@@ -1,0 +1,60 @@
+NAME
+	vrmlmod 
+
+USAGE
+            called from within directory:
+	./vrml [options] [FILE-input] [FILE-output]
+
+DESCRIPTION
+	Vrmlmod writes to FILE-output a vrml file (*.wrl) modeling the phylogenetic tree
+            embedded in the input Stockholm format multiple alignment. All branches of the tree
+	(including inner nodes) must be named and present in FILE-input, both in the alignment 
+            and in the newick representation of the tree. The resulting output file can be viewed using 
+            a VRML browser. (note - vrmlmod was developed using Cortona's VRML client ) Alignments 
+            longer than 100 basepairs long are scaled down to a default size of 50 and a difference-
+            based color scheme is used rather than a basepair-to-color mapping. In a scaled display, 
+            glowing elements represent quickly evolving portions of the alignment where in a full display,    
+	they represent changed basepairs.
+
+OPTIONS
+        -a  --ancestor comparison
+		In full display - compare sequences to root rather than parent for glow effect
+                In scaled display - compare sequences to parent rather than root for color-mapping and glow effect 
+
+	-b --background
+		Toggles a more interesting background (default is black)
+
+	-f --force full display
+		Overrides default scaling of alignments longer than 100 basepairs
+
+	-r --rotation
+		Disables rotation in evolution animation
+
+	-s --side view
+		Sets side-view as final viewpoint
+
+	-t NUM --time scale
+		Accelerates the timing of the evolution animation by NUM
+		NUM is limited to 0 < NUM <= 10
+
+	-v --viewpoint switch
+		Enables switching of the viewpoint during evolution animation
+
+	-x NUM - scale size
+		Sets the scaled display element map to NUM elements (default is 50)
+		Because of viewpoint limitations, NUM is limited to 10 <= NUM <= 500
+
+	-z NUM - spacing
+		Decreases element size and increases branch lengths by NUM to space out large 
+		phylogenies. Because of viewpoint limitations, NUM is limited to 0 <= NUM < 5
+	
+ADDITIONAL NOTES
+	- Because of the nature of Cortona's browser and many other browsers, starting positions 
+		and viewpoints are variable when refreshing a VRML file. Also, Cortona's MAC browser
+		does not support text. (Made it difficult to develop a standard for displaying text)
+	
+	- The arcs in RNA alignment vrml files represent matching base pairs and the consensus 
+		secondary structure of the files.
+	 
+
+

@@ -1,0 +1,323 @@
+\documentclass{article}
+\begin{document}
+
+\title{Telegraph projects}
+\maketitle
+
+\section{Setup}
+
+\begin{itemize}
+\item Build desk, monitor stand from flatpacks
+\item Assemble computer, LCD, mouse, keyboard
+\item Burn latst Debian install CD
+\item Connect computer to a network point
+\item Install Linux; take notes
+\item Get X working
+\item (Optional) Get wireless card working
+\item (Optional) Recompile kernel
+\item (Optional) Set up RAID
+\item (Optional) Set up USB keyboard drivers and other kernel modules
+\end{itemize}
+
+\section{Code to test properties of grammars}
+
+\subsection{Tests for regular grammars}
+
+Write functions to test if the grammar specified by a Telegraph file
+is (i) left-regular, (ii) right-regular.
+
+\subsection{Tests that a grammar can terminate}
+
+Write a function to test if a grammar can ``terminate'',
+starting from a given nonterminal symbol;
+that is, whether there is a path from that nonterminal to ``{\tt end}''.
+
+\section{Code relating to Telegraph expressions}
+
+\subsection{Note on expression binding}
+
+Telegraph expressions can include array indices of the form
+``{\tt \$1}'', ``{\tt \$2}'' (etc.), corresponding to the first, second (etc.)
+terms on the right-hand-side of a rule expression.
+
+For example, consider the following (incomplete) grammar
+
+\begin{verbatim}
+term RNA { A = "a", C = "c", G = "g", T = "t" };
+nonterm S;
+prob p[RNA][RNA];
+S -> RNA S RNA S { p[$1][$3] };
+\end{verbatim}
+
+(It's incomplete because it does not terminate.)
+
+To evaluate the final expression, ``{\tt p[\$1][\$3]}'',
+we need to {\em bind} the rule so that ``{\tt \$1}'' and ``{\tt \$3}''
+are bound to specific {\tt RNA} nucleotides.
+
+To bind a rule, we need to specify subsequence co-ordinates for
+every grammar symbol on the right-hand side of the rule; in particular,
+the first {\tt RNA} symbol ({\tt \$1}) and the third ({\tt \$3}).
+
+\subsection{Implement simple expression evaluation}
+
+Write a recursive function to implement a bound Telegraph ``simple expression''
+(i.e. addition, multiplication, division, probability parameters
+and constants).
+
+\subsection{Implement simple expression derivative evaluation}
+
+Write a recursive function to implement the log-derivative of a bound
+Telegraph ``simple expression'', with respect to a log-parameter.
+That is, for some parameter $x$ and some expression $f(x,\ldots)$,
+evaluate the following
+
+\[
+\frac{d \left( \log f(x,\ldots) \right)}{d (\log x)}
+= \frac{d f(x,\ldots)}{dx} \times \frac{x}{f(x,\ldots)}
+\]
+
+\subsection{Unbind an expression}
+
+Given a bound simple expression, write a function to unbind the
+expression, i.e. create an equivalent expression
+that does not contain any ``{\tt \$}$x$'' indices.
+
+\subsection{Create the likelihood expression for a parse tree}
+
+By multiplying together unbound expressions for the constituent rules,
+create the expression that corresponds to the likelihood of
+a parse tree.
+
+\subsection{Recursive copy and delete}
+
+Write recursive functions to (i) copy and (ii) delete an expression tree.
+
+\section{Dynamic programming codes}
+
+The following projects involve writing dynamic programming codes
+for the ``scripting'' functions of Telegraph.
+These implement the various grammar likelihood-related
+functions whose (virtual) prototypes are in the file ``{\tt tgpoly.h}''.
+
+In all cases, left-regular grammars (HMMs) can be handled more efficiently than
+general stochastic context-free grammars (SCFGs).
+Generally, for $N$ sequences of length $L$,
+HMMs take $O(L^N)$ time and memory,
+whereas SCFGs take $O(L^{2N})$ memory and $O(L^{3N})$ time.
+Therefore, it's worth going to the trouble of doing two separate
+implementations.
+
+\subsection{The {\tt pmax} function}
+
+Finding the maximum-likelihood parse for a grammar,
+given observed sequences.
+For HMMs (left-regular grammars), this is the Viterbi algorithm;
+for SCFGs, it is the CYK algorithm.
+
+\subsubsection{Viterbi implementation for left-regular grammars}
+
+\subsubsection{CYK implementation for SCFGs}
+
+\subsubsection{Viterbi traceback implementation for left-regular grammars}
+
+\subsubsection{CYK traceback implementation for SCFGs}
+
+\subsection{The {\tt psum} function}
+
+Finding the total likelihood (summed over all parses) for a grammar,
+given observed sequences.
+For HMMs (left-regular grammars), this is the Forward algorithm;
+for SCFGs, it is the Inside algorithm.
+
+\subsubsection{Forward implementation for left-regular grammars}
+
+\subsubsection{Inside implementation for SCFGs}
+
+\subsection{The {\tt psample} function}
+
+Sampling a random parse for a set of observed sequences.
+
+\subsubsection{Sampled Forward traceback implementation for left-regular grammars}
+
+\subsubsection{Sampled Inside traceback implementation for SCFGs}
+
+\subsection{The {\tt dlog} function}
+
+Finding the likelihood derivatives,
+which are related to the posterior probabilities
+that a particular rule was used to derive a particular set of subsequences.
+For HMMs (left-regular grammars), this uses the Forward-Backward algorithm;
+for SCFGs, it uses the Inside-Outside algorithm.
+
+\subsubsection{Outside implementation for SCFGs}
+
+\subsubsection{Backward implementation for left-regular grammars}
+
+\subsubsection{Derivative implementation for left-regular grammars}
+
+\subsubsection{Derivative implementation for SCFGs}
+
+\section{Telegraph-related utility codes}
+
+\subsection{Convert a Telegraph parse tree to a Stockholm alignment}
+
+Write a function that outputs a Telegraph parse tree as a Stockholm alignment
+(see e.g. {\tt biowiki.org/StockholmFormat}).
+
+\subsection{Telegraph as a distributed computing platform}
+
+\subsubsection{Telegraph XML generation using {\tt yaxx}}
+
+Write a version of the Telegraph compiler that generates XML,
+using the {\tt yaxx} program at {\tt yaxx.sourceforge.net}.
+
+\subsubsection{Web interface to Telegraph}
+
+Build a simple web UI to Telegraph, running on a dedicated Linux server.
+
+\subsubsection{Use Telegraph for remote job scheduling}
+
+Build a system that dispatches Telegraph grammars/scripts (``telegrams'')
+over a network connection to a compute farm, and collates the results.
+
+\subsubsection{Improve the scripting part of the Telegraph language}
+
+Telegraph's scripting capabilities could probably be more elegant.
+For example, by using concepts from Matlab, Maple, Mathematica, etc,
+to clarify the idea of ``simplifying'' an expression in various ways
+(from a {\tt psum}, possibly via an explicit polynomial, to a constant value).
+Comment, with proposals for improvements.
+
+\subsection{MCMC multiple alignment}
+
+These projects use Telegraph to implement some of the ideas behind
+Evolutionary HMMs and Evolutionary SCFGs.
+
+\subsubsection{Utilities to decompose and re-compose multiple alignments}
+
+Using the DART libraries, or otherwise,
+write small utilities to do the following:
+
+\begin{itemize}
+\item Given, as input, a Stockholm multiple alignment
+including a phylogenetic ``guide tree''
+ (containing all the sequence names in the alignment),
+break the alignment down into a Stockholm database of pairwise alignments,
+and print this on the output.
+\item Given, as input, a Stockholm multiple alignment
+and a series of subtrees (each of which contains some
+subset of the sequence names in the alignment),
+break the alignment down into a Stockholm database of smaller alignments
+(one for each of the phylogenetic trees),
+and print this on the output.
+\item Given, as input, a Stockholm database of pairwise alignments,
+each corresponding to a single branch of an assumed ``guide tree'',
+print on the output a single Stockholm multiple alignment
+(with the guide tree).
+\end{itemize}
+
+Feel free to find a more elegant way to fulfil these tasks,
+e.g. by combining the first two tasks into a single tool.
+
+\subsubsection{Implement a Handel-style alignment sampler using Telegraph}
+
+Use a scripting language as well as Telegraph.
+
+See Holmes and Bruno, Bioinformatics, 2001.
+
+\subsubsection{Extend the Handel-style alignment sampler to sample trees too}
+
+This involves adding some extra MCMC ``moves'' to the alignment sampler.
+
+\subsection{Consensus alignment}
+
+(Collaboration with Sjolander group.)
+
+Implement a tool to make a ``consensus'' alignment from a
+Stockholm database of multiple alignments.
+
+
+\section{Applications of Telegraph and DART}
+
+\subsection{Using stemloc (and/or evoldoer) to look for
+RNA regulatory structures in HIV and other viruses}
+
+(UndergraduateClass exercise.)
+
+Which of the following RNA structural elements can be detected
+by {\tt stemloc} or {\tt evoldoer},
+(i) if a suitably ``trimmed'' set of sequences (or alignment)
+is presented to the program;
+(ii) if the whole virus genome is tested?
+Try playing with the program settings to find the ones that work best.
+(Note: (ii) probably won't work very well due to the large size of
+the sequences involved, but try it anyway to see what happens.)
+
+\begin{itemize}
+\item The HIV Rev Response Element (RRE);
+\item The SARS s2m RNA;
+\item The elements identified by Hofacker {\em et al}
+(see e.g. Hofacker, Stadler and Stocsits, Bioinformatics 2004).
+\end{itemize}
+
+\subsection{Curation of viral regulatory RNAs}
+
+By searching the literature for conserved RNA secondary structures
+implicated in viral function (packaging, regulation of viral gene expression,
+regulation of host gene expression...),
+make a curated dataset of alignments of such elements,
+in Stockholm format.
+
+The elements should not be in RFAM yet, but should be
+in a format suitable for submission to RFAM.
+
+
+\subsection{Identify fruitfly microRNAs}
+
+(UndergraduateClass exercise.)
+
+Develop an exercise whereby the student is presented with several
+alignments, one of which contains a microRNA, one contains a tRNA,
+and several others are duds (or contain protein-coding genes or
+other conserved sequences that aren't ncRNA genes).
+
+The student should use pfold, xfold or QRNA.
+
+Optional: make the exercise more challenging by using longer alignments
+and the {\tt pfoldscan.pl} script.
+
+\subsection{Benchmarking stemloc, tkfalign+xfold,
+and other multiple alignment tools for RNA}
+
+Use the {\tt sankoff-paper/benchmark/benchmark.pl} script in
+the {\tt sankoff-paper} CVS repository on buffy as a starting point.
+
+\section{Documentation-related projects}
+
+\subsection{Documentation of the Linux computer setup process}
+
+Make it easy for others to do what you have done (setting up the
+Linux computer). Write a wiki page describing the process.
+
+\subsection{Latex document describing the Telegraph language}
+
+Write a succinct, introductory Latex document describing the Telegraph
+language, including a summary of the grammar (from the {\tt gram.y} file).
+
+\subsection{Header file comments}
+
+Add a short comment paragraph to the top of every ``{\tt .h}'' file,
+outlining the various data structures and functions used by the
+Telegraph compiler/interpreter.
+
+\subsection{Telegraph user's guide}
+
+Write a page or two describing Telegraph to a novice user.
+The text should be biologist-friendly.
+
+\subsection{Wiki pages}
+
+Update the wiki pages for Telegraph.
+
+\end{document}

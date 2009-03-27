@@ -1,0 +1,4 @@
+mkdir comp dot log
+rm dot/* comp/* log/* align
+handalign tiny.stk -af align -c comp -dot dot -log 5 -logcopy LOG
+handalign tc1.stk -m prot.hsm -ff 0 -s 1000 -ha -af align -c comp/tc1 -dot dot/tc1 -log 5 -log HMMOC_ADAPTER -logfile log/tc1

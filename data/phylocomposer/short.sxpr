@@ -1,0 +1,220 @@
+;; TKF91 model, joint ancestor-descendant Pair HMM:
+;; composition of a singleton transducer and a branch transducer.
+
+;; Alignment of T to CA. Sampled path distribution:
+;; Path in each case XYZ is SXYZWE  ==  (S(S)) ... XYZ ... (W(W)) (E(E))
+
+;;                XYZ   + P(PATH=SXYZWE)                    + -Log2 P(PATH=SXYZWE,$A=T,$D=CA)
+;; ---------------------+-----------------------------------+---------------------------------
+;;                      +                                   +
+;;        (I(M)) (I(I)) | k ~k ~b^2 a b     pi_T Q_TC pi_A  | 12.567  [auto]  PostProb = 0.305081908068732
+;;        (S(I)) (I(M)) | k ~k ~b^2 b a     pi_T pi_C Q_TA  | 14.152  [auto]  PostProb = 0.101691326108125
+;; (I(D)) (I(I)) (I(I)) | k ~k ~a g b ~b^2  pi_T pi_C pi_A  | 12.83  [auto]  PostProb = 0.254240986535332
+;; (S(I)) (I(D)) (I(I)) | k ~k b ~b^2 ~a g  pi_T pi_C pi_A  | 12.83  [auto]  PostProb = 0.254240986535332
+;; (S(I)) (S(I)) (I(D)) | k ~k b^2 ~b ~a ~g pi_T pi_C pi_A  | 14.415  [auto]  PostProb = 0.0847447927524798
+
+;;                         Forward -Log2 P($A=T,$D=CA) =        10.854268533035  [auto]
+
+;; Path fragments:
+
+;;        Path fragment + Terms            + -Log2 P
+;; ---------------------+------------------+---------------------------
+;;                      +                                   + 
+
+;; (emissions)
+;;
+;;                [-C]  | pi_C             | 2  [auto]
+;;                [TC]  | pi_T Q_TC        | 4.737  [auto]
+;;                [T-]  | pi_T             | 2  [auto]
+;;                [-A]  | pi_A             | 2  [auto]
+;;                [TA]  | pi_T Q_TA        | 6.322  [auto]
+
+;; (transitions)
+;;
+;;     (S(S)) -> (S(I)) | b                | 2  [auto]
+;;     (S(S)) -> (I(M)) | ~b k a           | 2.415  [auto]
+;;     (S(S)) -> (I(D)) | ~b k ~a          | 2.415  [auto]
+;;     (S(I)) -> (S(I)) | b                | 2  [auto]
+;;     (S(I)) -> (I(D)) | ~b k ~a          | 2.415  [auto]
+;;     (S(I)) -> (I(M)) | ~b k a           | 2.415  [auto]
+;;     (I(M)) -> (I(I)) | b                | 2  [auto]
+;;     (I(M)) -> (E(E)) | ~b ~k            | 1.415  [auto]
+;;     (I(D)) -> (I(I)) | g                | 1  [auto]
+;;     (I(D)) -> (E(E)) | ~g ~k            | 2  [auto]
+;;     (I(I)) -> (I(I)) | b                | 2  [auto]
+;;     (I(I)) -> (E(E)) | ~b ~k            | 1.415  [auto]
+
+;; (emissions plus transitions)
+;;
+;;  -C (S(S)) -> (S(I)) | b pi_C           | 4  [auto]
+;;  TC (S(S)) -> (I(M)) | ~b k a pi_T Q_TC | 7.152  [auto]
+;;  T- (S(S)) -> (I(D)) | ~b k ~a pi_T     | 4.415  [auto]
+;;  -A (S(I)) -> (S(I)) | b pi_A           | 4  [auto]
+;;  T- (S(I)) -> (I(D)) | ~b k ~a pi_T     | 4.415  [auto]
+;;  TA (S(I)) -> (I(M)) | ~b k a pi_T Q_TA | 8.737  [auto]
+;;  -A (I(M)) -> (I(I)) | b pi_A           | 4  [auto]
+;;     (I(M)) -> (E(E)) | ~b ~k            | 1.415  [auto]
+;;  -C (I(D)) -> (I(I)) | g pi_C           | 3  [auto]
+;;  -A (I(D)) -> (I(I)) | g pi_A           | 3  [auto]
+;;     (I(D)) -> (E(E)) | ~g ~k            | 2  [auto]
+;;  -A (I(I)) -> (I(I)) | b pi_A           | 4  [auto]
+;;     (I(I)) -> (E(E)) | ~b ~k            | 1.415  [auto]
+
+;; (paths to DP cells)
+;;
+;;              (I(D)) at [1 0] | ~b k ~a     pi_T            | 4.415  [auto]
+;;              (S(I)) at [0 1] | b           pi_C            | 4  [auto]
+;;              (I(M)) at [1 1] | ~b k a      pi_T Q_TC       | 7.152  [auto]
+;;       (S(I)) (I(D)) at [1 1] | b ~b k ~a   pi_T pi_C       | 8.415  [auto]
+;;       (I(D)) (I(I)) at [1 1] | ~b k ~a g   pi_T pi_C       | 7.415  [auto]
+;;       (S(I)) (S(I)) at [0 2] | b b         pi_C pi_A       | 8  [auto]
+;;       (S(I)) (I(M)) at [1 2] | k ~b b a    pi_T pi_C Q_TA  | 12.737  [auto]
+;;       (I(M)) (I(I)) at [1 2] | k ~b a b    pi_T Q_TC pi_A  | 11.152  [auto]
+;;(I(D)) (I(I)) (I(I)) at [1 2] | k ~a g b ~b pi_T pi_C pi_A  | 11.415  [auto]
+;;(S(I)) (I(D)) (I(I)) at [1 2] | b ~b k ~a g pi_T pi_C pi_A  | 11.415  [auto]
+;;(S(I)) (S(I)) (I(D)) at [1 2] | b^2 ~b k ~a pi_T pi_C pi_A  | 12.415  [auto]
+
+
+;; Run program "short.pl" to make the above auto-evaluations
+
+;; To test transitions:
+;;    phylocomposer short.sxpr -qq -a
+
+;;  (transition (from (S(S))) (to (E(E))) (bit-value 1.415))
+;;  (transition (from (S(S))) (to (S(I))) (bit-value 1.999))
+;;  (transition (from (S(S))) (to (I(M))) (bit-value 2.415))
+;;  (transition (from (S(S))) (to (I(D))) (bit-value 2.415))
+;; 
+;;  (transition (from (S(I))) (to (E(E))) (bit-value 1.415))
+;;  (transition (from (S(I))) (to (S(I))) (bit-value 1.999))
+;;  (transition (from (S(I))) (to (I(M))) (bit-value 2.415))
+;;  (transition (from (S(I))) (to (I(D))) (bit-value 2.415))
+;; 
+;;  (transition (from (I(M))) (to (E(E))) (bit-value 1.415))
+;;  (transition (from (I(M))) (to (I(M))) (bit-value 2.415))
+;;  (transition (from (I(M))) (to (I(D))) (bit-value 2.415))
+;;  (transition (from (I(M))) (to (I(I))) (bit-value 1.999))
+;; 
+;;  (transition (from (I(D))) (to (E(E))) (bit-value 1.999))
+;;  (transition (from (I(D))) (to (I(M))) (bit-value 3))
+;;  (transition (from (I(D))) (to (I(D))) (bit-value 3))
+;;  (transition (from (I(D))) (to (I(I))) (bit-value 0.999))
+;; 
+;;  (transition (from (I(I))) (to (E(E))) (bit-value 1.415))
+;;  (transition (from (I(I))) (to (I(M))) (bit-value 2.415))
+;;  (transition (from (I(I))) (to (I(D))) (bit-value 2.415))
+;;  (transition (from (I(I))) (to (I(I))) (bit-value 1.999))
+
+;; To test DP matrix:
+;;      phylocomposer short.sxpr -qq -f -log TRANSDUCER_DP_MATRIX
+
+;; Transducer forward DP matrix:
+;; Dimensions: (2 3)
+;; Cell    State:Score:Emit  (scores of -infinity are omitted)
+;; [0 0]
+;; [1 0]   I(D):-4415:-2000 
+;; [0 1]   S(I):-3999:-2000 
+;; [1 1]   I(M):-7151:-4736 I(D):-8414:-2000 I(I):-7414:-2000 
+;; [0 2]   S(I):-7998:-2000 
+;; [1 2]   I(M):-12735:-6321 I(D):-12413:-2000 I(I):-9736:-2000 
+;; End     -10854
+
+
+
+;; The tree
+(branch (to $ANCESTOR)
+ (transducer TKF91_ROOT)
+ (sequence (T))
+ (branch (transducer TKF91_BRANCH) (to $DESCENDANT)
+	 (sequence (C A))
+	 )
+ )
+
+;; Alphabet
+(token (A C G T))
+
+;; Singleton transducer
+(transducer
+
+ (name TKF91_ROOT)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name I) (type insert) (label pi))
+
+ (transition (from S) (to I) (label kappa))
+ (transition (from S) (to W) (label ~kappa))
+
+ (transition (from I) (to I) (label kappa))
+ (transition (from I) (to W) (label ~kappa))
+
+ (transition (from W) (to E))
+)
+
+;; Branch transducer
+(transducer
+
+ (name TKF91_BRANCH)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+
+ (state (name M) (type match) (label Q))
+ (state (name D) (type delete))
+ (state (name I) (type insert) (label pi))
+
+ (transition (from S) (to I) (label beta))
+ (transition (from S) (to W) (label ~beta))
+
+ (transition (from W) (to M) (label alpha))
+ (transition (from W) (to D) (label ~alpha))
+ (transition (from W) (to E))
+
+ (transition (from M) (to I) (label beta))
+ (transition (from M) (to W) (label ~beta))
+
+ (transition (from D) (to I) (label gamma))
+ (transition (from D) (to W) (label ~gamma))
+
+ (transition (from I) (to I) (label beta))
+ (transition (from I) (to W) (label ~beta))
+)
+
+
+;; Params
+(bit-value (beta 2)
+	   (~beta .415))
+(value ((Q A A) .75))
+(value ((Q A C) .05))
+(value ((Q A G) .15))
+(value ((Q A T) .05))
+
+(value ((Q C A) .05))
+(value ((Q C C) .75))
+(value ((Q C G) .05))
+(value ((Q C T) .15))
+
+(value ((Q G A) .15))
+(value ((Q G C) .05))
+(value ((Q G G) .75))
+(value ((Q G T) .05))
+
+(value ((Q T A) .05))
+(value ((Q T C) .15))
+(value ((Q T G) .05))
+(value ((Q T T) .75))
+
+(value ((pi A) .25))
+(value ((pi C) .25))
+(value ((pi G) .25))
+(value ((pi T) .25))
+
+(bit-value (alpha 1))
+(bit-value (~alpha 1))
+(bit-value (gamma 1))
+(bit-value (~gamma 1))
+
+(bit-value (kappa 1))
+(bit-value (~kappa 1))

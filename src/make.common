@@ -1,0 +1,211 @@
+# Requires GNU Make and gcc (version 3.2 or higher)
+# This file is included by all DART source directory makefiles.
+
+include $(SRCDIR)/make.defs
+
+# Library target
+LIBPREFIX  = lib
+LIBDART    = dart
+LIBSUFFIX  = .a
+LIBNAME    = $(LIBDART)$(DIRNAME)
+LIBTARGET  = $(LIBPREFIX)$(LIBNAME)$(LIBSUFFIX)
+
+# Directories
+
+BINDIR     = $(CCDIR)/../../bin
+LIBDIR     = $(CCDIR)/../../lib
+PERLDIR    = $(CCDIR)/../../perl
+
+OBJROOTDIR = $(CCDIR)/obj
+OBJOSDIR   = $(OBJROOTDIR)/$(OSDIR)
+OBJDIR     = $(OBJOSDIR)/$(DEBUGDIR)
+
+TESTDIR    = $(CCDIR)/t
+TMPMAKE    = Makefile.temp
+
+# The following conditional syntax allows constructs like 'make release all', 'make profile all' or 'make debug all' with GNU make.
+ifneq (,$(findstring debug,$(MAKECMDGOALS)))
+# 'debug' was specified:
+DEBUGDIR   = debug
+DEBUGFLAGS = -g -include $(SRCDIR)/util/dartdebug.h
+else
+ifneq (,$(findstring profile,$(MAKECMDGOALS)))
+# 'profile' was specified:
+DEBUGDIR   = profile
+DEBUGFLAGS = -O3 -pg
+else
+ifneq (,$(findstring noopt,$(MAKECMDGOALS)))
+# 'noopt' was specified:
+DEBUGDIR   = noopt
+DEBUGFLAGS = -O0 -DNDEBUG
+else
+# default is 'release':
+DEBUGDIR   = release
+DEBUGFLAGS = -O3
+endif
+endif
+endif
+
+# Dummy pseudotargets for 'make debug ...', 'make release ...', etc:
+debug release noopt profile alloc_dense pseudovec_bifurc explicit_bifurc:
+	echo Compiling in '$@' mode
+
+# macros
+
+ifneq (,$(findstring alloc_dense,$(MAKECMDGOALS)))
+# 'alloc_dense' was specified
+# Use dense(fast,fat) DP matrices for Pair SCFGs
+D1 = -DDART_USE_DENSE_CFGDP_ALLOCATORS
+M1 = alloc_dense
+else
+# Use sparse(slow,slim) DP matrices for Pair SCFGs
+D1 =
+M1 =
+endif
+
+ifneq (,$(findstring pseudovec_bifurc,$(MAKECMDGOALS)))
+# 'pseudovec_bifurc' was specified or default
+# Store bifurcations using "pseudovector" iterators (O(L^2) memory; slower)
+D2 = -DDART_USE_BIFURCATION_PSEUDOVECTORS
+M2 = pseudovec_bifurc
+else
+# 'explicit_bifurc' was specified or default
+# Store bifurcations explicitly (takes O(L^3) memory)
+D2 =
+M2 = explicit_bifurc
+endif
+
+DEFINES = $(D1) $(D2)
+MAKEARGS = $(DEBUGDIR) $(M1) $(M2)
+
+# files, dirs & stuff
+
+HFILES     = $(notdir $(wildcard $(CCDIR)/*.h))
+CFILES     = $(notdir $(wildcard $(CCDIR)/*.c))
+CCFILES    = $(notdir $(wildcard $(CCDIR)/*.cc))
+SRCFILES   = $(HFILES) $(CFILES) $(CCFILES)
+OBJFILES   = $(filter-out $(addsuffix .o,$(TARGETS)), $(subst .c,.o,$(CFILES)) $(subst .cc,.o,$(CCFILES)))
+
+CTESTS     = $(wildcard $(TESTDIR)/*.c)
+CCTESTS    = $(wildcard $(TESTDIR)/*.cc)
+PERLTESTS  = $(wildcard $(TESTDIR)/*.pl)
+EXECTESTS  = $(subst .c,,$(CTESTS)) $(subst .cc,,$(CCTESTS))
+SHELLTESTS = $(wildcard $(TESTDIR)/*.t)
+AUTOTESTS  = $(SHELLTESTS) $(PERLTESTS) $(EXECTESTS)
+
+INCDIRS    = -I$(SRCDIR)
+LIBDIRS    = -L$(LIBDIR)
+
+ifeq ($(DIRNAME),gfx)
+GFXLIBS    = -lgd -lpng -lz
+else
+GFXLIBS    = 
+endif
+
+
+DARTLIBS   = $(addprefix -ldart,$(DEPS))
+MATHLIBS   = -lm
+CPPLIBS    = -lstdc++
+THISLIB    = -l$(LIBNAME)
+LIBRARIES  = $(DARTLIBS) $(GFXLIBS) $(MATHLIBS) $(CPPLIBS)
+
+PPFLAGS    = $(INCDIRS) $(DEFINES)
+CCFLAGS    = $(INCDIRS) $(DEBUGFLAGS) $(DEFINES) -Wall
+LDFLAGS    = $(DEBUGFLAGS) $(LIBDIRS) $(STATIC)
+ARFLAGS    = -rcvs
+
+TESTHARNESS = $(PERLDIR)/testharness.pl
+
+.SUFFIXES :
+.SUFFIXES : .o .cc .cpp .c
+
+# Group rules
+
+all: exec lib
+
+exec: $(TARGETS)
+
+lib: $(LIBTARGET)
+
+test: $(TARGETS) $(LIBTARGET) $(EXECTESTS)
+	$(TESTHARNESS) $(TESTS) -fullpath -cd $(TESTDIR) $(AUTOTESTS)
+
+# The main rule - this creates hard links from the source files into the objects directory and works out dependencies on the fly.
+# There's probably a neater way of doing this with GNU make or autoconf... oh well.
+# The 'test FILE1 -nt FILE2' construct (for testing if FILE1 is newer than FILE2) works for GNU test (e.g. Linux or Macs), but not e.g. OSF1.
+# This is acceptable, as we pretty much rely on a GNU setup on development machines. For clean builds, the test should not be invoked.
+#
+$(TARGETS): $(OBJDIR)
+	$(LN) -f $(SRCFILES) $(OBJDIR)
+	$(TEST) -e $(BINDIR)/$@ && $(LN) -f $(BINDIR)/$@ $(OBJDIR)/$@.tmp || eval
+	( cat Makefile; \
+	$(CC) $(PPFLAGS) -M $(CFILES) $(CCFILES); \
+	echo '$@.tmp: $(OBJFILES) $@.o'; \
+	echo '	$(CPP) $(LDFLAGS) -o $@.tmp $@.o $(OBJFILES) $(LIBRARIES)' ) > $(OBJDIR)/$(TMPMAKE)
+	cd $(OBJDIR); $(MAKE) $(MAKEARGS) -e CCDIR=$(CCDIR) -f $(TMPMAKE) $@.tmp; $(RM) $(SRCFILES) $(TMPMAKE)
+	( ( $(TEST) ! -e $(BINDIR)/$@ || $(TEST) $(OBJDIR)/$@.tmp -nt $(BINDIR)/$@ ) && $(MV) $(OBJDIR)/$@.tmp $(BINDIR)/$@ ) || $(RM) $(OBJDIR)/$@.tmp
+
+# The library rule - same as the executables rule (above), but creates a library containing every object file.
+#
+$(LIBTARGET): $(OBJDIR)
+	$(LN) -f $(SRCFILES) $(OBJDIR)
+	$(TEST) -e $(LIBDIR)/$@ && $(LN) -f $(LIBDIR)/$@ $(OBJDIR)/$@.tmp || eval
+	( cat Makefile; \
+	$(CC) $(PPFLAGS) -M $(CFILES) $(CCFILES); \
+	echo '$@.tmp: $(OBJFILES)'; \
+	echo '	$(AR) $(ARFLAGS) $@.tmp $(OBJFILES)' ) > $(OBJDIR)/$(TMPMAKE)
+	cd $(OBJDIR); $(MAKE) $(MAKEARGS) -e CCDIR=$(CCDIR) -f $(TMPMAKE) $@.tmp; $(RM) $(SRCFILES) $(TMPMAKE)
+	( ( $(TEST) ! -e $(LIBDIR)/$@ || $(TEST) $(OBJDIR)/$@.tmp -nt $(LIBDIR)/$@ ) && $(MV) $(OBJDIR)/$@.tmp $(LIBDIR)/$@ ) || $(RM) $(OBJDIR)/$@.tmp
+
+# Tests in "t/" subdirectory
+#
+$(TESTDIR)/%: $(TESTDIR)/%.c $(LIBDIR)/$(LIBTARGET)
+	$(CPP) $(LDFLAGS) $(CCFLAGS) -o $@ $< $(THISLIB) $(LIBRARIES)
+
+$(TESTDIR)/%: $(TESTDIR)/%.cc $(LIBDIR)/$(LIBTARGET)
+	$(CPP) $(LDFLAGS) $(CCFLAGS) -o $@ $< $(THISLIB) $(LIBRARIES)
+
+#; $(RM) $(CCTESTS) $(CTESTS) $(TMPMAKE)
+
+# make clean
+
+clean: $(OBJDIR)
+	$(RM) -f $(OBJDIR)/*.o $(LIBDIR)/$(LIBTARGET)
+	cd $(BINDIR); $(RM) -f $(TARGETS)
+	cd $(TESTDIR); $(RM) -f $(EXECTESTS)
+
+# make cleanlib
+
+cleanlib:
+	$(RM) -f $(LIBDIR)/$(LIBPREFIX)$(LIBDART)*$(LIBSUFFIX)
+
+# rules to make object directories
+
+$(OBJDIR):
+	$(TEST) -d $(OBJROOTDIR) || mkdir $(OBJROOTDIR)
+	$(TEST) -d $(OBJOSDIR) || mkdir $(OBJOSDIR)
+	$(TEST) -d $(OBJDIR) || mkdir $(OBJDIR)
+
+$(TESTOBJDIR): $(OBJDIR)
+	$(TEST) -d $(TESTOBJDIR) || mkdir $(TESTOBJDIR)
+
+# emacs tags
+
+TAGS tags: $(SRCFILES)
+	$(ETAGS) --language=c++ $(SRCFILES)
+
+# suffix rules
+
+.cc.o .cpp.o:
+	$(CPP) $(CCFLAGS) -c -o $(OBJDIR)/$@ $(CCDIR)/$<
+
+.c.o:
+	$(CC) $(CCFLAGS) -c -o $(OBJDIR)/$@ $(CCDIR)/$<
+
+# dep and cleandep
+
+dep:
+	for DEPDIR in $(DEPS); do cd $(SRCDIR)/$$DEPDIR; $(MAKE) $(MAKEARGS) lib; done
+
+cleandep:
+	for DEPDIR in $(DEPS); do cd $(SRCDIR)/$$DEPDIR; $(MAKE) $(MAKEARGS) clean; done

@@ -1,0 +1,39 @@
+;; The alphabet
+(alphabet (name ALPHABET) (token (a c g t)) (wildcard *))
+
+;; The grammar
+(grammar
+ (name GRAMMAR)
+ (update-rates 1)
+ (update-rules 0)
+ ;; Null model grammar rules: emit, self-loop, terminate
+ (transform (from (STATE)) (to (EMISSION STATE*)))
+ (transform (from (STATE*)) (to (STATE)))
+ (transform (from (STATE*)) (to ()))
+
+ ;; Rate matrix
+ (chain
+  (update-policy irrev)
+  (terminal (EMISSION))
+
+  ;; Initial distribution over states
+  (initial (state (a)) (prob 0.25))
+  (initial (state (c)) (prob 0.25))
+  (initial (state (g)) (prob 0.25))
+  (initial (state (t)) (prob 0.25))
+
+  ;; Mutation rates
+  (mutate (from (a)) (to (c)) (rate .01))
+  (mutate (from (a)) (to (g)) (rate .01))
+  (mutate (from (a)) (to (t)) (rate .01))
+  (mutate (from (c)) (to (a)) (rate .01))
+  (mutate (from (c)) (to (g)) (rate .01))
+  (mutate (from (c)) (to (t)) (rate .01))
+  (mutate (from (g)) (to (a)) (rate .01))
+  (mutate (from (g)) (to (c)) (rate .01))
+  (mutate (from (g)) (to (t)) (rate .01))
+  (mutate (from (t)) (to (a)) (rate .01))
+  (mutate (from (t)) (to (c)) (rate .01))
+  (mutate (from (t)) (to (g)) (rate .01))
+ )  ;; end of rate matrix
+)  ;; end of grammar

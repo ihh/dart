@@ -1,0 +1,14 @@
+Requirements
+
+This library was developed with:
+
+   * Python 2.4 or higher
+      * http://www.python.org
+   * Ply 2.0 
+      * http://www.dabeaz.com/ply/ply.html
+   * BioPython 1.42
+      * http://www.biopython.org
+      
+Slighly older versions might do as well. The library
+accesses the Bio.Alphabet and Bio.Data.Codontable modules 
+from BioPython.   

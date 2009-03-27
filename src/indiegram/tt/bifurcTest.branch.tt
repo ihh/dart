@@ -1,0 +1,72 @@
+;; Test TT (bifurcation emphasis).
+;; (Left-emitting) HMM-like structure + bifurcations can originate at root or leaves.
+;; Composed TM (bifurcTest.valid.tm) hand-checked.
+;; Reduced composed TM (bifurcTest.valid.reduced.tm) hand-checked.
+
+;;;;;;;;;;;;
+;; Branch ;;
+;;;;;;;;;;;;
+
+>branch-stateTyping
+; "regular" branch states
+s = s
+il = i
+ml = m
+w = w
+Bi[S s] = bi
+Bi[S S] = bi
+Bm[s s] = bm
+e = e
+
+; "singlet"-ish branch states entered after bifurcation at leaf
+S = s
+Il = i
+
+>branch-absorbProfiling
+ml = l
+Bm[s s] = Bi[s s]
+
+>branch-emitProfiling
+il = l
+ml = l
+Bi[S s] = Bi[S s]
+Bm[s s] = Bm[s s]
+Bi[S S] = Bi[S S]
+
+Il = l
+
+>branch-emitDist
+il = p
+ml = m
+
+Il = p
+
+>branch-tm
+s -> il = ilp(t), w = 1-ilp(t)
+il -> il = ilp(t), Bi[S s] = blp(t), w = 1-ilp(t)-blp(t)
+ml -> il = ilp(t), w = 1-ilp(t)
+w -> ml = 1, Bm[s s] = 1, e = 1
+e ->
+
+S -> Il = 1-blp(t)-elp(t), Bi[S S] = blp(t), e = elp(t)
+Il -> Il = ilp(t), Bi[S S] = blp(t), e = 1-ilp(t)-blp(t)
+
+>branch-bifurc
+Bm[s s] -> (s, s, e)
+
+Bi[S s] -> (S, s, e)
+Bi[S S] -> (S, S, e)
+
+>branch-stateSorting
+s = 0
+il = 1
+ml = 2
+w = 3
+Bi[S s] = 5
+Bi[S S] = 5
+Bm[s s] = 5.5
+
+S = 6
+Il = 7
+
+e = 10

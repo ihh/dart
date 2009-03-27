@@ -1,0 +1,14 @@
+# STOCKHOLM 1.0
+
+#=GF NotaBene This file holds the sequence data used in the test testtripletdp.cc.
+#=GF NotaBene You can reproduce the constrained version with 'indiegram --testgrammar --minlooplen 0 tiny.stk'
+#=GF NotaBene and the unconstrained version by removing the fold information in '#=GR' tags.
+
+#=GF NH ((X:1,Y:1):1,Z:1);
+
+X           aaggaaattttt
+#=GR X SS   <<..<<<>>>>>
+Y           aaaaattttt
+#=GR Y SS   <<<<<>>>>>
+Z           aaatggaatttt
+#=GR Z SS   <<<>..<<>>>>

@@ -1,0 +1,75 @@
+;; The grammar.
+(grammar
+ (name HasegawaKishinoYano85)
+
+ ;; Transformation rules. These follow the pattern for a null model with rate matrix X.
+ ;; See e.g. the Kimura two-parameter xgram model for more info.
+ (transform (from (S)) (to (X S*)))
+ (transform (from (S*)) (to (S)) (prob 1))
+ (transform (from (S*)) (to ()) (prob 1))
+ (update-rules 0)
+
+ ;; Parameters for the HKY85 model
+ (params
+  ((piA .25) (piC .25) (piG .25) (piT .25))  ;; base frequencies
+  ((alpha .4))  ;; transition rate
+  ((beta .1))  ;; transversion rate
+  )  ;; end params
+
+ ;; Rate matrix
+ (chain
+  ;; The state of this chain is a single nucleotide X.
+  (terminal (X))
+  ;; Treat initial probabilities and mutation rates as functions, not variables.
+  (update-policy parametric)
+
+  ;; initial probability distribution
+  (initial (state (a)) (prob piA))
+  (initial (state (c)) (prob piC))
+  (initial (state (g)) (prob piG))
+  (initial (state (t)) (prob piT))
+
+  ;; mutation rates
+  (mutate (from (a)) (to (c)) (rate piC * beta))
+  (mutate (from (a)) (to (g)) (rate piG * alpha))
+  (mutate (from (a)) (to (t)) (rate piT * beta))
+  (mutate (from (c)) (to (a)) (rate piA * beta))
+  (mutate (from (c)) (to (g)) (rate piG * beta))
+  (mutate (from (c)) (to (t)) (rate piT * alpha))
+  (mutate (from (g)) (to (a)) (rate piA * alpha))
+  (mutate (from (g)) (to (c)) (rate piC * beta))
+  (mutate (from (g)) (to (t)) (rate piT * beta))
+  (mutate (from (t)) (to (a)) (rate piA * beta))
+  (mutate (from (t)) (to (c)) (rate piC * alpha))
+  (mutate (from (t)) (to (g)) (rate piG * beta))
+
+  ;; "unobserved" mutations that are needed to accumulate probabilistic counts correctly
+  ;; the "#" symbol is used to prevent unwanted accumulation of rate counts
+  (mutate (from (a)) (to (a)) (rate (piA + piG) * (# beta) + (piA + piC + piT) * (# alpha)))
+  (mutate (from (c)) (to (c)) (rate (piC + piT) * (# beta) + (piA + piC + piG) * (# alpha)))
+  (mutate (from (g)) (to (g)) (rate (piA + piG) * (# beta) + (piC + piG + piT) * (# alpha)))
+  (mutate (from (t)) (to (t)) (rate (piC + piT) * (# beta) + (piA + piG + piT) * (# alpha)))
+
+ )  ;; end chain X
+)  ;; end grammar
+
+;; Standard DNA alphabet
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *)
+)  ;; end alphabet DNA

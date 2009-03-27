@@ -1,0 +1,62 @@
+----------------------------------------------------------------------------
+
+Handel - software for Bayesian inference of evolutionary multiple alignments
+
+Copyright (C) 2000 Ian Holmes <ihh@fruitfly.org> (primary author)
+Licensed under the GNU Public License - see file "LICENSE"
+
+To install: 'cd Handel; make'
+Recommended accompaniment: Concerti grossi Op.6 1-4
+
+I have compiled Handel on RedHat Linux 6.0 using gcc version egcs-2.91.66
+and GNU make without difficulties. Let me know how it goes for you.
+Handel relies heavily on the Standard Template Library so if your compiler
+doesn't have that, you may be in trouble.
+
+It is ALWAYS good to hear that people have tried this software. Any
+questions you have will eventually make it into a FAQ; so please send
+mail to <ihh@fruitfly.org> with bug reports, comments or flames.
+
+----------------------------------------------------------------------------
+
+Summary of included programs (binaries in Handel/bin):
+
+tkfemit		- generate gapped alignments using the Thorne /
+		  Kishino / Felsenstein "links" model, given
+		  a tree in PHYLIP format
+
+tkfdistance	- generate "protdist"-style distance matrices
+		  for an unaligned FASTA sequence database
+
+tkfalign	- build, score, sample alignments given a tree
+		  and a sequence database
+
+There are several other undocumented programs
+ (assuming you even call this documentation).
+
+----------------------------------------------------------------------------
+
+Heavy debts of thanks are owed to the following contributors:
+
+Guy Gascoigne - Piggford <ggp@bigfoot.com>
+ for his C++ conversion of Henry Spencer's famous regexp code
+
+Robert Davies <robertd@netlink.co.nz>
+ for his cool Newmat linear algebra library, available from
+ http://webnz.com/robert/nzc_nm09.html  (check for updates)
+
+The "randlib" team for their comprehensive random number library:
+ Barry W. Brown
+ James Lovato
+ Kathy Russell
+ John Venier
+ Department of Biomathematics, Box 237
+ The University of Texas, M.D. Anderson Cancer Center
+ 1515 Holcombe Boulevard
+ Houston, TX      77030
+
+Sean Eddy <eddy@hmmer.wustl.edu>
+Graeme Mitchison <gjm@mrc-lmb.cam.ac.uk>
+ for useful mathematical routines from HMMER
+
+----------------------------------------------------------------------------

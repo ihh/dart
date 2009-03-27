@@ -1,0 +1,18 @@
+# STOCKHOLM 1.0
+
+#=GF NotaBene This is from Bralibase II.
+#=GF NotaBene Phylogeny estimated with Xfold and Jukes-Cantor grammar.
+
+#=GF NH                        (AC008670.6-83725_83795:0.0001000010,(AB042432.1-14140_14072:1.1786696444,Z82044.1-16031_16103:1.1786696444)node_3:0.0001000010)root;
+
+
+AB042432.1-14140_14072         GUUUCUGUAGUUGAAUUACAACGAUGAUUUUUCAUGUCAUUGGUCGCAGUUGAAUGCUGUGUAGAAAUA
+#=GR AB042432.1-14140_14072 SS <<<<<<<--<<<<----->>>>-<<<<<------->>>>>----<<<<<------->>>>>>>>>>>>-
+
+Z82044.1-16031_16103           GCGGUUGUGGCGAAGUGGUUAACGCACCAGAUUGUGGCUCUGGCACUCGUGGGUUCGAUUCCCAUCAAUCGCC
+#=GR Z82044.1-16031_16103 SS   <<<<<<<--<<<<-------->>>>-<<<<<------->>>>>-----<<<<<------->>>>>>>>>>>>-
+
+AC008670.6-83725_83795         ACUUUUAAAGGAUAACAGCCAUCCGUUGGUCUUAGGCCCCAAAAAUUUUGGUGCAACUCCAAAUAAAAGUA
+#=GR AC008670.6-83725_83795 SS <<<<<<<--<<<<------->>>>-<<<<<------->>>>>----<<<<<------->>>>>>>>>>>>-
+
+//

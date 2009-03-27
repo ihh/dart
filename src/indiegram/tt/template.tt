@@ -1,0 +1,42 @@
+;; Template tree transducer
+
+;;;;;;;;;;;;;
+;; Singlet ;;
+;;;;;;;;;;;;;
+
+>singlet-stateTyping
+
+
+>singlet-emitProfiling
+
+
+>singlet-trans
+
+
+>singlet-bifurc
+
+
+>singlet-stateSorting
+
+
+
+;;;;;;;;;;;;
+;; Branch ;;
+;;;;;;;;;;;;
+
+>branch-stateTyping
+
+
+>branch-absorbProfiling
+
+
+>branch-emitProfiling
+
+
+>branch-trans
+
+
+>branch-bifurc
+
+
+>branch-stateSorting

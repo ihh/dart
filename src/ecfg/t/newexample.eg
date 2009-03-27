@@ -1,0 +1,135 @@
+;; Declare the alphabet
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (wildcard *)
+ )
+
+;; Example null model ECFG in S-expressions
+(grammar
+ (name Example)
+
+ ;; Good old unidirectional cycler
+ (chain             			; declare a Markov chain
+  (update-policy irrev)			; EM update policy
+  (terminal (RX))			; abstract state label
+  (initial (state (a)) (prob 1))	; initial distribution
+  (mutate (from (a)) (to (c)) (rate 1))
+  (mutate (from (c)) (to (g)) (rate 1))
+  (mutate (from (g)) (to (t)) (rate 1))
+  (mutate (from (t)) (to (a)) (rate 1))
+  )
+
+ ;; Dinucleotide model
+ (chain					; declare a Markov chain
+  (update-policy irrev)			; EM update policy
+  (terminal (DX DY))
+
+  ;; Initial distribution
+  (initial (state (a a)) (prob .0625))
+  (initial (state (a c)) (prob .0625))
+  (initial (state (a g)) (prob .0625))
+  (initial (state (a t)) (prob .0625))
+  (initial (state (c a)) (prob .0625))
+  (initial (state (c c)) (prob .0625))
+  (initial (state (c g)) (prob .0625))
+  (initial (state (c t)) (prob .0625))
+  (initial (state (g a)) (prob .0625))
+  (initial (state (g c)) (prob .0625))
+  (initial (state (g g)) (prob .0625))
+  (initial (state (g t)) (prob .0625))
+  (initial (state (t a)) (prob .0625))
+  (initial (state (t c)) (prob .0625))
+  (initial (state (t g)) (prob .0625))
+  (initial (state (t t)) (prob .0625))
+
+  ;; Rate matrix
+  (mutate (from (a a)) (to (a c)) (rate 1))
+  (mutate (from (a a)) (to (a g)) (rate 1))
+  (mutate (from (a a)) (to (a t)) (rate 1))
+  (mutate (from (a c)) (to (a a)) (rate 1))
+  (mutate (from (a c)) (to (a g)) (rate 1))
+  (mutate (from (a c)) (to (a t)) (rate 1))
+  (mutate (from (a g)) (to (a a)) (rate 1))
+  (mutate (from (a g)) (to (a c)) (rate 1))
+  (mutate (from (a g)) (to (a t)) (rate 1))
+  (mutate (from (a t)) (to (a a)) (rate 1))
+  (mutate (from (a t)) (to (a c)) (rate 1))
+  (mutate (from (a t)) (to (a g)) (rate 1))
+  (mutate (from (c a)) (to (c c)) (rate 1))
+  (mutate (from (c a)) (to (c g)) (rate 1))
+  (mutate (from (c a)) (to (c t)) (rate 1))
+  (mutate (from (c c)) (to (c a)) (rate 1))
+  (mutate (from (c c)) (to (c g)) (rate 1))
+  (mutate (from (c c)) (to (c t)) (rate 1))
+  (mutate (from (c g)) (to (c a)) (rate 10)) ;; CG->TG
+  (mutate (from (c g)) (to (c c)) (rate 1))
+  (mutate (from (c g)) (to (c t)) (rate 1))
+  (mutate (from (c t)) (to (c a)) (rate 1))
+  (mutate (from (c t)) (to (c c)) (rate 1))
+  (mutate (from (c t)) (to (c g)) (rate 1))
+  (mutate (from (g a)) (to (g c)) (rate 1))
+  (mutate (from (g a)) (to (g g)) (rate 1))
+  (mutate (from (g a)) (to (g t)) (rate 1))
+  (mutate (from (g c)) (to (g a)) (rate 1))
+  (mutate (from (g c)) (to (g g)) (rate 1))
+  (mutate (from (g c)) (to (g t)) (rate 1))
+  (mutate (from (g g)) (to (g a)) (rate 1))
+  (mutate (from (g g)) (to (g c)) (rate 1))
+  (mutate (from (g g)) (to (g t)) (rate 1))
+  (mutate (from (g t)) (to (g a)) (rate 1))
+  (mutate (from (g t)) (to (g c)) (rate 1))
+  (mutate (from (g t)) (to (g g)) (rate 1))
+  (mutate (from (t a)) (to (t c)) (rate 1))
+  (mutate (from (t a)) (to (t g)) (rate 1))
+  (mutate (from (t a)) (to (t t)) (rate 1))
+  (mutate (from (t c)) (to (t a)) (rate 1))
+  (mutate (from (t c)) (to (t g)) (rate 1))
+  (mutate (from (t c)) (to (t t)) (rate 1))
+  (mutate (from (t g)) (to (t a)) (rate 1))
+  (mutate (from (t g)) (to (t c)) (rate 1))
+  (mutate (from (t g)) (to (t t)) (rate 1))
+  (mutate (from (t t)) (to (t a)) (rate 1))
+  (mutate (from (t t)) (to (t c)) (rate 1))
+  (mutate (from (t t)) (to (t g)) (rate 1))
+  )
+
+ ;; Grammar rules
+ ;; Transition from start state (which is null)
+ (transform (from (S)) (to (E)) (prob .5))
+ (transform (from (S)) (to (F)) (prob .5))
+
+ ;; Context-independent emission
+ (transform (from (E)) (to (RX E')) (prob 1))
+
+ (transform (from (E')) (to (E)) (prob .999))
+ (transform (from (E')) (to ())  (prob .001))
+
+ ;; Context-dependent emission
+ (transform (from (DX F)) (to (DX DY F')) (prob 1)
+	    (annotate (column DY) (row EMIT_ANNOT) (label D)))
+
+ (transform (from (F')) (to (F)) (prob .999))
+ (transform (from (F')) (to ())  (prob .001))
+
+ ;; Dummy bifurcation
+ (transform (from (dummy_bifurc)) (to (dummy_left dummy_right)))
+ (transform (from (dummy_left))   (to ()))
+ (transform (from (dummy_right))  (to ()))
+
+ ;; end of grammar
+ )

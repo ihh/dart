@@ -1,0 +1,9 @@
+#ifndef SLKEYWORDS_INCLUDED
+#define SLKEYWORDS_INCLUDED
+
+#define STEMLOC_GLOBAL "global"
+#define STEMLOC_LOCAL  "local"
+
+
+#endif /* SLKEYWORDS_INCLUDED */
+

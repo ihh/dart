@@ -1,0 +1,16 @@
+match[0] => 0.855;	match[1] => 3.103;	match[2] => 1.595;
+insert[0] => 1.635;	insert[1] => 0.560;	insert[2] => 12.488;
+gap[0] => 1.414;	gap[1] => 5.362;	gap[2] => 0.735;
+gapx[0] => 0.051;	gapx[1] => 4.834;
+qsubA[A] => 1.072;	qsubA[C] => 2.990;	qsubA[G] => 2.411;	qsubA[U] => 2.245;
+qsubC[A] => 2.303;	qsubC[C] => 1.638;	qsubC[G] => 2.521;	qsubC[U] => 1.726;
+qsubG[A] => 2.012;	qsubG[C] => 2.843;	qsubG[G] => 1.280;	qsubG[U] => 2.313;
+qsubU[A] => 2.128;	qsubU[C] => 2.342;	qsubU[G] => 2.483;	qsubU[U] => 1.339;
+match2[0] => 0.248;	match2[1] => 4.353;	match2[2] => 3.193;
+insert2[0] => 1.105;	insert2[1] => 0.908;	insert2[2] => 8.742;
+gap2[0] => 0.778;	gap2[1] => 4.000;	gap2[2] => 1.495;
+gapx2[0] => 0.146;	gapx2[1] => 3.371;
+qsubA2[A] => 0.627;	qsubA2[C] => 3.595;	qsubA2[G] => 2.744;	qsubA2[U] => 3.050;
+qsubC2[A] => 3.383;	qsubC2[C] => 0.687;	qsubC2[G] => 3.294;	qsubC2[U] => 2.464;
+qsubG2[A] => 2.806;	qsubG2[C] => 3.638;	qsubG2[G] => 0.574;	qsubG2[U] => 3.248;
+qsubU2[A] => 2.932;	qsubU2[C] => 2.395;	qsubU2[G] => 3.152;	qsubU2[U] => 0.819;

@@ -1,0 +1,98 @@
+;; phylocomposer example illustrating inference by dynamic programming
+
+(token (A C G T))
+
+(branch (name ROOT_BRANCH)
+ (transducer TKF91_ROOT)
+ (branch (transducer TKF91_BRANCH))
+ (branch (transducer TKF91_BRANCH))
+ )
+
+
+(bit-value ((Qz A G) 1)  ;; this label, Qz, isn't actually used anywhere; it's just assigned a value here to test the warning message
+	   (beta 1)
+	   (~beta 3))
+(value ((Q A A) .75))
+(value ((Q A C) .05))
+(value ((Q A G) .15))
+(value ((Q A T) .05))
+
+(value ((Q C A) .05))
+(value ((Q C C) .75))
+(value ((Q C G) .05))
+(value ((Q C T) .15))
+
+(value ((Q G A) .15))
+(value ((Q G C) .05))
+(value ((Q G G) .75))
+(value ((Q G T) .05))
+
+(value ((Q T A) .05))
+(value ((Q T C) .15))
+(value ((Q T G) .05))
+(value ((Q T T) .75))
+
+(value ((pi A) .25))
+(value ((pi C) .25))
+(value ((pi G) .25))
+(value ((pi T) .25))
+
+(value ((del A) 1))
+(value ((del C) 1))
+(value ((del G) 1))
+(value ((del T) 1))
+
+(bit-value (alpha 1))
+(bit-value (~alpha 1))
+(bit-value (gamma 1))
+(bit-value (~gamma 1))
+
+(bit-value (kappa 1))
+(bit-value (~kappa 1))
+
+(transducer
+
+ (name TKF91_ROOT)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name I) (type insert) (label pi))
+
+ (transition (from S) (to I) (label kappa))
+ (transition (from S) (to W) (label ~kappa))
+
+ (transition (from I) (to I) (label kappa))
+ (transition (from I) (to W) (label ~kappa))
+
+ (transition (from W) (to E))
+)
+
+(transducer
+
+ (name TKF91_BRANCH)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+
+ (state (name M) (type match) (label Q))
+ (state (name D) (type delete) (label del))
+ (state (name I) (type insert) (label pi))
+
+ (transition (from S) (to I) (label beta))
+ (transition (from S) (to W) (label ~beta))
+
+ (transition (from W) (to M) (label alpha))
+ (transition (from W) (to D) (label ~alpha))
+ (transition (from W) (to E))
+
+ (transition (from M) (to I) (label beta))
+ (transition (from M) (to W) (label ~beta))
+
+ (transition (from D) (to I) (label gamma))
+ (transition (from D) (to W) (label ~gamma))
+
+ (transition (from I) (to I) (label beta))
+ (transition (from I) (to W) (label ~beta))
+)

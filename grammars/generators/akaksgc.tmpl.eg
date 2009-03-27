@@ -1,0 +1,163 @@
+;; Template for lineage specific modeling of
+;;  -- nucleotide composition at all three codon positions
+;;  -- transition/transversion and synonymous/nonsynonymous rates
+
+;; Should only be used indirectly via the Perl script dart/perl/akaksgc.pl
+
+;; Here's the grammar...
+(grammar
+ (name Ancestral_GC_content)
+ (parametric)
+
+ ;; Define a hybrid chain with a different chain on each branch.
+ ;; What this block does is map each node name (e.g. "NODE") to its own substitution model ("CHAIN_NODE").
+ ;; The way that branches are mapped to substitution models is via "#=GS NODE TAG VALUE" Stockholm tags.
+ ;; This allows for arbitrary splits of the tree, to be defined in the Stockholm file.
+ ;; However, the split we want is rather unwieldy to define in this way,
+ ;; since we'd need to add a separate "#=GS..." line to the Stockholm file for every node of the tree.
+ ;; We can get around this using a piece of syntactic sugar: xrate's implicit #=GS annotations.
+ ;; Specifically, we use the special "?" TAG, whose VALUE xrate implicitly defines as the name of the node.
+ (hybrid-chain
+  (terminal (HYBRID0 HYBRID1 HYBRID2))
+  (row ?)   ;; the #=GS tag used to select substitution models (automagically equal to the node name)
+  (components
+   ;; We also put in a DEFAULT case, to deal with unlabeled internal nodes.
+   ;; The naming here is arbitrary (we do assume no other nodes are named DEFAULT).
+   ;; xrate takes the first-declared label in a hybrid chain to be the default.
+   ((label DEFAULT) (terminal ((. COD0_ DEFAULT) (. COD1_ DEFAULT) (. COD2_ DEFAULT))))
+   
+   (&foreach-node  ;; loop over node names
+    NODE
+    ((label NODE) (terminal ((. COD0_ NODE) (. COD1_ NODE) (. COD2_ NODE))))
+    )
+   )
+  )
+
+
+ ;; Declare params for a geometric length distribution
+ ;; This is only really here so that we get the mean length right when simulating from this grammar
+ (pgroup
+  ((ext .5) (~ext .5))
+  )
+
+ ;; Default chain parameters
+ (&warn Expanding macros for node DEFAULT)
+  ;; Default Synonymous/Nonsynonymous and transItion/transVersion rate parameters
+  (rate
+   ((. Rsi_ DEFAULT) 1)
+   ((. Rsv_ DEFAULT) 1)
+   ((. Rni_ DEFAULT) 1)
+   ((. Rnv_ DEFAULT) 1)
+   )
+
+ ;; Default probability parameters
+ (pgroup
+  ;; Nucleotide content at all three codon positions
+  (&foreach-integer
+   pos
+   (0 2)
+   ((&foreach-token
+     tok
+     ((. p tok pos _ DEFAULT)
+      (/ 1 #TOKENS))))
+   )
+  )
+
+ ;; Default substitution rate matrix
+ (chain
+  (update-policy parametric)
+  (terminal ((. COD0_ DEFAULT) (. COD1_ DEFAULT) (. COD2_ DEFAULT)))
+
+  ;; initial probability distribution & mutation rates
+  ;; will be pasted here by Perl code:   ==MUTATE(DEFAULT)==
+  )
+
+ ;; Main loop over branches
+ (&foreach-node
+  NODE
+  (&warn Creating parameters for node NODE)
+
+  ;; Parameters
+  ;; Nucleotide content at all three positions
+  (pgroup
+   (&foreach-integer
+    pos
+    (0 2)
+    ((&foreach-token
+      tok
+      ((. p tok pos _ NODE)
+       (/ 1 #TOKENS))))
+    )
+   )
+
+  ;; Synonymous/Nonsynonymous and transItion/transVersion rates
+  (rate
+   ((. Rsi_ NODE) 1)
+   ((. Rsv_ NODE) 1)
+   ((. Rni_ NODE) 1)
+   ((. Rnv_ NODE) 1)
+   )
+
+  ;; Branch-specific substitution rate matrix
+  (chain
+   (update-policy parametric)
+   (terminal ((. COD0_ NODE) (. COD1_ NODE) (. COD2_ NODE)))
+
+   ;; initial probability distribution & mutation rates
+   ;; will be pasted here by Perl code:   ==MUTATE(NODE)==
+
+   ) ;; end chain
+
+  ) ;; end loop over branches
+
+ ;; transformation rules
+ ;; START state
+ (transform
+  (from (START))
+  (to (EMIT))
+  (prob (ext)))
+
+ (transform
+  (from (START))
+  (to ())
+  (prob (~ext)))
+
+
+ ;; EMIT state
+ (transform
+  (from (EMIT))
+  (to (HYBRID0 HYBRID1 HYBRID2 EMIT*)))
+
+ (transform
+  (from (EMIT*))
+  (to (EMIT))
+  (prob (ext)))
+
+ (transform
+  (from (EMIT*))
+  (to ())
+  (prob (~ext)))
+
+ ) ;; end grammar Ancestral_GC_content
+
+
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *)
+)  ;; end alphabet DNA
+

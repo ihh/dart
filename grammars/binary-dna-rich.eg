@@ -1,0 +1,176 @@
+;; Simple DNA substitution model with binary hidden class.
+;; The underlying nucleotide substitution model is a fully reversible DNA substitution model.
+(grammar
+ (name binary_DNA_rich)
+ (update-rules 0)
+
+ ;; Probability parameters
+ (pgroup
+  ;; Initial (and equilibrium) distribution of slow & fast sites.
+  ((p1 0.5) (p2 0.5))
+  ;; Initial nucleotide frequencies. (Allowed to be different from equilibrium frequencies.)
+  ;; Move these into a "const-pgroup" block (instead of "pgroup") for Jukes-Cantor model.
+  ((pA .25) (pC .25) (pG .25) (pT .25))
+  ;; Probability of "accepting" a mutation at a slow site.
+  ((accept1 .5) (reject1 .5))
+  )
+
+ ;; Rate parameters
+ (rate
+  ;; "Baseline" substitution rates between any pair of nucleotides.
+  ;; Move these into a "const-rate" block (instead of "rate") for Jukes-Cantor model.
+  (a2c .33333)
+  (a2g .33333)
+  (a2t .33333)
+
+  (c2a .33333)
+  (c2g .33333)
+  (c2t .33333)
+
+  (g2a .33333)
+  (g2c .33333)
+  (g2t .33333)
+
+  (t2a .33333)
+  (t2c .33333)
+  (t2g .33333)
+
+  ;; Rate of acceleration & deceleration.
+  (rate_shift 0.001)
+
+  ;; end of trainable rate parameters
+  )
+
+ ;; The parametric, binary-hidden-class substitution model.
+ (chain
+  ;; boilerplate preamble
+  (update-policy parametric)
+  (terminal (X))
+  ;; hidden class labels
+  (hidden-class
+    (row CLASS)
+    (label (1 2)))
+
+  ;; Initial probability distribution.
+
+  ;; class 1
+  (initial (state (a 1)) (prob pA * p1))
+  (initial (state (c 1)) (prob pC * p1))
+  (initial (state (g 1)) (prob pG * p1))
+  (initial (state (t 1)) (prob pT * p1))
+
+  ;; class 2
+  (initial (state (a 2)) (prob pA * p2))
+  (initial (state (c 2)) (prob pC * p2))
+  (initial (state (g 2)) (prob pG * p2))
+  (initial (state (t 2)) (prob pT * p2))
+
+
+  ;; Substitutions of the observed (nucleotide) part of the state.
+  ;; class 1: substitutions in this class are "accepted" with probability accept1.
+  ;; Thus, accept1 is a de-facto rate "multiplier" for this class.
+  (mutate (from (a 1)) (to (c 1)) (rate a2c * accept1))
+  (mutate (from (a 1)) (to (g 1)) (rate a2g * accept1))
+  (mutate (from (a 1)) (to (t 1)) (rate a2t * accept1))
+
+  (mutate (from (c 1)) (to (a 1)) (rate c2a * accept1))
+  (mutate (from (c 1)) (to (g 1)) (rate c2g * accept1))
+  (mutate (from (c 1)) (to (t 1)) (rate c2t * accept1))
+
+  (mutate (from (g 1)) (to (a 1)) (rate g2a * accept1))
+  (mutate (from (g 1)) (to (c 1)) (rate g2c * accept1))
+  (mutate (from (g 1)) (to (t 1)) (rate g2t * accept1))
+
+  (mutate (from (t 1)) (to (a 1)) (rate t2a * accept1))
+  (mutate (from (t 1)) (to (c 1)) (rate t2c * accept1))
+  (mutate (from (t 1)) (to (g 1)) (rate t2g * accept1))
+
+  ;; The following mutations-to-self are needed to obtain unbiased EM updates, because of the following constraint:
+  ;;   accept1 + reject1 = 1
+  (mutate (from (a 1)) (to (a 1)) (rate reject1 * (a2c + a2g + a2t)))
+  (mutate (from (c 1)) (to (c 1)) (rate reject1 * (c2a + c2g + c2t)))
+  (mutate (from (g 1)) (to (g 1)) (rate reject1 * (g2a + g2c + g2t)))
+  (mutate (from (t 1)) (to (t 1)) (rate reject1 * (t2a + t2c + t2g)))
+
+  ;; class 2
+  ;; Mutations in this class are always "accepted".
+  ;; Thus the de-factor rate multiplier is 1.
+  ;; No unobserved mutations are required for unbiased estimation.
+  (mutate (from (a 2)) (to (c 2)) (rate a2c))
+  (mutate (from (a 2)) (to (g 2)) (rate a2g))
+  (mutate (from (a 2)) (to (t 2)) (rate a2t))
+
+  (mutate (from (c 2)) (to (a 2)) (rate c2a))
+  (mutate (from (c 2)) (to (g 2)) (rate c2g))
+  (mutate (from (c 2)) (to (t 2)) (rate c2t))
+
+  (mutate (from (g 2)) (to (a 2)) (rate g2a))
+  (mutate (from (g 2)) (to (c 2)) (rate g2c))
+  (mutate (from (g 2)) (to (t 2)) (rate g2t))
+
+  (mutate (from (t 2)) (to (a 2)) (rate t2a))
+  (mutate (from (t 2)) (to (c 2)) (rate t2c))
+  (mutate (from (t 2)) (to (g 2)) (rate t2g))
+
+  ;; Substitutions of the hidden part of the state.
+  ;; The mutations-to-self are needed to obtain unbiased EM updates, because of the following constraint:
+  ;;   p1 + p2 = 1
+
+  ;; nucleotide a
+  (mutate (from (a 1)) (to (a 1)) (rate p1 * rate_shift))  ;; mutation-to-self
+  (mutate (from (a 1)) (to (a 2)) (rate p2 * rate_shift))
+
+  (mutate (from (a 2)) (to (a 1)) (rate p1 * rate_shift))
+  (mutate (from (a 2)) (to (a 2)) (rate p2 * rate_shift))  ;; mutation-to-self
+
+  ;; nucleotide c
+  (mutate (from (c 1)) (to (c 1)) (rate p1 * rate_shift))  ;; mutation-to-self
+  (mutate (from (c 1)) (to (c 2)) (rate p2 * rate_shift))
+
+  (mutate (from (c 2)) (to (c 1)) (rate p1 * rate_shift))
+  (mutate (from (c 2)) (to (c 2)) (rate p2 * rate_shift))  ;; mutation-to-self
+
+  ;; nucleotide g
+  (mutate (from (g 1)) (to (g 1)) (rate p1 * rate_shift))  ;; mutation-to-self
+  (mutate (from (g 1)) (to (g 2)) (rate p2 * rate_shift))
+
+  (mutate (from (g 2)) (to (g 1)) (rate p1 * rate_shift))
+  (mutate (from (g 2)) (to (g 2)) (rate p2 * rate_shift))  ;; mutation-to-self
+
+  ;; nucleotide t
+  (mutate (from (t 1)) (to (t 1)) (rate p1 * rate_shift))  ;; mutation-to-self
+  (mutate (from (t 1)) (to (t 2)) (rate p2 * rate_shift))
+
+  (mutate (from (t 2)) (to (t 1)) (rate p1 * rate_shift))
+  (mutate (from (t 2)) (to (t 2)) (rate p2 * rate_shift))  ;; mutation-to-self
+
+ )  ;; end chain X
+
+ ;; the transformation rules (trivial as there is only one emitting state in the grammar; all the action is in the substitution model)
+ (transform (from (S)) (to (X S*)))
+ (transform (from (S*)) (to ()) (prob 1))
+ (transform (from (S*)) (to (S)) (prob 1))
+
+)  ;; end grammar
+
+;; the alphabet
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *)
+)  ;; end alphabet DNA
+

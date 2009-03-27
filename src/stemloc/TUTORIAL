@@ -1,0 +1,605 @@
+Stemloc Tutorial. December, 2003
+--------------------------------
+
+An HTML version of this tutorial is available, with pictures, at
+
+	http://dart.sourceforge.net/stemloc/
+
+Contents
+--------
+ 1. Introduction
+ 2. The algorithm
+ 3. Visualising the algorithm
+ 4. Tuning the envelopes
+ 5. Training the parameters
+ 6. Some common questions
+ References
+
+
+[1. Introduction]
+
+Stemloc is a program for doing pairwise alignment of RNA sequences. It
+attempts to predict the secondary structure at the same time, using a
+variant of an algorithm first proposed by Sankoff[1], with some
+heuristics formally known as "envelopes"[2] and informally as
+"go-faster stripes".
+
+This tutorial describes how to use stemloc by example. It assumes that
+you have the DART package installed. DART can be downloaded from SourceForge:
+
+	http://dart.sourceforge.net/
+
+Alternatively, you can get a bleeding-edge development version by anonymous CVS:
+
+	cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/dart login 
+	cvs -z3 -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/dart co dart
+
+You'll then need to build it (requires gcc 3.2 or 3.3; see INSTALL file
+in top-level directory). The examples in this tutorial are all found in
+the subdirectory 'dart/src/stemloc', so 'cd' into that directory first.
+
+We will start with a quick tour of some of stemloc's features, using
+two tRNA sequences distributed with the DYNALIGN package.
+Type the following
+
+	stemloc dynalign.trna
+
+You should see the following output
+
+	#=GR SS RD0260/26-67 .(<<<<<.......>>>>>)....(<<<<.......>>>>).
+	RD0260/26-67         UACUCCCCUGUCACGGGAGAGAAUGUGGGUUCAAAUCCCAUC
+	#=GC PS_cons         UAC..CCCUGUCACGG..G.GA..G.GGGUUC.AAUCCC..C
+	RD0500/26-66         UACGACCCUGUCACGGUCGUGA-CGCGGGUUCgAAUCCCGCC
+	#=GR SS RD0500/26-66 .<<<<<<.......>>>>>>..-.<<<<<.......>>>>>.
+	#=GC SS_cons         .<<<<<<.......>>>>>>....<<<<<.......>>>>>.
+	#=GF BS              29.481
+	//
+
+The format of this output is called Stockholm, and it is the format
+used by Rfam. It shows the sequence names, the co-ordinates of the
+matches, the alignment, the secondary structure of each sequence, the
+consensus secondary structure, the consensus primary sequence, and the
+log-odds score of the alignment in bits. The "//" line is used to
+separate alignments. Stockholm format is described in full here
+
+	http://www.cgr.ki.se/cgb/groups/sonnhammer/Stockholm.html
+
+[To convert Stockholm format into CT format (as used by NAVIEW in the
+MFOLD package, and various other programs), a Perl script called
+'stockholm2ct.pl' is provided in DART subdirectory 'dart/perl'.]
+
+The above alignment is a *local* alignment, which is what stemloc
+produces by default. Since we know that these two particular sequences
+are entire tRNA genes, it's reasonable to ask for a global alignment.
+To do this, type
+
+	stemloc dynalign.trna -g
+
+which should yield the following result
+
+	#=GR SS RD0260/1-77 <<<<<<<(.................-------..<<<<<.......>>>>>......<<<<.......>>>>)>>>>>>>....
+	RD0260/1-77         GCGACCGGGGCUGGCUUGGUAAUGG-------UACUCCCCUGUCACGGGAGAGAAUGUGGGUUCAAAUCCCAUCGGUCGCGCCA
+	#=GC PS_cons        GC....G.GG........GUA.UGG.......UAC..CCCUGUCACGG..G.GA..G.GGGUUC.AAUCCC..C....GCGCCA
+	RD0500/1-76         GCCCGGGUGGU-------GUAGUGGCCCAUCAUACGACCCUGUCACGGUCGUGA-CGCGGGUUCgAAUCCCGCCUCGGGCGCCA
+	#=GR SS RD0500/1-76 <<<<<(<(...-------................<<<<<.......>>>>>...-..<<<<.......>>>>)>)>>>>>....
+	#=GC SS_cons        <<<<<<<<..........................<<<<<.......>>>>>......<<<<.......>>>>>>>>>>>>....
+	#=GF BS             30.483
+	//
+
+This is better; we've got three out of the four cloverleaf stems, and
+the score has gone up slightly. However, we're still missing a
+stem. As mentioned above, stemloc uses heuristics to speed things up;
+one of these heuristics is that the search is narrowed to the most
+promising secondary structures, ignoring the less favourable ones.
+Because we're missing a stem, we might want to turn off this
+behaviour. Without worrying too much at this stage about what the
+precise syntax means, we can do this as follows
+
+	stemloc dynalign.trna -g -nf -1 -log CFGDP
+
+You may notice that this takes slightly longer. The program should
+print a series of log messages something like this
+
+	CYK: finished 12832 subseqs (11.6%) and 3001449 bifurcations (3.4%)
+	CYK: finished 18488 subseqs (16.7%) and 6002082 bifurcations (6.9%)
+	[...]
+	CYK: finished 109487 subseqs (99.3%) and 85102631 bifurcations (98.2%)
+	CYK: finished 110198 subseqs (100%) and 86635163 bifurcations (100%)
+
+...followed by this alignment...
+
+	#=GR SS RD0260/1-77 <<<<<<<(..<(((<...>))..)>.(<<<<<.......>>>>>).....<<<<.......>>>>)>>>>>>>....
+	RD0260/1-77         GCGACCGGGGCUGGCUUGGUAAUGGUACUCCCCUGUCACGGGAGAGAAUGUGGGUUCAAAUCCCAUCGGUCGCGCCA
+	#=GC PS_cons        GC....G.GG.....U.G...AU..UAC..CCCUGUCACGG..G.GA..G.GGGUUC.AAUCCC..C....GCGCCA
+	RD0500/1-76         GCCCGGGUGGUGUAGUGGCCCAUCAUACGACCCUGUCACGGUCGUGA-CGCGGGUUCgAAUCCCGCCUCGGGCGCCA
+	#=GR SS RD0500/1-76 <<<<<(<(..<<((<...>))..>>.<<<<<<.......>>>>>>..-..<<<<.......>>>>)>)>>>>>....
+	#=GC SS_cons        <<<<<<<<..<<<<<...>>>..>>.<<<<<<.......>>>>>>.....<<<<.......>>>>>>>>>>>>....
+	#=GF BS             38.799
+	//
+
+This is quite close to the "correct" structural alignment according to
+the Bayreuth tRNA database:
+
+	RD0260              GCGACCGGGGCUGGCUUGGUA-AUGGUACUCCCCUGUCACGGGAGAGAAUGUGGGUUCAAAUCCCAUCGGUCGCGCCA
+	#=GR RD0260 SS      <<<<<<<..<<<<........-.>>>>.<<<<<.......>>>>>.....<<<<<.......>>>>>>>>>>>>....
+	RD0500              GCCCGGGUGGUGUAGU-GGCCCAUCAUACGACCCUGUCACGGUCGUGA-CGCGGGUUCGAAUCCCGCCUCGGGCGCCA
+	#=GR RD0500 SS      <<<<<<<..<<<....-.......>>><<<<<<.......>>>>>>..-.<<<<<.......>>>>>>>>>>>>....
+
+To find out what this "correct" alignment would have scored, type
+
+	stemloc dynalign.trna.aligned
+
+The above examples use several command-line options that will be
+explored in this tutorial. To get a full list of available options,
+type
+
+	stemloc --help
+
+or just
+
+	stemloc -h
+
+
+
+[2. The algorithm]
+
+The technology underpinning stemloc is called the "Pair Stochastic
+Context-Free Grammar" or just "Pair SCFG". Chances are, you've heard
+of SCFGs (statistical language models, originally invented by the
+legendary Noam Chomsky, imported from Natural Language Processing by
+David Haussler, Sean Eddy and others). A Pair SCFG is simply an SCFG
+for two sequences, which is what you need to do pairwise alignment.
+
+Algorithmically, multiple-sequence SCFGs are related to Sankoff's
+dynamic programming algorithm for simultaneously folding and aligning
+multiple RNA sequences[1] (in fact, they can be viewed as a scoring
+scheme for this algorithm). Sankoff's algorithm considers all possible
+folds and all possible alignments of the two sequences, so it is
+thorough, but it is slow: for N sequences, each of length L, Sankoff's
+algorithm takes time O(L^(3N)) and memory O(L^(2N)), which basically
+puts it out of reach of anyone except the NSA. In 2003, you can
+probably do the above example (pairwise folding of tRNA) on a home
+computer, but not very quickly. The time and memory complexity of
+multiple-sequence SCFG algorithms are the same as for Sankoff's
+algorithm. So, some acceleration (and compactification) is called for,
+and that's what the stemloc algorithm does.
+
+Rather than considering *all* folds and *all* alignments of the two
+sequences (which, since the number of sequences is N=2, takes time
+O(L^6), using a Pair SCFG), stemloc allows you to limit this, in a
+flexible and user-defined way. Specifically, you can *pre-fold* each
+sequence individually (using a Single-sequence SCFG, which takes time
+O(L^3)), and you can *pre-align* the two sequences, ignoring the
+secondary structure and focussing only on primary sequence homology
+(using a Pair HMM, which takes time O(L^2)).
+
+The first of these steps -- pre-folding -- gives you a set of
+candidate structures for each sequence, while the second step --
+pre-alignment -- gives you a set of candidate alignments. Stemloc then
+uses these candidate folds & alignments to *constrain* the Pair
+SCFG. Specifically, any secondary structure or alignment that is
+inconsistent with the candidate folds or alignments is not even
+considered while doing the Pair SCFG alignment step. Therefore,
+stemloc gives you a tradeoff of speed against completeness.
+Furthermore, this tradeoff is highly tuneable, as will be seen below.
+
+
+
+[3. Visualising the algorithm]
+
+In stemloc terminology, the set of candidate folds is referred to as
+the "fold envelope", while the set of candidate alignments is referred
+to as the "alignment envelope" (or sometimes the "pair envelope"). It
+is possible to visualise both these envelopes as stemloc runs.
+Try typing the following
+
+	stemloc nanos-tiny.rna -log DOTPLOT
+
+If the output scrolls past too fast to see, try the following (this
+just pipes standard error through 'less' with control characters
+preserved, in case you're interested)
+
+	stemloc nanos-tiny.rna -log DOTPLOT |& less -r
+
+The sequences used here are very short (stem II from the TCE
+(Translational Control Element) in the 3'UTR of the nanos gene in
+fruitflies); they are just intended to illustrate the algorithm. In
+the output, you should see six ASCII art-like dotplots rendered in
+ANSI terminal color. The titles of these dotplots are
+
+	Banded folding pre-envelope for 'DVU24695_3utr'
+	Sampled fold envelope for 'DVU24695_3utr'
+	Banded folding pre-envelope for 'DRONANOS_3utr'
+	Sampled fold envelope for 'DRONANOS_3utr'
+	Banded alignment pre-envelope for 'DVU24695_3utr' vs 'DRONANOS_3utr'
+	Sampled alignment envelope for 'DVU24695_3utr' vs 'DRONANOS_3utr'
+
+The first dotplot, "Banded folding pre-envelope for 'DVU24695_3utr'",
+shows *all possible* basepairs for the first of the two sequences
+(called 'DVU24695_3utr'), while the second dotplot shows the basepairs
+that have made it into the fold envelope. Likewise, the third dotplot
+shows all possible basepairs for 'DRONANOS_3utr', while the fourth
+dotplot shows those in the fold envelope. Finally, the fifth dotplot
+shows all possible residue-level alignments between a residue from
+'DVU24695_3utr' and a residue from 'DRONANOS_3utr', while the sixth
+dotplot shows residue-level alignments that have made it into the
+envelope. Additional information is provided in the form of color: the
+"brighter" colors (from red to white, as indicated by the color
+code at the bottom of the dotplot) represent cells that made it into
+the envelope earlier; in other words, if the threshold for creating
+the envelope was raised, the red cells would be the first to be
+dropped from the envelope.
+
+The command-line option "-log DOTPLOT" is an example of a DART logfile
+directive. It's possible to get quite a lot of information out of a
+DART program via logging directives. You can specify individual
+logfile "tags" (as in the above example "DOTPLOT") or just specify a
+log level (the lower the log level, the more information you get). You
+can also ask for logging directives from specific parts of the source
+code, though it's unlikely you'll want to use this.
+
+Logging directives can be used in combination. For example, try
+
+	stemloc nanos-tiny.rna -log DOTPLOT -log 6 -log CFGDP
+
+This displays all logging messages with tags "DOTPLOT" and "CFGDP", as
+well as all log messages of level 6 or above. (Roughly speaking, level
+9 is silent; level 6 is chatty; level 3 is verbose; and level 0 will
+fill your hard drive. You can also use all the levels in between.)
+
+Logging messages are printed to standard error, unless the '-logfile LOG'
+option is specified, in which case they are sent to a logfile called
+LOG, or whatever you specify. (They're also wrapped in XML; see below.)
+
+The above example introduced a particular logging tag: '-log CFGDP'.
+This displays log messages like the following
+
+	CYK: finished 39 subseqs (100%) and 928 bifurcations (100%)
+
+These messages indicate the progress of the dynamic programming (DP)
+algorithm, which can be reassuring for long runs. "CYK" is the name of
+a particular DP algorithm; "subseqs" and "bifurcations" are different ways
+of indicating the progress of the algorithm (subseqs is a memory-related
+progress indicator, while bifurcations is time-related). For more detailed
+explanations of these terms, refer to the SCFG literature, e.g. [2] or [3].
+
+Some more log tags include
+
+ ALLOC
+  This displays a short message before attempting to allocate large
+  amounts of memory. Often this is the only way of anticipating an
+  out-of-memory error, which (unsatisfyingly) can sometimes cause Unix
+  to hang for ages before admitting defeat.
+
+ STEMLOC_FOLDENV, STEMLOC_PREFOLD, STEMLOC_BANDED_FOLDENV, STEMLOC_SAMPLED_FOLDENV
+ STEMLOC_PAIRENV, STEMLOC_PREALIGN, STEMLOC_BANDED_PAIRENV, STEMLOC_SAMPLED_PAIRENV
+  These are more specific versions of 'DOTPLOT', allowing you to print
+  individual dotplots, e.g. only the fold envelope dotplots
+  (STEMLOC_FOLDENV), or only the dotplot corresponding to the final
+  sampled fold envelope (STEMLOC_SAMPLED_FOLDENV), or only the dotplot
+  corresponding to alignments pre-specified as in section [4](b) below
+  (STEMLOC_PREALIGN), etc.
+
+Other log tags are introduced throughout the tutorial.
+
+To wrap up the topic of logging, it was mentioned above that log
+messages saved in the logfile are stored in a simple XML format. This
+format encodes the date, time and source-code location of all logfile
+messages, along with the corresponding log level and tags. There is a
+Perl script in the 'dart/perl' directory, called 'dartlog.pl', that
+unpicks this format and renders the (optionally filtered) log messages
+(together with the extra information) in ANSI color, piping the output
+through 'less -rF'. You can also get the XML tags to appear on the
+standard error version of the logfile, using the '-lvb' option (short
+for '--logverbose'). If you use these options, you definitely count as
+a power user.
+
+
+
+[4. Tuning the envelopes]
+
+The performance of stemloc is often quite sensitive to the envelope
+cutoff threshold; set the threshold too high, and you may miss the
+crucial fold or alignment. Conversely, if the threshold is too low,
+the envelopes will be too large, so that the Pair SCFG may require too
+much time or memory to be practical.
+
+You can tune the threshold using the options '-nf' and '-na', which
+set the number of folds and alignments (respectively) that are sampled
+to create the envelopes. In each case, you can set the respective
+parameter to -1 to unlimit the number of folds/alignments sampled.
+For example, the following command
+
+	stemloc nanos-tiny.rna -nf -1 -na -1
+
+runs the full Sankoff algorithm on the dataset 'nanos-tiny.rna'.
+
+Most alignments do not contain huge indels, so that the alignment
+generally does not wander far from the main diagonal of the DP matrix
+(or alignment dotplot). You can restrict the alignment envelope to be
+within a certain distance of the diagonal using the '-band' option.
+
+Similarly, if you are looking for (say) short regulatory elements in a
+long 3'UTR, you may not want to consider RNA structures where very
+distant bases are paired. You can restrict the maximum stem length
+allowed in the fold envelope using the '-len' option.
+
+Putting these together, the following is a more realistic attempt to
+find the TCE in the nanos 3'UTR
+
+	stemloc Nanos-Drosophilae-virilis-melanogaster.fa -len 100 -band 50 -log CFGDP -log 6
+
+You can also pre-specify the fold or alignment envelopes, simply by
+passing in the data as an (optionally annotated) Stockholm alignment,
+instead of as a FASTA file. Effectively, you have three options:
+
+ (a) you can specify the structure of a sequence, but not its
+     alignment, by putting the sequence in its own alignment and
+     annotating it with a "#=GR <name> SS" line (see Stockholm format
+     documentation for details). For example,
+
+	DVU24695_3utr         gaagcucuggcagcuuu
+	#=GR DVU24695_3utr SS <<<<<<.....>>>>>>
+	//
+	DRONANOS_3utr         gaggcucuggcagcuuu
+	#=GR DRONANOS_3utr SS <<<<<<.....>>>>>>
+	//
+
+     Alternatively, you could specify the structure of just one of the
+     sequences, and leave all the others un-annotated (or pass them in
+     separately in a FASTA file; stemloc can take multiple input
+     files).
+
+     In this mode, and with the alignment envelope unlimited ('-na -1'),
+     stemloc is behaving a little like the RSEARCH program (though it
+     lacks certain features of RSEARCH, such as the assignment of
+     statistical significance by fitting an Extreme Value Distribution
+     to the search results).
+
+ (b) you can specify the alignment of two (or more) sequences, but not
+     their structure. For example,
+
+	DVU24695_3utr         gaagcucuggcagcuuu
+	DRONANOS_3utr         gaggcucuggcagcuuu
+	//
+
+     In this mode, and with the fold envelope unlimited ('-nf -1'),
+     stemloc is behaving a little like the QRNA program (though,
+     again, it lacks many features of QRNA, such as the three-way
+     model comparison that discriminates RNA genes from coding DNA
+     sequences and neutral homology).
+
+ (c) you can specify both the alignment and the structure of two (or
+     more) sequences, as follows
+
+	DVU24695_3utr         gaagcucuggcagcuuu
+	#=GR DVU24695_3utr SS <<<<<<.....>>>>>>
+	DRONANOS_3utr         gaggcucuggcagcuuu
+	#=GR DRONANOS_3utr SS <<<<<<.....>>>>>>
+	//
+
+Note that it is not, in general, sufficient to specify a consensus
+fold for the entire alignment (via a Stockholm "#=GC SS" line); you
+must specify individual folds for each sequence. (A program to
+propagate consensus folds to individual sequence folds, called
+"gc2gr-ss", is distributed as part of DART.)
+
+Options (b) and (c) can be useful for debugging, or to understand why
+stemloc is giving you the results that it does. For example, to get an
+idea of why stemloc only finds stem II of the TCE, and not the full
+three-way stem junction, try the following
+
+	stemloc Nanos-Drosophilae-virilis-melanogaster.folded -g -na -1
+or
+	stemloc Nanos-Drosophilae-virilis-melanogaster.aligned -g
+
+The score is quite negative, probably because the structure is so full
+of indels. One way to approach this kind of problem is to try training
+the program on gappier data. More on this later.
+
+By default, the fold (and alignment) envelopes are creating by
+sampling the best N folds (alignments) for each sequence (pair), where
+N is given by the '-nf' option (or '-na'). You can change this
+behaviour, so that stemloc samples a *random* set of folds and/or
+alignments, using the '-rf' and '-ra' options. This may be quicker in
+some cases (about twice as fast; the technical reason is that it
+doesn't require an Outside pass through the DP matrix), but it can
+be less predictable. To ensure that the stochastically sampled
+envelopes are, at least, reproducible, you can use the '-rndseed'
+option to seed the random number generator with a particular
+value. (By default, the random number generator is seeded on the
+current clock time, so consecutive runs with sampled envelopes may
+give different results each time.)
+
+As mentioned in the introduction, you can force global alignment using
+the '-g' option. Depending on whether you selected global or local
+alignment, the pre-alignment step is also global or local.
+
+You can ask for more than one alignment for each sequence pair using
+the '-mh' ("max hits") option, which limits the number of hits
+returned for each pair (by default, this is 1). This does a
+Waterman-Eggert-style masking after each reported hit. You can also
+ask for only hits above a minimum score threshold, using the '-ms'
+("min score") option.
+
+Occasionally, you may get an error message because the score for a
+particular sequence pair is -infinity. This can happen if the
+envelopes are too restrictive. For example, if you ask for only one
+alignment and one fold of each sequence
+
+	stemloc -na 1 -nf 1 dynalign.trna
+
+you get the following result
+
+	Warning: alignment score for 'RD0260' and 'RD0500' is -infinity; skipping.
+	 (this usually means there is no valid alignment of the sequences, which often means that the precomputed structures or alignments are too restrictive;
+	  try setting -nf or -na higher?)
+
+You can see exactly why this is by setting the POSTENV log tag, which
+displays each sampled fold & alignment
+
+	stemloc -na 1 -nf 1 dynalign.trna -log POSTENV
+
+
+	Finding 1 best RNA secondary structures for fold envelope
+	Sequence   GCGACCGGGGCUGGCUUGGUAAUGGUACUCCCCUGUCACGGGAGAGAAUGUGGGUUCAAAUCCCAUCGGUCGCGCCA
+	Fold     1 <<<<<<<(.........................................................)>>>>>>>.... (score -15.343 bits)
+	Finding 1 best RNA secondary structures for fold envelope
+	Sequence   GCCCGGGUGGUGUAGUGGCCCAUCAUACGACCCUGUCACGGUCGUGACGCGGGUUCgAAUCCCGCCUCGGGCGCCA
+	Fold     1 <<<<<<<(<<((<(((((<<<(((((<<<<<<(<<.>>)>>>>>>)))))>>>)))))>))>>)>>.>>>>>.... (score -12.656 bits)
+	Finding 1 best pairwise alignments for alignment envelope
+	Sequence   GCGACCGGGGCUGGCUUGGUAAUGGUACUCCCCUGUCACGGGAGAGAAUGUGGGUUCAAAUCCCAUCGGUCGCGCCA
+	Adding state path to alignment envelope
+	Alignment 1 (score 23.247 bits):
+	RD0260 gcgaccggggcuggcuugguaaugguacuc------------------------------cccugucacgggagagaauguggguucaaaucccaucggucgcgcca
+	RD0500 ------------------------------gcccgggugguguaguggcccaucauacgacccugucacggucgugacgc-ggguucgaaucccgccucgggcgcca
+
+The single fold predicted for each sequence is incompatible with the
+single best alignment, since the 3' ends of the stems are aligned but
+the 5' ends are not. Hence, the fold and alignment envelopes are
+incompatible, so the returned score is -infinity.
+
+
+
+[5. Training the parameters]
+
+One of the most powerful features of probabilistic models is the
+ability to parameterise them automatically from data by maximising
+the likelihood of a "training set". In the case of SCFGs (and other
+models), this can be done quickly and efficiently using the
+Inside-Outside algorithm, a special case of the Expectation
+Maximisation (EM) algorithm.
+
+Why would you want to train parameters yourself, when the default set
+of parameters hat comes with stemloc is probably adequate? The answer
+is that it may not be adequate for all cases. The default parameters
+for stemloc were trained on a selection of pairwise alignments of
+betweem 30% and 40% sequence identity from release 5.0 of Rfam. We
+have already seen one case where these parameters are only partially
+effective (the nanos TCE, above). Another case where they are quite
+hopeless is the regulatory stem-loop in the K-10 3'UTR from
+Drosophila. Try
+
+	stemloc k10-3utr.dna -log 6
+
+and, for the "true" alignment,
+
+	stemloc k10-3utr.aligned
+
+You can get a breakdown of the score for the true alignment as follows
+
+	stemloc k10-3utr.aligned -log CYK_EXPANDED_TRACE
+
+Because stemloc was trained on low-identity alignments, it rewards
+some covariant matches (e.g. UA-AU, or AU-GC) better than exact
+identities (UA-UA). Also, it's not too fond of bulges, and it likes to
+see conservation in bulges and loops. These are parameterisation
+issues, and may (or may not) be fixable by training. Sometimes a
+signal is just buried, and there's not much you can do about that, but
+you can often get extra mileage by training on a dataset that more
+closely reflects your own data.
+
+Stemloc uses three different stochastic grammars. These are
+
+ [F] a single-sequence SCFG for predicting the fold envelope
+ [A] a pair HMM for predicting the alignment envelope
+ [C] a pair SCFG for the full structural alignment comparison
+
+Each of these grammars has its own parameterisation and can be
+independently trained. In fact, you can do the following tasks with
+each grammar:
+
+ [L] Load the parameters from a file
+ [S] Save the parameters to a file
+ [T] Train the parameters from a Stockholm multiple alignment database
+
+The options for doing each of these are '-lf', '-sf', '-tf' (for
+loading/saving/training the fold parameters); '-la', '-sa', '-ta' (the
+alignment parameters); and '-lc', '-sc', '-tc' (the comparison
+parameters). See the help text ('stemloc -h') for details.
+
+When training, it is important not to *overtrain*; that is, to use a
+dataset that contains insufficient data to train all the
+parameters. For example, the fold grammar has 298 parameters: the bulk
+of these come from the 256 = 16*16 different probabilities for all
+possible base-pair stackings in an RNA double helix. To avoid
+overtraining this grammar, you need a dataset that contains at least
+one example of all 256 different stackings.
+
+You can get an idea of how many parameters are required for each
+grammar by saving the default parameters to a file (using '-sf', '-sa'
+or '-sc'). The parameters are stored in Telegraph format. Telegraph
+is a machine-readable notation for SCFGs; currently, only the
+parameterisation part of Telegraph is utilised by stemloc. The
+parameter files consist of fields like this
+
+	stackCG_GC => 2.659;
+
+which means that the log-likelihood score for this probabilistic
+parameter (in this case, the stacking of a GC basepair on top of an
+existing CG) is -2.659 bits.
+
+The training set must be a fully annotated Stockholm database like this
+
+	#=GF WT 1.0
+	DVU24695_3utr         gaagcucuggcagcuuu
+	#=GR DVU24695_3utr SS <<<<<<.....>>>>>>
+	DRONANOS_3utr         gaggcucuggcagcuuu
+	#=GR DRONANOS_3utr SS <<<<<<.....>>>>>>
+	//
+	#=GF WT 0.5
+	k10_dmel_utr3         CUUGAUUGUAUUUUUAAAUUAAUUCUUAAAAACUACAAAUUAAG
+	#=GR k10_dmel_utr3 SS <<<<<<<<<<<<<<<<<........>>>>>>>.>>>>.>>>>>>
+	k10_dpse_utr3         CUUGAUUGUAUUUUUAGGUUCACUCUUAGAAAUCACAAAUUAAG
+	#=GR k10_dpse_utr3 SS <<<<<<<<<<<<<<<<<........>>>>>>>.>>>>.>>>>>>
+	//
+
+Here, the "#=GF WT" lines specify the weight that each alignment
+contributes to the training. In the above example, the first alignment
+contributes twice as much as the second alignment, exactly as if it
+had been included twice.
+
+Although you are free to train your parameters every time you want to
+do an alignment, typically you would want to train the parameters
+once, save them to a file, then re-load them every time (because the
+training can be quite time-consuming). To train (and optionally
+load/save) the parameters without doing any alignment, use the '-to'
+command-line option.
+
+
+
+[6. Some common questions]
+
+* I want to align multiple RNA sequences
+
+So do I! I'm working on this. I believe that Cedric Notredame's RAGA,
+and possible Sean Eddy and Robert Klein's RSEARCH, are the only
+programs available to do this at present.
+
+* I want to predict the structure of a multiple RNA alignment
+
+Again, this is also a priority of mine. Currently the best program to
+do this (IMO) is Bjarne Knudsen's PFOLD, which uses an evolutionary
+model of basepair covariation.
+
+* Why does the program abort?
+
+Probably because you've run out of memory. Try '-log ALLOC' to make
+stemloc print a log message before allocating big chunks. Reducing the
+fold and alignment envelopes (using '-nf' and '-na') can save memory
+sometimes.
+
+
+
+
+References.
+
+[1] Sankoff D. and Kruskal J.B., eds. 1983.
+    Time Warps, String Edits, and Macromolecules: the Theory and Practice of Sequence Comparison.
+    Addison-Wesley, Reading, MA.
+[2] Holmes I. and Rubin G.M. 2002.
+    Pairwise RNA structure comparison using stochastic context-free grammars.
+    Proceedings, Pacific Symposium on Biocomputing.
+[3] Durbin R., Eddy S., Krogh A. and Mitchison G. 1998.
+    Biological Sequence Analysis: Probabilistic Models of Proteins and Nucleic Acids.
+    Cambridge University Press, Cambridge, UK.

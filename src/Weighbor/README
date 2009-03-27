@@ -1,0 +1,23 @@
+Weighbor -- WEIGHted neighBOR joining
+    ver 1.0.0alpha [20-May-98]
+
+See the file INSTALL for information on how to compile the
+program. The Doc subdirectory contains a manual page describing how to
+run the program and the various command line options.
+
+Further information on how the algorithm works can be found in the
+following references ???. 
+
+Additionally the source code as been formated to allow pretty printing
+using the cnoweb package (which is also included). Simplely tex any of
+the source files and print (or view) the resulting dvi file.
+
+N.B. This release of the program is a ALPHA release. Use at your own risk.
+
+DEVELOPMENT TEAM:
+  W. Bruno (billb@t10.lanl.gov)
+  A. Halpern (ahalpern@ender.unm.edu)
+  N. D. Socci (nds@lucent.com)
+
+
+

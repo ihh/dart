@@ -1,0 +1,141 @@
+;; Example of a template model.
+
+
+;; Y'know, maybe (just maybe) these macros could be auto-handled within xrate itself, before the grammar is parsed....
+;; Potentially triggered by a command-line switch, i.e. "xrate -m ..." or "xrate --macros ..."
+
+;; The way it works is as follows.
+;; The alignment is auto-assigned a set of #=GS values (NB all internal nodes must be forced to have names at this point):
+
+;;  "#=GS NodeName  =NodeName  1"   for all tree node names "NodeName"
+;;  "#=GS NodeName1 :NodeName2 1"   for all tree node names "NodeName1" & "NodeName2", iff NodeName1 is equal to or descended from NodeName2
+
+
+;; Constructs of the following form are then expanded in the grammar S-expression before it is parsed:
+
+;; (foreach VAR (LIST) EXPRLIST)    -- clones EXPRLIST for every element of LIST, replacing all instances of the atom VAR with the list item
+;; (foreach-token NODE EXPRLIST)    -- same as foreach, but the list is the set of alphabet tokens
+;; (foreach-node NODE EXPRLIST)     -- same as foreach, but the list is the set of nodes in the tree (requires that Stockholm database contains exactly one alignment)
+;; (foreach-branch NODE EXPRLIST)   -- same as foreach-node, but excludes the root node (requires that Stockholm database contains exactly one alignment)
+;; (foreach-leaf NODE EXPRLIST)     -- same as foreach-node, but leaf nodes only (requires that Stockholm database contains exactly one alignment)
+;; (. LIST)                         -- concatenates a list of atoms into a single atom, e.g. (. A B C) evaluates to ABC
+;; (+ LIST)                         -- sums the integer values of LIST, e.g. (+ 1 4 -3) evaluates to 2
+;; (* LIST)                         -- multiplies the integer values of LIST, e.g. (* 5 2 3) evaluates to 30
+;; #NODES                           -- number of nodes on the tree
+;; #LEAVES                          -- number of leaves
+;; #BRANCHES                        -- number of branches = #NODES - 1
+
+
+(grammar
+ (name nullrna)
+
+ ;; Here's the macro stuff
+ (foreach-branch
+  NODE
+  (hybrid-chain
+   (terminal ((. H- NODE)))
+   (row (. = NODE))
+   (components
+    ((label 0) (terminal (X)))
+    ((label 1) (terminal (Y)))
+    )
+   )
+
+  (hybrid-chain
+   (terminal ((. I- NODE)))
+   (row (. : NODE))
+   (components
+    ((label 0) (terminal (X)))
+    ((label 1) (terminal (Y)))
+    )
+   )
+
+  (transform (from ((. S- NODE))) (to ((. H- NODE) (. S- NODE *))))
+  (transform (from ((. S- NODE *))) (to ()) (prob 1))
+
+  (foreach-branch  ;; note that one foreach construct can be nested inside another...
+   NODE2
+   (transform (from ((. S- NODE *))) (to ((. S- NODE2))) (prob (1 / #BRANCHES)))
+   )
+
+  (transform (from ((. T- NODE))) (to ((. I- NODE) (. T- NODE *))))
+  (transform (from ((. T- NODE *))) (to ((. T- NODE))) (prob 1))
+  (transform (from ((. T- NODE *))) (to ()) (prob 1))
+
+  )
+
+ ;; Now the normal grammar stuff
+ (chain
+  (update-policy parametric)
+  (terminal (X))
+
+  ;; initial probability distribution
+  (initial (state (a)) (prob 0.25))
+  (initial (state (c)) (prob 0.25))
+  (initial (state (g)) (prob 0.25))
+  (initial (state (u)) (prob 0.25))
+
+  ;; mutation rates
+  (mutate (from (a)) (to (c)) (rate 1))
+  (mutate (from (a)) (to (g)) (rate 1))
+  (mutate (from (a)) (to (u)) (rate 1))
+  (mutate (from (c)) (to (a)) (rate 1))
+  (mutate (from (c)) (to (g)) (rate 1))
+  (mutate (from (c)) (to (u)) (rate 1))
+  (mutate (from (g)) (to (a)) (rate 1))
+  (mutate (from (g)) (to (c)) (rate 1))
+  (mutate (from (g)) (to (u)) (rate 1))
+  (mutate (from (u)) (to (a)) (rate 1))
+  (mutate (from (u)) (to (c)) (rate 1))
+  (mutate (from (u)) (to (g)) (rate 1))
+ )  ;; end chain X
+
+ (chain
+  (update-policy parametric)
+  (terminal (Y))
+
+  ;; initial probability distribution
+  (initial (state (a)) (prob 0.25))
+  (initial (state (c)) (prob 0.25))
+  (initial (state (g)) (prob 0.25))
+  (initial (state (u)) (prob 0.25))
+
+  ;; mutation rates
+  (mutate (from (a)) (to (c)) (rate lambda))
+  (mutate (from (a)) (to (g)) (rate lambda))
+  (mutate (from (a)) (to (u)) (rate lambda))
+  (mutate (from (c)) (to (a)) (rate lambda))
+  (mutate (from (c)) (to (g)) (rate lambda))
+  (mutate (from (c)) (to (u)) (rate lambda))
+  (mutate (from (g)) (to (a)) (rate lambda))
+  (mutate (from (g)) (to (c)) (rate lambda))
+  (mutate (from (g)) (to (u)) (rate lambda))
+  (mutate (from (u)) (to (a)) (rate lambda))
+  (mutate (from (u)) (to (c)) (rate lambda))
+  (mutate (from (u)) (to (g)) (rate lambda))
+ )  ;; end chain Y
+
+)  ;; end grammar nullrna
+
+
+
+(alphabet
+ (name RNA)
+ (token (a c g u))
+ (complement (u g c a))
+ (extend (to n) (from a) (from c) (from g) (from u))
+ (extend (to x) (from a) (from c) (from g) (from u))
+ (extend (to t) (from u))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from u))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from u))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from u))
+ (extend (to h) (from a) (from c) (from u))
+ (extend (to b) (from c) (from g) (from u))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from u))
+ (wildcard *)
+)  ;; end alphabet RNA
+

@@ -1,0 +1,57 @@
+
+ ;; Tolerances
+ (initial-tol .06)
+ (mutate-tol .06)
+ (wait-tol .06)
+ (param-tol .06)
+ (n-align 10)
+ (min-inc .001)
+ (forgive 0)
+
+ ;; Probability and rate parameters
+
+ (pgroup
+  ((ext 0.999)
+   (~ext 0.001))
+  ((pa0 0.3)
+   (pc0 0.2)
+   (pg0 0.2)
+   (pt0 0.3))
+  ((pa1 0.4)
+   (pc1 0.1)
+   (pg1 0.1)
+   (pt1 0.4))
+  ((pa2 0.45)
+   (pc2 0.05)
+   (pg2 0.05)
+   (pt2 0.45))
+  ((k 0.1)   ;; transversion/transition ratio
+   (~k 0.9))
+  )
+
+ (rate
+  (s 200)  ;; synonymous substitution rate parameter
+  (n 100)  ;; nonsynonymous substitution rate parameter
+  )
+
+ ;; Defaults for seeding training
+ (seed
+   (ext .5)
+   (~ext .5)
+   (pa0 0.25)
+   (pc0 0.25)
+   (pg0 0.25)
+   (pt0 0.25)
+   (pa1 0.25)
+   (pc1 0.25)
+   (pg1 0.25)
+   (pt1 0.25)
+   (pa2 0.25)
+   (pc2 0.25)
+   (pg2 0.25)
+   (pt2 0.25)
+   (k 0.5)
+   (~k 0.9)
+   (s 1)
+   (n 1)
+   )

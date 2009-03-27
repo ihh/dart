@@ -1,0 +1,84 @@
+.TH WEIGHBOR L "[20-May-98]" "Ver 1.0.0alpha"
+.SH NAME
+weighbor \- weighted neighbor joining
+.SH SYNOPSIS
+.B weighbor
+[\-L
+.I sequenceLength] 
+[\-b
+.I alphabetSize]
+[\-i
+.I fileName] 
+[\-o 
+.I fileName] 
+[\-v[v[v]]] [\-V]
+.SH DESCRIPTION
+.B Weighbor 
+takes an input file of pairwise distances in
+.I Phylip
+format and computes the phylogentic tree that best corresponds to
+those distances. The output is this tree in 
+lisp-like format. Currently the input is read from
+.B stdin
+and the output is written to 
+.B stdout.
+Note, several inputs can be sent to
+.B weighbor
+and it will process each in order and print the corresponding tree.
+Additional information about about how the tree was build can be
+output to a log file (currently
+.B weighbor.out
+). The amount of information written to the log file can be controlled.
+.PP
+These options are available:
+.TP
+.BI "\-L " sequenceLength
+Sets the length of the sequences. Default is 500. This is the effective sequence 
+length equal to the number of varying sites. 
+Note if the 
+.B
+\-L
+option is not used then the program will print a warning message to
+stderr indicating that it is using this default length.
+.TP
+.BI "\-b " alphabetSize
+Sets the size of the alphabet of characters (number of bases) 
+.B b.
+.B 1/b 
+is equal to the probablity that there will be a match for
+infinite evolution time. The default value for 
+.B b
+is 4.
+.TP
+.BI "\-i " fileName
+Read input from the filename given. Default is to read from stdin.
+.TP
+.BI "\-o " fileName
+Write output to the given file. Default is to write to stdout.
+.TP
+.B \-v
+Turns on logging and creates the logfile
+.I weighbor.out
+The amount of information can be adjusted by using
+.B \-v,
+.B \-vv
+or 
+.B \-vvv
+to get progressively more detailed information in the logfile. At
+level one
+.B (\-v)
+the the logfile will contain the pair of taxa that was joined at each
+iteration of the algorithm along with the taxon that was the next best
+choice. Also printed is the p-value of this triplet.  
+.TP
+.B \-V
+Print out the version number.
+.SH DEVELOPMENT TEAM
+W. Bruno
+.IR <billb@t10.lanl.gov>
+.PP
+A. Halpern
+.IR <halpern@ender.unm.edu>
+.PP
+N. D. Socci
+.IR <nds@lucent.com>

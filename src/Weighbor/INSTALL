@@ -1,0 +1,17 @@
+To compile the weighbor program you will need an ANSI compliant C
+compilier. Specifically the compiler must be able to parse function
+prototypes. The GNU C compiler (gcc) is ANSI compliant, some old
+sun compilers are not (although acc is).
+
+Edit the Makefile and change the CC varible to the name of your C
+compiler and adjust the CFLAGS variable as desired (currently it is
+set to compile with debugging information added, change to optimized
+compilation if desired).
+
+Then simply type make to compile the program. make clean will delete
+temporary files and make spotless will delete all but the source code.
+
+See the files in the Doc subdirectory for information on how to run
+the program.
+
+

@@ -1,0 +1,11 @@
+#=GF CC   Nanos 3'UTRs from Drosophilae virilis & melanogaster.
+#=GF CC   Structure from Crucs, Chatterjee and Gavis, Mol. Cell 5, 457-467 (2000).
+
+#=GR DVU24695_3utr/3-65/1-63 SS <--------<<<<<---(<<<<<.....>>>>>)---....<<<((<<<<<<.-(<.>).>>>>>>))>>>.->>>>---->-------->
+DVU24695_3utr/3-65/1-63         g--------uggaa---gaagcucuggcagcuuu---uuaagcguuuauauaa-gaguuauauauaugcgcg-uucc----a--------c
+#=GC PS_cons                    ...........g.a...ga.gcucuggcagcuuu......agcguuuauauaa...g..auauauau.cgc..u.c.....a.........
+DRONANOS_3utr/9-96/1-88         aauccagcucuggagcagaggcucuggcagcuuuugc---agcguuuauauaacaugaaauauauauacgcauuccgaucaaagcuggguu
+#=GR DRONANOS_3utr/9-96/1-88 SS <<(<<<<<<((<<<<<<(<(<<<.....>>>)>)>>>---.<<<<(<<<<<<..(<.>).>>>>>>)>>>>..>>>)....)>>>>>>)>>
+#=GC SS_cons                    <..........<<<...(<.<<<.....>>>.>).......<<<.(<<<<<<..(<.>).>>>>>>).>>>..>>>..............>
+#=GF BS                         -28.367
+//

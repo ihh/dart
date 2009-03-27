@@ -1,0 +1,12 @@
+# These two alignments should give identical annotations with grammar dart/grammars/ncRnaDualStrand.eg
+
+# STOCKHOLM 1.0
+#=GF NH (Xf:.1,Yf:.1);
+Xf aaggccaauuccaaACGUaaACGUc
+Yf aaggccaauuccaaGUACaaGUACc
+//
+# STOCKHOLM 1.0
+#=GF NH (Xr:.1,Yr:.1);
+Xr gACGUuuACGUuuggaauuggccuu
+Yr gGUACuuGUACuuggaauuggccuu
+//

@@ -1,0 +1,1 @@
+perl -we 'my$dest=shift;foreach(@ARGV){system"phatrates.pl submat/$_ -invert -grey -gif -nodisplay tmpfile.gif; convert tmpfile.gif $dest/$_.eps; rm tmpfile.gif"}' ~/latex/emrate-paper HSM1a.max HSM1b.max HSM1c.max HSM2a.max HSM2b.max HSM2c.max HSM2b.interrind HSM2b.intra HSM2c.interrind HSM2c.intra HSM3a.rind HSM3a.rind.max HSM4a.rind

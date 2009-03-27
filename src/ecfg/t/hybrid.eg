@@ -1,0 +1,135 @@
+;; Grammar hybrid
+;;
+(grammar
+ (name hybrid)
+ (update-rates 1)
+ (update-rules 0)
+
+ ;; Transformation rules for grammar symbols
+
+ ;; Nonterminal Start
+ ;;
+ (transform (from (Start)) (to (S)) (prob .45))
+ (transform (from (Start)) (to (T)) (prob .45))
+ (transform (from (Start)) (to ()) (prob .1))
+
+ ;; Nonterminal S
+ ;;
+ (transform (from (S)) (to (Z S*)) (gaps-ok)
+  (annotate (row HYBRID) (column Z) (label 1))
+  (minlen 1))
+ (transform (from (S*)) (to ()) (prob 1))
+ (transform (from (S*)) (to (S)) (prob 1))
+
+ ;; Nonterminal T
+ ;;
+ (transform (from (T)) (to (X T*)) (gaps-ok)
+  (annotate (row HYBRID) (column X) (label 0))
+  (minlen 1))
+ (transform (from (T*)) (to ()) (prob 1))
+ (transform (from (T*)) (to (T)) (prob 1))
+
+ ;; Observed counts for probability and rate parameters
+
+ (observed-counts
+  )  ;; end observed-counts
+
+ ;; Parameters
+ (params
+  (R .05)
+  (transition .3)
+  (transversion .03)
+  ((p .8) (q .2))
+  )
+
+; (pseudocounts
+;  (R 0 .0001)
+;  (transition 0 .0001)
+;  (transversion 0 .0001)
+;  )
+
+ ;; Markov chain substitution models
+
+ (chain
+  (update-policy parametric)
+  (terminal (X))
+
+  ;; initial probability distribution
+  (initial (state (a)) (prob (p / 2)))
+  (initial (state (c)) (prob (q / 2)))
+  (initial (state (g)) (prob (q / 2)))
+  (initial (state (t)) (prob (p / 2)))
+
+  ;; mutation rates
+  (mutate (from (a)) (to (c)) (rate (R)))
+  (mutate (from (a)) (to (g)) (rate (R)))
+  (mutate (from (a)) (to (t)) (rate (R)))
+  (mutate (from (c)) (to (a)) (rate (R)))
+  (mutate (from (c)) (to (g)) (rate (R)))
+  (mutate (from (c)) (to (t)) (rate (R)))
+  (mutate (from (g)) (to (a)) (rate (R)))
+  (mutate (from (g)) (to (c)) (rate (R)))
+  (mutate (from (g)) (to (t)) (rate (R)))
+  (mutate (from (t)) (to (a)) (rate (R)))
+  (mutate (from (t)) (to (c)) (rate (R)))
+  (mutate (from (t)) (to (g)) (rate (R)))
+ )  ;; end chain X
+
+ (chain
+  (update-policy parametric)
+  (terminal (Y))
+
+  ;; initial probability distribution
+  (initial (state (a)) (prob (p / 2)))
+  (initial (state (c)) (prob (q / 2)))
+  (initial (state (g)) (prob (q / 2)))
+  (initial (state (t)) (prob (p / 2)))
+
+  ;; mutation rates
+  (mutate (from (a)) (to (c)) (rate (transversion)))
+  (mutate (from (a)) (to (g)) (rate (transition)))
+  (mutate (from (a)) (to (t)) (rate (transversion)))
+  (mutate (from (c)) (to (a)) (rate (transversion)))
+  (mutate (from (c)) (to (g)) (rate (transversion)))
+  (mutate (from (c)) (to (t)) (rate (transition)))
+  (mutate (from (g)) (to (a)) (rate (transition)))
+  (mutate (from (g)) (to (c)) (rate (transversion)))
+  (mutate (from (g)) (to (t)) (rate (transversion)))
+  (mutate (from (t)) (to (a)) (rate (transversion)))
+  (mutate (from (t)) (to (c)) (rate (transition)))
+  (mutate (from (t)) (to (g)) (rate (transversion)))
+ )  ;; end chain Y
+
+ (hybrid-chain
+  (terminal (Z))
+  (row HLABEL)
+  (components
+   ((label X) (terminal (X)))
+   ((label Y) (terminal (Y)))
+   )
+  )
+
+)  ;; end grammar parametric
+
+;; Alphabet DNA
+;;
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *)
+)  ;; end alphabet DNA
+

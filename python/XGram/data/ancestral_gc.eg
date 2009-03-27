@@ -1,0 +1,128 @@
+;; Model for measuring ancestral GC content
+;; To see how the macros expand, type the following:
+
+;;  echo | xrate -g dart/grammars/ancestral_gc.eg -t expanded.eg
+;;  more expanded.eg
+
+;; Here's the grammar...
+(grammar
+ (name Ancestral_GC_content)
+ (parametric)
+
+ ;; Define a hybrid chain with a different chain on each branch
+ (hybrid-chain
+  (terminal (HYBRID))
+  (row ?)
+  (components
+   (&foreach-branch
+    NODE
+    ((label NODE) (terminal ((. CHAIN_ NODE))))
+    )
+   )
+  )
+
+ ;; Main loop over branches
+ (&foreach-branch
+  NODE
+
+  ;; Parameters
+  ;; Branch-specific GC/AT content
+  (pgroup
+   (((. pGC_ NODE) 0.5) ((. pAT_ NODE) 0.5))
+   )
+
+  ;; Branch-specific substitution rate
+  (rate
+   ((. RATE_ NODE) 1)
+   )
+
+  ;; Branch-specific substitution rate matrix
+  (chain
+   (update-policy parametric)
+   (terminal ((. CHAIN_ NODE)))
+
+   (&foreach-token
+    SRC
+    ;; initial probability distribution
+    (initial (state (SRC)) (prob ((. (?
+				      (&or
+				       (= SRC g)
+				       (= SRC c)
+				       )
+				      pGC_
+				      pAT_
+				      )
+				     NODE) / 2)))
+
+    ;; mutation rates
+    (&foreach-token
+     DEST
+     (?
+      (= SRC DEST)
+      ()
+      (mutate
+       (from (SRC))
+       (to (DEST))
+       (rate (((. RATE_ NODE) * (. (?
+				    (&or
+				     (= DEST g)
+				     (= DEST c)
+				     )
+				    pGC_
+				    pAT_
+				    )
+				   NODE))))
+       )
+      )
+     )
+    )
+   ) ;; end chain
+
+  ) ;; end loop over branches
+
+ ;; transformation rules
+ ;; START state
+ (transform
+  (from (START))
+  (to (EMIT)))
+
+ (transform
+  (from (START))
+  (to ()))
+
+ ;; EMIT state
+ (transform
+  (from (EMIT))
+  (to (HYBRID EMIT*)))
+
+ (transform
+  (from (EMIT*))
+  (to (EMIT)))
+
+ (transform
+  (from (EMIT*))
+  (to ()))
+
+ ) ;; end grammar Ancestral_GC_content
+
+
+(alphabet
+ (name RNA)
+ (token (a c g u))
+ (complement (u g c a))
+ (extend (to n) (from a) (from c) (from g) (from u))
+ (extend (to x) (from a) (from c) (from g) (from u))
+ (extend (to t) (from u))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from u))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from u))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from u))
+ (extend (to h) (from a) (from c) (from u))
+ (extend (to b) (from c) (from g) (from u))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from u))
+ (wildcard *)
+ ) ;; end alphabet RNA
+

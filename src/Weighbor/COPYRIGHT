@@ -1,0 +1,26 @@
+/*
+ *
+ * WEIGHBOR 0.2.13
+ *
+ * Copyright (c) 1997-1998 
+ *    Los Alamos National Laboratories
+ *
+ * This file is part of the WEIGHBOR program that can be used free of
+ * charge in academic research and teaching. Any commercial use of
+ * this software requires prior permission and possibly a license. For
+ * commercial use contact: W. Bruno at billb@t10.lanl.gov Los Alamos
+ * National Laboratories makes no representations about the
+ * suitability of this software for any purpose. It is provided 
+ * "as is" without express or implied warranty
+ *	
+ * For those using this program for research please use the following 
+ * citation for this program:
+ *
+ *    Bruno, W. J., Socci, N. D. and Halpern, A. L., ``Weighted 
+ *        Neighbor Joining: A Fast Approximation to Maximum-Likelihood
+ *        Phylogeny Reconstruction,'' Submitted to Molecular Biology
+ *        and Evolution, (1998).
+ *
+ * 
+ */
+

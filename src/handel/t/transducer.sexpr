@@ -1,0 +1,61 @@
+; the first thing we specify is the tree (as a set of nested branches)
+; the Newick format representation of this tree is ((node1:generic,node2:generic):root_branch);
+; (although, strictly, this isn't Newick format because the branch "lengths" are transducer names, instead of nonnegative real numbers)
+
+(branch
+ (transducer root_branch)
+ (branch (transducer generic))
+ (branch (transducer generic))
+ )
+
+; now the transducers
+; first a generic transducer illustrating all states & all permissible types of connection
+(transducer
+
+ (name generic)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name M) (type match))
+ (state (name D) (type delete))
+ (state (name I) (type insert))
+
+ (transition (from S) (to I) (label a))
+ (transition (from S) (to W) (label b))
+
+ (transition (from W) (to M) (label c))
+ (transition (from W) (to D) (label d))
+ (transition (from W) (to E) (label e))
+
+ (transition (from M) (to I) (label f))
+ (transition (from M) (to W) (label g))
+
+ (transition (from D) (to I) (label h))
+ (transition (from D) (to W) (label i))
+
+ (transition (from I) (to I) (label j))
+ (transition (from I) (to W) (label k))
+)
+
+
+; now a dummy transducer for root branch, that assumes a zero-length input
+; i.e. it only inserts, and accepts no input symbols
+; NB transitions without labels (as in this transducer) are assumed to have weight 1
+(transducer
+
+ (name root_branch)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name I) (type insert))
+
+ (transition (from S) (to I))
+ (transition (from S) (to W))
+
+ (transition (from I) (to I))
+ (transition (from I) (to W))
+
+ (transition (from W) (to E))
+)

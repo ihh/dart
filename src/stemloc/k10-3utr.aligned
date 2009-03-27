@@ -1,0 +1,7 @@
+#=GF CC   K10 3'UTRs from Drosophilae melanogaster & pseudoobscura.
+#=GF CC   Structure from Serano & Cohen, Development 121, 3809-3818 (1995).
+
+#=GR k10_dmel_utr3/681-733 SS <<<<<<<<<<<<<<<<<........>>>>>>>.>>>>.>>>>>>
+k10_dmel_utr3/681-733         CUUGAUUGUAUUUUUAAAUUAAUUCUUAAAAACUACAAAUUAAG
+k10_dpse_utr3/681-733         CUUGAUUGUAUUUUUAGGUUCACUCUUAGAAAUCACAAAUUAAG
+#=GR k10_dpse_utr3/681-733 SS <<<<<<<<<<<<<<<<<........>>>>>>>.>>>>.>>>>>>

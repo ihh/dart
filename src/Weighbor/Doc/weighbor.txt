@@ -1,0 +1,132 @@
+
+
+
+Local Commands                                        WEIGHBOR(L)
+
+
+
+NAME
+     weighbor - weighted neighbor joining
+
+SYNOPSIS
+     weighbor [-L sequenceLength] [-b alphabetSize] [-i fileName]
+     [-o fileName] [-v[v[v]]] [-V]
+
+DESCRIPTION
+     Weighbor takes an input file of pairwise distances in Phylip
+     format   and   computes   the  phylogentic  tree  that  best
+     corresponds to those distances. The output is this  tree  in
+     lisp-like format. Currently the input is read from stdin and
+     the output is written to stdout. Note, several inputs can be
+     sent to weighbor and it will process each in order and print
+     the corresponding tree.  Additional information about  about
+     how  the  tree  was  build  can  be  output  to  a  log file
+     (currently weighbor.out ). The amount of information written
+     to the log file can be controlled.
+
+     These options are available:
+
+     -L sequenceLength
+          Sets the length of the sequences. Default is 500.  This
+          is the effective sequence length equal to the number of
+          varying sites. Note if the -L option is not  used  then
+          the  program  will  print  a  warning message to stderr
+          indicating that it is using this default length.
+
+     -b alphabetSize
+          Sets the size of the alphabet of characters (number  of
+          bases)  b.  1/b  is  equal to the probablity that there
+          will be  a  match  for  infinite  evolution  time.  The
+          default value for b is 4.
+
+     -i fileName
+          Read input from the filename given. Default is to  read
+          from stdin.
+
+     -o fileName
+          Write output to the given file. Default is to write  to
+          stdout.
+
+     -v   Turns on logging and creates the  logfile  weighbor.out
+          The  amount of information can be adjusted by using -v,
+          -vv or -vvv to get progressively more detailed informa-
+          tion  in the logfile. At level one (-v) the the logfile
+          will contain the pair of taxa that was joined  at  each
+          iteration  of  the  algorithm along with the taxon that
+          was the next best choice. Also printed is  the  p-value
+          of this triplet.
+
+     -V   Print out the version number.
+
+
+
+Ver 1.0.0alpha      Last change: [20-May-98]                    1
+
+
+
+
+
+
+Local Commands                                        WEIGHBOR(L)
+
+
+
+DEVELOPMENT TEAM
+     W. Bruno <billb@t10.lanl.gov>
+
+     A. Halpern <halpern@ender.unm.edu>
+
+     N. D. Socci <nds@lucent.com>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ver 1.0.0alpha      Last change: [20-May-98]                    2
+
+
+

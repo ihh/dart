@@ -1,0 +1,14 @@
+> 2. It would also be nice if the software automatically changed the fold
+> and align number parameters whilst the software is running if it can't 
+> produce a valid alignment rather than having to check on progress and 
+> restart the job using different parameters if an error should occur. 
+> 
+
+* allow fold envelopes to optionally be generated on-the-fly. add comment to tutorial about mem usage of fold envelope database.
+* investigate general bias towards parameterisation #4, due to high-%ID models scoring highest on random sequence (MD training? local training alignments?)
+* query available memory before big allocs
+* compare PairSCFG score to explicit (1,2,3)-microsatellite & CDS PairHMMs (base microsatellite model on Trirep_model from empath?)
+* allow several categories of stem & loop conservation
+* do 256*256 stacked dinucleotide substitution matrix, P(ij->kl|ab->cd) [via reduced parameterisation]
+* significance assessment
+* webserver

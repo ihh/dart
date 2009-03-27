@@ -1,0 +1,77 @@
+;; Grammar irrev
+;;
+(grammar
+ (name irrev)
+ (update-rates 1)
+ (update-rules 0)
+
+ ;; Transformation rules for grammar symbols
+
+ ;; Nonterminal Start
+ ;;
+ (transform (from (Start)) (to (S)) (prob 1))
+ (transform (from (Start)) (to ()) (prob 1))
+
+ ;; Nonterminal S
+ ;;
+ (transform (from (S)) (to (X S*)) (gaps-ok)
+  (minlen 1))
+ (transform (from (S*)) (to ()) (prob 1))
+ (transform (from (S*)) (to (S)) (prob 1))
+
+ ;; Observed counts for probability and rate parameters
+
+ (observed-counts
+  )  ;; end observed-counts
+
+ ;; Markov chain substitution models
+
+ (chain
+  (update-policy irrev)
+  (terminal (X))
+
+  ;; initial probability distribution
+  (initial (state (a)) (prob 0.249994))
+  (initial (state (c)) (prob 0.249994))
+  (initial (state (g)) (prob 0.273294))
+  (initial (state (t)) (prob 0.226718))
+
+  ;; mutation rates
+  (mutate (from (a)) (to (c)) (rate 1.72069e-23))
+  (mutate (from (a)) (to (g)) (rate 4.55989e-23))
+  (mutate (from (a)) (to (t)) (rate 1.11827e-21))
+  (mutate (from (c)) (to (a)) (rate 1.72062e-23))
+  (mutate (from (c)) (to (g)) (rate 4.55846e-23))
+  (mutate (from (c)) (to (t)) (rate 1.11824e-21))
+  (mutate (from (g)) (to (a)) (rate 1.73832e-21))
+  (mutate (from (g)) (to (c)) (rate 1.73689e-21))
+  (mutate (from (g)) (to (t)) (rate 29.984))
+  (mutate (from (t)) (to (a)) (rate 1.49414e-23))
+  (mutate (from (t)) (to (c)) (rate 1.49418e-23))
+  (mutate (from (t)) (to (g)) (rate 0.00410548))
+ )  ;; end chain X
+
+)  ;; end grammar irrev
+
+;; Alphabet DNA
+;;
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *)
+)  ;; end alphabet DNA
+

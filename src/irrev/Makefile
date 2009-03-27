@@ -1,0 +1,12 @@
+# Requires GNU Make
+
+TESTS      = 
+TARGETS    = $(TESTS) irrev_xrate xsim
+DIRNAME    = irrev
+
+DEPS       = ecfg telegraph scfg hmm handel hsm tree scfg hmm seq util newmat randlib
+
+CCDIR      = $(shell pwd)
+SRCDIR     = $(CCDIR)/..
+
+include $(SRCDIR)/make.common

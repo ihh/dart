@@ -1,0 +1,134 @@
+;; This phylo-HMM has #COLUMNS states.
+;; Each state has its own Markov chain for generating an alignment column.
+;; Each chain is parameterized by one rate parameter and a probability distribution over #TOKENS.
+;; Each column's substitution model thus follows the idea of (Felsenstein, 1981)
+;; and the overall construct is something like (Bruno, 1996).
+(grammar
+ (name Site_specific_frequencies)
+ (parametric)
+ (update-rates 1)
+ (update-rules 1)
+
+ ;; Transition from START state to first column
+ ;; This must come before any other transitions,
+ ;; so that START is the first nonterminal.
+ (transform
+  (from (START))
+  (to (?
+       (= #COLUMNS 0)
+       ()  ;; if zero columns, alignment is empty: just goto end state
+       (NONTERM1)))  ;; otherwise, goto NONTERM1
+  )
+
+ ;; Main loop over columns
+ (&foreach-integer
+  COLUMN
+  (1 #COLUMNS)
+  (&warn Generating column COLUMN ...)
+
+  ;; First, define the parameters for COLUMN, and their priors.
+  ;; Rate parameter for COLUMN
+  (rate
+   ((. Rate COLUMN) 1)  ;; seed the rate at one
+   )
+
+  ;; Pseudocounts for the rate parameter (effectively specifying a gamma prior)
+  (pseudocounts
+   ((. Rate COLUMN)
+    1  ;; shape parameter
+    1  ;; scale parameter
+    )
+   )
+
+  ;; Frequency parameters for COLUMN
+  (pgroup
+   ((&foreach-token
+     TOK
+     ((. Freq COLUMN TOK)
+      (/ 1 #TOKENS))))  ;; seed with flat frequency distribution
+   )
+
+  ;; Pseudocounts for the frequency parameters (effectively specifying a Dirichlet prior)
+  (pseudocounts
+   (&foreach-token
+    TOK
+    ((. Freq COLUMN TOK)
+     1))  ;; pseudocount of 1 for each frequency parameter (Laplace)
+   )
+
+  ;; Now define the Markov chain substitution matrix for COLUMN,
+  ;; specifying the functional mapping from the rate matrix to the parameters.
+  (chain
+   (update-policy parametric)
+   (terminal ((. TERM COLUMN)))
+
+   ;; initial probability of being in state SRC is Freq[COLUMN][SRC]
+   (&foreach-token
+    SRC
+    (initial
+     (state (SRC))
+     (prob ((. Freq COLUMN SRC))))
+
+    ;; mutation rate from SRC to DEST is Rate[COLUMN] * Freq[COLUMN][DEST]
+    (&foreach-token
+     DEST
+     (?
+      (= SRC DEST)
+      ()  ;; if SRC=DEST, just insert empty brackets (which will be ignored) into the chain expression
+      (mutate  ;; SRC != DEST
+       (from (SRC))
+       (to (DEST))
+       (rate ((. Rate COLUMN) * (. Freq COLUMN DEST)))
+       )
+      )
+     )
+    )
+   ) ;; end of chain
+
+  ;; Emission of COLUMN
+  ;; The mapping from phyloHMM state to Markov chain.
+  (transform
+   (from ((. NONTERM COLUMN)))
+   (to ((. TERM COLUMN) (. NONTERM COLUMN *)))
+   ;; The following "minlen" and "maxlen" clauses help the DP run more efficiently,
+   ;; by avoiding computation of the emission likelihoods except at the one subsequence where it matters.
+   ;; The "len" in this co-ordinate scheme refers to the length of the Inside subsequence,
+   ;; which is (1 + #COLUMNS - COLUMN).
+   (minlen (+ 1 (- #COLUMNS COLUMN)))
+   (maxlen (+ 1 (- #COLUMNS COLUMN)))
+   )
+
+  ;; Transition to next COLUMN
+  ;; The connectivity of the phyloHMM.
+  (transform
+   (from ((. NONTERM COLUMN *)))
+   (to (?
+        (< COLUMN #COLUMNS)  ;; still more columns to go?
+        ((. NONTERM (+ COLUMN 1)))  ;; yes, so goto next column
+        ()  ;; no, so goto end state
+	)
+       )
+   )
+  )  ;; end main loop over columns
+ )
+
+;; alphabet
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *)
+ )  ;; end alphabet DNA

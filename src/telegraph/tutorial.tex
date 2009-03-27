@@ -1,0 +1,258 @@
+\documentclass{article}
+\usepackage{psfig}
+\begin{document}
+
+\newcommand\Telegraph{{\tt telegraph}}
+
+\title{Telegraph: Machine-Readable Probabilistic Grammars}
+\author{Ian Holmes}
+\maketitle
+
+\abstract{{\bf Motivation.}
+\\
+{\bf Methods.}
+\\
+{\bf Results.}
+\\
+{\bf Availability.}
+\\
+{\bf Contact.}
+\\
+}
+
+% Introduction.
+\section{Introduction}
+
+Telegraph is a functional language based on C and {\tt yacc} (and to a lesser
+extent C++ / IDL) and is best understood by direct comparison to those
+languages.
+
+\subsection{C-like types}
+
+\begin{verbatim}
+	bool
+	int
+	double
+	unsigned int
+	unsigned double
+	enum
+	struct
+\end{verbatim}
+
+These are the same as in C, except for {\tt unsigned double} (whose meaning
+should be obvious; it is useful for probabilities) and {\tt bool} (boolean,
+as in C++). Also, {\tt enum}'s can't have explicit integer assignments, as they
+can in C, i.e. you can write
+
+\begin{verbatim}
+		enum ascii { A, B };   /* legal */
+\end{verbatim}
+
+but not
+
+\begin{verbatim}
+		enum ascii { A = 65, B = 66 };   /* illegal */
+\end{verbatim}
+
+Operators that work on C types generally work on the corresponding
+Telegraph types, except for assignment operators like {\tt +=}
+which change the value of a variable (since Telegraph is functional,
+variables can't change their values).
+
+An important exception is the equality comparison operator {\tt ==} which only
+works on {\tt enum}, {\tt int} and {\tt bool} in Telegraph, but not {\tt double}. In other
+words, {\tt ==} works on discrete types but not continuous types. (In
+practise, using {\tt ==} on {\tt double}'s is risky even in C, due to rounding
+errors. I've had code break due to this before.)
+
+The distinction between discrete and continuous types is an important one
+in Telegraph \& will be returned to. Essentially, discrete types have a
+finite range of values and so can be used to index bounded lookup tables.
+
+\subsection{Type constructors}
+
+\begin{verbatim}
+	sequence<X>
+	table<K,V>
+	int (A..B)
+	G parse (S1 [,S2 [,S3...]])
+\end{verbatim}
+
+The first two of these are used to build complex types from simpler types,
+like generic programming in C++. The second two build types from
+expressions \& thus are more functional in nature.
+
+\begin{verbatim}
+	sequence<X>
+\end{verbatim}
+
+This is similar to IDL's {\tt sequence<X>} (and C++'s {\tt vector<X>} in the
+standard template library).
+
+\begin{verbatim}
+	table<K,V>
+\end{verbatim}
+
+{\tt table<K,V>} is a map from a key type ({\tt K}) to a value type ({\tt V}), similar to
+C++'s {\tt map<K,V>}. The difference is that in C++, {\tt K} can be any model of
+EqualityComparable (i.e. any type supporting the {\tt ==} operator) whereas
+in Telegraph it must be a discrete type. (Note that only discrete types
+support {\tt ==} in Telegraph, so this is consistent.)
+
+Another difference is that in C++, {\tt map}'s are initially empty (and
+key-value pairs are added later), whereas a Telegraph table defines a
+value {\tt V} for every {\tt K}. Thus a {\tt table} is actually more like a C array, and
+I expect most compilers will represent {\tt table}'s as arrays.
+
+\begin{verbatim}
+	int (A..B)
+\end{verbatim}
+
+This type represents an integer in the range {\tt A..B}, where {\tt A} and {\tt B} are
+expressions. For example, if {\tt PROT} is a protein sequence, then
+
+\begin{verbatim}
+		typedef int (1..length(PROT)) PROT_INDEX;
+\end{verbatim}
+
+defines a new type {\tt PROT\_INDEX} that indexes a residue in {\tt PROT}. Any
+assignment that violates this, e.g.
+
+\begin{verbatim}
+		PROT_INDEX x;
+		x = length(PROT) + 1;   /* illegal */
+\end{verbatim}
+
+will cause a run-time type error (in this case, an extra-clever compiler
+with dynamic flow analysis could catch the error at compile-time, but in
+general this is impossible).
+
+The range operator {\tt ..} is stolen from Perl. I expect that I won't
+implement this type at first, although it's useful for Genewise/HMMER.
+
+\begin{verbatim}
+	G parse (S1 [,S2 [,S3...]])
+\end{verbatim}
+
+This type represents a parse of sequence {\tt S1} (and possibly sequences {\tt S2} and
+{\tt S3}, or more; the exact number of sequenecs is specified by the grammar)
+according to grammar {\tt G}.
+
+As with the {\tt int(A..B)} type above, a parameter of this type is {\em defined} to
+be within bounds (i.e. a legal parse of the sequences according to the
+grammar). This allows us to write simple expressions for well-known
+algorithms. e.g. if {\tt SW} is the Smith-Waterman grammar, then the Smith-
+Waterman algorithm itself looks like this:
+
+\begin{verbatim}
+		typedef SW parse (query, target) qt_alignment;
+		qt_alignment optimal_qt_alignment;
+		optimal_qt_alignment = argmax (qt_alignment A) { translate (A) };
+\end{verbatim}
+
+Here we have used the iterator {\tt argmax} and the built-in function
+{\tt translate}. More on these, and on grammars, to follow.
+
+
+\subsection{Iterators}
+
+\begin{verbatim}
+	for     (DISCRETE_TYPE var) { ... statements ... }
+	sum     (DISCRETE_TYPE var) { ... expression ... }
+	product (DISCRETE_TYPE var) { ... expression ... }
+	argmax  (DISCRETE_TYPE var) { ... expression ... }
+	sample  (DISCRETE_TYPE var) { ... expression ... }
+\end{verbatim}
+
+The model for all of these is {\tt for}. Unlike C, this does not signify a
+loop (although it may be executed as such in the compiler), since there is
+no flow of control in Telegraph.
+
+Rather, the for construct specifies that the block-enclosed statements are
+true for {\em every} value of {\tt var} (note that {\tt var} must have a discrete type for
+this to be practical).
+
+Similarly, {\tt sum}, {\tt product} and {\tt argmax} apply the operators {\tt +}, {\tt *} and
+{\tt max} to the enclosed expression for all values of {\tt var}. In the case of
+{\tt sum} and {\tt product}, the final value has the same type as {\tt expression}; in
+the case of {\tt argmax}, it has the same type as {\tt var}, i.e. {\tt DISCRETE\_TYPE}.
+
+{\tt sample} is slightly different, in that it is (sort of) non-deterministic.  
+It samples a variable of type {\tt DISCRETE\_TYPE} from the probability
+distribution induced by {\tt var}.
+
+\subsection{Grammars}
+
+\begin{verbatim}
+	grammar G {
+	  terminal T;
+	  nonterminal N;
+	rule1: NONTERMINALS -> SYMBOLS { PROBABILITY }
+		             | SYMBOLS { PROBABILITY }
+		  	     | SYMBOLS { PROBABILITY }
+			    ... more right-hand-side options ...
+			     ;
+        rule2: ... more rules ...
+	};
+\end{verbatim}
+
+This construct describes a grammar. Formal grammars are defined elsewhere
+and I won't go into them here. Basically, the {\tt terminal} keyword names the
+element types of the sequence(s) that this grammar can parse, whereas the
+{\tt nonterminal} keyword identifies names of nonterminals that can be used in
+production rules.
+
+The production rules use a similar format to {\tt yacc}/{\tt bison}. The separator for
+the left- and right-hand sides of rules is {\tt ->} (in {\tt yacc}, it is {\tt :}, but
+Telegraph uses this for labelling rules). {\tt SYMBOLS} is a whitespace-
+separated list of symbols (nonterminals or terminals). Where {\tt yacc} has
+semantic actions in {\tt \{ ... \}} blocks, Telegraph has probability
+expressions.
+
+A sequence {\tt S} may be parseable by this grammar if it has type
+{\tt sequence<T>}. A parse {\tt P} of {\tt S} using this grammar has type {\tt G parse (S)}.
+The probability of this parse is given by the function {\tt translate(P)}.
+Thus the Forward sum-over-alignments for {\tt S} is, notationally
+
+\begin{verbatim}
+		forward = sum (G parse (S) P) { translate(P) };
+\end{verbatim}
+
+Just because we can write this down in Telegraph doesn't mean it can be
+evaluated. In fact, if {\tt G} is an unrestricted grammar then the question ``are
+there any values of P with finite probability'' is undecidable (it is the
+halting problem!)
+
+It is however very easy to check if {\tt G} is a ``simple'' grammar, e.g. a
+regular grammar (an HMM) or a context-free grammar (for RNA). Most
+compilers will complain if given any grammar more complex than this.
+However, this freedom is (I think) quite a cool way to allow for future
+expansion.
+
+The above is a very terse description of the grammar format. The {\tt yacc}
+file may shed a bit more light on things.
+
+
+\subsection{Built-in functions}
+
+\begin{verbatim}
+	length(S)
+	translate(P)
+	diff(E,X)
+\end{verbatim}
+
+{\tt length} gives the length of a sequence {\tt S}.
+
+{\tt translate} gives the probability of a parse {\tt P}. (Formally, it replaces a
+parse with its semantic translation according to the grammar, then reduces
+this sequence to a single expression by a binary operator, which is {\tt *} by
+default. These are details, just there to make the theory nice really.)
+
+{\tt diff} differentiates the expression {\tt E} with respect to the parameter {\tt X}.
+This is used to express the forward-backward and inside-outside
+algorithms.
+
+\bibliographystyle{unsrt}
+\bibliography{alignment}
+
+\end{document}

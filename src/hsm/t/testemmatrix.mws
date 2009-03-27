@@ -1,0 +1,203 @@
+{VERSION 3 0 "IBM INTEL LINUX" "3.0" }
+{USTYLETAB {CSTYLE "Maple Input" -1 0 "Courier" 0 1 255 0 0 1 0 1 0 0 
+1 0 0 0 0 }{CSTYLE "2D Math" -1 2 "Times" 0 1 0 0 0 0 0 0 2 0 0 0 0 0 
+0 }{CSTYLE "2D Output" 2 20 "" 0 1 0 0 255 1 0 0 0 0 0 0 0 0 0 }
+{PSTYLE "Normal" -1 0 1 {CSTYLE "" -1 -1 "" 0 1 0 0 0 0 0 0 0 0 0 0 0 
+0 0 }0 0 0 -1 -1 -1 0 0 0 0 0 0 -1 0 }{PSTYLE "Text Output" -1 2 1 
+{CSTYLE "" -1 -1 "Courier" 1 10 0 0 255 1 0 0 0 0 0 1 3 0 3 }1 0 0 -1 
+-1 -1 0 0 0 0 0 0 -1 0 }{PSTYLE "Warning" 2 7 1 {CSTYLE "" -1 -1 "" 0 
+1 0 0 255 1 0 0 0 0 0 0 1 0 0 }0 0 0 -1 -1 -1 0 0 0 0 0 0 -1 0 }
+{PSTYLE "Maple Output" 0 11 1 {CSTYLE "" -1 -1 "" 0 1 0 0 0 0 0 0 0 0 
+0 0 0 0 0 }3 3 0 -1 -1 -1 0 0 0 0 0 0 -1 0 }{PSTYLE "" 11 12 1 
+{CSTYLE "" -1 -1 "" 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 }1 0 0 -1 -1 -1 0 0 
+0 0 0 0 -1 0 }}
+{SECT 0 {EXCHG {PARA 0 "" 0 "" {TEXT -1 0 "" }{MPLTEXT 1 0 13 "with(li
+nalg);" }}{PARA 7 "" 1 "" {TEXT -1 32 "Warning, new definition for nor
+m" }}{PARA 7 "" 1 "" {TEXT -1 33 "Warning, new definition for trace" }
+}{PARA 12 "" 1 "" {XPPMATH 20 "6#7^r%.BlockDiagonalG%,GramSchmidtG%,Jo
+rdanBlockG%)LUdecompG%)QRdecompG%*WronskianG%'addcolG%'addrowG%$adjG%(
+adjointG%&angleG%(augmentG%(backsubG%%bandG%&basisG%'bezoutG%,blockmat
+rixG%(charmatG%)charpolyG%)choleskyG%$colG%'coldimG%)colspaceG%(colspa
+nG%*companionG%'concatG%%condG%)copyintoG%*crossprodG%%curlG%)definite
+G%(delcolsG%(delrowsG%$detG%%diagG%(divergeG%(dotprodG%*eigenvalsG%,ei
+genvaluesG%-eigenvectorsG%+eigenvectsG%,entermatrixG%&equalG%,exponent
+ialG%'extendG%,ffgausselimG%*fibonacciG%+forwardsubG%*frobeniusG%*gaus
+selimG%*gaussjordG%(geneqnsG%*genmatrixG%%gradG%)hadamardG%(hermiteG%(
+hessianG%(hilbertG%+htransposeG%)ihermiteG%*indexfuncG%*innerprodG%)in
+tbasisG%(inverseG%'ismithG%*issimilarG%'iszeroG%)jacobianG%'jordanG%'k
+ernelG%*laplacianG%*leastsqrsG%)linsolveG%'mataddG%'matrixG%&minorG%(m
+inpolyG%'mulcolG%'mulrowG%)multiplyG%%normG%*normalizeG%*nullspaceG%'o
+rthogG%*permanentG%&pivotG%*potentialG%+randmatrixG%+randvectorG%%rank
+G%(ratformG%$rowG%'rowdimG%)rowspaceG%(rowspanG%%rrefG%*scalarmulG%-si
+ngularvalsG%&smithG%,stackmatrixG%*submatrixG%*subvectorG%)sumbasisG%(
+swapcolG%(swaprowG%*sylvesterG%)toeplitzG%&traceG%*transposeG%,vanderm
+ondeG%*vecpotentG%(vectdimG%'vectorG%*wronskianG" }}}{EXCHG {PARA 0 ">
+ " 0 "" {MPLTEXT 1 0 27 "R:=matrix(2,2,[-3,3,4,-4]);" }}{PARA 11 "" 1 
+"" {XPPMATH 20 "6#>%\"RG-%'matrixG6#7$7$!\"$\"\"$7$\"\"%!\"%" }}}
+{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 19 "v:=eigenvectors(R);" }}
+{PARA 11 "" 1 "" {XPPMATH 20 "6#>%\"vG6$7%!\"(\"\"\"<#-%'vectorG6#7$F(
+#!\"%\"\"$7%\"\"!F(<#-F+6#7$F(F(" }}}{EXCHG {PARA 0 "> " 0 "" 
+{MPLTEXT 1 0 79 "R_right:=matrix(2,2,[v[1][3][1][1],v[2][3][1][1],v[1]
+[3][1][2],v[2][3][1][2]]);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%(R_rig
+htG-%'matrixG6#7$7$\"\"\"F*7$#!\"%\"\"$F*" }}}{EXCHG {PARA 0 "> " 0 "
+" {MPLTEXT 1 0 25 "R_left:=inverse(R_right);" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6#>%'R_leftG-%'matrixG6#7$7$#\"\"$\"\"(#!\"$F,7$#\"\"%F,F
+*" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 42 "R_diag:=matrix(2,2,[v[
+1][1],0,0,v[2][1]]);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%'R_diagG-%'m
+atrixG6#7$7$!\"(\"\"!7$F+F+" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 
+40 "pi:=vector(2,[R_left[2,1],R_left[2,2]]);" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6#>%#piG-%'vectorG6#7$#\"\"%\"\"(#\"\"$F+" }}}{EXCHG 
+{PARA 0 "> " 0 "" {MPLTEXT 1 0 32 "multiply(R_right,R_diag,R_left);" }
+}{PARA 11 "" 1 "" {XPPMATH 20 "6#-%'matrixG6#7$7$!\"$\"\"$7$\"\"%!\"%
+" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 15 "multiply(pi,R);" }}
+{PARA 11 "" 1 "" {XPPMATH 20 "6#-%'vectorG6#7$\"\"!F'" }}}{EXCHG 
+{PARA 0 "> " 0 "" {MPLTEXT 1 0 78 "exp_R_diag:=t->evalf(matrix(2,2,[ex
+p(R_diag[1,1]*t),0,0,exp(R_diag[2,2]*t)]));" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6#>%+exp_R_diagGR6#%\"tG6\"6$%)operatorG%&arrowGF(-%&eval
+fG6#-%'matrixG6%\"\"#F27&-%$expG6#*&&%'R_diagG6$\"\"\"F;F;9$F;\"\"!F=-
+F56#*&&F96$F2F2F;F<\"\"\"F(F(F(" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 
+1 0 45 "M:=t->multiply(R_right,exp_R_diag(t),R_left);" }}{PARA 11 "" 
+1 "" {XPPMATH 20 "6#>%\"MGR6#%\"tG6\"6$%)operatorG%&arrowGF(-%)multipl
+yG6%%(R_rightG-%+exp_R_diagG6#9$%'R_leftGF(F(F(" }}}{EXCHG {PARA 0 "> \+
+" 0 "" {MPLTEXT 1 0 32 "multiply(pi,M(any_real_number));" }}{PARA 11 "
+" 1 "" {XPPMATH 20 "6#-%'vectorG6#7$$\"+9dG9d!#5$\"+'G9dG%F)" }}}
+{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 61 "wu:=(i,j,a,b,T)->int(M(t)[a,
+i]*M(T-t)[j,b],t=0..T)/M(T)[a,b];" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>
+%#wuGR6'%\"iG%\"jG%\"aG%\"bG%\"TG6\"6$%)operatorG%&arrowGF,*&-%$intG6$
+*&&-%\"MG6#%\"tG6$9&9$\"\"\"&-F76#,&9(F=F9!\"\"6$9%9'F=/F9;\"\"!FB\"\"
+\"&-F76#FB6$F;FF!\"\"F,F,F," }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 
+40 "simplify(wu(2,2,1,1,X) + wu(1,1,1,1,X));" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6#%\"XG" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 31 "wab
+T:=(i,a,b,T)->wu(i,i,a,b,T);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%%wab
+TGR6&%\"iG%\"aG%\"bG%\"TG6\"6$%)operatorG%&arrowGF+-%#wuG6'9$F29%9&9'F
++F+F+" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 40 "uabT:=(i,j,a,b,T)-
+>R[i,j]*wu(i,j,a,b,T);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%%uabTGR6'%
+\"iG%\"jG%\"aG%\"bG%\"TG6\"6$%)operatorG%&arrowGF,*&&%\"RG6$9$9%\"\"\"
+-%#wuG6'F4F59&9'9(F6F,F,F," }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 
+45 "branch_len:=array([.01,.02,.03,.04,.05,.06]);" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6#>%+branch_lenG-%'vectorG6#7($\"\"\"!\"#$\"\"#F+$\"\"$F+
+$\"\"%F+$\"\"&F+$\"\"'F+" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 28 
+"leaf_char:=array([1,1,2,1]);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%*le
+af_charG-%'vectorG6#7&\"\"\"F)\"\"#F)" }}}{EXCHG {PARA 0 "> " 0 "" 
+{MPLTEXT 1 0 135 "U_parent:=(parent_char,lchild,rchild)->product(M(bra
+nch_len[child_node])[parent_char,leaf_char[child_node]],child_node=lch
+ild..rchild);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%)U_parentGR6%%,pare
+nt_charG%'lchildG%'rchildG6\"6$%)operatorG%&arrowGF*-%(productG6$&-%\"
+MG6#&%+branch_lenG6#%+child_nodeG6$9$&%*leaf_charGF7/F8;9%9&F*F*F*" }}
+}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 33 "U_left:=char->U_parent(char
+,1,2);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%'U_leftGR6#%%charG6\"6$%)o
+peratorG%&arrowGF(-%)U_parentG6%9$\"\"\"\"\"#F(F(F(" }}}{EXCHG {PARA 
+0 "> " 0 "" {MPLTEXT 1 0 34 "U_right:=char->U_parent(char,3,4);" }}
+{PARA 11 "" 1 "" {XPPMATH 20 "6#>%(U_rightGR6#%%charG6\"6$%)operatorG%
+&arrowGF(-%)U_parentG6%9$\"\"$\"\"%F(F(F(" }}}{EXCHG {PARA 0 "> " 0 "
+" {MPLTEXT 1 0 132 "U_sum:=(parent_char,child_node,U_child)->sum(M(bra
+nch_len[child_node])[parent_char,child_char]*U_child(child_char),child
+_char=1..2);" }}{PARA 12 "" 1 "" {XPPMATH 20 "6#>%&U_sumGR6%%,parent_c
+harG%+child_nodeG%(U_childG6\"6$%)operatorG%&arrowGF*-%$sumG6$*&&-%\"M
+G6#&%+branch_lenG6#9%6$9$%+child_charG\"\"\"-9&6#F<F=/F<;F=\"\"#F*F*F*
+" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 72 "U_root:=root_char->U_su
+m(root_char,5,U_left)*U_sum(root_char,6,U_right);" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6#>%'U_rootGR6#%*root_charG6\"6$%)operatorG%&arrowGF(*&-%
+&U_sumG6%9$\"\"&%'U_leftG\"\"\"-F.6%F0\"\"'%(U_rightGF3F(F(F(" }}}
+{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 55 "L:=sum(pi[root_char]*U_root(
+root_char),root_char=1..2);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%\"LG$
+\"+2QaWW!#6" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 100 "D_parent:=(
+root_char,sibling_node,U_sibling)->pi[root_char]*U_sum(root_char,sibli
+ng_node,U_sibling);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%)D_parentGR6%
+%*root_charG%-sibling_nodeG%*U_siblingG6\"6$%)operatorG%&arrowGF**&&%#
+piG6#9$\"\"\"-%&U_sumG6%F29%9&F3F*F*F*" }}}{EXCHG {PARA 0 "> " 0 "" 
+{MPLTEXT 1 0 49 "D_left:=root_char->D_parent(root_char,6,U_right);" }}
+{PARA 11 "" 1 "" {XPPMATH 20 "6#>%'D_leftGR6#%*root_charG6\"6$%)operat
+orG%&arrowGF(-%)D_parentG6%9$\"\"'%(U_rightGF(F(F(" }}}{EXCHG {PARA 0 
+"> " 0 "" {MPLTEXT 1 0 49 "D_right:=root_char->D_parent(root_char,5,U_
+left);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%(D_rightGR6#%*root_charG6
+\"6$%)operatorG%&arrowGF(-%)D_parentG6%9$\"\"&%'U_leftGF(F(F(" }}}
+{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 133 "D_sum:=(parent_char,parent_
+node,D_parent)->sum(D_parent(root_char)*M(branch_len[parent_node])[roo
+t_char,parent_char],root_char=1..2);" }}{PARA 12 "" 1 "" {XPPMATH 20 "
+6#>%&D_sumGR6%%,parent_charG%,parent_nodeG%)D_parentG6\"6$%)operatorG%
+&arrowGF*-%$sumG6$*&-9&6#%*root_charG\"\"\"&-%\"MG6#&%+branch_lenG6#9%
+6$F59$F6/F5;F6\"\"#F*F*F*" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 
+162 "D_leaf:=(parent_char,sibling_node,parent_node,D_parent)->D_sum(pa
+rent_char,parent_node,D_parent)*M(branch_len[sibling_node])[parent_cha
+r,leaf_char[sibling_node]];" }}{PARA 12 "" 1 "" {XPPMATH 20 "6#>%'D_le
+afGR6&%,parent_charG%-sibling_nodeG%,parent_nodeG%)D_parentG6\"6$%)ope
+ratorG%&arrowGF+*&-%&D_sumG6%9$9&9'\"\"\"&-%\"MG6#&%+branch_lenG6#9%6$
+F3&%*leaf_charGF=F6F+F+F+" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 
+36 "D1:=lchar->D_leaf(lchar,2,5,D_left);" }}{PARA 11 "" 1 "" {XPPMATH 
+20 "6#>%#D1GR6#%&lcharG6\"6$%)operatorG%&arrowGF(-%'D_leafG6&9$\"\"#\"
+\"&%'D_leftGF(F(F(" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 36 "D2:=l
+char->D_leaf(lchar,1,5,D_left);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%#
+D2GR6#%&lcharG6\"6$%)operatorG%&arrowGF(-%'D_leafG6&9$\"\"\"\"\"&%'D_l
+eftGF(F(F(" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 37 "D3:=rchar->D_
+leaf(rchar,4,6,D_right);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%#D3GR6#%
+&rcharG6\"6$%)operatorG%&arrowGF(-%'D_leafG6&9$\"\"%\"\"'%(D_rightGF(F
+(F(" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 37 "D4:=rchar->D_leaf(rc
+har,3,6,D_right);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%#D4GR6#%&rcharG
+6\"6$%)operatorG%&arrowGF(-%'D_leafG6&9$\"\"$\"\"'%(D_rightGF(F(F(" }}
+}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 54 "sum(D4(rchar)*M(branch_len[
+4])[rchar,1],rchar=1..2)/L;" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"++++
++5!\"*" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 106 "sum(sum(D_right(
+root_char)*M(branch_len[6])[root_char,rchar]*U_right(rchar),rchar=1..2
+),root_char=1..2)/L;" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+'*********
+!#5" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 12 "is1:=x->2-x;" }}
+{PARA 11 "" 1 "" {XPPMATH 20 "6#>%$is1GR6#%\"xG6\"6$%)operatorG%&arrow
+GF(,&\"\"#\"\"\"9$!\"\"F(F(F(" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 
+0 12 "is2:=x->x-1;" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%$is2GR6#%\"xG6
+\"6$%)operatorG%&arrowGF(,&9$\"\"\"!\"\"F.F(F(F(" }}}{EXCHG {PARA 0 ">
+ " 0 "" {MPLTEXT 1 0 48 "U_func:=array([is1,is1,is2,is1,U_left,U_right
+]);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%'U_funcG-%'vectorG6#7(%$is1GF
+)%$is2GF)%'U_leftG%(U_rightG" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 
+0 44 "D_func:=array([D1,D2,D3,D4,D_left,D_right]);" }}{PARA 11 "" 1 "
+" {XPPMATH 20 "6#>%'D_funcG-%'vectorG6#7(%#D1G%#D2G%#D3G%#D4G%'D_leftG
+%(D_rightG" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 65 "qabn:=(a,b,n)
+->D_func[n](a)*M(branch_len[n])[a,b]*U_func[n](b)/L;" }}{PARA 11 "" 1 
+"" {XPPMATH 20 "6#>%%qabnGR6%%\"aG%\"bG%\"nG6\"6$%)operatorG%&arrowGF*
+*&*(-&%'D_funcG6#9&6#9$\"\"\"&-%\"MG6#&%+branch_lenGF36$F69%F7-&%'U_fu
+ncGF36#F?F7\"\"\"%\"LG!\"\"F*F*F*" }}}{EXCHG {PARA 0 "> " 0 "" 
+{MPLTEXT 1 0 24 "s:=i->pi[i]*U_root(i)/L;" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6#>%\"sGR6#%\"iG6\"6$%)operatorG%&arrowGF(*&*&&%#piG6#9$
+\"\"\"-%'U_rootGF0F2\"\"\"%\"LG!\"\"F(F(F(" }}}{EXCHG {PARA 0 "> " 0 "
+" {MPLTEXT 1 0 68 "wn_asum:=(i,n,a)->sum(qabn(a,b,n)*wabT(i,a,b,branch
+_len[n]),b=1..2);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%(wn_asumGR6%%\"
+iG%\"nG%\"aG6\"6$%)operatorG%&arrowGF*-%$sumG6$*&-%%qabnG6%9&%\"bG9%\"
+\"\"-%%wabTG6&9$F5F6&%+branch_lenG6#F7F8/F6;F8\"\"#F*F*F*" }}}{EXCHG 
+{PARA 0 "> " 0 "" {MPLTEXT 1 0 48 "w:=i->sum(wn_asum(i,n,1)+wn_asum(i,
+n,2),n=1..6);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%\"wGR6#%\"iG6\"6$%)
+operatorG%&arrowGF(-%$sumG6$,&-%(wn_asumG6%9$%\"nG\"\"\"F5-F16%F3F4\"
+\"#F5/F4;F5\"\"'F(F(F(" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 72 "u
+n_asum:=(i,j,n,a)->sum(qabn(a,b,n)*uabT(i,j,a,b,branch_len[n]),b=1..2)
+;" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%(un_asumGR6&%\"iG%\"jG%\"nG%\"a
+G6\"6$%)operatorG%&arrowGF+-%$sumG6$*&-%%qabnG6%9'%\"bG9&\"\"\"-%%uabT
+G6'9$9%F6F7&%+branch_lenG6#F8F9/F7;F9\"\"#F+F+F+" }}}{EXCHG {PARA 0 ">
+ " 0 "" {MPLTEXT 1 0 56 "u:=(i,j)->sum(un_asum(i,j,n,1)+un_asum(i,j,n,
+2),n=1..6);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#>%\"uGR6$%\"iG%\"jG6\"6
+$%)operatorG%&arrowGF)-%$sumG6$,&-%(un_asumG6&9$9%%\"nG\"\"\"F7-F26&F4
+F5F6\"\"#F7/F6;F7\"\"'F)F)F)" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 
+0 2 "L;" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+2QaWW!#6" }}}{EXCHG 
+{PARA 0 "> " 0 "" {MPLTEXT 1 0 5 "w(1);" }}{PARA 11 "" 1 "" {XPPMATH 
+20 "6#$\"+ImxH;!#5" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 5 "w(2);
+" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+#pLAq%!#6" }}}{EXCHG {PARA 0 "
+> " 0 "" {MPLTEXT 1 0 7 "u(1,2);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$
+\"+m:DK*)!#5" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 7 "u(2,1);" }}
+{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+f$H(ov!#5" }}}{EXCHG {PARA 0 "> " 
+0 "" {MPLTEXT 1 0 5 "s(1);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+(*3m
+o#)!#5" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 5 "s(2);" }}{PARA 11 
+"" 1 "" {XPPMATH 20 "6#$\"+*4R8t\"!#5" }}}{EXCHG {PARA 0 "> " 0 "" 
+{MPLTEXT 1 0 10 "U_left(1);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+U$)
+em\"*!#5" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 10 "U_left(2);" }}
+{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+81)R)G!#7" }}}{EXCHG {PARA 0 "> " 
+0 "" {MPLTEXT 1 0 11 "U_right(1);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$
+\"+CQ<os!#6" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 11 "U_right(2);
+" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+>OZW7!#5" }}}{EXCHG {PARA 0 ">
+ " 0 "" {MPLTEXT 1 0 10 "U_root(1);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6
+#$\"+xWKJk!#6" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 10 "U_root(2);
+" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+5H]&z\"!#6" }}}{EXCHG {PARA 0 
+"> " 0 "" {MPLTEXT 1 0 10 "D_left(1);" }}{PARA 11 "" 1 "" {XPPMATH 20 
+"6#$\"+pS,)e%!#6" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 10 "D_left(
+2);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+(['o)*[!#6" }}}{EXCHG 
+{PARA 0 "> " 0 "" {MPLTEXT 1 0 11 "D_right(1);" }}{PARA 11 "" 1 "" 
+{XPPMATH 20 "6#$\"+tn>xX!#5" }}}{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 
+11 "D_right(2);" }}{PARA 11 "" 1 "" {XPPMATH 20 "6#$\"+^i8Kn!#6" }}}
+{EXCHG {PARA 0 "> " 0 "" {MPLTEXT 1 0 0 "" }}}}{MARK "48 1 0" 0 }
+{VIEWOPTS 1 1 0 1 1 1803 }

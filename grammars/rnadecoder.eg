@@ -1,0 +1,642 @@
+;; RNA-decoder grammar
+(grammar
+ (name RNA-decoder)
+ (update-rates 1)
+ (update-rules 0)
+
+ ;; initial low seed probability for transitions
+ (&define SEED .001)
+
+ ;; high-level subgrammar
+ ;; begin -> pre_ns | pre_s
+ (nonterminal (name begin))
+ (transform (prob SEED) (from (begin)) (to (pre_ns)))
+ (transform (prob SEED) (from (begin)) (to (pre_s)))
+
+ ;; pre_ns -> pre_ns | nonstruct pre_ns
+ (nonterminal (name pre_ns))
+ (transform (prob SEED) (from (pre_ns)) (to (pre_ns)))
+ (transform (prob SEED) (from (pre_ns)) (to (bif_ns)))
+
+ (nonterminal (name bif_ns))
+ (transform (prob SEED) (from (bif_ns)) (to (nonstruct pre_s)))
+
+ ;; pre_s -> pre_ns | struct inter_ns_s | end
+ (nonterminal (name pre_s))
+ (transform (prob SEED) (from (pre_s)) (to (pre_ns)))
+ (transform (prob SEED) (from (pre_s)) (to (bif_s)))
+ (transform (prob SEED) (from (pre_s)) (to ()))
+
+ (nonterminal (name bif_s))
+ (transform (prob SEED) (from (bif_s)) (to (struct inter_ns_s)))
+
+ ;; inter_ns_s -> pre_ns | pre_s
+ (nonterminal (name inter_ns_s))
+ (transform (prob SEED) (from (inter_ns_s)) (to (pre_ns)))
+ (transform (prob SEED) (from (inter_ns_s)) (to (pre_s)))
+
+ ;; nonstruct submodel
+
+ ;; null model parameters
+ ;; nulprob
+ (pgroup
+  ((&foreach-token i
+		   ((. nulprob i) SEED))))
+
+ ;; nulrate
+ (rate
+  (&foreach-token i
+		  (&foreach-token j
+				  (? (= i j)
+				     ((. nuldummy i 2 j) 0)
+				     ((. nulrate i 2 j) SEED)))))
+
+ ;; nonstruct
+ ;; nonstruct -> ns_1 | ns_2 | ... | ns_CLASSES
+ (nonterminal (name nonstruct))
+
+ (&define CLASSES 3)
+ (&foreach-integer X (1 CLASSES)
+	   ;; nonstruct -> nsX
+	   (transform (prob SEED) (from (nonstruct)) (to ((. ns X))))
+
+	   ;; nulratemulX parameter
+	   (rate ((. nulratemul X) (* (+ X 1) SEED)))
+
+	   ;; matrix (NULX)
+	   (chain
+	    (terminal ((. NUL X)))
+	    (update-policy parametric)
+	    (&foreach-token i
+			    (initial (state (i)) (prob ((. nulprob i))))
+			    (&foreach-token j
+					    (? (= i j) ()
+					       (mutate (from (i)) (to (j))
+						       (rate
+							((. nulratemul X)
+							 (. nulrate i 2 j))))))))
+
+	   ;; ns_X -> NULX ns_X*
+	   (transform
+	    (from ((. ns X)))
+	    (to ((. NUL X) (. ns X *)))
+	    (annotate (row SubRate) (column (. NUL X)) (label (&chr (+ X (&ord 0)))))
+	    (annotate (row SS_cons) (column (. NUL X)) (label ,))
+	    (annotate (row RdFrame) (column (. NUL X)) (label ,)))
+
+	   ;; ns_X -> end
+	   (transform (prob SEED) (from ((. ns X *))) (to ()))
+
+	   (&foreach-integer Y (1 CLASSES)
+			     ;; ns_X -> ns_Y
+			     (transform (prob SEED) (from ((. ns X *))) (to ((. ns Y))))))
+
+
+ ;; struct submodel
+ ;; struct -> pfoldS | fns0
+ (nonterminal (name struct))
+ (transform (prob SEED) (from (struct)) (to (pfoldS)))
+ (transform (prob SEED) (from (struct)) (to (fns0)))
+
+ ;; for fns0->fns1->fns2->fns0->... cycle, see loop over reading frames
+
+ ;; fns0* -> fl(1,1) fns2
+ (transform (prob SEED) (from (fns0*)) (to (fns_bif)))
+ (transform (from (fns_bif)) (to (fl11 fns2)))
+
+ ;; fns2* -> end
+ (transform (prob SEED) (from (fns2*)) (to ()))
+
+
+ ;; PFOLD subgrammar
+ ;; pfoldS -> pfoldL | pfoldB
+ (nonterminal (name pfoldS))
+ (transform (prob SEED) (from (pfoldS)) (to (pfoldL)))
+ (transform (prob SEED) (from (pfoldS)) (to (pfoldB)))
+
+ ;; pfoldF -> LNUC pfoldF* RNUC
+ (nonterminal (name pfoldF))
+ (transform (gaps-ok)
+  (from (pfoldF))
+  (to (LNUC pfoldF* RNUC))
+  (annotate (row SubRate) (column LNUC) (label ,))
+  (annotate (row SubRate) (column RNUC) (label ,))
+  (annotate (row SS_cons) (column LNUC) (label <))
+  (annotate (row SS_cons) (column RNUC) (label >))
+  (annotate (row RdFrame) (column LNUC) (label ,))
+  (annotate (row RdFrame) (column RNUC) (label ,)))
+
+ ;; pfoldF* -> pfoldF | pfoldL pfoldS
+ (transform (prob SEED) (from (pfoldF*)) (to (pfoldF)))
+ (transform (prob SEED) (from (pfoldF*)) (to (pfoldB)))
+
+ (nonterminal (name pfoldB))
+ (transform (prob SEED) (from (pfoldB)) (to (pfoldL pfoldS)))
+
+ ;; pfoldL -> pfoldF | pfoldU
+ (nonterminal (name pfoldL))
+ (transform (prob SEED) (from (pfoldL)) (to (pfoldF)))
+ (transform (prob SEED) (from (pfoldL)) (to (pfoldU)))
+
+ ;; pfoldU -> NUC
+ (nonterminal (name pfoldU))
+ (transform (gaps-ok)
+  (from (pfoldU))
+  (to (NUC pfoldU*))
+  (annotate (row SubRate) (column NUC) (label ,))
+  (annotate (row SS_cons) (column NUC) (label -))
+  (annotate (row RdFrame) (column NUC) (label ,)))
+
+
+ (transform (prob SEED) (from (pfoldU*)) (to ()))
+
+
+ ;; codon subgrammars, on forward & reverse strands, with & without overlapping RNA structure
+ ;; nonstructured codon model parameters
+ ;; NSi
+ (pgroup
+  ((&foreach-token i
+		   ((. NS i) SEED))))
+
+ ;; NSi2j
+ (rate
+  (&foreach-token i
+		  (&foreach-token j
+				  (? (= i j)
+				     ((. NSdummy i 2 j) 0)
+				     ((. NS i 2 j) SEED)))))
+
+ ;; nonterminals
+ (&foreach X (0 1 2)
+	   (nonterminal (name (. fns X)))
+	   (&foreach Y (0 1 2)
+		     (nonterminal (name (. fpp X Y)) (sum-from))))
+
+ ;; outer loop over reading frames
+ (&foreach X (0 1 2)
+	   ;; LmulX parameter
+	   (rate ((. Lmul X) (* (+ X 1) SEED)))
+
+	   ;; matrix (LX)
+	   (chain
+	    (terminal ((. L X)))
+	    (update-policy parametric)
+	    (&foreach-token i
+			    (initial (state (i)) (prob ((. L i))))
+			    (&foreach-token j
+					    (? (= i j) ()
+					       (mutate (from (i)) (to (j))
+						       (rate
+							((. Lmul X)
+							 (. L i 2 j))))))))
+
+	   ;; matrix (NSX)
+	   (chain
+	    (terminal ((. NS X)))
+	    (update-policy parametric)
+	    (&foreach-token i
+			    (initial (state (i)) (prob ((. NS i))))
+			    (&foreach-token j
+					    (? (= i j) ()
+					       (mutate (from (i)) (to (j))
+						       (rate
+							((. NS i 2 j))))))))
+
+	   ;; fns(X) -> NSX fns*(X)
+	   (transform
+	    (from ((. fns X)))
+	    (to ((. NS X) (. fns X *)))
+	    (annotate (row SubRate) (column (. NS X)) (label ,))
+	    (annotate (row SS_cons) (column (. NS X)) (label ,))
+	    (annotate (row RdFrame) (column (. NS X)) (label X)))
+
+	   ;; fns*(X) -> fns(X+1)
+	   (transform (prob SEED) (from ((. fns X *))) (to ((. fns (% (+ X 1) 3)))))
+
+	   ;; inner loop over reading frames
+	   (&foreach Y (0 1 2)
+
+		     ;; PPmulXY parameter
+		     (rate ((. PPmul X Y) (* (+ X 1) (+ Y 1) SEED)))
+
+		     ;; matrix (PP_LXY PP_RXY)
+		     (chain
+		      (terminal ((. PP_L X Y) (. PP_R X Y)))
+		      (update-policy parametric)
+		      (&foreach-token i
+				      (&foreach-token j
+						      (initial (state (i j)) (prob ((. PP i j))))
+						      (&foreach-token k
+								      (&foreach-token l
+										      (? (= (. i j) (. k l)) ()
+											 (mutate
+											  (from (i j)) (to (k l))
+											  (rate
+											   ((. PPmul X Y)
+											    (. PP i j 2 k l))))))))))
+
+		     ;; fl, flX, flY
+		     ;; note: ambiguous ordering of ...->(flX|flY)->... is summed-out in fpp->... transitions
+
+		     ;; fl
+		     ;; fl(X,Y) -> flX(X,Y)
+		     (transform (prob SEED) (from ((. fl X Y))) (to ((. flX X Y))))
+
+		     ;; fl(X,Y) -> flY(X,Y)
+		     (transform (prob SEED) (from ((. fl X Y))) (to ((. flY X Y))))
+
+		     ;; fl(X,Y) -> fpp(X,Y)
+		     (transform (prob SEED) (from ((. fl X Y))) (to ((. fpp X Y))))
+
+		     ;; flX
+		     ;; flX(X,Y) -> LX flX*(X,Y)
+		     (transform
+		      (from ((. flX X Y)))
+		      (to ((. L X) (. flX X Y *)))
+		      (annotate (row SubRate) (column (. L X)) (label ,))
+		      (annotate (row SS_cons) (column (. L X)) (label ,))
+		      (annotate (row RdFrame) (column (. L X)) (label X)))
+
+		     ;; flX*(X,Y) -> flX(X+1,Y)
+		     (transform (prob SEED) (from ((. flX X Y *))) (to ((. flX (% (+ X 1) 3) Y))))
+
+		     ;; flX*(X,Y) -> flY(X+1,Y)
+		     (transform (prob SEED) (from ((. flX X Y *))) (to ((. flY (% (+ X 1) 3) Y))))
+
+		     ;; flX*(X,Y) -> fpp(X+1,Y)
+		     (transform (prob SEED) (from ((. flX X Y *))) (to ((. fpp (% (+ X 1) 3) Y))))
+
+		     ;; flX*(X,X) -> end
+		     (? (= X Y)
+			(transform (prob SEED) (from ((. flX X Y *))) (to ()))
+			())
+
+		     ;; flY
+		     ;; flY(X,Y) -> flY*(X,Y) ~LY
+		     (transform
+		      (from ((. flY X Y)))
+		      (to ((. flY X Y *) (. ~L Y)))
+		      (annotate (row SubRate) (column (. L Y)) (label ,))
+		      (annotate (row SS_cons) (column (. L Y)) (label ,))
+		      (annotate (row RdFrame) (column (. L Y)) (label Y)))
+
+		     ;; flY*(X,Y) -> flX(X,Y-1)
+		     (transform (prob SEED) (from ((. flY X Y *))) (to ((. flX X (% (+ Y 2) 3)))))
+
+		     ;; flY*(X,Y) -> flY(X,Y-1)
+		     (transform (prob SEED) (from ((. flY X Y *))) (to ((. flY X (% (+ Y 2) 3)))))
+
+		     ;; flY*(X,Y) -> fpp(X,Y-1)
+		     (transform (prob SEED) (from ((. flY X Y *))) (to ((. fpp X (% (+ Y 2) 3)))))
+
+		     ;; flY*(X,X) -> end
+		     (? (= X Y)
+			(transform (prob SEED) (from ((. flY X Y *))) (to ()))
+			())
+
+		     ;; fpp
+		     ;; fpp(X,Y) -> PP_LXY fpp*(X,Y) PP_RXY
+		     (transform
+		      (from ((. fpp X Y)))
+		      (to ((. PP_L X Y) (. fpp X Y *) (. PP_R X Y)))
+		      (annotate (row SubRate) (column (. PP_L X Y)) (label ,))
+		      (annotate (row SubRate) (column (. PP_R X Y)) (label ,))
+		      (annotate (row SS_cons) (column (. PP_L X Y)) (label <))
+		      (annotate (row SS_cons) (column (. PP_R X Y)) (label >))
+		      (annotate (row RdFrame) (column (. PP_L X Y)) (label X))
+		      (annotate (row RdFrame) (column (. PP_R X Y)) (label Y)))
+
+		     ;; fpp*(X,Y) -> flX(X+1,Y-1)
+		     (transform (prob SEED) (from ((. fpp X Y *))) (to ((. flX (% (+ X 1) 3) (% (+ Y 2) 3)))))
+
+		     ;; fpp*(X,Y) -> flY(X+1,Y-1)
+		     (transform (prob SEED) (from ((. fpp X Y *))) (to ((. flY (% (+ X 1) 3) (% (+ Y 2) 3)))))
+
+		     ;; fpp*(X,Y) -> fpp(X+1,Y-1)
+		     (transform (prob SEED) (from ((. fpp X Y *))) (to ((. fpp (% (+ X 1) 3) (% (+ Y 2) 3)))))))
+
+
+
+ ;; matrix (LNUC RNUC)
+ (chain
+  (terminal (LNUC RNUC))
+  (update-policy parametric)
+  (&foreach-token i
+		  (&foreach-token j
+				  (initial (state (i j)) (prob ((. PP i j))))
+				  (&foreach-token k
+						  (&foreach-token l
+								  (? (= (. i j) (. k l)) ()
+								     (mutate (from (i j)) (to (k l))
+									     (rate ((. PP i j 2 k l))))))))))
+
+ ;; matrix (NUC)
+ (chain
+  (terminal (NUC))
+  (update-policy parametric)
+  (&foreach-token i
+		  (initial (state (i)) (prob ((. L i))))
+		  (&foreach-token j
+				  (? (= i j) ()
+				     (mutate (from (i)) (to (j))
+					     (rate ((. L i 2 j))))))))
+
+;; PFOLD submodel parameters
+ (const-pgroup
+  ((PPaa 0.00328221)
+   (PPca 0.00347549)
+   (PPga 0.00307144)
+   (PPua 0.17502)
+   (PPac 0.00315426)
+   (PPcc 0.00124465)
+   (PPgc 0.262689)
+   (PPuc 0.00153384)
+   (PPag 0.0020268)
+   (PPcg 0.242176)
+   (PPgg 0.00367966)
+   (PPug 0.0670904)
+   (PPau 0.156751)
+   (PPcu 0.00292735)
+   (PPgu 0.0669179)
+   (PPuu 0.00495998))
+  ((La 0.382474)
+   (Lc 0.165227)
+   (Lg 0.212267)
+   (Lu 0.240031)))
+
+ (const-rate
+  (PPaa2ca 0.0600986)
+  (PPaa2ga 0.0560814)
+  (PPaa2ua 0.722548)
+  (PPaa2ac 0.00801522)
+  (PPaa2cc 0.000500964)
+  (PPaa2gc 0.220784)
+  (PPaa2uc 0.00275364)
+  (PPaa2ag 0.0555913)
+  (PPaa2cg 0.181145)
+  (PPaa2gg 0.0123296)
+  (PPaa2ug 0.0732074)
+  (PPaa2au 0.38294)
+  (PPaa2cu 0.00263527)
+  (PPaa2gu 0.104946)
+  (PPaa2uu 0.0101865)
+  (PPca2aa 0.0550617)
+  (PPca2ga 0.000248377)
+  (PPca2ua 1.52268)
+  (PPca2ac 0.0106921)
+  (PPca2cc 0.00909657)
+  (PPca2gc 0.0226681)
+  (PPca2uc 0.048088)
+  (PPca2ag 0.0116228)
+  (PPca2cg 1.44542)
+  (PPca2gg 6.52292)
+  (PPca2ug 0.142471)
+  (PPca2au 0.144192)
+  (PPca2cu 0.0285873)
+  (PPca2gu 0.0448919)
+  (PPca2uu 0.0758845)
+  (PPga2aa 0.0468908)
+  (PPga2ca 0.000179098)
+  (PPga2ua 0.0664109)
+  (PPga2ac 0.0136496)
+  (PPga2cc 2.13375)
+  (PPga2gc 0.359512)
+  (PPga2uc 0.0365082)
+  (PPga2ag 0.0559623)
+  (PPga2cg 0.289524)
+  (PPga2gg 0.123137)
+  (PPga2ug 0.0249727)
+  (PPga2au 0.0924175)
+  (PPga2cu 0.00720614)
+  (PPga2gu 0.138561)
+  (PPga2uu 1.10955)
+  (PPua2aa 0.0116365)
+  (PPua2ca 0.0264064)
+  (PPua2ga 0.00130226)
+  (PPua2ac 0.00152053)
+  (PPua2cc 0.000164548)
+  (PPua2gc 0.169927)
+  (PPua2uc 0.015992)
+  (PPua2ag 0.00110859)
+  (PPua2cg 0.595657)
+  (PPua2gg 0.00122839)
+  (PPua2ug 0.18163)
+  (PPua2au 0.190888)
+  (PPua2cu 0.00188783)
+  (PPua2gu 0.0477751)
+  (PPua2uu 0.0068114)
+  (PPac2aa 0.00841425)
+  (PPac2ca 0.0116368)
+  (PPac2ga 0.016023)
+  (PPac2ua 0.100195)
+  (PPac2cc 7.48296)
+  (PPac2gc 0.801266)
+  (PPac2uc 0.0429033)
+  (PPac2ag 0.0098591)
+  (PPac2cg 0.14827)
+  (PPac2gg 0.00710364)
+  (PPac2ug 0.0544213)
+  (PPac2au 2.24099)
+  (PPac2cu 0.00174961)
+  (PPac2gu 0.158405)
+  (PPac2uu 0.0538624)
+  (PPcc2aa 0.00154035)
+  (PPcc2ca 0.0290034)
+  (PPcc2ga 3.09766)
+  (PPcc2ua 0.0312161)
+  (PPcc2ac 0.00018022)
+  (PPcc2gc 0.756131)
+  (PPcc2uc 0.000115355)
+  (PPcc2ag 0.00178109)
+  (PPcc2cg 0.880955)
+  (PPcc2gg 0.00182354)
+  (PPcc2ug 0.000357246)
+  (PPcc2au 0.307587)
+  (PPcc2cu 0.305967)
+  (PPcc2gu 0.00228456)
+  (PPcc2uu 0.424535)
+  (PPgc2aa 0.00226888)
+  (PPgc2ca 0.000221077)
+  (PPgc2ga 0.00442428)
+  (PPgc2ua 0.108136)
+  (PPgc2ac 0.0077065)
+  (PPgc2cc 0.00265237)
+  (PPgc2uc 0.0047607)
+  (PPgc2ag 0.00252173)
+  (PPgc2cg 0.161692)
+  (PPgc2gg 0.00468077)
+  (PPgc2ug 0.0369679)
+  (PPgc2au 0.363911)
+  (PPgc2cu 0.000237221)
+  (PPgc2gu 0.146935)
+  (PPgc2uu 0.000921564)
+  (PPuc2aa 0.0050849)
+  (PPuc2ca 0.0929205)
+  (PPuc2ga 0.0680928)
+  (PPuc2ua 1.74279)
+  (PPuc2ac 0.0699375)
+  (PPuc2cc 0.00010949)
+  (PPuc2gc 0.767942)
+  (PPuc2ag 0.0920627)
+  (PPuc2cg 0.221304)
+  (PPuc2gg 7.51353)
+  (PPuc2ug 0.224965)
+  (PPuc2au 0.416059)
+  (PPuc2cu 0.725971)
+  (PPuc2gu 0.54302)
+  (PPuc2uu 0.395759)
+  (PPag2aa 0.0736214)
+  (PPag2ca 0.0133319)
+  (PPag2ga 0.0851861)
+  (PPag2ua 0.0884144)
+  (PPag2ac 0.0129818)
+  (PPag2cc 0.000689574)
+  (PPag2gc 0.314135)
+  (PPag2uc 0.055443)
+  (PPag2cg 0.378244)
+  (PPag2gg 0.684434)
+  (PPag2ug 0.130778)
+  (PPag2au 0.345818)
+  (PPag2cu 0.0105537)
+  (PPag2gu 0.102139)
+  (PPag2uu 0.00331333)
+  (PPcg2aa 0.00203881)
+  (PPcg2ca 0.017434)
+  (PPcg2ga 0.0039756)
+  (PPcg2ua 0.418131)
+  (PPcg2ac 0.00164065)
+  (PPcg2cc 0.00334865)
+  (PPcg2gc 0.178829)
+  (PPcg2uc 0.00127102)
+  (PPcg2ag 0.00338039)
+  (PPcg2gg 0.0020812)
+  (PPcg2ug 0.168745)
+  (PPcg2au 0.145702)
+  (PPcg2cu 0.00244459)
+  (PPcg2gu 0.0388902)
+  (PPcg2uu 0.00342286)
+  (PPgg2aa 0.00921008)
+  (PPgg2ca 2.78353)
+  (PPgg2ga 0.110856)
+  (PPgg2ua 0.0565478)
+  (PPgg2ac 0.00539509)
+  (PPgg2cc 0.000473867)
+  (PPgg2gc 0.329049)
+  (PPgg2uc 1.14866)
+  (PPgg2ag 0.405389)
+  (PPgg2cg 0.135011)
+  (PPgg2ug 0.237254)
+  (PPgg2au 0.0942869)
+  (PPgg2cu 5.99633)
+  (PPgg2gu 0.101844)
+  (PPgg2uu 6.79864)
+  (PPug2aa 0.00304058)
+  (PPug2ca 0.00624757)
+  (PPug2ga 0.00124873)
+  (PPug2ua 0.470255)
+  (PPug2ac 0.00227149)
+  (PPug2cc 3.91899)
+  (PPug2gc 0.150634)
+  (PPug2uc 0.0053021)
+  (PPug2ag 0.00425216)
+  (PPug2cg 0.623185)
+  (PPug2gg 0.0132827)
+  (PPug2au 0.0928019)
+  (PPug2cu 0.00054114)
+  (PPug2gu 0.0501015)
+  (PPug2uu 0.0175326)
+  (PPau2aa 0.00707689)
+  (PPau2ca 0.00276467)
+  (PPau2ga 0.00204505)
+  (PPau2ua 0.217944)
+  (PPau2ac 0.0407537)
+  (PPau2cc 0.00189936)
+  (PPau2gc 0.656173)
+  (PPau2uc 0.00432559)
+  (PPau2ag 0.00497806)
+  (PPau2cg 0.236585)
+  (PPau2gg 0.00241152)
+  (PPau2ug 0.0408929)
+  (PPau2cu 0.00270805)
+  (PPau2gu 0.193703)
+  (PPau2uu 0.0171095)
+  (PPcu2aa 0.00270672)
+  (PPcu2ca 0.0330145)
+  (PPcu2ga 0.0093404)
+  (PPcu2ua 0.124358)
+  (PPcu2ac 0.00153177)
+  (PPcu2cc 0.107342)
+  (PPcu2gc 0.0245369)
+  (PPcu2uc 0.459612)
+  (PPcu2ag 0.0126742)
+  (PPcu2cg 0.225204)
+  (PPcu2gg 3.56543)
+  (PPcu2ug 0.0134794)
+  (PPcu2au 0.157059)
+  (PPcu2gu 0.0106611)
+  (PPcu2uu 0.116896)
+  (PPgu2aa 0.00428753)
+  (PPgu2ca 0.00192258)
+  (PPgu2ga 0.00675078)
+  (PPgu2ua 0.120924)
+  (PPgu2ac 0.00612704)
+  (PPgu2cc 2.70186)
+  (PPgu2gc 0.58713)
+  (PPgu2uc 0.0124049)
+  (PPgu2ag 0.00330918)
+  (PPgu2cg 0.139835)
+  (PPgu2gg 0.00567916)
+  (PPgu2ug 0.0489215)
+  (PPgu2au 0.427378)
+  (PPgu2cu 0.000420502)
+  (PPgu2uu 0.0129376)
+  (PPuu2aa 0.00654874)
+  (PPuu2ca 0.0518951)
+  (PPuu2ga 9.80974)
+  (PPuu2ua 0.268948)
+  (PPuu2ac 0.0311739)
+  (PPuu2cc 0.0863386)
+  (PPuu2gc 0.0587096)
+  (PPuu2uc 0.134384)
+  (PPuu2ag 0.00182589)
+  (PPuu2cg 0.191769)
+  (PPuu2gg 5.82577)
+  (PPuu2ug 0.262991)
+  (PPuu2au 0.597663)
+  (PPuu2cu 0.0677624)
+  (PPuu2gu 0.201889)
+  (La2c 0.148703)
+  (La2g 0.205491)
+  (La2u 0.202537)
+  (Lc2a 0.36034)
+  (Lc2g 0.139421)
+  (Lc2u 0.640389)
+  (Lg2a 0.36449)
+  (Lg2c 0.101818)
+  (Lg2u 0.224063)
+  (Lu2a 0.338521)
+  (Lu2c 0.442178)
+  (Lu2g 0.210874))
+ 
+ ) ;; end grammar
+
+;; RNA alphabet
+(alphabet
+ (name RNA)
+ (token (a c g u))
+ (complement (u g c a))
+ (extend (to n) (from a) (from c) (from g) (from u))
+ (extend (to x) (from a) (from c) (from g) (from u))
+ (extend (to t) (from u))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from u))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from u))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from u))
+ (extend (to h) (from a) (from c) (from u))
+ (extend (to b) (from c) (from g) (from u))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from u))
+ (wildcard *)
+ ) ;; end alphabet RNA

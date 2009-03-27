@@ -1,0 +1,41 @@
+# Requires GNU make, gcc (version 3.2 or higher), ar, and coreutils (test/ln/mv/rm).
+# This file is included by make.common, which is included by all source directory Makefiles.
+# It is also included by the top-level Makefile.
+
+# Executables required by build process:
+#
+MAKE   = make
+AR     = ar
+TEST   = test
+LN     = ln
+MV     = mv
+RM     = rm -f
+CC     = gcc
+
+# OS X (gcc 4.0.1, XCodeTools 2.2) requires that we use "g++" to compile C++.
+#  (see biowiki.org/XcodeToolsUnwindResumeBug)
+# However, Linux (older gcc's?) require we use "gcc".
+# So, we use another test. Sigh.
+#
+ifneq (,$(findstring Darwin,$(shell uname)))
+CPP    = g++
+else
+CPP    = $(CC)
+endif
+
+# Optional extras:
+#
+ETAGS  = etags
+
+
+# Comment out this line, and uncomment the one after, if you want dynamically linked executables:
+# STATIC = -static
+STATIC =
+
+
+# If you want to compile on multiple platforms from the same source directory,
+# you need to replace the following with something like:
+#
+# OSDIR = $(OSTYPE)
+#
+OSDIR  =

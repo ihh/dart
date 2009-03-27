@@ -1,0 +1,511 @@
+% c-NO_WEB (a c program pretty printer)
+% by Jim Fox, February 1987
+% version 1.1, August 10, 1989
+% version 1.2, October 30, 1989
+%              fixed spacing after ?, :, etc.
+% version 1.3, June 28, 1990
+%              added OOdent and IIdent, added \|typewriter|
+% version 1.4, January 4, 1991
+%              allow /* and */ in strings
+% version 1.5, December 11, 1991
+%              page offset shift for two-sided page print alignment
+%              nicer setting of too-long code lines
+%              add \listfile and \includefile macros
+% version 1.6, March 17, 1992
+%              Restore plain-tex meaning of right quote in math
+%
+%------------------------------------------------------------------
+%
+% The TeX input file is a c source program.  It is assumed to have
+% this structure:
+%
+%   /* comments ignored by c-no-web
+%      \input cnoweb
+%      \title{A one line title of the program (optional) }
+%      \synopsis{Synopsis of the program (optional) }
+%      \section{Name of the first section}
+%      rest of comments */
+%
+% The rest of the file is normal c code.
+% Within the title a \\ may be used to separate lines.
+%
+% Each major section begins with
+%   /* \section{name of the section}    .... */
+% The section names are printed boldface, marked for reference in
+% the page headline, and written to the table of contents.
+%
+% Each minor section begins with
+%   /* \subsection{name of the subsection}    .... */
+% The subsection names are written to the table of contents.
+%
+% A new page can be forced by
+%      /* \newpage */
+%
+% Code and other text containing special characters may be
+% typed in text mode if it is bracked by *< ... >*
+% e.g. /* *<inactive c-code>* */
+% but this may not be used in a macro argument.
+%
+% You can print in bold by enclosing text in double quotes: \"text".
+% You can print in typewriter by enclosing text in vertical bars: \|text|.
+% You can print in italics by enclosing text in single quotes: \'text'.
+%
+% You can include a verbatim listing of a file with \listfile, e.g.,
+%      ... \listfile{program.h} ...
+% You can include a c file to be formatted with \includefile, e.g.,
+%      ... \includefile{program.h} ...
+%     
+% The file must end with \endc in a comment. e.g.,
+%      ... last c code statement ...
+%      /* \endc */
+%
+%-----------------------------------------------------------------
+%
+% Make sure macros loaded only once
+%
+\expandafter\ifx\csname cnoweb loaded\endcsname\relax
+  \expandafter\let\csname cnoweb loaded\endcsname*
+  \else\endinput\fi
+%
+\catcode`\@=11
+%
+\message{[c-no-web vers 1.6]}
+%
+%
+% page parameters -- most of these can be changed without harm
+% The default setup is for 12 point type on an 8.5 x 11 inch page.
+% Two side printing is assumed, 1-inch margins on the inside.
+%
+\vsize=55pc
+\hsize=37pc
+\topskip=2pc
+\parindent=0pt
+\parskip=6pt
+\overfullrule=0pt
+\newdimen\oddsideshift \oddsideshift=0pc % adjustment to odd, left margins
+\newdimen\evensideshift \evensideshift=2pc % adjustment to even, left margins
+\newdimen\rightmarginslop \rightmarginslop=3pc % right margin slop in code
+\newdimen\blockindent \blockindent=18pt % '{' block indentation
+\newdimen\longblockindent \longblockindent=30pt % '(' indentation
+\newskip\sectionskip \sectionskip2pc
+%
+% fonts
+%
+\font\titles=cmr10 scaled\magstep3     % for titles
+%
+% normal commentary size is 12 point
+%
+\font\twelverm=cmr12 % roman text
+\font\twelvei=cmmi12 % math italic
+\font\twelvesy=cmsy10 scaled\magstep1 % math symbols
+\font\twelvebf=cmbx12 % boldface extended
+\font\twelvett=cmtt12 % typewriter
+\font\twelvesl=cmsl12 % slanted roman
+\font\twelveit=cmti12 % text italic
+\font\twelveex=cmex10 scaled\magstep1 % math symbols
+%
+\font\ninerm=cmr9 % roman text
+\font\ninei=cmmi9 % math italic
+\font\ninesy=cmsy9 % math symbols
+%
+\def\normaltype{%
+ \def\rm{\fam0\twelverm}%
+ \textfont0=\twelverm \scriptfont0=\ninerm \scriptscriptfont0=\sevenrm
+ \textfont1=\twelvei  \scriptfont1=\ninei  \scriptscriptfont1=\seveni
+ \textfont2=\twelvesy \scriptfont2=\ninesy \scriptscriptfont2=\sevensy
+ \textfont3=\twelveex \scriptfont3=\twelveex \scriptscriptfont3=\twelveex
+ \textfont\itfam=\twelveit \def\it{\fam\itfam\twelveit}%
+ \textfont\slfam=\twelvesl \def\sl{\fam\slfam\twelvesl}%
+ \textfont\bffam=\twelvebf \def\bf{\fam\bffam\twelvebf}%
+ \textfont\ttfam=\twelvett \def\tt{\fam\ttfam\twelvett}%
+ \normalbaselineskip 14\p@
+ \setbox\strutbox=\hbox{\vrule height10\p@ depth4\p@
+      width0\p@}%
+ \normalbaselines\rm}
+\normaltype
+%
+% normal code size is 11 point
+%
+\font\elevenrm=cmr10  scaled\magstephalf % roman text
+\font\eleveni=cmmi10  scaled\magstephalf % math italic
+\font\elevensy=cmsy10  scaled\magstephalf % math symbols
+\font\elevenbf=cmbx10  scaled\magstephalf % boldface extended
+\font\eleventt=cmtt10  scaled\magstephalf % typewriter
+\font\elevensl=cmsl10  scaled\magstephalf % slanted roman
+\font\elevenit=cmti10  scaled\magstephalf % text italic
+%
+\def\codetype{%
+ \def\rm{\fam0\elevenrm}%
+ \textfont0=\elevenrm \scriptfont0=\sevenrm \scriptscriptfont0=\fiverm
+ \textfont1=\eleveni  \scriptfont1=\seveni  \scriptscriptfont1=\fivei
+ \textfont2=\elevensy \scriptfont2=\sevensy \scriptscriptfont2=\fivesy
+ \textfont3=\tenex \scriptfont3=\tenex \scriptscriptfont3=\tenex
+ \textfont\itfam=\elevenit \def\it{\fam\itfam\elevenit}%
+ \textfont\slfam=\elevensl \def\sl{\fam\slfam\elevensl}%
+ \textfont\bffam=\elevenbf \def\bf{\fam\bffam\elevenbf}%
+ \textfont\ttfam=\eleventt \def\tt{\fam\ttfam\eleventt}%
+ \normalbaselineskip 13\p@
+ \setbox\strutbox=\hbox{\vrule height9.5\p@ depth3.5\p@ width0\p@}%
+ \normalbaselines\rm}
+%
+% restricted code size is 10 point
+%
+\def\rcodetype{%
+ \def\rm{\fam0\tenrm}%
+ \textfont0=\tenrm \scriptfont0=\sevenrm \scriptscriptfont0=\fiverm
+ \textfont1=\teni  \scriptfont1=\seveni  \scriptscriptfont1=\fivei
+ \textfont2=\tensy \scriptfont2=\sevensy \scriptscriptfont2=\fivesy
+ \textfont3=\tenex \scriptfont3=\tenex \scriptscriptfont3=\tenex
+ \textfont\itfam=\tenit \def\it{\fam\itfam\tenit}%
+ \textfont\slfam=\tensl \def\sl{\fam\slfam\tensl}%
+ \textfont\bffam=\tenbf \def\bf{\fam\bffam\tenbf}%
+ \textfont\ttfam=\tentt \def\tt{\fam\ttfam\tentt}%
+ \normalbaselineskip 13\p@
+ \setbox\strutbox=\hbox{\vrule height9.5\p@ depth3.5\p@ width0\p@}%
+ \normalbaselines\rm}
+%
+% try using 11pt for text also
+%
+\let\normaltype\codetype
+\let\smalltype\rcodetype
+\normaltype
+%
+% allow underscore as char in non-math text
+\def\oldun{_}
+\def\specialunderscore{\ifmmode_\else{\tt\char"5F}\fi}
+\catcode`\_=\active
+\let_\specialunderscore
+%
+\def\\{{\tt\char"5C}}   % for \ in comments
+\def\section#1{\mark{#1}%
+  {\let\folio=\relax\let_=\oldun \edef\\{\write\cfile{\endgraf
+     \tocnormaltype#1\cdots\cpageno\endgraf}}\\}%
+  {\bf#1.\ }}
+\def\subsection#1{%
+  {\let\folio=\relax\let_=\oldun \edef\\{\write\cfile{\endgraf
+     \toccodetype\hskip12pt#1\cdots\cpageno\endgraf}}\\}%
+  {#1.\ }}
+\def\subsubsection#1{%
+  {\let\folio=\relax\let_=\oldun \edef\\{\write\cfile{\endgraf
+     \tocrcodetype\hskip18pt#1\cdots\cpageno\endgraf}}\\}%
+  {#1.\ }}
+%
+%
+% headline contains (title, page number, section)
+%
+\def\makeheadline{\vbox to0pt{\vskip-30pt
+  \ifnum\pageno=-1\else\line{\strut\normaltype
+      \ifodd\pageno\firstmark\hfill\bf\the\job\rlap{\ -- \folio}%
+      \else\bf\llap{\folio\ -- }\the\job\rm\hfill\firstmark\fi}\fi
+  \vss}\nointerlineskip}
+\def\makefootline{\line{\tenrm\vrule height30pt depth0pt width0pt
+   \ifodd\pageno\today\ @\rightnow\ by \cnoweb\hfill
+      \else\hfill\today\ @\rightnow\ by \cnoweb\fi}}
+%
+\def\plainoutput{\shipout\vbox{%
+  \ifodd\pageno\moveright\oddsideshift\else\moveright\evensideshift\fi
+  \vbox{\makeheadline\pagebody\makefootline}}%
+  \advancepageno
+  \ifnum\outputpenalty>-\@MM \else\dosupereject\fi}
+
+\let\oldpagebody\pagebody
+\def\toprules{\vrule height4pt width.4pt\kern-.4pt\hskip\blockindent}
+\def\pagebody{\ifnum\pageno>0\vbox to0pt{\hrule height.3pt width\hsize
+      \leftline{\leaders\hbox{\toprules}}%
+      \vss}\nointerlineskip
+   \hbox{\llap{\vrule height\vsize width.3pt\hskip3pt}%
+     \oldpagebody}%
+   \else\oldpagebody\fi}
+
+%
+% table of contents
+%
+\newwrite\cfile
+\immediate\openout\cfile=\jobname.toc
+\def\cdots{\nobreak\leaders\hbox to1pc{\hss.\hss}
+  \hskip24pt plus1fill}
+\def\cpageno{\rlap{\hbox to18pt{\hfill\folio}}}
+%
+% these set the type size in toc entries
+%
+\let\tocnormaltype\relax   % de-activate
+\let\toccodetype\relax
+\let\tocrcodetype\relax
+%
+%
+%-------------------------------------------------------------------
+%
+%
+% All comment fields are formatted normally (plain TeX style).
+% All c code is scanned and formatted verbatim.
+%
+% '/*' triggers TeX mode, '*/' triggers verbatim mode
+%
+\let\star=*   % a catcode 11 star
+\let\slash=/  % a catcode 11 slash
+\let\rarrow=> % a catcode 11 right arrow
+%
+% ---------------------------------------------------------------
+%
+% In TeX mode the * is active  and looks for */ or *<
+% \setex sets TeX mode
+%
+\newif\ifrestricted\restrictedfalse
+\def\setex{% begins TeX mode
+  \ifrestricted\rcodetype
+     \else\ifvmode\normaltype\filbreak\else\codetype\fi\fi
+  \catcode`\*=\active
+  {\tt/* }\ignorespaces}
+%
+{\catcode`\*=\active
+ \gdef*{\futurelet\next\checkslash}
+ }
+\def\checkslash{%
+    \ifx\next/\ifrestricted\let\next\resetrcc\else\let\next\setcc\fi
+   \else\ifx\next<\let\next\setrcc
+     \else\let\next\star\fi\fi\next}
+%
+%
+% In code mode / is active and looks for /*
+% \setcc sets the active code mode
+%
+\def\setcc/{\@setcc}
+\def\@setcc{% set code mode
+  \begingroup\ccverbatim\catcode`\/=\active
+  */
+  \parskip=0pt}
+%
+{\catcode`\/=\active
+ \gdef/{\futurelet\next\checkstar}
+ }
+\def\checkstar{\ifx\next*\let\next\endcc
+     \else\let\next\slash\fi\next}
+\def\endcc*{\@endcc}
+\def\@endcc{\endgroup\ifvmode\filbreak\fi\setex}
+%
+%
+% In restricted code mode > is active and looks for >*
+% \setrcc sets the restricted code mode
+%
+\def\setrcc<{% set little code mode
+  \begingroup\restrictedtrue
+  \begingroup\ccverbatim\rccverbatim\tt\catcode`\>=\active
+  \catcode`\/=\active
+  \parskip=0pt}
+%
+\def\resetrcc/{% reset little code mode
+  \begingroup\ccverbatim\rccverbatim\tt\catcode`\>=\active
+  \catcode`\/=\active
+  */
+  \parskip=0pt}
+%
+{\catcode`\>=\active
+ \gdef>{\futurelet\next\checkrstar}
+ }
+\def\checkrstar{\ifx\next*\let\next\endrcc
+     \else\let\next\rarrow\fi\next}
+\def\endrcc*{\endgroup\endgroup}
+%
+%
+% ---------------------------------------------------------------
+%
+% \leftskip is controlled by the presence of '{', '}',
+%    '(', and ')' in the code text.
+%
+% \Ident increases \leftskip and takes effect after the current line
+% \Odent decreases \leftskip and takes effect on the current line
+% \IIdent and \OOdent do the same but use the long indentation
+%
+\newdimen\leftadjust % leftskip adjustment at next par
+\def\Ident{\global\advance\leftadjust\blockindent}
+\def\Odent{\global\advance\leftadjust-\blockindent\doOdent}
+\def\IIdent{\global\advance\leftadjust\longblockindent}
+\def\OOdent{\global\advance\leftadjust-\longblockindent\doOdent}
+\def\doOdent{%
+  \ifvmode\ifdim\leftadjust<\z@\global\advance\leftskip\leftadjust
+     \global\leftadjust0pt\fi\fi}
+%
+\def\codepar{% this is \par in code mode
+   \ifvmode\bigskip % this way blank lines are ignored at page tops
+   \else\endgraf
+     \ifdim\leftadjust=\z@\else\global\advance\leftskip\leftadjust
+       \global\leftadjust0pt\fi\fi}
+%
+% ---------------------------------------------------------------
+%
+% Here are the catcodes and definitions for c-code verbatim
+%
+\chardef\other=12
+\def\ccverbatim{%  set all chars to type `other' or `active'
+  \catcode`\\=\other
+  \catcode`\{=\active
+  \catcode`\}=\active
+  \catcode`\(=\active
+  \catcode`\)=\active
+  \catcode`\$=\other
+  \catcode`\*=\other
+  \catcode`\&=\other
+  \catcode`\#=\active
+  \catcode`\%=\other
+  \catcode`\~=\other
+  \catcode`\_=\other
+  \catcode`\^=\other
+  \catcode`\|=\other
+  \catcode`\`=\active
+  \catcode`\'=\active
+  \catcode`\"=\active
+  \let\par\codepar
+  \obeyspaces \obeylines \frenchspacing \codetype
+  \pretolerance10000 % don't hyphenate variable names, etc.
+  \everypar{\hangindent\longblockindent\hangafter1}% indent wrapped 
+  \rightskip0pt minus\rightmarginslop % allow some extension
+  \tt}
+\def\rccverbatim{% additional \other chars for restricted mode
+  \catcode`\{=\other
+  \catcode`\}=\other
+  \catcode`\(=\other
+  \catcode`\)=\other
+  \catcode`\#=\other
+  \catcode`\'=\other
+  \catcode`\"=\other
+  \rcodetype \tt}
+%
+% And here are the definitions for the c-code active characters.
+% These perform the little formatting we do on c-code.
+%     {, }, (, ), and # adjust the indentation
+%     `, ', ", and / trigger more complete verbatim
+%     
+% Note that the right quote already has a plain-tex definition
+%
+{ \catcode`\<=1\catcode`\>=2
+  \catcode`\{=\active \gdef{<<\Ident\char`\{>>
+  \catcode`\}=\active \gdef}<<\Odent\char`\}>>
+  \catcode`\(=\active \gdef(<<\IIdent\char`\(>>
+  \catcode`\)=\active \gdef)<<\OOdent\char`\)>>
+  \catcode`\|=0
+  \catcode`\\=\active
+  |catcode`|"=|active
+  |gdef"<|char`|"|bgroup
+     |catcode`|{=|other |catcode`|}=|other
+     |catcode`|(=|other |catcode`|)=|other
+     |catcode`|'=|other |catcode`|/=|other
+     |catcode`|\=|active |let\|verbslash
+     |def"<<|char`|"|egroup>>>
+  |catcode`|'=|active
+  |global|let|plain@rquote'
+  |gdef|cnoweb@rquote<|char`|'|bgroup
+     |catcode`|{=|other |catcode`|}=|other
+     |catcode`|(=|other |catcode`|)=|other
+     |catcode`|"=|other |catcode`|/=|other
+     |catcode`|\=|active |let\|verbslash
+     |def'<<|char`|'|egroup>>>
+  |gdef'<|ifmmode|let|next|plain@rquote
+     |else|let|next|cnoweb@rquote|fi|next>
+ >
+\def\verbslash{\begingroup\catcode`\'=\other\catcode`\"=\other\doverbslash}
+\def\doverbslash#1{\\#1\endgroup}
+{\catcode`\`=\active\gdef`{\relax\lq}}
+{\catcode`\#=\active\gdef#{\ifvmode\ifdim\leftskip>\z@
+   \noindent\llap{\hbox to\leftskip{\#\hss}}\ignorespaces
+   \else\#\fi\else\#\fi}}
+%
+%
+% ---------------------------------------------------------------
+%
+% \listfile produces a verbatim listing of a file
+% \includefile formats the file (assumed to be c-code)
+%
+{\obeyspaces\gdef\hardspaces{\global\let =\ }}
+\def\listfile#1{\par\begingroup\leftskip\blockindent\parskip0pt
+    \ccverbatim\rccverbatim\hardspaces\input#1\par\endgroup}
+\def\includefile#1{\@setcc\par\input#1\par\@endcc}
+%
+% ---------------------------------------------------------------
+%
+% \endc signals end of the c program
+%
+\def\endc{{\it end~\tt*/}\vfill\eject\dotitle\docontents\end}
+%
+% ---------------------------------------------------------------
+%
+% /* \newpage */ should give nice new page
+\def\newpage{\vadjust{\vfill\eject}}
+%
+% some ebcdic systems get 05 for tabs
+\catcode`\^^E=10  % make them spaces
+%
+% \"bold text" and \|typewriter text| and \'italic text'
+%
+\def\"#1"{{\bf#1}}
+\def\|#1|{{\tt#1}}
+\def\'#1'{{\it#1}}
+%
+% fix \item, etc. to work without \parindent
+%
+\newdimen\itemindent\itemindent2\blockindent
+\def\hang{\hangindent\itemindent}
+\def\textindent#1{\indent\hbox to\itemindent{\hss#1\enspace}\ignorespaces}
+\def\item{\par\hang\textindent}
+\def\textiindent#1{\indent\hbox to2\itemindent{\hss#1\enspace}\ignorespaces}
+\def\itemitem{\par\indent\hangindent2\itemindent\textiindent}
+\def\narrower{\advance\leftskip\itemindent
+  \advance\rightskip\itemindent}
+%
+% c-no-web name
+%
+\def\cnoweb{\hbox{c-\setbox0=\hbox{web}%
+  \vrule depth-.25\ht0 height.33\ht0 width\wd0\kern-\wd0\box0}}
+%
+% print the title and table of contents
+%
+\newtoks\job\job={\jobname}
+\newtoks\title\title={}
+\newtoks\synopsis\synopsis={}
+\def\dotitle{
+  \ifodd\pageno\else
+     \message{page alignment}Intentionally blank \vfill\eject\fi
+  \pageno=-1
+  \vglue2pc
+  \centerline{\titles\the\job}
+  \vskip18pt
+  \centerline{\bf\the\title}
+  {\openup3pt\narrower\noindent\the\synopsis\par}
+  \vfill}
+\def\docontents{% print table of contents
+  \mark{Contents}
+  \immediate\closeout\cfile
+  \begingroup
+  \catcode`\@=11
+  \leftskip=18pt\rightskip=\leftskip
+  \everypar={\hang}
+  \rightline{Page}
+  \medskip
+  \let\tocnormaltype\normaltype   % activate these type size macros
+  \let\toccodetype\codetype
+  \let\tocrcodetype\rcodetype
+  \input \jobname.toc
+  \catcode`\@=12
+  \endgroup
+  \vfill
+  \eject}
+\def\today{\ifcase\month\or
+  January\or February\or March\or April\or May\or June\or
+  July\or August\or September\or October\or November\or December\fi
+  \space\number\day, \number\year}
+\def\today{\ifcase\month\or
+  Jan\or Feb\or Mar\or Apr\or May\or Jun\or
+  Jul\or Aug\or Sep\or Oct\or Nov\or Dec\fi
+  \space\number\day, \number\year}
+\def\rightnow{\count0=\time\count1=\count0  \divide\count0by60
+  \ifnum\count0<10 0\fi\number\count0:% hours
+  \multiply\count0by60 \advance\count1by-\count0
+  \ifnum\count1<10 0\fi\number\count1% minutes
+  }
+%
+\catcode`\@=11
+%
+{\hsize\maxdimen
+  \output={\setbox0=\box255}\eject} % delete all before \input cnoweb
+\setex  % begin with TeX mode
+
+% end of cnoweb.tex

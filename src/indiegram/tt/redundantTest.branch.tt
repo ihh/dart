@@ -1,0 +1,43 @@
+;; Test TT.
+;; (Left-emitting) HMM-like structure + bifurcations at root.
+;; Composed TM (simpleTest.valid.tm) hand-checked.
+;; Reduced composed TM (simpleTest.valid.reduced.tm) hand-checked.
+
+;;;;;;;;;;;;
+;; Branch ;;
+;;;;;;;;;;;;
+
+>branch-stateTyping
+s = s
+ml = m
+dl = m
+w = w
+e = e
+
+>branch-absorbProfiling
+ml = l
+dl = l
+
+>branch-emitProfiling
+ml = l
+dl = 
+
+>branch-emitDist
+ml = m
+
+>branch-tm
+s -> w = 1
+ml -> w = 1
+dl -> w = 1
+w -> ml = mlp_t, dl = 1-mlp_t, e = 1
+e -> 
+
+>branch-bifurc
+
+>branch-stateSorting
+s = 0
+il = 1
+ml = 2
+dl = 2.5
+w = 3
+e = 10

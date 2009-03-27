@@ -1,0 +1,9 @@
+# STOCKHOLM 1.0
+#=GF CC xrate -n -log XRATE -i low_seed.xrate
+seq1    ACGTATGC
+seq2    CGTATGCA
+seq3    GTACGCAT
+seq4    TACGCATG
+seq5    ACGTATGC
+#=GF NH (seq1:.01,(seq2:.01,(seq3:.01,(seq4:.01,seq5:1.01):1):1):1);
+//

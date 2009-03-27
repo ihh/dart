@@ -1,0 +1,15 @@
+# STOCKHOLM 1.0
+#=GF NH (X:.1,Y:.1);
+
+X b28208eff7db249ef341cf3496d7969a6551c7d30c38a651c79249659a69e79
+Y b28208eff7db2cbef341cf3cb6dfbeba6551c7d30c38a651cfb2cb6dbaebefb
+
+#=GF CC Used the following perl script to generate this alignment:
+#=GF CC perl -e '@p=split(//,"0123456789abcdef");@d=qw(aa ca ga ta ac cc gc tc ag cg gg tg at ct gt tt);%p=map(($d[$_]=>$p[$_]),0..@d-1);foreach$row(@ARGV){$out="";for($i=0;$i<length($row)-1;++$i){$out.=$p{lc substr($row,$i,2)}}print$out,"\n"}' tgagaagtttctgacgttacattacgctcgcggcccatctaataggccatcgacgccggcgtcg tgagaagtttctgaTgttacattaTgctTgTggcccatctaataggccatTgaTgcTggTgtTg
+
+#=GF CC Run xrate as follows:
+#=GF CC xrate -a 0123456789abcdef sparse.stk ....
+
+//
+
+

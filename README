@@ -1,0 +1,140 @@
+DART: DNA/Amino/RNA Tests
+===============================================================================
+
+The primary reference point for DART is the following URL:
+
+http://biowiki.org/dart
+
+===============================================================================
+
+INSTALLATION
+============
+
+Type "make all".
+
+See INSTALL file for more info.
+
+===============================================================================
+
+NOTES
+=====
+
+DART is a collection of application programs for doing
+probabilistic bioinformatics using evolutionary models
+and stochastic grammars.
+
+As well as the primary packages (Handel, Stemloc, XRate etc),
+DART contains various utilities related to the primary datatypes:
+DNA, RNA and protein sequence.
+
+The package was mostly written by Ian Holmes <ihh@berkeley.edu>
+For a full list of contributors see http://biowiki.org/dart
+
+Some free packages from external sources are included in the distribution:
+	dart/src/newmat          [Newmat, by RB Davies]
+	dart/src/randlib         [randlib, from UTexas Biomath dept] 
+	dart/src/Weighbor        [Weighbor, by Bill Bruno & Nick Socci]
+	dart/src/util/Regexp.*   [regexp library by Henry Spencer & others]
+
+DART is released under the GNU Public License (GPL).
+
+===============================================================================
+
+Supported packages
+==================
+
+xrate:   A package for training phylo-grammars using EM,
+          and applying them to annotate alignments.
+
+Handel:  phylogenetic multiple alignment software based on
+          the TKF91 evolutionary indel/substitution model.
+
+Stemloc: comparative RNA structure-finder using accelerated
+          pairwise stochastic context-free grammars
+
+evoldoer: pairwise RNA alignment using an evolutionary model
+          (formerly "tkfstalign")
+
+
+Also included are various bioinformatics tools, tests and algorithms.
+
+
+Longer (but not by much) package descriptions
+=============================================
+
+** xrate
+
+This is a package for training & annotation using phylogrammars.
+See the following URL for documentation:
+
+http://biowiki.org/XrateSoftware
+
+
+** Handel
+
+This is a package for doing multiple sequence alignment under an
+evolutionary model.
+
+Since it uses a probabilistic (MCMC) approach, as well as "greedy"
+heuristics (progressive alignment etc),	the program can generate
+suboptimal alignments as well as looking for the best alignment.
+
+The probabilistic framework also means that the program can be
+"trained" directly from data, avoiding the need to supply
+"gap penalties", "substitution matrices" etc.
+
+Currently the evolutionary model used is the TKF model.
+This implies global alignment, homogenous selection & linear gap costs.
+A more realistic model (affine gaps, local alignment, heterogenous)
+is under development.
+
+The main programs in this package are:
+
+
+tkfemit -- generates alignments from the TKF model, given a tree
+tkfdistance -- computes a PHYLIP distance matrix from unaligned sequences
+tkfalign -- builds & samples alignments, given a tree
+tkfidem -- EM estimation of TKF91 indel rates
+phylocomposer -- phylogenetic transducer composition & alignment
+phylodirector.pl -- animations of phylo-transducers
+weighbor -- Bill Bruno's program to build a tree from the tkfdistance matrix
+
+
+
+** Stemloc
+
+This is a program for finding conserved motifs in RNA sequences,
+using pairwise stochastic context-free grammars.
+
+The algorithm simultaneously aligns and folds multiple RNA sequences,
+and may be viewed as a constrained (and so accelerated) version of
+the dynamic programming	method of Sankoff et al.
+
+Again, due to the probabilistic nature of the approach,
+the program can be "trained" directly from data, without the
+need for expert knowledge to set the parameters.
+	
+The main program in this package is "stemloc" itself.
+See the following URL for a tutorial:
+
+http://biowiki.org/StemlocTutorial
+
+
+** evoldoer
+
+Like stemloc, this is an RNA alignment program, but it only does
+pairwise alignments, not multiple alignments. It is however
+fully based on an evolutionary model for RNA structure,
+called the TKF Structure Tree (TKFST), based on the TKF91 model.
+TKFST models indels of whole substructures as well as point
+(base) substitutions & indels and covariant (basepair)
+substitutions & indels.
+	
+
+
+REFERENCES
+==========
+
+For references see the following URL:
+
+http://biowiki.org/PaperArchive

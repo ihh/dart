@@ -1,0 +1,2 @@
+xrate -g bug1.eg -t bug1-out.eg bug1.stock
+Causes a bus error. Problem seems to be somewhere in Newmat.

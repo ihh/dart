@@ -1,0 +1,14 @@
+# STOCKHOLM 1.0
+#=GF CC        DynAlign test set: two tRNAs for aspartic acid (anticodon GUC).
+#=GF CC        RD0260 is from Phage T5 (virus), RD0500 is from Haloferax volcanii (archaea).
+#=GF CC        Original source: Bayreuth tRNA database (Sprinzl et al, NAR 24).
+
+#=GF CC                 1         2         3         4         5         6         7
+#=GF CC        123456789012345678901234567890123456789012345678901234567890123456789012345678
+
+RD0260         GCGACCGGGGCUGGCUUGGUA-AUGGUACUCCCCUGUCACGGGAGAGAAUGUGGGUUCAAAUCCCAUCGGUCGCGCCA
+#=GR RD0260 SS <<<<<<<..<<<<........-.>>>><<<<<<.......>>>>>>....<<<<<.......>>>>>>>>>>>>....
+RD0500         GCCCGGGUGGUGUAGU-GGCCCAUCAUACGACCCUGUCACGGUCGUGA-CGCGGGUUCGAAUCCCGCCUCGGGCGCCA
+#=GR RD0500 SS <<<<<<<..<<<<...-......>>>><<<<<<.......>>>>>>..-.<<<<<.......>>>>>>>>>>>>....
+#=GC SS_cons   <<<<<<<..<<<<..........>>>><<<<<<.......>>>>>>....<<<<<.......>>>>>>>>>>>>....
+//

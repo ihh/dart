@@ -1,0 +1,110 @@
+;; Strand-symmetric DNA model with gaps
+
+
+(alphabet
+ (name GappedDNA)
+ (token (a c g t _))
+ (complement (t g c a _))
+
+ (extend (to -) (from _))
+ (extend (to .) (from _))
+
+ (extend (to n) (from a) (from c) (from g) (from u))
+ (extend (to x) (from a) (from c) (from g) (from u))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from u))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from u))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from u))
+ (extend (to h) (from a) (from c) (from u))
+ (extend (to b) (from c) (from g) (from u))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from u))
+ (wildcard *)
+)  ;; end alphabet GappedDNA
+
+
+(grammar
+ (parametric)
+ (name dna_symmetric_gapsub)
+
+ ;; up-front nonterminal declarations
+ (nonterminal (name START))
+ (nonterminal (name S) (prefix) (gaps-ok))
+
+ ;; state 0: START
+ (transform (from (START)) (to ()) (prob 1))
+ (transform (from (START)) (to (S)) (prob 1))
+
+ ;; state 1: S
+ (transform (from (S)) (to (X S*)))
+ (transform (from (S*)) (to ()) (prob 1))
+ (transform (from (S*)) (to (S)) (prob 1))
+
+
+ ;; probability parameters
+ (pgroup
+   ;; strand-symmetric null model (X)
+   ((X_au 0.57)
+    (X_gc 0.41)
+    (X_gap 0.02))
+   )
+
+ ;; rate parameters
+ (rate
+  ;; strand-symmetric null model (X)
+  (X_a2c_u2g 0.181653)
+  (X_a2g_u2c 0.356092)
+  (X_a2u_u2a 0.250436)
+  (X_c2a_g2u 0.2485445)
+  (X_c2g_g2c 0.188999)
+  (X_c2u_g2a 0.48795)
+
+  (X_au2gap 0.01)
+  (X_gc2gap 0.01)
+  (X_gap2au 0.01)
+  (X_gap2gc 0.01)
+ )
+
+
+;; Markov chain substitution model
+
+ (chain
+  (update-policy parametric)
+  (terminal (X))
+
+  ;; initial probability distribution
+  (initial (state (a)) (prob (X_au / 2)))
+  (initial (state (c)) (prob (X_gc / 2)))
+  (initial (state (g)) (prob (X_gc / 2)))
+  (initial (state (u)) (prob (X_au / 2)))
+  (initial (state (_)) (prob (X_gap)))
+
+  ;; mutation rates
+  (mutate (from (a)) (to (c)) (rate X_a2c_u2g))
+  (mutate (from (a)) (to (g)) (rate X_a2g_u2c))
+  (mutate (from (a)) (to (u)) (rate X_a2u_u2a))
+  (mutate (from (c)) (to (a)) (rate X_c2a_g2u))
+  (mutate (from (c)) (to (g)) (rate X_c2g_g2c))
+  (mutate (from (c)) (to (u)) (rate X_c2u_g2a))
+  (mutate (from (g)) (to (a)) (rate X_c2u_g2a))
+  (mutate (from (g)) (to (c)) (rate X_c2g_g2c))
+  (mutate (from (g)) (to (u)) (rate X_c2a_g2u))
+  (mutate (from (u)) (to (a)) (rate X_a2u_u2a))
+  (mutate (from (u)) (to (c)) (rate X_a2g_u2c))
+  (mutate (from (u)) (to (g)) (rate X_a2c_u2g))
+
+  (mutate (from (a)) (to (_)) (rate X_au2gap))
+  (mutate (from (c)) (to (_)) (rate X_gc2gap))
+  (mutate (from (g)) (to (_)) (rate X_gc2gap))
+  (mutate (from (u)) (to (_)) (rate X_au2gap))
+
+  (mutate (from (_)) (to (a)) (rate X_gap2au))
+  (mutate (from (_)) (to (g)) (rate X_gap2gc))
+  (mutate (from (_)) (to (c)) (rate X_gap2gc))
+  (mutate (from (_)) (to (u)) (rate X_gap2au))
+ )  ;; end chain X
+
+)  ;; end grammar

@@ -1,0 +1,161 @@
+;; Clone of DLESS-style phylo-HMM, to illustrate xrate macro functionality
+;; To see how the macros expand, type the following:
+
+;;  echo | xrate -g dart/grammars/rescaled_branch_phylohmm.eg -t expanded.eg
+;;  more expanded.eg
+
+;; Here's the grammar...
+(grammar
+ (name DLESS_Doppelganger)
+ (parametric)
+
+ ;; Probability parameters
+ (pgroup
+
+  ;; Initial distribution over states
+  ((&foreach-token TOK ((. p TOK) (/ 1 #TOKENS))))
+
+  ;; Probability of staying in the same branch-scale class, or leaving
+  ((stayProb .9) (leaveProb .1))
+  )
+
+ ;; Rate parameters
+ (rate
+  (regular_rate 1)
+  (rescaled_rate 0.1)
+  )
+
+ ;; define regular_chain and rescaled_chain
+ (&foreach
+  TYPE
+  (regular rescaled)
+
+  ;; Markov chain for residue substitution
+  (chain
+   (update-policy parametric)
+   (terminal ((. TYPE _chain)))
+
+   ;; initial probability distribution
+   (&foreach-token
+    TOK
+    (initial (state (TOK)) (prob (. p TOK)))
+    )
+
+   ;; mutation rates
+   (&foreach-token
+    SRC
+    (&foreach-token
+     DEST
+     (?
+      (= SRC DEST)
+      ()
+      (mutate (from (SRC)) (to (DEST)) (rate (((. TYPE _ rate) * (. p DEST)))))
+      )
+     )
+    )
+   ) ;; end chain
+  )
+
+ ;; Main loop over branches
+ (&foreach-branch
+  NODE
+
+  ;; Define a hybrid chain for each branch
+  (hybrid-chain
+   (terminal ((. hybrid_ NODE)))
+   (row (. = NODE))
+   (components
+    ((label 0) (terminal (regular_chain)))
+    ((label 1) (terminal (rescaled_chain)))
+    )
+   )
+
+  ;; transformation rules for state S{NODE}
+  (transform
+   (from (START))
+   (to ((. SCALE_ NODE)))
+   (prob (+ 1 (/ 1 #BRANCHES))))
+
+  (transform
+   (from (REGULAR*))
+   (to ((. SCALE_ NODE)))
+   (prob leaveProb * (/ 1 (+ 1 #BRANCHES))))
+
+  (transform
+   (from ((. SCALE_ NODE)))
+   (to ((. hybrid_ NODE) (. SCALE_ NODE *)))
+   (annotate
+    (row (. NODE _rescaled))
+    (column (. hybrid_ NODE))
+    (label 1)))
+
+  (transform
+   (from ((. SCALE_ NODE *)))
+   (to ()) (prob 1))
+
+  (transform
+   (from ((. SCALE_ NODE *)))
+   (to (REGULAR))
+   (prob leaveProb * (/ 1 (+ 1 #BRANCHES))))
+
+  ;; transitions
+  (&foreach-branch
+   DEST_NODE
+   (transform
+    (from ((. SCALE_ NODE *)))
+    (to ((. SCALE_ DEST_NODE)))
+    (prob (?
+	   (= NODE DEST_NODE)
+	   (stayProb)
+	   (leaveProb * (/ 1 (+ 1 #BRANCHES)))
+	   )
+	  ))
+   )
+
+  ) ;; end main loop over branches
+
+ ;; Other transitions involving START and REGULAR
+ (transform
+  (from (START))
+  (to (REGULAR))
+  (prob (/ 1 (+ 1 #BRANCHES))))
+
+ ;; Add a START->END transition, so empty alignments don't have zero likelihood
+ (transform
+  (from (START))
+  (to ()))
+
+ ;; REGULAR state: no rescaled branches
+ (transform
+  (from (REGULAR))
+  (to (regular_chain REGULAR*))
+  )
+
+ (transform
+  (from (REGULAR*))
+  (to (REGULAR))
+  (prob stayProb))
+
+ ) ;; end grammar DLESS_Doppelganger
+
+
+(alphabet
+ (name RNA)
+ (token (a c g u))
+ (complement (u g c a))
+ (extend (to n) (from a) (from c) (from g) (from u))
+ (extend (to x) (from a) (from c) (from g) (from u))
+ (extend (to t) (from u))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from u))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from u))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from u))
+ (extend (to h) (from a) (from c) (from u))
+ (extend (to b) (from c) (from g) (from u))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from u))
+ (wildcard *)
+ ) ;; end alphabet RNA
+

@@ -1,0 +1,14 @@
+# STOCKHOLM 1.0
+#=GF NH (((U:.01,V:.01)UV:.02,(W:.1,((X:.1,Y:.1)XY:.01,Z:.05)XYZ:.02)WXYZ:.05)UVWXYZ:.03);
+U      aaaaaa
+V      aaaaaa
+UV     ******
+W      aaaagg
+X      aaaatt
+Y      ttaaaa
+XY     ******
+Z      tttttt
+XYZ    ******
+WXYZ   ******
+UVWXYZ ******
+//

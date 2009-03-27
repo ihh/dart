@@ -1,0 +1,101 @@
+/* A grammar for 6-nucleotide context around a splice site */
+
+/* Run the C++ preprocessor over everything first */
+
+/* Type definitions */
+
+typedef unsigned double probability;
+
+/* Alphabet for DNA */
+enum Nucleotide { A, C, G, T };
+
+/* Extended alphabet for DNA with splice site predictions */
+struct Spliceable
+{
+  Nucleotide nucleotide;
+  probability splice_start;
+};
+
+/* Parameter declarations */
+
+/* The following line declares a null model,
+    i.e. an array of (unnormalised) likelihoods, indexed by nucleotide.
+*/
+probability[Nucleotide] null_emit;
+
+/* Some match probabilities.
+   Note that each state has its own array.
+   In some future release, I may allow these to be combined by having
+    arrays that can be indexed by an int as well as a nucleotide,
+    but for now I do it the clumsy way.
+*/
+/* The profile for the last three nucleotides of the exon */
+probability[Nucleotide] exon3_emit;
+probability[Nucleotide] exon2_emit;
+probability[Nucleotide] exon1_emit;
+/* The profile for the first three nucleotides of the intron */
+probability[Nucleotide] intron1_emit;
+probability[Nucleotide] intron2_emit;
+probability[Nucleotide] intron3_emit;
+
+table<Nucleotide,probability> exon3_emit;
+
+/* Now the actual grammar.
+ */
+grammar Splice_site_model {
+  /* Declare terminals */
+  terminal Spliceable;
+  /* Declare states (i.e. nonterminals). "start" and "end" are reserved */
+  nonterminal exon3;
+  nonterminal exon2;
+  nonterminal exon1;
+  nonterminal intron1;
+  nonterminal intron2;
+  nonterminal intron3;
+  /* List the production rules for the grammar.
+     These have the form: LEFT_HAND_SYMBOL -> RIGHT_HAND_SYMBOLS = EXPR;
+      where EXPR is an expression for the likelihood(ratio) of this production.
+     If EXPR is omitted, it is assumed to be the constant 1.
+     Note that EXPR's don't have to sum to 1.
+     Allowed binary infix operators in EXPR's are '+', '*' and '/'
+      (NOT '-', otherwise you could get negative probabilities).
+     The array-indexing and struct-access postfix operators '[]' and '.' are also allowed.
+   */
+  for (Spliceable S) {  /* Effectively loop over all possible Spliceable's S */
+    /* The first transition.
+       This self-looping, likelihood=1 transition effectively provides for local alignment.
+    */
+rule1:    start   -> S start;
+    /* The main transitions. */
+rule2:    start   -> Spliceable exon3   { ($1.nucleotide == A) * exon3_emit[$1.nucleotide] / null_emit[$1.nucleotide] } ;
+rule3:    exon3   -> S exon2   { exon2_emit[S.nucleotide] / null_emit[S.nucleotide] } ;
+rule4:    exon2   -> S exon1   { exon1_emit[S.nucleotide] / null_emit[S.nucleotide] } ;
+rule5:    exon1   -> S intron1 { S.splice_start * intron1_emit[S.nucleotide] / null_emit[S.nucleotide] } ;
+rule6:    intron1 -> S intron2 { intron2_emit[S.nucleotide] / null_emit[S.nucleotide] } ;
+rule7:    intron2 -> S intron3 { intron3_emit[S.nucleotide] / null_emit[S.nucleotide] } ;
+rule8:    intron3 -> end;
+    /* The final transition. Again, it's self-looping & has likelihood 1.
+     */
+    end     -> S end;
+  }
+};
+
+/* Here's how I assign probabilities.
+   The following lines say that all nucleotides in exons all have probability 0.25,
+    whereas the probabilities for nucleotides in introns are the same as the null model probabilities
+    (which may, or may not, be all 0.25).
+ */
+for (Nucleotide X) {
+  /* first, exons */
+  exon3_emit[X] = 0.25;
+  exon2_emit[X] = 0.25;
+  exon1_emit[X] = 0.25;
+  /* next, introns */
+  intron1_emit[X] = null_emit[X];
+  intron2_emit[X] = null_emit[X];
+}
+/* just for variety, assign the elements of the last array explicitly */
+intron3_emit[A] = null_emit[A];
+intron3_emit[C] = null_emit[C];
+intron3_emit[G] = null_emit[G];
+intron3_emit[T] = null_emit[T];

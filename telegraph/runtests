@@ -1,0 +1,1 @@
+ls test/*.tg | perl -ne '$c="./tgc $_";print"\n$c";system$c'

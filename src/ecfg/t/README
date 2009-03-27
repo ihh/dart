@@ -1,0 +1,48 @@
+xrate tests
+-----------
+
+The xrate tests are driven by the script testxrate.pl
+This follows the standard convention of printing
+"not ok" on stdout in case of failure &
+"ok" in case of success.
+
+The testxrate.pl script executes a series of xrate tests.
+All of these must be passed for "ok" to be printed.
+
+Each test corresponds to a pair of files in this directory,
+each sharing the same prefix and having the suffices
+".stockholm" and ".xrange"
+
+	e.g. Reversible_acgt_cycler.stockholm
+	     Reversible_acgt_cycler.xrange
+
+The ".stockholm" file is used as an input to xrate.
+Any line in this file matching the following pattern...
+
+	#=GF CC xrate [....args....]
+
+...is parsed, and the "args" are passed to xrate
+as command-line options.
+
+xrate is run on the ".stockholm" file (with the supplied
+command-line args, if any) and the output is dumped to a
+".xrate" file (in the above case, it would be
+"Reversible_acgt_cycler.xrate"). This file is then
+compared with the ".xrange" file.
+
+The ".xrange" file can be an exact template, which the
+".xrate" file is required to match. Alternatively,
+if the fields in the ".xrange" file contain numerical
+ranges separated by a colon, such as "0:.2", then
+this is interpreted as a range of permissible values
+for the corresponding field in the ".xrate" output file.
+
+If the ".stockholm" file includes any line beginning with...
+
+	#=GF CC fail
+
+...then a mismatch between the ".xrate" and ".xrange" files
+will not cause the test to fail. This allows new tests to be
+developed before the code to satisfy them has been implemented.
+(If there is no mismatch, the test will not fail either, but
+a warning to remove the "#=GF CC fail" line will be printed.)

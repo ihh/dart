@@ -1,0 +1,15 @@
+token DNA { A C G T };
+term DNA1[DNA], DNA2[DNA];
+nonterm start, match, insert, delete;
+prob subst[DNA][DNA], gapOpen, gapExtend;
+start -> DNA1 start | DNA2 start | start DNA1 | start DNA2 | match;
+match -> DNA1 DNA2 match { subst[$1][$2] }
+       | DNA2 insert     { gapOpen }
+       | DNA1 delete     { gapOpen };
+insert -> DNA2 insert    { gapExtend }
+        | match DNA2 DNA1;
+delete -> DNA1 delete    { gapExtend }
+        | match
+	| DNA1 DNA2
+	| DNA1 DNA2 delete DNA1;
+	

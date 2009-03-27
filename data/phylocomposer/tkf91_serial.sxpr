@@ -1,0 +1,54 @@
+; TKF91 serial composition
+
+(branch
+ (transducer TKF91_BRANCH)
+ (branch (transducer TKF91_BRANCH))
+ )
+
+(transducer
+
+ (name TKF91_BRANCH)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name M) (type match))
+ (state (name D) (type delete))
+ (state (name I) (type insert))
+
+ (transition (from S) (to I) (label beta))
+ (transition (from S) (to W) (label ~beta))
+
+ (transition (from W) (to M) (label alpha))
+ (transition (from W) (to D) (label ~alpha))
+ (transition (from W) (to E))
+
+ (transition (from M) (to I) (label beta))
+ (transition (from M) (to W) (label ~beta))
+
+ (transition (from D) (to I) (label gamma))
+ (transition (from D) (to W) (label ~gamma))
+
+ (transition (from I) (to I) (label beta))
+ (transition (from I) (to W) (label ~beta))
+)
+
+;; dummy transducer that absorbs all tokens & doesn't emit anything
+;; this allows us to fulfil the "must be a binary tree" requirement
+(transducer
+
+ (name DUMMY_RECEIVER)
+
+ (state (name s) (type start))
+ (state (name w) (type wait))
+ (state (name d) (type delete))
+ (state (name e) (type end))
+
+ (transition (from s) (to w))
+
+ (transition (from w) (to d))
+ (transition (from w) (to e))
+
+ (transition (from d) (to w))
+)
+

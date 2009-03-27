@@ -1,0 +1,45 @@
+;; Gotoh node sampling
+;; http://biowiki.org/GotohTransducer
+
+(branch
+ (transducer Gotoh_BRANCH)
+ (branch (transducer Gotoh_BRANCH))
+ (branch (transducer Gotoh_BRANCH))
+ )
+
+
+(transducer
+
+ (name Gotoh_BRANCH)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name X) (type wait))
+ (state (name M) (type match))
+ (state (name D) (type delete))
+ (state (name I) (type insert))
+
+ (transition (from S) (to I) (label a))
+ (transition (from S) (to W) (label b))
+ (transition (from S) (to X) (label c))
+
+ (transition (from M) (to I) (label d))
+ (transition (from M) (to W) (label e))
+ (transition (from M) (to X) (label f))
+
+ (transition (from D) (to I) (label p))
+ (transition (from D) (to W) (label q))
+ (transition (from D) (to X) (label r))
+
+ (transition (from I) (to I) (label v))
+ (transition (from I) (to W) (label w))
+ (transition (from I) (to X) (label x))
+
+ (transition (from W) (to M))
+ (transition (from W) (to E))
+
+ (transition (from X) (to D))
+ (transition (from X) (to E))
+
+)

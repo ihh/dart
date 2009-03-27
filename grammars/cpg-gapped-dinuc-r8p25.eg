@@ -1,0 +1,594 @@
+;; alphabet
+(alphabet
+ (name gapped-DNA)
+
+ ;; non-degenerate characters
+ (token (a c g t _))
+ (complement (t g c a _))
+
+ ;; degenerate characters
+ (wildcard *)
+ (extend (to .) (from _))
+ (extend (to -) (from _))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+)  ;; end alphabet
+
+;; grammar
+(grammar
+ (name r8p25)
+ (update-policy parametric)
+
+ ;; Probability parameters
+ (pgroup
+  ;; Dinucleotide frequencies
+  ((pi_{AA} .04) (pi_{AC} .04) (pi_{AG} .04) (pi_{AT} .04) (pi_{A_} .04)
+   (pi_{CA} .04) (pi_{CC} .04) (pi_{CG} .04) (pi_{CT} .04) (pi_{C_} .04)
+   (pi_{GA} .04) (pi_{GC} .04) (pi_{GG} .04) (pi_{GT} .04) (pi_{G_} .04)
+   (pi_{TA} .04) (pi_{TC} .04) (pi_{TG} .04) (pi_{TT} .04) (pi_{T_} .04)
+   (pi_{_A} .04) (pi_{_C} .04) (pi_{_G} .04) (pi_{_T} .04) (pi_{__} .04)
+   )
+  )
+
+ ;; Rate parameters
+ (rate
+  ;; Context_independent point substitution rates
+  (  transition 1)  ;; single_nucleotide transition
+  (transversion 1)  ;; single_nucleotide transversion
+
+  ;; Context_dependent point substitution rates
+  (cpg 1)  ;; CpG__>CpA and CpG__>UpG
+
+  ;; Double substitution rates
+  (dinuc 1)  ;; simultaneous dinucleotide substitution
+
+  ;; Gap opening & extension rates
+  (create_gap1 1)  ;; create first gap character (e.g. open a deletion)
+  (remove_gap1 1)  ;; remove first gap character (e.g. extend an insertion)
+
+  (create_gap2 1)  ;; create second gap character (e.g. extend a deletion)
+  (remove_gap2 1)  ;; remove second gap character (e.g. open an insertion)
+  )
+
+ ;; Nonterminals
+ (nonterminal (name S))
+
+ ;; Transformation rules
+ ;; context + S __> context + emission + S*
+ (transform (from (CONTEXT S)) (to (CONTEXT EMISSION S*)) (gaps_ok))
+
+ ;; S* __> S | end
+ (transform (from (S*)) (to (S)) (prob 1))
+ (transform (from (S*)) (to ()) (prob 1))
+
+
+ ;; Substitution model
+ (chain
+  ;; pseudoterminals
+  (terminal (CONTEXT EMISSION))
+  ;; this is a parametric model
+  (update-policy parametric)
+
+  ;; initial state probabilities
+  (initial (state (a a)) (prob pi_{AA}))
+  (initial (state (c a)) (prob pi_{CA}))
+  (initial (state (g a)) (prob pi_{GA}))
+  (initial (state (t a)) (prob pi_{TA}))
+  (initial (state (_ a)) (prob pi_{_A}))
+
+  (initial (state (a c)) (prob pi_{AC}))
+  (initial (state (c c)) (prob pi_{CC}))
+  (initial (state (g c)) (prob pi_{GC}))
+  (initial (state (t c)) (prob pi_{TC}))
+  (initial (state (_ c)) (prob pi_{_C}))
+
+  (initial (state (a g)) (prob pi_{AG}))
+  (initial (state (c g)) (prob pi_{CG}))
+  (initial (state (g g)) (prob pi_{GG}))
+  (initial (state (t g)) (prob pi_{TG}))
+  (initial (state (_ g)) (prob pi_{_G}))
+
+  (initial (state (a t)) (prob pi_{AT}))
+  (initial (state (c t)) (prob pi_{CT}))
+  (initial (state (g t)) (prob pi_{GT}))
+  (initial (state (t t)) (prob pi_{TT}))
+  (initial (state (_ t)) (prob pi_{_T}))
+
+  (initial (state (a _)) (prob pi_{A_}))
+  (initial (state (c _)) (prob pi_{C_}))
+  (initial (state (g _)) (prob pi_{G_}))
+  (initial (state (t _)) (prob pi_{T_}))
+  (initial (state (_ _)) (prob pi_{__}))
+
+  ;; mutation rates
+  ;; Mutations from (a a)
+  (mutate (from (a a)) (to (c a)) (rate (transversion * pi_{CA})))
+  (mutate (from (a a)) (to (g a)) (rate (  transition * pi_{GA})))
+  (mutate (from (a a)) (to (t a)) (rate (transversion * pi_{TA})))
+
+  (mutate (from (a a)) (to (a c)) (rate (transversion * pi_{AC})))
+  (mutate (from (a a)) (to (c c)) (rate (       dinuc * pi_{CC})))
+  (mutate (from (a a)) (to (g c)) (rate (       dinuc * pi_{GC})))
+  (mutate (from (a a)) (to (t c)) (rate (       dinuc * pi_{TC})))
+
+  (mutate (from (a a)) (to (a g)) (rate (  transition * pi_{AG})))
+  (mutate (from (a a)) (to (c g)) (rate (       dinuc * pi_{CG})))
+  (mutate (from (a a)) (to (g g)) (rate (       dinuc * pi_{GG})))
+  (mutate (from (a a)) (to (t g)) (rate (       dinuc * pi_{TG})))
+
+  (mutate (from (a a)) (to (a t)) (rate (transversion * pi_{AT})))
+  (mutate (from (a a)) (to (c t)) (rate (       dinuc * pi_{CT})))
+  (mutate (from (a a)) (to (g t)) (rate (       dinuc * pi_{GT})))
+  (mutate (from (a a)) (to (t t)) (rate (       dinuc * pi_{TT})))
+
+  (mutate (from (a a)) (to (_ a)) (rate ( create_gap1 * pi_{_A})))
+  (mutate (from (a a)) (to (a _)) (rate ( create_gap1 * pi_{A_})))
+
+  ;; Mutations from (c a)
+  (mutate (from (c a)) (to (a a)) (rate (transversion * pi_{AA})))
+  (mutate (from (c a)) (to (g a)) (rate (transversion * pi_{GA})))
+  (mutate (from (c a)) (to (t a)) (rate (  transition * pi_{TA})))
+
+  (mutate (from (c a)) (to (a c)) (rate (       dinuc * pi_{AC})))
+  (mutate (from (c a)) (to (c c)) (rate (transversion * pi_{CC})))
+  (mutate (from (c a)) (to (g c)) (rate (       dinuc * pi_{GC})))
+  (mutate (from (c a)) (to (t c)) (rate (       dinuc * pi_{TC})))
+
+  (mutate (from (c a)) (to (a g)) (rate (       dinuc * pi_{AG})))
+  (mutate (from (c a)) (to (c g)) (rate (  transition * pi_{CG})))
+  (mutate (from (c a)) (to (g g)) (rate (       dinuc * pi_{GG})))
+  (mutate (from (c a)) (to (t g)) (rate (       dinuc * pi_{TG})))
+
+  (mutate (from (c a)) (to (a t)) (rate (       dinuc * pi_{AT})))
+  (mutate (from (c a)) (to (c t)) (rate (transversion * pi_{CT})))
+  (mutate (from (c a)) (to (g t)) (rate (       dinuc * pi_{GT})))
+  (mutate (from (c a)) (to (t t)) (rate (       dinuc * pi_{TT})))
+
+  (mutate (from (c a)) (to (_ a)) (rate ( create_gap1 * pi_{_A})))
+  (mutate (from (c a)) (to (c _)) (rate ( create_gap1 * pi_{C_})))
+
+  ;; Mutations from (g a)
+  (mutate (from (g a)) (to (a a)) (rate (  transition * pi_{AA})))
+  (mutate (from (g a)) (to (c a)) (rate (transversion * pi_{CA})))
+  (mutate (from (g a)) (to (t a)) (rate (transversion * pi_{TA})))
+
+  (mutate (from (g a)) (to (a c)) (rate (       dinuc * pi_{AC})))
+  (mutate (from (g a)) (to (c c)) (rate (       dinuc * pi_{CC})))
+  (mutate (from (g a)) (to (g c)) (rate (transversion * pi_{GC})))
+  (mutate (from (g a)) (to (t c)) (rate (       dinuc * pi_{TC})))
+
+  (mutate (from (g a)) (to (a g)) (rate (       dinuc * pi_{AG})))
+  (mutate (from (g a)) (to (c g)) (rate (       dinuc * pi_{CG})))
+  (mutate (from (g a)) (to (g g)) (rate (  transition * pi_{GG})))
+  (mutate (from (g a)) (to (t g)) (rate (       dinuc * pi_{TG})))
+
+  (mutate (from (g a)) (to (a t)) (rate (       dinuc * pi_{AT})))
+  (mutate (from (g a)) (to (c t)) (rate (       dinuc * pi_{CT})))
+  (mutate (from (g a)) (to (g t)) (rate (transversion * pi_{GT})))
+  (mutate (from (g a)) (to (t t)) (rate (       dinuc * pi_{TT})))
+
+  (mutate (from (g a)) (to (_ a)) (rate ( create_gap1 * pi_{_A})))
+  (mutate (from (g a)) (to (g _)) (rate ( create_gap1 * pi_{G_})))
+
+  ;; Mutations from (t a)
+  (mutate (from (t a)) (to (a a)) (rate (transversion * pi_{AA})))
+  (mutate (from (t a)) (to (c a)) (rate (  transition * pi_{CA})))
+  (mutate (from (t a)) (to (g a)) (rate (transversion * pi_{GA})))
+
+  (mutate (from (t a)) (to (a c)) (rate (       dinuc * pi_{AC})))
+  (mutate (from (t a)) (to (c c)) (rate (       dinuc * pi_{CC})))
+  (mutate (from (t a)) (to (g c)) (rate (       dinuc * pi_{GC})))
+  (mutate (from (t a)) (to (t c)) (rate (transversion * pi_{TC})))
+
+  (mutate (from (t a)) (to (a g)) (rate (       dinuc * pi_{AG})))
+  (mutate (from (t a)) (to (c g)) (rate (       dinuc * pi_{CG})))
+  (mutate (from (t a)) (to (g g)) (rate (       dinuc * pi_{GG})))
+  (mutate (from (t a)) (to (t g)) (rate (  transition * pi_{TG})))
+
+  (mutate (from (t a)) (to (a t)) (rate (       dinuc * pi_{AT})))
+  (mutate (from (t a)) (to (c t)) (rate (       dinuc * pi_{CT})))
+  (mutate (from (t a)) (to (g t)) (rate (       dinuc * pi_{GT})))
+  (mutate (from (t a)) (to (t t)) (rate (transversion * pi_{TT})))
+
+  (mutate (from (t a)) (to (_ a)) (rate ( create_gap1 * pi_{_A})))
+  (mutate (from (t a)) (to (t _)) (rate ( create_gap1 * pi_{T_})))
+
+  ;; Mutations from (a c)
+  (mutate (from (a c)) (to (a a)) (rate (transversion * pi_{AA})))
+  (mutate (from (a c)) (to (c a)) (rate (       dinuc * pi_{CA})))
+  (mutate (from (a c)) (to (g a)) (rate (       dinuc * pi_{GA})))
+  (mutate (from (a c)) (to (t a)) (rate (       dinuc * pi_{TA})))
+
+  (mutate (from (a c)) (to (c c)) (rate (transversion * pi_{CC})))
+  (mutate (from (a c)) (to (g c)) (rate (  transition * pi_{GC})))
+  (mutate (from (a c)) (to (t c)) (rate (transversion * pi_{TC})))
+
+  (mutate (from (a c)) (to (a g)) (rate (transversion * pi_{AG})))
+  (mutate (from (a c)) (to (c g)) (rate (       dinuc * pi_{CG})))
+  (mutate (from (a c)) (to (g g)) (rate (       dinuc * pi_{GG})))
+  (mutate (from (a c)) (to (t g)) (rate (       dinuc * pi_{TG})))
+
+  (mutate (from (a c)) (to (a t)) (rate (  transition * pi_{AT})))
+  (mutate (from (a c)) (to (c t)) (rate (       dinuc * pi_{CT})))
+  (mutate (from (a c)) (to (g t)) (rate (       dinuc * pi_{GT})))
+  (mutate (from (a c)) (to (t t)) (rate (       dinuc * pi_{TT})))
+
+  (mutate (from (a c)) (to (_ c)) (rate ( create_gap1 * pi_{_C})))
+  (mutate (from (a c)) (to (a _)) (rate ( create_gap1 * pi_{A_})))
+
+  ;; Mutations from (c c)
+  (mutate (from (c c)) (to (a a)) (rate (       dinuc * pi_{AA})))
+  (mutate (from (c c)) (to (c a)) (rate (transversion * pi_{CA})))
+  (mutate (from (c c)) (to (g a)) (rate (       dinuc * pi_{GA})))
+  (mutate (from (c c)) (to (t a)) (rate (       dinuc * pi_{TA})))
+
+  (mutate (from (c c)) (to (a c)) (rate (transversion * pi_{AC})))
+  (mutate (from (c c)) (to (g c)) (rate (transversion * pi_{GC})))
+  (mutate (from (c c)) (to (t c)) (rate (  transition * pi_{TC})))
+
+  (mutate (from (c c)) (to (a g)) (rate (       dinuc * pi_{AG})))
+  (mutate (from (c c)) (to (c g)) (rate (transversion * pi_{CG})))
+  (mutate (from (c c)) (to (g g)) (rate (       dinuc * pi_{GG})))
+  (mutate (from (c c)) (to (t g)) (rate (       dinuc * pi_{TG})))
+
+  (mutate (from (c c)) (to (a t)) (rate (       dinuc * pi_{AT})))
+  (mutate (from (c c)) (to (c t)) (rate (  transition * pi_{CT})))
+  (mutate (from (c c)) (to (g t)) (rate (       dinuc * pi_{GT})))
+  (mutate (from (c c)) (to (t t)) (rate (       dinuc * pi_{TT})))
+
+  (mutate (from (c c)) (to (_ c)) (rate ( create_gap1 * pi_{_C})))
+  (mutate (from (c c)) (to (c _)) (rate ( create_gap1 * pi_{C_})))
+
+  ;; Mutations from (g c)
+  (mutate (from (g c)) (to (a a)) (rate (       dinuc * pi_{AA})))
+  (mutate (from (g c)) (to (c a)) (rate (       dinuc * pi_{CA})))
+  (mutate (from (g c)) (to (g a)) (rate (transversion * pi_{GA})))
+  (mutate (from (g c)) (to (t a)) (rate (       dinuc * pi_{TA})))
+
+  (mutate (from (g c)) (to (a c)) (rate (  transition * pi_{AC})))
+  (mutate (from (g c)) (to (c c)) (rate (transversion * pi_{CC})))
+  (mutate (from (g c)) (to (t c)) (rate (transversion * pi_{TC})))
+
+  (mutate (from (g c)) (to (a g)) (rate (       dinuc * pi_{AG})))
+  (mutate (from (g c)) (to (c g)) (rate (       dinuc * pi_{CG})))
+  (mutate (from (g c)) (to (g g)) (rate (transversion * pi_{GG})))
+  (mutate (from (g c)) (to (t g)) (rate (       dinuc * pi_{TG})))
+
+  (mutate (from (g c)) (to (a t)) (rate (       dinuc * pi_{AT})))
+  (mutate (from (g c)) (to (c t)) (rate (       dinuc * pi_{CT})))
+  (mutate (from (g c)) (to (g t)) (rate (  transition * pi_{GT})))
+  (mutate (from (g c)) (to (t t)) (rate (       dinuc * pi_{TT})))
+
+  (mutate (from (g c)) (to (_ c)) (rate ( create_gap1 * pi_{_C})))
+  (mutate (from (g c)) (to (g _)) (rate ( create_gap1 * pi_{G_})))
+
+  ;; Mutations from (t c)
+  (mutate (from (t c)) (to (a a)) (rate (       dinuc * pi_{AA})))
+  (mutate (from (t c)) (to (c a)) (rate (       dinuc * pi_{CA})))
+  (mutate (from (t c)) (to (g a)) (rate (       dinuc * pi_{GA})))
+  (mutate (from (t c)) (to (t a)) (rate (transversion * pi_{TA})))
+
+  (mutate (from (t c)) (to (a c)) (rate (transversion * pi_{AC})))
+  (mutate (from (t c)) (to (c c)) (rate (  transition * pi_{CC})))
+  (mutate (from (t c)) (to (g c)) (rate (transversion * pi_{GC})))
+
+  (mutate (from (t c)) (to (a g)) (rate (       dinuc * pi_{AG})))
+  (mutate (from (t c)) (to (c g)) (rate (       dinuc * pi_{CG})))
+  (mutate (from (t c)) (to (g g)) (rate (       dinuc * pi_{GG})))
+  (mutate (from (t c)) (to (t g)) (rate (transversion * pi_{TG})))
+
+  (mutate (from (t c)) (to (a t)) (rate (       dinuc * pi_{AT})))
+  (mutate (from (t c)) (to (c t)) (rate (       dinuc * pi_{CT})))
+  (mutate (from (t c)) (to (g t)) (rate (       dinuc * pi_{GT})))
+  (mutate (from (t c)) (to (t t)) (rate (  transition * pi_{TT})))
+
+  (mutate (from (t c)) (to (_ c)) (rate ( create_gap1 * pi_{_C})))
+  (mutate (from (t c)) (to (t _)) (rate ( create_gap1 * pi_{T_})))
+
+  ;; Mutations from (a g)
+  (mutate (from (a g)) (to (a a)) (rate (  transition * pi_{AA})))
+  (mutate (from (a g)) (to (c a)) (rate (       dinuc * pi_{CA})))
+  (mutate (from (a g)) (to (g a)) (rate (       dinuc * pi_{GA})))
+  (mutate (from (a g)) (to (t a)) (rate (       dinuc * pi_{TA})))
+
+  (mutate (from (a g)) (to (a c)) (rate (transversion * pi_{AC})))
+  (mutate (from (a g)) (to (c c)) (rate (       dinuc * pi_{CC})))
+  (mutate (from (a g)) (to (g c)) (rate (       dinuc * pi_{GC})))
+  (mutate (from (a g)) (to (t c)) (rate (       dinuc * pi_{TC})))
+
+  (mutate (from (a g)) (to (c g)) (rate (transversion * pi_{CG})))
+  (mutate (from (a g)) (to (g g)) (rate (  transition * pi_{GG})))
+  (mutate (from (a g)) (to (t g)) (rate (transversion * pi_{TG})))
+
+  (mutate (from (a g)) (to (a t)) (rate (transversion * pi_{AT})))
+  (mutate (from (a g)) (to (c t)) (rate (       dinuc * pi_{CT})))
+  (mutate (from (a g)) (to (g t)) (rate (       dinuc * pi_{GT})))
+  (mutate (from (a g)) (to (t t)) (rate (       dinuc * pi_{TT})))
+
+  (mutate (from (a g)) (to (a _)) (rate ( create_gap1 * pi_{A_})))
+  (mutate (from (a g)) (to (_ g)) (rate ( create_gap1 * pi_{_G})))
+
+  ;; Mutations from (c g)
+  (mutate (from (c g)) (to (a a)) (rate (       dinuc * pi_{AA})))
+  (mutate (from (c g)) (to (c a)) (rate (         cpg * pi_{CA})))
+  (mutate (from (c g)) (to (g a)) (rate (       dinuc * pi_{GA})))
+  (mutate (from (c g)) (to (t a)) (rate (       dinuc * pi_{TA})))
+
+  (mutate (from (c g)) (to (a c)) (rate (       dinuc * pi_{AC})))
+  (mutate (from (c g)) (to (c c)) (rate (transversion * pi_{CC})))
+  (mutate (from (c g)) (to (g c)) (rate (       dinuc * pi_{GC})))
+  (mutate (from (c g)) (to (t c)) (rate (       dinuc * pi_{TC})))
+
+  (mutate (from (c g)) (to (a g)) (rate (transversion * pi_{AG})))
+  (mutate (from (c g)) (to (g g)) (rate (transversion * pi_{GG})))
+  (mutate (from (c g)) (to (t g)) (rate (         cpg * pi_{TG})))
+
+  (mutate (from (c g)) (to (a t)) (rate (       dinuc * pi_{AT})))
+  (mutate (from (c g)) (to (c t)) (rate (transversion * pi_{CT})))
+  (mutate (from (c g)) (to (g t)) (rate (       dinuc * pi_{GT})))
+  (mutate (from (c g)) (to (t t)) (rate (       dinuc * pi_{TT})))
+
+  ;; Mutations from (g g)
+  (mutate (from (g g)) (to (a a)) (rate (       dinuc * pi_{AA})))
+  (mutate (from (g g)) (to (c a)) (rate (       dinuc * pi_{CA})))
+  (mutate (from (g g)) (to (g a)) (rate (  transition * pi_{GA})))
+  (mutate (from (g g)) (to (t a)) (rate (       dinuc * pi_{TA})))
+
+  (mutate (from (g g)) (to (a c)) (rate (       dinuc * pi_{AC})))
+  (mutate (from (g g)) (to (c c)) (rate (       dinuc * pi_{CC})))
+  (mutate (from (g g)) (to (g c)) (rate (transversion * pi_{GC})))
+  (mutate (from (g g)) (to (t c)) (rate (       dinuc * pi_{TC})))
+
+  (mutate (from (g g)) (to (a g)) (rate (  transition * pi_{AG})))
+  (mutate (from (g g)) (to (c g)) (rate (transversion * pi_{CG})))
+  (mutate (from (g g)) (to (t g)) (rate (transversion * pi_{TG})))
+
+  (mutate (from (g g)) (to (a t)) (rate (       dinuc * pi_{AT})))
+  (mutate (from (g g)) (to (c t)) (rate (       dinuc * pi_{CT})))
+  (mutate (from (g g)) (to (g t)) (rate (transversion * pi_{GT})))
+  (mutate (from (g g)) (to (t t)) (rate (       dinuc * pi_{TT})))
+
+  (mutate (from (g g)) (to (g _)) (rate ( create_gap1 * pi_{G_})))
+  (mutate (from (g g)) (to (_ g)) (rate ( create_gap1 * pi_{_G})))
+
+  ;; Mutations from (t g)
+  (mutate (from (t g)) (to (a a)) (rate (       dinuc * pi_{AA})))
+  (mutate (from (t g)) (to (c a)) (rate (       dinuc * pi_{CA})))
+  (mutate (from (t g)) (to (g a)) (rate (       dinuc * pi_{GA})))
+  (mutate (from (t g)) (to (t a)) (rate (  transition * pi_{TA})))
+
+  (mutate (from (t g)) (to (a c)) (rate (       dinuc * pi_{AC})))
+  (mutate (from (t g)) (to (c c)) (rate (       dinuc * pi_{CC})))
+  (mutate (from (t g)) (to (g c)) (rate (       dinuc * pi_{GC})))
+  (mutate (from (t g)) (to (t c)) (rate (transversion * pi_{TC})))
+
+  (mutate (from (t g)) (to (a g)) (rate (transversion * pi_{AG})))
+  (mutate (from (t g)) (to (c g)) (rate (  transition * pi_{CG})))
+  (mutate (from (t g)) (to (g g)) (rate (transversion * pi_{GG})))
+
+  (mutate (from (t g)) (to (a t)) (rate (       dinuc * pi_{AT})))
+  (mutate (from (t g)) (to (c t)) (rate (       dinuc * pi_{CT})))
+  (mutate (from (t g)) (to (g t)) (rate (       dinuc * pi_{GT})))
+  (mutate (from (t g)) (to (t t)) (rate (transversion * pi_{TT})))
+
+  (mutate (from (t g)) (to (t _)) (rate ( create_gap1 * pi_{T_})))
+  (mutate (from (t g)) (to (_ g)) (rate ( create_gap1 * pi_{_G})))
+
+  ;; Mutations from (a t)
+  (mutate (from (a t)) (to (a a)) (rate (transversion * pi_{AA})))
+  (mutate (from (a t)) (to (c a)) (rate (       dinuc * pi_{CA})))
+  (mutate (from (a t)) (to (g a)) (rate (       dinuc * pi_{GA})))
+  (mutate (from (a t)) (to (t a)) (rate (       dinuc * pi_{TA})))
+
+  (mutate (from (a t)) (to (a c)) (rate (  transition * pi_{AC})))
+  (mutate (from (a t)) (to (c c)) (rate (       dinuc * pi_{CC})))
+  (mutate (from (a t)) (to (g c)) (rate (       dinuc * pi_{GC})))
+  (mutate (from (a t)) (to (t c)) (rate (       dinuc * pi_{TC})))
+
+  (mutate (from (a t)) (to (a g)) (rate (transversion * pi_{AG})))
+  (mutate (from (a t)) (to (c g)) (rate (       dinuc * pi_{CG})))
+  (mutate (from (a t)) (to (g g)) (rate (       dinuc * pi_{GG})))
+  (mutate (from (a t)) (to (t g)) (rate (       dinuc * pi_{TG})))
+
+  (mutate (from (a t)) (to (c t)) (rate (transversion * pi_{CT})))
+  (mutate (from (a t)) (to (g t)) (rate (  transition * pi_{GT})))
+  (mutate (from (a t)) (to (t t)) (rate (transversion * pi_{TT})))
+
+  (mutate (from (a t)) (to (a _)) (rate ( create_gap1 * pi_{A_})))
+  (mutate (from (a t)) (to (_ t)) (rate ( create_gap1 * pi_{_T})))
+
+  ;; Mutations from (c t)
+  (mutate (from (c t)) (to (a a)) (rate (       dinuc * pi_{AA})))
+  (mutate (from (c t)) (to (c a)) (rate (transversion * pi_{CA})))
+  (mutate (from (c t)) (to (g a)) (rate (       dinuc * pi_{GA})))
+  (mutate (from (c t)) (to (t a)) (rate (       dinuc * pi_{TA})))
+
+  (mutate (from (c t)) (to (a c)) (rate (       dinuc * pi_{AC})))
+  (mutate (from (c t)) (to (c c)) (rate (  transition * pi_{CC})))
+  (mutate (from (c t)) (to (g c)) (rate (       dinuc * pi_{GC})))
+  (mutate (from (c t)) (to (t c)) (rate (       dinuc * pi_{TC})))
+
+  (mutate (from (c t)) (to (a g)) (rate (       dinuc * pi_{AG})))
+  (mutate (from (c t)) (to (c g)) (rate (transversion * pi_{CG})))
+  (mutate (from (c t)) (to (g g)) (rate (       dinuc * pi_{GG})))
+  (mutate (from (c t)) (to (t g)) (rate (       dinuc * pi_{TG})))
+
+  (mutate (from (c t)) (to (a t)) (rate (transversion * pi_{AT})))
+  (mutate (from (c t)) (to (g t)) (rate (transversion * pi_{GT})))
+  (mutate (from (c t)) (to (t t)) (rate (  transition * pi_{TT})))
+
+  (mutate (from (c t)) (to (c _)) (rate ( create_gap1 * pi_{C_})))
+  (mutate (from (c t)) (to (_ t)) (rate ( create_gap1 * pi_{_T})))
+
+  ;; Mutations from (g t)
+  (mutate (from (g t)) (to (a a)) (rate (       dinuc * pi_{AA})))
+  (mutate (from (g t)) (to (c a)) (rate (       dinuc * pi_{CA})))
+  (mutate (from (g t)) (to (g a)) (rate (transversion * pi_{GA})))
+  (mutate (from (g t)) (to (t a)) (rate (       dinuc * pi_{TA})))
+
+  (mutate (from (g t)) (to (a c)) (rate (       dinuc * pi_{AC})))
+  (mutate (from (g t)) (to (c c)) (rate (       dinuc * pi_{CC})))
+  (mutate (from (g t)) (to (g c)) (rate (  transition * pi_{GC})))
+  (mutate (from (g t)) (to (t c)) (rate (       dinuc * pi_{TC})))
+
+  (mutate (from (g t)) (to (a g)) (rate (       dinuc * pi_{AG})))
+  (mutate (from (g t)) (to (c g)) (rate (       dinuc * pi_{CG})))
+  (mutate (from (g t)) (to (g g)) (rate (transversion * pi_{GG})))
+  (mutate (from (g t)) (to (t g)) (rate (       dinuc * pi_{TG})))
+
+  (mutate (from (g t)) (to (a t)) (rate (  transition * pi_{AT})))
+  (mutate (from (g t)) (to (c t)) (rate (transversion * pi_{CT})))
+  (mutate (from (g t)) (to (t t)) (rate (transversion * pi_{TT})))
+
+  (mutate (from (g t)) (to (g _)) (rate ( create_gap1 * pi_{G_})))
+  (mutate (from (g t)) (to (_ t)) (rate ( create_gap1 * pi_{_T})))
+
+  ;; Mutations from (t t)
+  (mutate (from (t t)) (to (a a)) (rate (       dinuc * pi_{AA})))
+  (mutate (from (t t)) (to (c a)) (rate (       dinuc * pi_{CA})))
+  (mutate (from (t t)) (to (g a)) (rate (       dinuc * pi_{GA})))
+  (mutate (from (t t)) (to (t a)) (rate (transversion * pi_{TA})))
+
+  (mutate (from (t t)) (to (a c)) (rate (       dinuc * pi_{AC})))
+  (mutate (from (t t)) (to (c c)) (rate (       dinuc * pi_{CC})))
+  (mutate (from (t t)) (to (g c)) (rate (       dinuc * pi_{GC})))
+  (mutate (from (t t)) (to (t c)) (rate (  transition * pi_{TC})))
+
+  (mutate (from (t t)) (to (a g)) (rate (       dinuc * pi_{AG})))
+  (mutate (from (t t)) (to (c g)) (rate (       dinuc * pi_{CG})))
+  (mutate (from (t t)) (to (g g)) (rate (       dinuc * pi_{GG})))
+  (mutate (from (t t)) (to (t g)) (rate (transversion * pi_{TG})))
+
+  (mutate (from (t t)) (to (a t)) (rate (transversion * pi_{AT})))
+  (mutate (from (t t)) (to (c t)) (rate (  transition * pi_{CT})))
+  (mutate (from (t t)) (to (g t)) (rate (transversion * pi_{GT})))
+
+  (mutate (from (t t)) (to (t _)) (rate ( create_gap1 * pi_{T_})))
+  (mutate (from (t t)) (to (_ t)) (rate ( create_gap1 * pi_{_T})))
+
+
+
+
+  ;; Mutations from (_ a)
+  (mutate (from (_ a)) (to (_ c)) (rate (transversion * pi_{_C})))
+  (mutate (from (_ a)) (to (_ g)) (rate (  transition * pi_{_G})))
+  (mutate (from (_ a)) (to (_ t)) (rate (transversion * pi_{_T})))
+
+  (mutate (from (_ a)) (to (_ _)) (rate ( create_gap2 * pi_{__})))
+
+  (mutate (from (_ a)) (to (a a)) (rate ( remove_gap1 * pi_{AA})))
+  (mutate (from (_ a)) (to (c a)) (rate ( remove_gap1 * pi_{CA})))
+  (mutate (from (_ a)) (to (g a)) (rate ( remove_gap1 * pi_{GA})))
+  (mutate (from (_ a)) (to (t a)) (rate ( remove_gap1 * pi_{TA})))
+
+  ;; Mutations from (_ c)
+  (mutate (from (_ c)) (to (_ a)) (rate (transversion * pi_{_A})))
+  (mutate (from (_ c)) (to (_ g)) (rate (transversion * pi_{_G})))
+  (mutate (from (_ c)) (to (_ t)) (rate (  transition * pi_{_T})))
+
+  (mutate (from (_ c)) (to (_ _)) (rate ( create_gap2 * pi_{__})))
+
+  (mutate (from (_ c)) (to (a c)) (rate ( remove_gap1 * pi_{AC})))
+  (mutate (from (_ c)) (to (c c)) (rate ( remove_gap1 * pi_{CC})))
+  (mutate (from (_ c)) (to (g c)) (rate ( remove_gap1 * pi_{GC})))
+  (mutate (from (_ c)) (to (t c)) (rate ( remove_gap1 * pi_{TC})))
+
+  ;; Mutations from (_ g)
+  (mutate (from (_ g)) (to (_ a)) (rate (  transition * pi_{_A})))
+  (mutate (from (_ g)) (to (_ c)) (rate (transversion * pi_{_C})))
+  (mutate (from (_ g)) (to (_ t)) (rate (transversion * pi_{_T})))
+
+  (mutate (from (_ g)) (to (_ _)) (rate ( create_gap2 * pi_{__})))
+
+  (mutate (from (_ g)) (to (a g)) (rate ( remove_gap1 * pi_{AG})))
+  (mutate (from (_ g)) (to (c g)) (rate ( remove_gap1 * pi_{CG})))
+  (mutate (from (_ g)) (to (g g)) (rate ( remove_gap1 * pi_{GG})))
+  (mutate (from (_ g)) (to (t g)) (rate ( remove_gap1 * pi_{TG})))
+
+  ;; Mutations from (_ t)
+  (mutate (from (_ t)) (to (_ a)) (rate (transversion * pi_{_A})))
+  (mutate (from (_ t)) (to (_ c)) (rate (  transition * pi_{_C})))
+  (mutate (from (_ t)) (to (_ g)) (rate (transversion * pi_{_G})))
+
+  (mutate (from (_ t)) (to (_ _)) (rate ( create_gap2 * pi_{__})))
+
+  (mutate (from (_ t)) (to (a t)) (rate ( remove_gap1 * pi_{AT})))
+  (mutate (from (_ t)) (to (c t)) (rate ( remove_gap1 * pi_{CT})))
+  (mutate (from (_ t)) (to (g t)) (rate ( remove_gap1 * pi_{GT})))
+  (mutate (from (_ t)) (to (t t)) (rate ( remove_gap1 * pi_{TT})))
+ 
+  ;; Mutations from (a _)
+  (mutate (from (a _)) (to (c _)) (rate (transversion * pi_{C_})))
+  (mutate (from (a _)) (to (g _)) (rate (  transition * pi_{G_})))
+  (mutate (from (a _)) (to (t _)) (rate (transversion * pi_{T_})))
+
+  (mutate (from (a _)) (to (_ _)) (rate ( create_gap2 * pi_{__})))
+
+  (mutate (from (a _)) (to (a a)) (rate ( remove_gap1 * pi_{AA})))
+  (mutate (from (a _)) (to (a c)) (rate ( remove_gap1 * pi_{AC})))
+  (mutate (from (a _)) (to (a g)) (rate ( remove_gap1 * pi_{AG})))
+  (mutate (from (a _)) (to (a t)) (rate ( remove_gap1 * pi_{AT})))
+
+  ;; Mutations from (c _)
+  (mutate (from (c _)) (to (a _)) (rate (transversion * pi_{A_})))
+  (mutate (from (c _)) (to (g _)) (rate (transversion * pi_{G_})))
+  (mutate (from (c _)) (to (t _)) (rate (  transition * pi_{T_})))
+
+  (mutate (from (c _)) (to (_ _)) (rate ( create_gap2 * pi_{__})))
+
+  (mutate (from (c _)) (to (c a)) (rate ( remove_gap1 * pi_{CA})))
+  (mutate (from (c _)) (to (c c)) (rate ( remove_gap1 * pi_{CC})))
+  (mutate (from (c _)) (to (c g)) (rate ( remove_gap1 * pi_{CG})))
+  (mutate (from (c _)) (to (c t)) (rate ( remove_gap1 * pi_{CT})))
+
+  ;; Mutations from (g _)
+  (mutate (from (g _)) (to (a _)) (rate (  transition * pi_{A_})))
+  (mutate (from (g _)) (to (c _)) (rate (transversion * pi_{C_})))
+  (mutate (from (g _)) (to (t _)) (rate (transversion * pi_{T_})))
+
+  (mutate (from (g _)) (to (_ _)) (rate ( create_gap2 * pi_{__})))
+
+  (mutate (from (g _)) (to (g a)) (rate ( remove_gap1 * pi_{GA})))
+  (mutate (from (g _)) (to (g c)) (rate ( remove_gap1 * pi_{GC})))
+  (mutate (from (g _)) (to (g g)) (rate ( remove_gap1 * pi_{GG})))
+  (mutate (from (g _)) (to (g t)) (rate ( remove_gap1 * pi_{GT})))
+
+  ;; Mutations from (t _)
+  (mutate (from (t _)) (to (a _)) (rate (transversion * pi_{A_})))
+  (mutate (from (t _)) (to (c _)) (rate (  transition * pi_{C_})))
+  (mutate (from (t _)) (to (g _)) (rate (transversion * pi_{G_})))
+
+  (mutate (from (t _)) (to (_ _)) (rate ( create_gap2 * pi_{__})))
+
+  (mutate (from (t _)) (to (t a)) (rate ( remove_gap1 * pi_{TA})))
+  (mutate (from (t _)) (to (t c)) (rate ( remove_gap1 * pi_{TC})))
+  (mutate (from (t _)) (to (t g)) (rate ( remove_gap1 * pi_{TG})))
+  (mutate (from (t _)) (to (t t)) (rate ( remove_gap1 * pi_{TT})))
+
+
+  ;; Mutations from (_ _)
+  (mutate (from (_ _)) (to (a _)) (rate ( remove_gap2 * pi_{A_})))
+  (mutate (from (_ _)) (to (c _)) (rate ( remove_gap2 * pi_{C_})))
+  (mutate (from (_ _)) (to (g _)) (rate ( remove_gap2 * pi_{G_})))
+  (mutate (from (_ _)) (to (t _)) (rate ( remove_gap2 * pi_{T_})))
+
+  (mutate (from (_ _)) (to (_ a)) (rate ( remove_gap2 * pi_{_A})))
+  (mutate (from (_ _)) (to (_ c)) (rate ( remove_gap2 * pi_{_C})))
+  (mutate (from (_ _)) (to (_ g)) (rate ( remove_gap2 * pi_{_G})))
+  (mutate (from (_ _)) (to (_ t)) (rate ( remove_gap2 * pi_{_T})))
+
+ )  ;; end chain
+
+)  ;; end grammar
+

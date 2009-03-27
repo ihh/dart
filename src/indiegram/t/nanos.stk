@@ -1,0 +1,46 @@
+# STOCKHOLM 1.0
+
+#=GF NotaBene This is from the RFAM family nos_TCE.stock.
+#=GF NotaBene Phylogeny estimated with Xfold and Jukes-Cantor grammar.
+
+#=GF NH                    (AF252722.1.810-873:0.0054939322,(U24695.1.2509-2569:0.1643350493,M72421.1.2491-2554:0.0001000010)node_3:0.0054937377)root;
+
+#=GF            AC RF00161
+#=GF            ID nos_TCE
+#=GF            DE Nanos 3' UTR translation control element
+#=GF            AU Griffiths-Jones SR
+#=GF            SE Griffiths-Jones SR
+#=GF            SS Published; PMID:10882131
+#=GF            GA 34.80
+#=GF            TC 34.84
+#=GF            NC 34.34
+#=GF            TP Cis-reg;
+#=GF            BM cmbuild CM SEED
+#=GF            BM cmsearch -W 100 CM SEQDB
+#=GF            RN [1]
+#=GF            RM 10882131
+#=GF            RT Overlapping but distinct RNA elements control repression and
+#=GF            RT activation of nanos translation.
+#=GF            RA Crucs S, Chatterjee S, Gavis ER;
+#=GF            RL Mol Cell 2000;5:457-467.
+#=GF            CC The Nanos protein in Drosophila is required for correct
+#=GF            CC anterior/posterior patterning in the Drosophila embryo.
+#=GF            CC Translation of the nanos mRNA is repressed in the bulk 
+#=GF            CC cytoplasm and activated in the posterior region.  Repression is 
+#=GF            CC mediated by a translation control element (TCE) in the 3' UTR of 
+#=GF            CC the mRNA.  This element forms a Y-shaped structure, part of 
+#=GF            CC which is recognised by the Smaug protein leading to translational
+#=GF            CC repression [1].
+#=GF            SQ 3
+
+
+U24695.1.2509-2569         UGGAAGAAGCUCUGGCAGCUUUUUAAGCGUUUAUAUAAGAGUUAUAUAUAUGCGCGUUCCA
+#=GR U24695.1.2509-2569 SS <<<<<<<<<<<.....>>>>>>>>>.<<<<.<<<<<<.......>>>>>>.>>....>>>>
+
+M72421.1.2491-2554         UGGAGCAGAGGCUCUGGCAGCUUUUGCAGCGUUUAUAUAACAUGAAAUAUAUAUACGCAUUCCG
+#=GR M72421.1.2491-2554 SS <<<<<<<<<<<<<.....>>>>>>>>>.<<<<.<<<<<<........>>>>>>.>>>>..>>>>
+
+AF252722.1.810-873         NGGAGCAGAGGCUCUGGCAGCUUUUGCAGCGUUUAUAUAACAAGAAAUAUAUAUACGCAUUCCG
+#=GR AF252722.1.810-873 SS <<<<<<<<<<<<<.....>>>>>>>>>.<<<<.<<<<<<........>>>>>>.>>>>..>>>>
+
+//

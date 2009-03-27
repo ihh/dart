@@ -1,0 +1,16 @@
+# These two alignments should give identical scores with grammar dart/grammars/ncRnaDualStrand.eg
+
+# STOCKHOLM 1.0
+#=GF NH (Xf:.1,Yf:.1);
+          Xf UaaA
+          Yf CaaG
+#=GC SS_cons <__>
+#=GC  STRAND ++++
+//
+# STOCKHOLM 1.0
+#=GF NH (Xr:.1,Yr:.1);
+          Xr UuuA
+          Yr CuuG
+#=GC SS_cons <__>
+#=GC  STRAND ----
+//

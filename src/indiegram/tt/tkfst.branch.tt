@@ -1,0 +1,160 @@
+;; TKF Structure Tree
+;; Singlet model identical to that of tkfst-fixed.tt.
+;; Branch model modified to allow for insertion and deletion of S-links.
+
+
+;;;;;;;;;;;;
+;; Branch ;;
+;;;;;;;;;;;;
+
+>branch-stateTyping
+; Match:
+; loop
+L = s
+IL = i
+ML = m
+DL = m
+WL = w
+
+; stem
+S = s
+IS = i
+MS = m
+DS = m
+WS = w
+
+; bifurc
+Bm[S L] = bm
+Bp[e L] = bm
+Bm[e L] = bm
+
+; Insert sub-model:
+; loop
+Li = s
+ILi = i
+
+; stem
+Si = s
+ISi = i
+
+; bifurc
+Bi[Si L] = bi
+Bi[Si Li] = bi
+Bi[e Li] = bi
+
+e = e
+
+>branch-absorbProfiling
+; loop
+ML = l
+DL = l
+
+; stem
+MS = lr
+DS = lr
+
+Bm[S L] = Bi[S L]
+Bp[e L] = Bi[S L]
+Bm[e L] = Bi[e L]
+
+>branch-emitProfiling
+; loop
+IL = l
+ML = l
+DL = 
+
+; stem
+IS = lr
+MS = lr
+DS = 
+
+Bm[S L] = Bm[S L]
+Bp[e L] = Bp[e L]
+Bm[e L] = Bm[e L]
+
+; Insert sub-model:
+ILi = l
+ISi = lr
+
+; bifurc
+Bi[Si L] = Bi[Si L]
+Bi[Si Li] = Bi[Si Li]
+Bi[e Li] = Bi[e Li]
+
+>branch-emitDist
+IL = p1
+ML = m1_t
+
+IS = p2
+MS = m2_t
+
+ILi = p1
+ISi = p2
+
+>branch-tm
+; loop
+L -> IL = b1(t), Bi[Si L] = b1(t)*pS(), WL = 1-b1(t)
+IL -> IL = b1(t), Bi[Si L] = b1(t)*pS(), WL = 1-b1(t)
+ML -> IL = b1(t), Bi[Si L] = b1(t)*pS(), WL = 1-b1(t)
+DL -> IL = g1(t), Bi[Si L] = g1(t)*pS(), WL = 1-g1(t)
+WL -> ML = a1(t), DL = 1-a1(t), Bm[S L] = a1(t), Bp[e L] = 1-a1(t), e = 1
+
+; stem
+S -> IS = b2(t), WS = 1-b2(t)
+IS -> IS = b2(t), WS = 1-b2(t)
+MS -> IS = b2(t), WS = 1-b2(t)
+DS -> IS = g2(t), WS = 1-g2(t)
+WS -> MS = a2(t), DS = 1-a2(t), Bm[e L] = 1
+
+e -> 
+
+; Insert sub-model
+Li -> ILi = K1(), Bi[Si Li] = K1()*pS(), e = 1-K1()
+ILi -> ILi = K1(), Bi[Si Li] = K1()*pS(), e = 1-K1()
+
+Si -> ISi = K2(), Bi[e Li] = 1-K2()
+ISi -> ISi = K2(), Bi[e Li] = 1-K2()
+
+>branch-bifurc
+Bm[S L] -> (S, L, e)
+Bp[e L] -> (e, L, e)
+Bm[e L] -> (e, L, e)
+
+Bi[Si L] -> (Si, L, e)
+Bi[Si Li] -> (Si, Li, e)
+Bi[e Li] -> (e, Li, e)
+
+>branch-stateSorting
+L = 1
+IL = 2
+ML = 3
+DL = 3.5
+WL = 4
+
+; stem
+S = 1
+IS = 2
+MS = 3
+DS = 3.5
+WS = 4
+
+; bifurc
+Bm[S L] = 5
+Bp[e L] = 5
+Bm[e L] = 5
+
+; Insert sub-model:
+; loop
+Li = 6
+ILi = 7
+
+; stem
+Si = 6
+ISi = 7
+
+; bifurc
+Bi[Si L] = 9
+Bi[Si Li] = 9
+Bi[e Li] = 9
+
+e = 10

@@ -1,0 +1,36 @@
+;; Test TT.
+;; (Left-emitting) HMM-like structure + bifurcations at root.
+;; Composed TM (simpleTest.valid.tm) hand-checked.
+;; Reduced composed TM (simpleTest.valid.reduced.tm) hand-checked.
+
+
+;;;;;;;;;;;;;
+;; Singlet ;;
+;;;;;;;;;;;;;
+
+>singlet-stateTyping
+s = s
+il = i
+Bi[s s] = bi
+e = e
+
+>singlet-emitProfiling
+il = l
+Bi[s s] = Bi[s s]
+
+>singlet-emitDist
+il = p
+
+>singlet-tm
+s -> il = 1-ep(), e = ep()
+il -> il = ilp(), Bi[s s] = blp(), e = 1-ilp()-blp()
+e ->
+
+>singlet-bifurc
+Bi[s s] -> (s, s, e)
+
+>singlet-stateSorting
+s = 0
+il = 1
+Bi[s s] = 5
+e = 10

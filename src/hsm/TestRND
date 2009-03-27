@@ -1,0 +1,1 @@
+ls -1 rndsubmat/HSM* | perl -ne 'chomp;print$_," ";system"hsmem -log 7 -logfile TMPLOG $_ Pfam/test200 -notrain >/dev/null";$f=`grep Final TMPLOG; rm TMPLOG`;if($f=~/log-likelihood = (\S+)/){print$1,"\n"}else{print"\n"}'

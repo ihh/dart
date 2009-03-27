@@ -1,0 +1,40 @@
+INSTALLATION
+============
+
+Type the following...
+
+	make all
+
+...to make all targets.
+
+Alternatively, the following will make individual packages:
+
+	make xrate
+	make handel
+	make stemloc
+	make evoldoer
+
+Executables go in the following directories:
+
+	dart/bin
+	dart/perl
+
+Some programs expect you to set the environment variable DARTDIR
+to the root path of the dart distribution, but omitting this
+is rarely fatal.
+
+To compile, you'll need the following tools:
+
+  -- GNU gcc  (version 4.0 or higher)
+  -- GNU make (probably any recent version, but 3.80 is safe)
+  -- GNU ar   (found in the binutils package; version 2.14 is safe)
+  -- GNU test/rm/mv/ln       (found in the coreutils package)
+
+You may be able to get away without having GNU ar, but probably not
+without GNU make and definitely not without GNU gcc. Really, DART
+should be considered a GNU package.
+
+There's nothing as sophisticated as autoconf here yet, so if your
+C++ compiler isn't on your path as 'gcc', or your setup is nonstandard
+in some other way and you need to edit the Makefiles, the relevant
+definitions are all in 'dart/src/make.defs'.

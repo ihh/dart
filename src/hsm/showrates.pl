@@ -1,0 +1,2 @@
+#!/usr/local/bin/perl -w
+my$al="arndcqeghilkmfpstwyv";$_=<>;my($C,$A)=split;$_=<>;my@p=split;my@intra;foreach my$c(0..$C-1){my@c;foreach my$ai(0..$A-1){$_=<>;push@c,[split]}push@intra,\@c}my@inter;foreach my$a(0..$A-1){my@c;foreach my$ci(0..$C-1){$_=<>;push@c,[split]}push@inter,\@c}foreach my$a(0..$A-1){print uc(substr($al,$a,1))," prob ",join(" ",map($p[$a+$A*$_],0..$C-1))," intra ",join(" ",map(-$intra[$_]->[$a]->[$a],0..$C-1))," inter ",join(" ",map(-$inter[$a]->[$_]->[$_],0..$C-1)),"\n"}

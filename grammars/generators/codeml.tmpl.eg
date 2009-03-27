@@ -1,0 +1,135 @@
+;; Template for lineage-specific modeling of...
+;;  px0, px1, px2: nucleotide composition at each codon position
+;;              k: transversion/transition ratio     }  these "ratios" are actually
+;;              w: synonymous/nonsynonymous ratio    }  move acceptance probabilities
+
+;; Probabilistically, the model looks something like this:
+;; Each move is labeled with a codon position.
+;; Moves are proposed with rate S per codon position.
+;; A nucleotide is first sampled from the position-specific distribution.
+;; If the nucleotide is the same as the one that was already there, then the move is rejected.
+;; If changing the nucleotide at that position gives a codon that translates to a different amino acid,
+;;   then the move is rejected with probability (1-W).
+;; Finally, if the move is a transversion, it is rejected with probability (1-K).
+
+;; Here's the grammar...
+(grammar
+ (name CodeML_f4x3_ancestral)
+ (parametric)
+
+ ;; Define a hybrid chain with a different chain on each branch.
+ ;; What this block does is map each node name (e.g. "NODE") to its own substitution model ("CHAIN_NODE").
+ ;; The way that branches are mapped to substitution models is via "#=GS NODE TAG VALUE" Stockholm tags.
+ ;; This allows for arbitrary splits of the tree, to be defined in the Stockholm file.
+ ;; However, the split we want is rather unwieldy to define in this way,
+ ;; since we'd need to add a separate "#=GS..." line to the Stockholm file for every node of the tree.
+ ;; We can get around this using a piece of syntactic sugar: xrate's implicit #=GS annotations.
+ ;; Specifically, we use the special "?" TAG, whose VALUE xrate implicitly defines as the name of the node.
+ (hybrid-chain
+  (terminal (HYBRID0 HYBRID1 HYBRID2))
+  (row ?)   ;; the #=GS tag used to select substitution models (automagically equal to the node name)
+  (components
+   (&foreach-node  ;; loop over node names
+    NODE
+    ((label NODE) (terminal ((. COD0_ NODE) (. COD1_ NODE) (. COD2_ NODE))))
+    )
+   )
+  )
+
+ ;; Main loop over branches
+ (&foreach-node
+  NODE
+  (&warn Creating parameters for node NODE)
+
+  ;; Branch-specific probability parameters
+  (pgroup
+  ;; Nucleotide content at all three codon positions
+   (&foreach-integer
+    pos
+    (0 2)
+    ((&foreach-token
+      tok
+      ((. p tok pos _ NODE)
+       (/ 1 #TOKENS))))
+    )
+   ;; Probability of accepting/rejecting a transversion
+   (((. k_ NODE) .5) ((. ~k_ NODE) .5))
+   ;; Probability of accepting/rejecting a nonsynonymous substitution
+   (((. w_ NODE) .5) ((. ~w_ NODE) .5))
+  )
+
+  ;; Branch-specific rate parameters
+  (rate
+   ((. S_ NODE) 1)  ;; hopefully, this is something like CODEML's per-nucleotide synonymous substitution rate (per-codon rate is 3 * this)
+   )
+
+  ;; Branch-specific substitution rate matrix
+  (chain
+   (update-policy parametric)
+   (terminal ((. COD0_ NODE) (. COD1_ NODE) (. COD2_ NODE)))
+
+    ;; initial probability distribution
+   (&foreach-token
+    i
+    (&foreach-token
+     j
+     (&foreach-token
+      k
+      (initial (state (i j k)) (prob ((. p i 0_ NODE) * (. p i 1_ NODE) * (. p i 2_ NODE))))
+      )
+     )
+    )
+
+   ;; mutation rates
+   ;; will be pasted here by Perl code:   ==MUTATE==
+
+   ) ;; end chain
+
+  ) ;; end loop over branches
+
+ ;; transformation rules
+ ;; START state
+ (transform
+  (from (START))
+  (to (EMIT)))
+
+ (transform
+  (from (START))
+  (to ()))
+
+ ;; EMIT state
+ (transform
+  (from (EMIT))
+  (to (HYBRID0 HYBRID1 HYBRID2 EMIT*)))
+
+ (transform
+  (from (EMIT*))
+  (to (EMIT)))
+
+ (transform
+  (from (EMIT*))
+  (to ()))
+
+ ) ;; end grammar Ancestral_GC_content
+
+
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *)
+)  ;; end alphabet DNA
+

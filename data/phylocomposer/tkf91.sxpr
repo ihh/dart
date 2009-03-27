@@ -1,0 +1,36 @@
+;; A very simple phylocomposer input file,
+;; illustrating the TKF91 model on a single-branch tree.
+
+;; The tree
+(branch
+ (transducer TKF91_BRANCH)
+ )
+
+;; The transducer
+(transducer
+
+ (name TKF91_BRANCH)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name M) (type match))
+ (state (name D) (type delete))
+ (state (name I) (type insert))
+
+ (transition (from S) (to I) (label beta))
+ (transition (from S) (to W) (label ~beta))
+
+ (transition (from W) (to M) (label alpha))
+ (transition (from W) (to D) (label ~alpha))
+ (transition (from W) (to E))
+
+ (transition (from M) (to I) (label beta))
+ (transition (from M) (to W) (label ~beta))
+
+ (transition (from D) (to I) (label gamma))
+ (transition (from D) (to W) (label ~gamma))
+
+ (transition (from I) (to I) (label beta))
+ (transition (from I) (to W) (label ~beta))
+)

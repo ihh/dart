@@ -1,0 +1,58 @@
+;; TKF Structure Tree
+;; Singlet model identical to that of tkfst-fixed.tt.
+;; Branch model modified to allow for insertion and deletion of S-links.
+
+
+;;;;;;;;;;;;;
+;; Singlet ;;
+;;;;;;;;;;;;;
+
+>singlet-stateTyping
+; loop
+L = s
+IL = i
+
+; stem
+S = s
+IS = i
+
+; bifurc
+Bi[S L] = bi
+Bi[e L] = bi
+
+e = e
+
+>singlet-emitProfiling
+IL = l
+IS = lr
+
+Bi[S L] = Bi[S L]
+Bi[e L] = Bi[e L]
+
+>singlet-emitDist
+IL = p1
+IS = p2
+
+>singlet-tm
+; loop
+L -> IL = K1(), Bi[S L] = K1()*pS(), e = 1-K1()
+IL -> IL = K1(), Bi[S L] = K1()*pS(), e = 1-K1()
+
+; stem
+S -> IS = K2(), Bi[e L] = 1-K2()
+IS -> IS = K2(), Bi[e L] = 1-K2()
+
+e -> 
+
+>singlet-bifurc
+Bi[S L] -> (S, L, e)
+Bi[e L] -> (e, L, e)
+
+>singlet-stateSorting
+L = 1
+S = 1
+IL = 2
+IS = 2
+Bi[S L] = 5
+Bi[e L] = 5
+e = 10

@@ -1,0 +1,4 @@
+all:
+	cd src/newmat; make
+	cd src/randlib; make
+	cd src/scfg; make dep exec test

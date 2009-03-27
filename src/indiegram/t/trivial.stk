@@ -1,0 +1,10 @@
+# STOCKHOLM 1.0
+
+#=GF NH ((X:1,Y:1):1,Z:1);
+
+X           aattt
+#=GR X SS   <<.>>
+Y           aattt
+#=GR Y SS   .<.>.
+Z           aattt
+#=GR Z SS   <<.>>

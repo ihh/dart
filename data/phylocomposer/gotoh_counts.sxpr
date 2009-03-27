@@ -1,0 +1,113 @@
+;; Gotoh transducer
+;; http://biowiki.org/GotohTransducer
+
+(token (A C G T))
+
+(branch (name ROOT_BRANCH)
+	(sequence                  (A G C T A T G))
+	(transducer Gotoh_ROOT)
+	(branch
+	 (transducer Gotoh_BRANCH)
+	 (sequence                 (A G C T A T G)))
+	(branch
+	 (transducer Gotoh_BRANCH)
+	 (sequence                 (A G C T A T G)))
+	)
+
+(value ((Q A A) .75))
+(value ((Q A C) .05))
+(value ((Q A G) .15))
+(value ((Q A T) .05))
+
+(value ((Q C A) .05))
+(value ((Q C C) .75))
+(value ((Q C G) .05))
+(value ((Q C T) .15))
+
+(value ((Q G A) .15))
+(value ((Q G C) .05))
+(value ((Q G G) .75))
+(value ((Q G T) .05))
+
+(value ((Q T A) .05))
+(value ((Q T C) .15))
+(value ((Q T G) .05))
+(value ((Q T T) .75))
+
+(value ((pi A) .25))
+(value ((pi C) .25))
+(value ((pi G) .25))
+(value ((pi T) .25))
+
+(bit-value (a 3)
+	   (b 1)
+	   (c 3))
+
+(bit-value (d 3)
+	   (e 1)
+	   (f 3))
+
+(bit-value (p 3)
+	   (q 1)
+	   (r 2))
+
+(bit-value (v 2)
+	   (w 1)
+	   (x 3))
+
+(bit-value (g 1)
+	   (h 1))
+
+(transducer
+
+ (name Gotoh_BRANCH)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name X) (type wait))
+ (state (name M) (type match) (label Q))
+ (state (name D) (type delete))
+ (state (name I) (type insert) (label pi))
+
+ (transition (from S) (to I) (label a))
+ (transition (from S) (to W) (label b))
+ (transition (from S) (to X) (label c))
+
+ (transition (from M) (to I) (label d))
+ (transition (from M) (to W) (label e))
+ (transition (from M) (to X) (label f))
+
+ (transition (from D) (to I) (label p))
+ (transition (from D) (to W) (label q))
+ (transition (from D) (to X) (label r))
+
+ (transition (from I) (to I) (label v))
+ (transition (from I) (to W) (label w))
+ (transition (from I) (to X) (label x))
+
+ (transition (from W) (to M))
+ (transition (from W) (to E))
+
+ (transition (from X) (to D))
+ (transition (from X) (to E))
+
+)
+
+(transducer
+
+ (name Gotoh_ROOT)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name I) (type insert) (label pi))
+
+ (transition (from S) (to I) (label g))
+ (transition (from S) (to W) (label h))
+
+ (transition (from I) (to I) (label g))
+ (transition (from I) (to W) (label h))
+
+ (transition (from W) (to E))
+)

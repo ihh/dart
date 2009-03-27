@@ -1,0 +1,16 @@
+- DP matrix scores appear inconsistent with final score & breakdown (perhaps due to normalization of conditional score profiles?)
+  Examples:
+   handalign t/mini.stk -log TRANSDUCER_DP_MATRIX -branch -log BREAKDOWN -log TRANSDUCER_ELIM -log TRANSDUCER_PRE_ELIM
+
+   handalign t/trunc.stk -m t/prot.hsm -log 5 -flip -noc -rndseed 15 -log BREAKDOWN
+   handalign t/trunc.stk -m t/prot.hsm -log 5 -flip -noc -rndseed 15 -log TRANSDUCER_DP_MATRIX |& perl -ne 'print if/^43\s+\[(\d+) (\d+) (\d+)/&&$1==$2&&$1==$3'
+
+Check: path score through composite transducer should be equal to indel score in breakdown (again, this won't be true if normalization is turned on)
+
+- More generally, need to develop a series of tests that exercise the various incarnations of sample_subtree in alitrans.cc
+ - branch sampling: do the pairwise path & emit scores fit with those of the full alignment?
+ - node sampling: ditto (but may need to prevent null-state-elimination to test this)
+
+- "-log EMIT_BREAKDOWN" is broken, and in any case the display is not easy to read; fix
+
+- Observed at least one crash in a long run on the Tc1 alignment: check (may be fixed by now...)

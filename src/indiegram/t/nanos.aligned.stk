@@ -1,0 +1,17 @@
+# STOCKHOLM 1.0
+
+#=GF NotaBene This is from the RFAM family nos_TCE.stock.
+#=GF NotaBene Phylogeny estimated with Xrate and Jukes-Cantor grammar.
+
+#=GF NH                    (AF252722.1.810-873:0.0054939322,(U24695.1.2509-2569:0.1643350493,M72421.1.2491-2554:0.0001000010)node_3:0.0054937377)root;
+
+U24695.1.2509-2569         UGGA..AGAAGCUCUGGCAGCUUUUUAAGCGUUUAUAUAAGA.GUUAUAUAUAUGCGCGUUCCA
+#=GR U24695.1.2509-2569 SS <<<<<<<<<<<<<.....>>>>>>>>>.<<<<.<<<<<<........>>>>>>.>>>>..>>>>
+
+M72421.1.2491-2554         UGGAGCAGAGGCUCUGGCAGCUUUUGCAGCGUUUAUAUAACAUGAAAUAUAUAUACGCAUUCCG
+#=GR M72421.1.2491-2554 SS <<<<<<<<<<<<<.....>>>>>>>>>.<<<<.<<<<<<........>>>>>>.>>>>..>>>>
+
+AF252722.1.810-873         NGGAGCAGAGGCUCUGGCAGCUUUUGCAGCGUUUAUAUAACAAGAAAUAUAUAUACGCAUUCCG
+#=GR AF252722.1.810-873 SS <<<<<<<<<<<<<.....>>>>>>>>>.<<<<.<<<<<<........>>>>>>.>>>>..>>>>
+
+//

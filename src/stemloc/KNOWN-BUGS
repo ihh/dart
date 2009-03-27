@@ -1,0 +1,1 @@
+stemloc RF00168_all.fasta --progressive -slow -log 5 -log CYK_TRACEBACK

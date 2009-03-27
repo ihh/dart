@@ -1,0 +1,84 @@
+(branch
+ (transducer ROOT)
+ (branch (transducer CONVEX_BRANCH))
+ (branch (transducer CONVEX_BRANCH))
+ )
+
+(transducer
+
+ (name CONVEX_BRANCH)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name X) (type wait))
+ (state (name Y) (type wait))
+ (state (name M) (type match))
+ (state (name C) (type delete))
+ (state (name D) (type delete))
+ (state (name I) (type insert))
+ (state (name J) (type insert))
+
+ (transition (from S) (to I) (label a1))
+ (transition (from S) (to J) (label a2))
+ (transition (from S) (to W) (label b))
+ (transition (from S) (to X) (label c1))
+ (transition (from S) (to Y) (label c2))
+
+ (transition (from W) (to M))
+ (transition (from W) (to E))
+
+ (transition (from X) (to C))
+ (transition (from X) (to E))
+
+ (transition (from Y) (to D))
+ (transition (from Y) (to E))
+
+ (transition (from M) (to I) (label d1))
+ (transition (from M) (to J) (label d2))
+ (transition (from M) (to W) (label e))
+ (transition (from M) (to X) (label f1))
+ (transition (from M) (to Y) (label f2))
+
+ (transition (from C) (to I) (label p11))
+ (transition (from C) (to J) (label p12))
+ (transition (from C) (to W) (label q1))
+ (transition (from C) (to X) (label r11))
+ (transition (from C) (to Y) (label r12))
+
+ (transition (from D) (to I) (label p21))
+ (transition (from D) (to J) (label p22))
+ (transition (from D) (to W) (label q2))
+ (transition (from D) (to X) (label r21))
+ (transition (from D) (to Y) (label r22))
+
+ (transition (from I) (to I) (label v11))
+ (transition (from I) (to J) (label v12))
+ (transition (from I) (to W) (label w1))
+ (transition (from I) (to X) (label x11))
+ (transition (from I) (to Y) (label x12))
+
+ (transition (from J) (to I) (label v21))
+ (transition (from J) (to J) (label v22))
+ (transition (from J) (to W) (label w2))
+ (transition (from J) (to X) (label x21))
+ (transition (from J) (to Y) (label x22))
+)
+
+(transducer
+
+ (name ROOT)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name I) (type insert))
+
+ (transition (from S) (to I) (label g))
+ (transition (from S) (to W) (label h))
+
+ (transition (from I) (to I) (label g))
+ (transition (from I) (to W) (label h))
+
+ (transition (from W) (to E))
+)

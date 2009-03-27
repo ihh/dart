@@ -1,0 +1,2 @@
+Helpful debugging tip on OS X:
+Copy stl_vector.h to /usr/include/c++/4.0.0/bits/ for debugging guards on vector containers.

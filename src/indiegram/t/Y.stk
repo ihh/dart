@@ -1,0 +1,18 @@
+# STOCKHOLM 1.0
+
+#=GF NotaBene Sequences and structures are from Teunissen et al 2000 (NAR).
+#=GF NotaBene The conserved first stems of these three Y RNAs are not included.
+
+#=GF NH ((hY4:0.5,hY5:0.5):1,hY1:1);
+
+hY1           guagugaguuaucucaauugauuguucacagucaguuacagaucgaacuccuuguucuacucuuuccccccuucucacuac
+#=GR hY1 SS   <<<<<<<<.......<<<<<<<<<....>>>>>>>>>.......<<<<.....>>>>................>>>>>>>>
+
+hY4           guaguggguuaucagaacuuauuaacauuagugucacuaaaguugguauacaaccccccacugc
+#=GR hY4 SS   <<<<<<<<...........<<<<<<<.<<<<.....>>>>.>>>>>>>........>>>>>>>>
+
+
+hY5           guuguggguuauuguuaaguugauuuaacauugucuccccccacaac
+#=GR hY5 SS   <<<<<<<<....<<<<<<......>>>>>>.........>>>>>>>>
+
+//

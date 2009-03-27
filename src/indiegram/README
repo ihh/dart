@@ -1,0 +1,22 @@
+
+The TKFST model initialization file, tkfst.cc, will not compile on many versions of gcc
+with dart's default options.  The problem is with code optimization.
+You can get around this by preventing optimization when building the tkfst.o library.
+Build it by hand by:
+- navigate to the indiegram directory
+- execute
+    g++ -I.. -O0 -Wall -c -o obj/release/tkfst.o tkfst.cc
+- then build indiegram as usual with
+    make dep indiegram
+
+- The following make syntax should do this workaround for you:
+    make workaround dep indiegram
+
+The model-construction code in the files tkfst.h and tkfst.cc is generated automatically by
+the Perl script tripletSCFG.pl.  You can reproduce it by running
+   ./tripletSCFG.pl --tkfst --write
+This is equivalent to 
+   ./tripletSCFG.pl --write ../tt/tkfst.singlet.tt ../tt/tkfst.branch.tt
+
+Please see http://biowiki.org/IndiegramSoftware for further explanation of the provided
+sample models and information on creating your own models.

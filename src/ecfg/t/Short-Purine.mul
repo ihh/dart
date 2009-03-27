@@ -1,0 +1,46 @@
+# STOCKHOLM 1.0
+#=GF AC                          RF00167
+#=GF ID                          Purine
+#=GF DE                          Purine riboswitch
+#=GF AU                          Boese B, Barrick JE, Breaker RR
+#=GF SE                          Boese B, Barrick JE
+#=GF SS                          Published; PMID:12787499
+#=GF GA                          25.00
+#=GF TC                          29.04
+#=GF NC                          20.25
+#=GF TP                          Site
+#=GF BM                          cmbuild --rf CM SEED
+#=GF BM                          cmsearch -W 150 CM SEQDB
+#=GF RN                          [1]
+#=GF RM                          12787499
+#=GF RT                          Riboswitches Control Fundamental Biochemical Pathways in Bacillus
+#=GF RT                          subtilis and Other Bacteria.
+#=GF RA                          Mandal M, Boese B, Barrick JE, Winkler WC, Breaker RR;
+#=GF RL                          Cell 2003;113:577-586.
+#=GF CC                          Riboswitches are metabolite binding domains within certain messenger
+#=GF CC                          RNAs that serve as precision sensors for their corresponding targets.
+#=GF CC                          Allosteric rearrangement of mRNA structure is mediated by ligand
+#=GF CC                          binding, and this results in modulation of gene expression. A class
+#=GF CC                          of riboswitches that selectively recognises guanine and becomes
+#=GF CC                          saturated at concentrations as low as 5 nM. In Bacillus subtilis,
+#=GF CC                          this mRNA motif is located on at least five separate transcriptional
+#=GF CC                          units that together encode 17 genes that are mostly involved in
+#=GF CC                          purine transport and purine nucleotide biosynthesis. It has also been
+#=GF CC                          shown that some members of this family are specific for adenine
+#=GF CC                          instead.  Hence this family are termed purine riboswitches.
+#=GF SQ                          37
+AP001509.1/209873-209971         UUAAUCGAGCUCAACACUCUUCGUAUAUCCUC-UCAAUAUGG-GAUGAGGGUCUCUAC-AGGUA-CCGUAAA-UACCUAGCUACGAAAAGAAUGCAGUUAAUGU
+AP001509.1/79478-79577           ---UCUUUAUAUAAAGUACCUCAUAUAAUCUUGGGAAUAUGG-CCCAAAAGUUUCUACCUGCUGACCGUAAAUCGGCGGACUAUGGGGAAAGAUUUUGGAUCUU
+AP001509.1/51442-51541           ACAUGUAGAUAUCAUCCCUUUCGUAUAUACUUGGAGAUAAGG-UCCAGGAGUUUCUACCAGAUCACCGUAAAUGAUCUGACUAUGAAGGUGGAAUGGCUCG---
+U51115.1/15592-15691             ---GAAAUCAAAACACGACCUCAUAUAAUCUUGGGAAUAUGG-CCCAUAAGUUUCUACCCGGCAACCGUAAAUUGCCGGACUAUGCAGGGAAGUGAUCGAUAAA
+X83878.1/168-267                 UUACAAUAUAAUAGGAACACUCAUAUAAUCGCGUGGAUAUGG-CACGCAAGUUUCUACCGGGCA-CCGUAAA-UGUCCGACUAUGGGUGAGCAAUGGAACCGC-
+AP001512.1/93773-93674           -UUUACAUUAAAAAAAGCACUCGUAUAAUCGCGGGAAUAGGG-CCCGCAAGUUUCUACCAGGCUGCCGUAAACAGCCUGACUACGAGUGAUACUUUGACAUA--
+AP001509.1/53310-53409           -AUAAAUCGAAAACAUCAUUUCGUAUAAUGGCAGGAAUAGGG-CCUGCGAGUUUCUACCAAGCUACCGUAAAUAGCUUGACUACGAAAAUAAUGGGUUUUUU--
+Z99107.2/14363-14264             AAUUAAAUAGCUAUUAUCACUUGUAUAACCUCAAUAAUAUGG-UUUGAGGGUGUCUACCAGGAA-CCGUAAA-AUCCUGAUUACAAAAUUUGUUUAUGACAUU-
+Z99107.2/86084-86183             ---GAAAUCAAAACACGACCUCAUAUAAUCUUGGGAAUAUGG-CCCAUAAGUUUCUACCCGGCAACCGUAAAUUGCCGGACUAUGCAGGAAAGUGAUCGAUAAA
+Z99107.2/82145-82244             AGAAAUCAAAUAAGAUGAAUUCGUAUAAUCGCGGGAAUAUGG-CUCGCAAGUCUCUACCAAGCUACCGUAAAUGGCUUGACUACGUAAACAUUUCUUUCGU---
+Z99123.2/194904-195003           ---CUUAGAAAAAGACAUUCUUGUAUAUGAUCAGUAAUAUGG-UCUGAUUGUUUCUACCUAGUAACCGUAAAAAACUAGACUACAAGAAAGUUUGAAUAAAUUU
+AB008757.1/115-16                AAUGAAUCACGCUGACUCACUCAUAUAAUCGCAAGAAUACGG-CUUGCGAGUCUCUACCAGCCGACCGUAAAUCGGCUGACUAUGAGUGGCAAUGUCAGGA---
+#=GC RF                          xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+#=GC SS_cons                     .................<<<<<<<<...<<<<<<<........>>>>>>>........<<<<<<<.......>>>>>>>..>>>>>>>>...............
+//
