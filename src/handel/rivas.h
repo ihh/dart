@@ -73,51 +73,71 @@ struct Rivas_transducer_factory : Transducer_alignment
 
 struct Affine_transducer_factory_param_container
 {
-  double gamma_param;
-  double delete_rate_param;
-  double delete_extend_prob_param;
+  double gamma_param;  // 'gamma', the equilibrium sequence extension probability (probably better renamed 'eqm_extend')
+  double delete_rate_param;  // deletion rate
+  double delete_extend_prob_param; // delete_extend probability, i.e. parameter of geometric deletion length distribution
 };
 
 struct Convex_transducer_factory_param_container
 {
-  double gamma_param;
-  double delete_rate_param;
-  vector<double> cpt_weight_param;
-  vector<double> cpt_delete_extend;
+  double gamma_param;  // 'gamma', the equilibrium sequence extension probability (probably better renamed 'eqm_extend')
+  double delete_rate_param;  // deletion rate
+  vector<double> cpt_weight_param;  // probabilities of various deletion size classes
+  vector<double> cpt_delete_extend; // delete_extend probabilities for various deletion size classes
 };
 
 // Affine_transducer_factory
 // A Rivas_transducer_factory for simple affine gap models (geometric distribution)
 struct Affine_transducer_factory : Affine_transducer_factory_param_container, Rivas_transducer_factory
 {
+  // prior (static/global/singleton variables)
+  // hyperparameters of various beta & gamma priors; see Convex_transducer_factory comments for explanation of naming
   static double alpha, beta, gamma_alpha, gamma_beta, delete_extend_alpha, delete_extend_beta; 
 
+  // constructor
   Affine_transducer_factory (double gamma, double delete_rate, double delete_extend_prob);
   
+  // methods
   void set_transitions (double gamma, double delete_rate, double delete_extend_prob);
 
   void sample_indel_params ();
 
   sstring indel_parameter_string() const;
 
-  Affine_transducer_factory_param_container* propose_indel_params ();
+  Affine_transducer_factory_param_container propose_indel_params ();
 };
 
 // Convex_transducer_factory
 // A Rivas_transducer_factory for convex gap models (mixture-of-geometric distribution)
 struct Convex_transducer_factory : Convex_transducer_factory_param_container, Rivas_transducer_factory
 {
-  static double alpha, beta, gamma_alpha, gamma_beta, cpt1_alpha, cpt1_beta, cpt2_alpha, cpt2_beta; 
+  // prior (static/global/singleton variables)
+  // global prior on delete_rate
+  static double alpha, beta;  // hyperparameters of beta prior on delete_rate
+
+  // global prior on 'gamma', the equilibrium sequence extension probability (probably better renamed 'eqm_extend')
+  static double gamma_alpha, gamma_beta;  // hyperparameters of beta prior on 'gamma'
+
+  // singleton container object for global prior on delete_extend mixture distribution parameters
+  struct Component_prior
+  {
+    vector<double> weight_count;  // hyperparameters of Dirichlet prior on delete_extend mixture component weights
+    vector<double> alpha, beta; // hyperparameters of beta priors on delete_extend component values
+    Component_prior();  // singleton initializer code
+  };
+  static Component_prior cpt_prior;  // cpt_prior singleton object
+
   // constructor
   Convex_transducer_factory (double gamma, double delete_rate, const vector<double>& cpt_weight, const vector<double>& cpt_delete_extend);
 
+  // methods
   void set_transitions (double gamma, double delete_rate, const vector<double>& cpt_weight, const vector<double>& cpt_delete_extend);
   
   void sample_indel_params ();
 
   sstring indel_parameter_string() const;
 
-  Convex_transducer_factory_param_container* propose_indel_params ();
+  Convex_transducer_factory_param_container propose_indel_params ();
 
 };
 

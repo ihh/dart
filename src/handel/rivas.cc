@@ -2,15 +2,21 @@
 
 // uncomment the following #define to enable D->I transitions
 // #define ALLOW_DELETE_TO_INSERT_TRANSITIONS
-#define LARGE_NUM 1000
+
+// number of parameter-sets to sample from the prior, for each parameter-sampling step
+// 1024 parameter samples takes embarrassingly long, but is probably necessary. There are 5 parameters for the 2-cpt long indel model, and 1024=4^5.
+// So, 1024 samples is 4 independent samples of each parameter. Any fewer seems like it might undersample the prior.
+#define PRIOR_SAMPLES_PER_PARAM_SAMPLING_STEP 1024
 
 // static inits
 // May want to allow these to be configurable from cmdline?
+// IH (3/30/09): configurable from cmdline would be good...
+
 // alpha, beta are hyperparameters for the gamma 
 // distribution from which delete rates are sampled
 // default rate = alpha/beta, weight = 1/beta
 
-//should reestimate convex hyperparams!
+// TODO: reestimate convex hyperparams!
 double Affine_transducer_factory::alpha = 195.437;
 double Affine_transducer_factory::beta = 3.861;
 double Convex_transducer_factory::alpha = 195.437;
@@ -25,12 +31,27 @@ double Convex_transducer_factory::gamma_alpha = 8.597;
 double Convex_transducer_factory::gamma_beta = 0.488;
 double Affine_transducer_factory::delete_extend_alpha = 10.313;
 double Affine_transducer_factory::delete_extend_beta = 1.639;
-//Convex del_extend hyperparams
-double Convex_transducer_factory::cpt1_alpha = 19.72;
-double Convex_transducer_factory::cpt1_beta = 21.94;
-double Convex_transducer_factory::cpt2_alpha = 7.83;
-double Convex_transducer_factory::cpt2_beta = 1.64;
 
+// Component_prior singleton constructor
+
+Convex_transducer_factory::Component_prior::Component_prior()
+  :  weight_count (2),  // 2-component mixture
+     alpha (2),
+     beta (2)
+{
+  // mild (2:1) prior on mixture component weights
+  weight_count[0] = 2.;
+  weight_count[1] = 1.;
+
+  // mild del_extend prior; hand-tweaked hyperparams
+  alpha[0] = 19.72;
+  beta[0] = 21.94;
+  alpha[1] = 7.83;
+  beta[1] = 1.64;
+}
+
+
+Convex_transducer_factory::Component_prior Convex_transducer_factory::cpt_prior = Convex_transducer_factory::Component_prior();
 
 Rivas_transducer_factory::Rivas_transducer_factory (int branch_states, double gamma_val) :
   prior (2),
@@ -250,46 +271,40 @@ void Affine_transducer_factory::set_transitions(double gamma_val, double delete_
   mean_del_size = 1. / (1. - del_extend_prob);
 }
 
-Affine_transducer_factory_param_container* Affine_transducer_factory::propose_indel_params()
+Affine_transducer_factory_param_container Affine_transducer_factory::propose_indel_params()
 {
-  Affine_transducer_factory_param_container* container = new Affine_transducer_factory_param_container;
-  container->gamma_param = genbet(gamma_alpha, gamma_beta);
-  container->delete_extend_prob_param = genbet(delete_extend_alpha, delete_extend_beta);
-  container->delete_rate_param = Rnd::sample_gamma(alpha, beta);
+  Affine_transducer_factory_param_container container;
+  container.gamma_param = Rnd::sample_beta (gamma_alpha, gamma_beta);
+  container.delete_extend_prob_param = Rnd::sample_beta (delete_extend_alpha, delete_extend_beta);
+  container.delete_rate_param = Rnd::sample_gamma (alpha, beta);
   return container;
 } 
 
-Convex_transducer_factory_param_container* Convex_transducer_factory::propose_indel_params()
+Convex_transducer_factory_param_container Convex_transducer_factory::propose_indel_params()
 {
-  Convex_transducer_factory_param_container* container = new Convex_transducer_factory_param_container;
-  container->gamma_param = genbet(gamma_alpha, gamma_beta);
-  //maybe should put this in a for loop w/iterator to deal w/ arbitrary # of components?
-  //sanity check in the meantime.
-  if(cpt_weight_param.size() > 2){
-    THROWEXPR ("Parameter sampling not implemented for more than 2 components!");
-  }
-  container->cpt_weight_param.push_back(cpt_weight_param.at(0));
-  container->cpt_weight_param.push_back(cpt_weight_param.at(1));
-  container->cpt_delete_extend.push_back(genbet(cpt1_alpha, cpt1_beta));
-  container->cpt_delete_extend.push_back(genbet(cpt2_alpha, cpt2_beta));
-  container->delete_rate_param = Rnd::sample_gamma(alpha, beta);
+  Convex_transducer_factory_param_container container;
+  container.gamma_param = Rnd::sample_beta (gamma_alpha, gamma_beta);
+  
+  container.cpt_weight_param = Rnd::sample_dirichlet (cpt_prior.weight_count);
+  for (unsigned int cpt = 0; cpt < cpt_weight_param.size(); ++cpt)
+    container.cpt_delete_extend.push_back (Rnd::sample_beta (cpt_prior.alpha.at(cpt), cpt_prior.beta.at(cpt)));
+
+  container.delete_rate_param = Rnd::sample_gamma(alpha, beta);
   return container;
 }
 
 sstring Affine_transducer_factory::indel_parameter_string() const
 {
   sstring param_string;
-  param_string << "Gamma: " << gamma_param << ", Delete_rate: " << delete_rate_param << ", Del_extend: " << delete_extend_prob_param;
+  param_string << "Eqm_extend: " << gamma_param << ", Delete_rate: " << delete_rate_param << ", Del_extend: " << delete_extend_prob_param;
   return param_string;
 }
 
 sstring Convex_transducer_factory::indel_parameter_string() const
 {
   sstring param_string;
-  param_string << "Gamma: " << gamma_param << ", Delete_rate: " << delete_rate_param;
-  for (unsigned int i = 0; i < cpt_weight_param.size(); i++){
-    param_string << " cpt "<<i<< " weight: " << cpt_weight_param[i] << " cpt "<<i<<" extend: "<< cpt_delete_extend[i];
-  }
+  param_string << "Eqm_extend: " << gamma_param << ", Delete_rate: " << delete_rate_param
+	       << ", Del_size_class:( " << cpt_weight_param << "), Del_extend:( " << cpt_delete_extend << ')';
   return param_string;
 }
 
@@ -299,16 +314,22 @@ void Affine_transducer_factory::sample_indel_params()
   vector<Prob> probs;
   vector<Affine_transducer_factory_param_container> params;
   CTAG(5, PARAM_SAMPLE) << "Proposing new parameters\n";
-  for (int i = 0; i < LARGE_NUM; i++){
-     params.push_back(*propose_indel_params());
-     CTAG(3, PARAM_SAMPLE) << "\tParameter set " << i << ": "<< params[i].gamma_param << "," << params[i].delete_rate_param << "," << params[i].delete_extend_prob_param << "\n";
+  for (int i = 0; i < PRIOR_SAMPLES_PER_PARAM_SAMPLING_STEP; i++){
+     params.push_back(propose_indel_params());
      set_transitions(params[i].gamma_param, params[i].delete_rate_param, params[i].delete_extend_prob_param);
-     scores.push_back(alignment_score());
+     const Score align_sc = alignment_score();
+     scores.push_back (align_sc);
+     CTAG(3, PARAM_SAMPLE) << "param_set #" << i << " (" << -Score2Bits(align_sc)
+			   << " bits): gamma=" << params[i].gamma_param
+			   << ",delete_rate="  << params[i].delete_rate_param
+			   << ",delete_extend=" << params[i].delete_extend_prob_param << "\n";
   }
   probs = Score2ProbVecNorm(scores);
   int index = Rnd::choose(probs);
   set_transitions(params[index].gamma_param, params[index].delete_rate_param, params[index].delete_extend_prob_param);
-  CTAG(5, PARAM_SAMPLE) << "New parameters chosen: "<< gamma_param << ',' <<delete_rate_param << ',' <<delete_extend_prob_param<<"\n";
+  CTAG(5, PARAM_SAMPLE) << "New parameters chosen (score " << -Score2Bits(scores[index]) << " bits, postprob " << -Prob2Bits(probs[index])
+			<< " bits): gamma=" << gamma_param
+			<< ",delete_rate=" << delete_rate_param << ",delete_extend=" <<delete_extend_prob_param<<"\n";
 }
 
 void Convex_transducer_factory::sample_indel_params()
@@ -317,24 +338,21 @@ void Convex_transducer_factory::sample_indel_params()
   vector<Prob> probs;
   vector<Convex_transducer_factory_param_container> params;
   CTAG(5, PARAM_SAMPLE) << "Proposing new parameters\n";
-  for (int i = 0; i < LARGE_NUM; i++){
-     params.push_back(*propose_indel_params());
-     CTAG(3, PARAM_SAMPLE) << "\tParameter set " << i << ": "<< params[i].gamma_param << "," << params[i].delete_rate_param << ",";
-     for (unsigned int j = 0; j < cpt_weight_param.size(); j++){
-       CTAG(3, PARAM_SAMPLE) << " cpt "<< j << " weight: " << params[i].cpt_weight_param[j] << "cpt "<< j <<" extend: "<< params[i].cpt_delete_extend[j];
-     }
-     CTAG(3, PARAM_SAMPLE) <<"\n";
+  for (int i = 0; i < PRIOR_SAMPLES_PER_PARAM_SAMPLING_STEP; i++){
+     params.push_back(propose_indel_params());
      set_transitions(params[i].gamma_param, params[i].delete_rate_param, params[i].cpt_weight_param, params[i].cpt_delete_extend);
-     scores.push_back(alignment_score());
+     const Score align_sc = alignment_score();
+     scores.push_back (align_sc);
+     CTAG(3, PARAM_SAMPLE) << "param_set #" << i << " (" << -Score2Bits(align_sc)
+			   << " bits): gamma="<< params[i].gamma_param << ",delete_rate=" << params[i].delete_rate_param
+			   << ",weight=(" << cpt_weight_param << "),delete_extend=(" << cpt_delete_extend << ")\n";
   }
   probs = Score2ProbVecNorm(scores);
   int index = Rnd::choose(probs);
   set_transitions(params[index].gamma_param, params[index].delete_rate_param, params[index].cpt_weight_param, params[index].cpt_delete_extend);
-  CTAG(5, PARAM_SAMPLE) << "New parameters chosen: "<< gamma_param << ',' <<delete_rate_param << ',';
-  for (unsigned int j = 0; j < cpt_weight_param.size(); j++){
-    CTAG(5, PARAM_SAMPLE) << " cpt "<< j << " weight: " << cpt_weight_param[j] << "cpt "<< j <<" extend: "<< cpt_delete_extend[ j ];
-  }
-  CTAG(5, PARAM_SAMPLE) << "\n";
+  CTAG(5, PARAM_SAMPLE) << "New parameters chosen (score " << -Score2Bits(scores[index]) << " bits, postprob " << -Prob2Bits(probs[index])
+			<< " bits): gamma="<< gamma_param << ",delete_rate=" << delete_rate_param
+			<< ",weight=(" << cpt_weight_param << "),delete_extend=(" << cpt_delete_extend << ")\n";
 }
 
 Affine_transducer_factory::Affine_transducer_factory (double gamma, double delete_rate, double del_extend_prob)
