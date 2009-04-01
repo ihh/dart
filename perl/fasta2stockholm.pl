@@ -16,43 +16,44 @@ push @argv, "-" unless @argv;
 
 # loop through FASTA files
 foreach my $fasta (@argv) {
-# print Stockholm output
-    print "# STOCKHOLM 1.0\n";
-
 # read FASTA file
-    my %seen;
-    my ($name, $seq, $len, $lastname, $lastlen);
+    my %seq;
+    my @name;
+    my $name;
     open FASTA, "<$fasta" or die "Couldn't open '$fasta': $!";
     while (<FASTA>) {
 	if (/^\s*>\s*(\S+)/) {
-	    if (defined ($lastname) && $len != $lastlen) {
-		# length changed, so start new alignment
-		print "//\n# STOCKHOLM 1.0\n";
-		%seen = ();  # forget previously-seen sequence names
-	    }
-	    print "$name $seq\n" if defined $name;
-	    $lastname = $name;
-	    $lastlen = $len;
 	    $name = $1;
-	    $len = 0;
-	    $seq = "";
-	    warn "Duplicate sequence name: $name\n" if $seen{$name};
-	    $seen{$name} = 1;
+	    push @name, $name;
 	} else {
 	    if (/\S/ && !defined $name) {
 		warn "Ignoring: $_";
 	    } else {
 		s/\s//g;
-		$seq .= $_;
-		$len += length;
+		$seq{$name} .= $_;
 	    }
 	}
     }
     close FASTA;
-    if (defined ($lastname) && $len != $lastlen) {
-	# length changed, so start new alignment
-	print "//\n# STOCKHOLM 1.0\n";
+
+# check all seqs are same length
+    my $length;
+    my $lname;
+    foreach my $name (@name) {
+	my $l = length $seq{$name};
+	if (defined $length) {
+	    die "Sequences not all same length ($lname is $length, $name is $l)" unless $length == $l;
+	} else {
+	    $length = length $seq{$name};
+	    $lname = $name;
+	}
     }
-    print "$name $seq\n" if defined $name;
+
+# print Stockholm output
+    print "# STOCKHOLM 1.0\n";
+    foreach my $name (@name) {
+	print $name, " ", $seq{$name}, "\n";
+    }
     print "//\n";
 }
+
