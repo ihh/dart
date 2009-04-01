@@ -21,35 +21,38 @@ foreach my $fasta (@argv) {
 
 # read FASTA file
     my %seen;
-    my ($name, $len, $lastname, $lastlen);
+    my ($name, $seq, $len, $lastname, $lastlen);
     open FASTA, "<$fasta" or die "Couldn't open '$fasta': $!";
     while (<FASTA>) {
 	if (/^\s*>\s*(\S+)/) {
-	    print "\n" if defined $name;
 	    if (defined ($lastname) && $len != $lastlen) {
-		die "Sequence $name (length $len) has different length from sequence $lastname (length $lastlen)\n";
+		# length changed, so start new alignment
+		print "//\n# STOCKHOLM 1.0\n";
+		%seen = ();  # forget previously-seen sequence names
 	    }
+	    print "$name $seq\n" if defined $name;
 	    $lastname = $name;
 	    $lastlen = $len;
 	    $name = $1;
 	    $len = 0;
+	    $seq = "";
 	    warn "Duplicate sequence name: $name\n" if $seen{$name};
 	    $seen{$name} = 1;
-	    print "$name ";
 	} else {
 	    if (/\S/ && !defined $name) {
 		warn "Ignoring: $_";
 	    } else {
 		s/\s//g;
-		print;
+		$seq .= $_;
 		$len += length;
 	    }
 	}
     }
     close FASTA;
-    print "\n" if defined $name;
     if (defined ($lastname) && $len != $lastlen) {
-	die "Sequence $name (length $len) has different length from sequence $lastname (length $lastlen)\n";
+	# length changed, so start new alignment
+	print "//\n# STOCKHOLM 1.0\n";
     }
+    print "$name $seq\n" if defined $name;
     print "//\n";
 }
