@@ -20,41 +20,36 @@ foreach my $fasta (@argv) {
     print "# STOCKHOLM 1.0\n";
 
 # read FASTA file
-    my %len;
-    my @name;
-    my $name;
+    my %seen;
+    my ($name, $len, $lastname, $lastlen);
     open FASTA, "<$fasta" or die "Couldn't open '$fasta': $!";
     while (<FASTA>) {
 	if (/^\s*>\s*(\S+)/) {
 	    print "\n" if defined $name;
+	    if (defined ($lastname) && $len != $lastlen) {
+		die "Sequence $name (length $len) has different length from sequence $lastname (length $lastlen)\n";
+	    }
+	    $lastname = $name;
+	    $lastlen = $len;
 	    $name = $1;
-	    warn "Duplicate sequence name: $name\n" if exists $len{$name};
+	    $len = 0;
+	    warn "Duplicate sequence name: $name\n" if $seen{$name};
+	    $seen{$name} = 1;
 	    print "$name ";
-	    push @name, $name;
 	} else {
 	    if (/\S/ && !defined $name) {
 		warn "Ignoring: $_";
 	    } else {
 		s/\s//g;
 		print;
-		$len{$name} += length;
+		$len += length;
 	    }
 	}
     }
     close FASTA;
     print "\n" if defined $name;
-    print "//\n";
-
-# check all seqs are same length
-    my $length;
-    foreach my $name (@name) {
-	my $l = $len{$name};
-	if (defined $length) {
-	    if ($length != $l) {
-		die "Sequences not all same length:\n", map (" $_ : $len{$_}\n", @name);
-	    }
-	} else {
-	    $length = $l;
-	}
+    if (defined ($lastname) && $len != $lastlen) {
+	die "Sequence $name (length $len) has different length from sequence $lastname (length $lastlen)\n";
     }
+    print "//\n";
 }
