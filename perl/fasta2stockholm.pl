@@ -28,7 +28,7 @@ foreach my $fasta (@argv) {
 	if (/^\s*>\s*(\S+)/) {
 	    print "\n" if defined $name;
 	    $name = $1;
-	    die "Duplicate sequence name: $name\n" if exists $len{$name};
+	    warn "Duplicate sequence name: $name\n" if exists $len{$name};
 	    print "$name ";
 	    push @name, $name;
 	} else {
