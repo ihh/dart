@@ -45,8 +45,6 @@ foreach my $fasta (@argv) {
     print "\n" if defined $name;
     print "//\n";
 
-    warn map (" $_ : $len{$_}\n", @name);
-
 # check all seqs are same length
     my $length;
     foreach my $name (@name) {
