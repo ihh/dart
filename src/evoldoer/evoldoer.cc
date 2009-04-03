@@ -1,5 +1,5 @@
 #include "evoldoer/tkfstructuretree.h"
-#include "handel/tkfhmm.h"
+#include "tkf/tkfhmm.h"
 #include "scfg/postenv.h"
 #include "scfg/paircfgdp.h"
 #include "scfg/cfgdotplot.h"
