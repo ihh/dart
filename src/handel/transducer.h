@@ -2079,10 +2079,10 @@ struct Pair_transducer_funcs : Pair_transducer<PFunc>
     Transducer_methods::populate_transducer_scores (*this, pair_sc, var_sc);
 
     // emissions
-    pair_sc.state_type = state_type;
-    pair_sc.alloc_pair_emit ((Score) 0);
     pair_sc.emit_label = emit_label;
     pair_sc.alphabet_size = alphabet_size;
+    pair_sc.state_type = state_type;
+    pair_sc.alloc_pair_emit ((Score) 0);
 
     for (int state = 0; state < states(); ++state)
       for (int x = 0; x < pair_emit[state].xsize(); ++x)
