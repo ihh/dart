@@ -638,7 +638,7 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 	      vector<int> rebuilt_cols;
 	      vector<sstring> emit_state;
 	      vector<char> emit_chars;
-	      const int ppdec = ml_chain_state_prob * 10 + .5;
+	      const int ppdec = (int) (ml_chain_state_prob * 10 + .5);
 	      const char ppchar =
 		ppdec < 0
 		? (char) '0'
