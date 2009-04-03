@@ -1596,10 +1596,10 @@ Singleton_transducer_funcs::Singleton_transducer_funcs (int alph_sz)
   : Pair_transducer_funcs (2)
 {
   Pair_transducer_funcs::alphabet_size = alph_sz;
-  alloc_pair_emit (PFunc (1));
 
   state_type[insert_state()] = TransducerInsertType;
   state_type[wait_state()] = TransducerWaitType;
+  alloc_pair_emit (PFunc (1));
 
   start_name = Singleton_start_state_name;
   end_name = Singleton_end_state_name;
@@ -1619,10 +1619,10 @@ Singleton_transducer_scores::Singleton_transducer_scores (int alph_sz)
   : Pair_transducer_scores (2)
 {
   Pair_transducer_scores::alphabet_size = alph_sz;
-  alloc_pair_emit (0);
 
   state_type[insert_state()] = TransducerInsertType;
   state_type[wait_state()] = TransducerWaitType;
+  alloc_pair_emit (0);
 
   start_name = Singleton_start_state_name;
   end_name = Singleton_end_state_name;

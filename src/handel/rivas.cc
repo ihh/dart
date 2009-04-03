@@ -140,7 +140,7 @@ void Rivas_transducer_factory::set_trans_prob_rate (int src_state, int old_dest_
 Pair_transducer_scores Rivas_transducer_factory::prior_pair_trans_sc()
 {
   prior.alphabet_size = subst_model.m();
-  prior.alloc_pair_emit (0);
+  prior.alloc_pair_emit (0);  // prior.state_type already initialized by calls to init_prior_* from constructor
 
   const vector<Prob> ins = subst_model.create_prior();
   for (int i = 0; i < subst_model.m(); ++i)
@@ -163,7 +163,7 @@ void Rivas_transducer_factory::update_trans_probs()
 Pair_transducer_scores Rivas_transducer_factory::branch_pair_trans_sc (double time)
 {
   branch.alphabet_size = subst_model.m();
-  branch.alloc_pair_emit (0);
+  branch.alloc_pair_emit (0);  // branch.state_type already initialized by calls to init_branch_* from set_transitions_method (called by constructor)
 
   const vector<Prob> ins = subst_model.create_prior();
   const array2d<Prob> match = subst_model.create_conditional_substitution_matrix (time);
