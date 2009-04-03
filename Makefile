@@ -1,5 +1,6 @@
 # All Targets
-all: stemloc xrate xgram xfold xprot simgram handel evoldeeds psw empath kimono weighbor utils
+# NB indiegram is not included in the target list by default, since it takes forever to compile
+all: stemloc xrate xgram xfold xprot simgram handel evoldoer psw empath kimono weighbor utils
 	@echo All targets built
 
 # files & paths
@@ -91,9 +92,6 @@ dense-stemloc:
 # evoldoer: pairwise statistical alignment of RNA sequences
 evoldoer:
 	cd $(SRCDIR)/evoldoer; $(MAKE) -k $(RELEASE) dep evoldoer
-
-# evoldeeds: evoldoer, indiegram, stemloc
-evoldeeds: evoldoer indiegram stemloc
 
 # Indiegram: three-way statistical alignment of RNA sequences
 indiegram:
