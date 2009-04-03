@@ -2,7 +2,7 @@
 #define TKF_STRUCTURE_TREE_INCLUDED
 
 #include "scfg/paircfg.h"
-#include "handel/tkfparams.h"
+#include "tkf/tkfparams.h"
 #include "hsm/em_matrix.h"
 
 struct TKFST_params
