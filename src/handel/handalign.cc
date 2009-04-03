@@ -244,7 +244,7 @@ int main(int argc, char* argv[])
 			<< "i.e. deleting a row from an existing alignment then 'reconstructing' it,\n"
 			<< "a better bet would be to re-root the tree at the missing node (or its parent).\n\n";
 		  
-	      CTAG(5,HANDALIGN) << "Creating an ungapped alignment row for tree node '" << tree.node_name[node] << "'\n";
+	      CTAG(5,HANDALIGN) << "Creating a minimally-gapped alignment row for tree node '" << tree.node_name[node] << "'\n";
 	      const int new_row = stock.add_row (stock.path.create_empty_row(), tree.node_name[node], (Named_profile*) 0);
 	      new_rows.insert (new_row);
 	      for (int col = 0; col < stock.columns(); ++col)
