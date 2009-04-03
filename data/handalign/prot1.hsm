@@ -418,4 +418,3 @@
   (mutate (from (v)) (to (w)) (rate 0.0028241))
   (mutate (from (v)) (to (y)) (rate 0.0179363))
  )  ;; end of rate matrix
-)  ;; end of grammar
