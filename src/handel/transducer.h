@@ -508,10 +508,10 @@ struct Pair_transducer : Transducer<T>, TSpaceEnum
   void alloc_pair_emit (T t)
   {
     pair_emit = vector<array2d<T> > (Transducer<T>::states());
-    for (int s = 0; s < states(); ++s)
-      if (state_type[s] == TransducerInsertType || state_type[s] == TransducerDeleteType)
+    for (int s = 0; s < Transducer<T>::states(); ++s)
+      if (Transducer<T>::state_type[s] == Transducer_state_type_enum::TransducerInsertType || Transducer<T>::state_type[s] == Transducer_state_type_enum::TransducerDeleteType)
 	pair_emit[s] = array2d<T> (alphabet_size, 1, t);
-      else if (state_type[s] == TransducerMatchType)
+      else if (Transducer<T>::state_type[s] == Transducer_state_type_enum::TransducerMatchType)
 	pair_emit[s] = array2d<T> (alphabet_size, alphabet_size, t);
   }
 

@@ -337,7 +337,7 @@ Handel_movement Transducer_alignment::prepare_movement (const PHYLIP_tree& new_t
       const int phylip_n = etree2phylip[etree_n];
 
       const sstring tape_name = safe_tape_name (new_tree, phylip_n);
-      CTAG(1,HANDEL_MOVEMENT) << "Preparing transducers for node " << tape_name << '\n';
+      CTAG(1,HANDEL_MOVEMENT) << "Preparing transducer for node " << tape_name << '\n';
 
       const Pair_transducer_scores bpts = branch_pair_trans_sc (new_tree.branch_length (phylip_p, phylip_n));
       sstring pvar_prefix;
