@@ -1,6 +1,7 @@
 # All Targets
 # NB indiegram is not included in the target list by default, since it takes forever to compile
-all: stemloc xrate xgram xfold xprot simgram handel evoldoer psw empath kimono weighbor utils
+# empath & kimono are also no longer included, since they are rarely used
+all: stemloc xrate xgram xfold xprot simgram handel evoldoer psw weighbor utils
 	@echo All targets built
 
 # files & paths
