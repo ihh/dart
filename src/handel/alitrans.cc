@@ -335,9 +335,13 @@ Handel_movement Transducer_alignment::prepare_movement (const PHYLIP_tree& new_t
       const int etree_p = etree.parent[etree_n];
       const int phylip_p = etree2phylip[etree_p];
       const int phylip_n = etree2phylip[etree_n];
+
+      const sstring tape_name = safe_tape_name (new_tree, phylip_n);
+      CTAG(1,HANDEL_MOVEMENT) << "Preparing transducers for node " << tape_name << '\n';
+
       const Pair_transducer_scores bpts = branch_pair_trans_sc (new_tree.branch_length (phylip_p, phylip_n));
       sstring pvar_prefix;
-      pvar_prefix << safe_tape_name (new_tree, phylip_n) << PVAR_PREFIX_CHAR;
+      pvar_prefix << tape_name << PVAR_PREFIX_CHAR;
       pair_trans[etree_n] = Pair_transducer_funcs (bpts, pscores, trans_alph, pvar_prefix.c_str());
     }
 

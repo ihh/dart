@@ -507,7 +507,12 @@ struct Pair_transducer : Transducer<T>, TSpaceEnum
   // allocator for pair_emit
   void alloc_pair_emit (T t)
   {
-    pair_emit = vector<array2d<T> > (Transducer<T>::states(), array2d<T> (alphabet_size, alphabet_size, t));
+    pair_emit = vector<array2d<T> > (Transducer<T>::states());
+    for (int s = 0; s < states(); ++s)
+      if (state_type[s] == TransducerInsertType || state_type[s] == TransducerDeleteType)
+	pair_emit[s] = array2d<T> (alphabet_size, 1, t);
+      else if (state_type[s] == TransducerMatchType)
+	pair_emit[s] = array2d<T> (alphabet_size, alphabet_size, t);
   }
 
   // constructors

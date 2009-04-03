@@ -189,6 +189,9 @@ struct Alphabet_group : PGroup
 template<class T>
 class PVar_container : Stream_saver
 {
+private:
+  // private data
+  set<sstring> group_name_set;  // fast indexing for group_name
 protected:
   // protected method _new_group_index allocates a new group index & returns it
   int _new_group_index (unsigned int size, T default_val, const char* name, const vector<sstring>& suffix)
@@ -204,12 +207,13 @@ protected:
 	gname.clear();
 	if (name) gname << name; else gname << "Group" << group_idx;
 	if (gnum > 1) gname << gnum;
-	if (find (group_name.begin(), group_name.end(), gname) == group_name.end())
+	if (group_name_set.find (gname) == group_name_set.end())
 	  break;
       }
 
     // store and return
     group_name.push_back (gname);
+    group_name_set.insert (gname);
     group_suffix.push_back (suffix);
 
     // group index
@@ -253,8 +257,10 @@ public:
 
   void delete_group (int group_idx)
   {
+    const sstring gname = group_name[group_idx];
     group.erase (group.begin() + group_idx);
     group_name.erase (group_name.begin() + group_idx);
+    group_name_set.erase (gname);
     group_suffix.erase (group_suffix.begin() + group_idx);
   }
 
