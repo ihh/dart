@@ -317,7 +317,7 @@ void Affine_transducer_factory::sample_indel_params()
   for (int i = 0; i < PRIOR_SAMPLES_PER_PARAM_SAMPLING_STEP; i++){
      params.push_back(propose_indel_params());
      set_transitions(params[i].gamma_param, params[i].delete_rate_param, params[i].delete_extend_prob_param);
-     const Score align_sc = alignment_score();
+     const Score align_sc = alignment_path_score();
      scores.push_back (align_sc);
      CTAG(3, PARAM_SAMPLE) << "param_set #" << i << " (" << -Score2Bits(align_sc)
 			   << " bits): gamma=" << params[i].gamma_param
@@ -341,7 +341,7 @@ void Convex_transducer_factory::sample_indel_params()
   for (int i = 0; i < PRIOR_SAMPLES_PER_PARAM_SAMPLING_STEP; i++){
      params.push_back(propose_indel_params());
      set_transitions(params[i].gamma_param, params[i].delete_rate_param, params[i].cpt_weight_param, params[i].cpt_delete_extend);
-     const Score align_sc = alignment_score();
+     const Score align_sc = alignment_path_score();
      scores.push_back (align_sc);
      CTAG(3, PARAM_SAMPLE) << "param_set #" << i << " (" << -Score2Bits(align_sc)
 			   << " bits): gamma="<< params[i].gamma_param << ",delete_rate=" << params[i].delete_rate_param

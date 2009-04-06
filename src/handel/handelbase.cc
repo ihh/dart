@@ -271,7 +271,8 @@ void Handel_base::sample_branch_length (const Undirected_pair& branch, double kT
 
 void Handel_base::sample_indel_params()
 {
-
+  // base class; do nothing
+  return;
 }
 
 sstring Handel_base::indel_parameter_string() const
@@ -1063,9 +1064,9 @@ void Handel_base::show_column_emit_score_breakdown (ostream& o, int col, const v
 
 void Handel_base::write_Stockholm_with_score (ostream& out, const char* alignment_type, int alignment_step) const
 {
-  const Score align_sc = alignment_score();
-  const Score null_sc = null_score();
-  const Score odds_ratio_sc = ScorePMul (align_sc, -null_sc);
+  const Loge align_ll = Score2Nats (alignment_score());
+  const Loge null_ll = Score2Nats (null_score());
+  const Loge odds_ratio_ll = NatsPMul (align_ll, -null_ll);
   const sstring indel_param = indel_parameter_string();
 
   out << Stockholm_header;
@@ -1074,15 +1075,15 @@ void Handel_base::write_Stockholm_with_score (ostream& out, const char* alignmen
   out << Stockholm_file_annotation << ' ' << Stockholm_alignment_step_tag << ' ' << alignment_step + 1 << '\n';
   if (!indel_param.empty())
     out << Stockholm_file_annotation << ' ' << Stockholm_indel_parameter_tag << ' '<< indel_param << '\n';
-  out << Stockholm_file_annotation << ' ' << Stockholm_bit_score_tag << ' ' << Score2Bits (odds_ratio_sc)  << '\n';
+  out << Stockholm_file_annotation << ' ' << Stockholm_bit_score_tag << ' ' << Nats2Bits (odds_ratio_ll)  << '\n';
 
   tree.write_Stockholm (out);
   align.write_MUL (out, alphabet(), 0, true);
 
   out << Stockholm_file_annotation << ' ' << Stockholm_comment_tag << ' ';
-  out << "LgP(alignment|tree)= " << Score2Bits (align_sc) << " bits; ";
-  out << "LgP(sequences|unrelated)= " << Score2Bits (null_sc) << " bits; ";
-  out << "LgOddsRatio= " << Score2Bits (odds_ratio_sc) << " bits\n";
+  out << "LgP(alignment|tree)= " << Nats2Bits (align_ll) << " bits; ";
+  out << "LgP(sequences|unrelated)= " << Nats2Bits (null_ll) << " bits; ";
+  out << "LgOddsRatio= " << Nats2Bits (odds_ratio_ll) << " bits\n";
 
   out << Stockholm_alignment_separator << '\n';
 }
