@@ -535,7 +535,12 @@ Score Handel_base::anneal (double kT_start, double kT_end, int annealing_steps,
 	    shuffler.reset();
 	}
        else if (action == Tree_shuffler::Sample_indel_params)
-         sample_indel_params();
+	 {
+	   // print the log message here, because the sample_indel_params() method is virtual
+	   // (HACKY: dual implementations in Affine_transducer_factory & Convex_transducer_factory subclasses duplicate a lot of code.)
+	   CTAG(5,MCMC PARAM_SAMPLE) << "Sampling indel parameters\n";
+	   sample_indel_params();
+	 }
       
       tree_changed();
       align_changed();
