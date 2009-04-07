@@ -10,7 +10,9 @@ my $cols;  # alignment columns per row
 my $progname = $0;
 $progname =~ s/^.*?([^\/]+)$/$1/;
 
-my $usage = "Usage: $progname <Stockholm file>\n";
+my $usage = "$progname: animation of Stockholm alignment traces from MCMC sampling runs\n";
+$usage .=   "\n";
+$usage .=   "Usage: $progname <Stockholm file>\n";
 $usage .=   "          [-h] print this message\n";
 $usage .=   "      [-delay] frame delay in seconds (default is $delay_secs)\n";
 $usage .=   "   [-cols <N>] number of columns per row\n";
@@ -38,7 +40,7 @@ die $usage unless @argv == 1;
 my ($filename) = @argv;
 
 my $db = Stockholm::Database->from_file ($filename);
-warn "Animation will take ", $delay_secs * @$db, " seconds (plus display overhead)\n";
+warn "Animation has ", @$db+0, " alignment frames & will take ", $delay_secs * @$db, " seconds (plus display overhead)\n";
 
 warn "Calibrating delay loop...\n";
 my $ticks_per_sec = 0;
@@ -47,12 +49,13 @@ $SIG{'ALRM'} = \&alarm_sub;   # hmm, must be a less hacky way of doing this...
 while (1) { ++$ticks_per_sec }
 
 sub alarm_sub {
-    alarm 0;
+    alarm 0;  # turn off that alarm
     my $delay_ticks = $delay_secs * $ticks_per_sec;
 
     for my $stock (@$db) {
+	my $next_frame = $stock->to_string ($cols);
 	system "clear";  # clear the screen
-	print $stock->to_string ($cols);
+	print $next_frame;
 	for (my $ticks = 0; $ticks < $delay_ticks; ++$ticks) { }
     }
 
