@@ -761,8 +761,6 @@ void ECFG_outside_matrix::fill()
   for (int dest_subseq_idx = env.subseqs() - 1; dest_subseq_idx >= 0; --dest_subseq_idx)
     {
       const Subseq_coords& subseq = env.subseq[dest_subseq_idx];
-      env.get_bif_outl (subseq, bif_outl);
-      env.get_bif_outr (subseq, bif_outr);
       for_const_contents (vector<int>, outside_fill_states, d)
 	{
 	  Loge ll = -InfinityLoge;
@@ -818,6 +816,11 @@ void ECFG_outside_matrix::fill()
 		      NatsPSumAcc (ll, incoming_ll);
 		    }
 		}
+
+	      // get bifurcation subseq indices
+	      // (doing this in the inner loop over outside_fill_states is criminally inefficient... should probably optimize... if gprof confirms this!)
+	      env.get_bif_outl (dest_emit_coords, bif_outl);
+	      env.get_bif_outr (dest_emit_coords, bif_outr);
 
 	      // loop over incoming bifurcations to left
 	      for_const_contents (vector<Subseq::Bifurc_out_l>, bif_outl, b)
