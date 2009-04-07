@@ -436,7 +436,8 @@ bool Handel_base::proposal_accept (Handel_base* old_align, double kT)
 Score Handel_base::anneal (double kT_start, double kT_end, int annealing_steps,
 			   Tree_shuffler& shuffler, vector<int>& scores,
 			   bool sample_seq, bool use_best,
-			   bool refine, int refine_period)
+			   bool refine, int refine_period,
+			   bool refine_node_triplets)
 {
   if (refine && refine_period > 0 && !use_best && sample_stream == 0)
     CLOGERR << "Warning: these annealing parameters may discard alignments!\n";
@@ -474,7 +475,7 @@ Score Handel_base::anneal (double kT_start, double kT_end, int annealing_steps,
 	  while (1)
 	    {
 	      const Score old_ref_score = ref_score;
-	      const bool changed = refine_nodes_or_branches (shuffler.node_realign_rate > 0., sample_seq);
+	      const bool changed = refine_nodes_or_branches (refine_node_triplets && shuffler.node_realign_rate > 0., sample_seq);
 	      if (!changed)
 		break;
 	      ref_score = alignment_score();

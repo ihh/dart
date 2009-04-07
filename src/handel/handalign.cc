@@ -324,7 +324,8 @@ int main(int argc, char* argv[])
       if (first_node.size())
 	shuffler.cue (first_node);
       vector<int> alignment_scores;
-      trans.anneal (kT_start, kT_end, annealing_steps, shuffler, alignment_scores, sample_internal_sequences, use_best, refine, refine_period);
+      const bool refine_node_triplets = !use_Redelings_Suchard;   // do not refine node triplets if Redelings-Suchard is being used (memory-saving measure)
+      trans.anneal (kT_start, kT_end, annealing_steps, shuffler, alignment_scores, sample_internal_sequences, use_best, refine, refine_period, refine_node_triplets);
 
       // log final results
       CLOG(6) << "Sampling phase complete\n";

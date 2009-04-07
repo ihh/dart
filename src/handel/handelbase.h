@@ -192,13 +192,17 @@ struct Handel_base : Tree_alignment
   /** anneal(...)
    // Main MCMC sampling method.
    // Can also (as the name implies) be used for ad-hoc simulated annealing
-   // If sample_seq==0, Felsenstein wildcards are used
-   // If target_loglike is non-null, it's used to accept/reject moves
+   // If member variable target_loglike is non-null, it's used to accept/reject moves
+   // If argument sample_seq==false, Felsenstein wildcards are used
+   // If argument use_best==true, final state is best alignment (rather than final sampled alignment)
+   // If argument refine==true, iterative refinement is applied every refine_period steps (if refine_period>0), and at the end
+   // If argument refine_node_triplets==true, iterative refinement does three-way "node" DP as well as pairwise "branch" DP
    */
   Score anneal (double kT_start, double kT_end, int annealing_steps,
 		Tree_shuffler& shuffler, vector<int>& scores,
 		bool sample_seq = 0, bool use_best = 0,
-		bool refine = 0, int refine_period = 0);
+		bool refine = 0, int refine_period = 0,
+		bool refine_node_triplets = true);
 
   /** optimise_missing_nodes
   // call optimise_node() on each missing node,
