@@ -440,7 +440,7 @@ Score Handel_base::anneal (double kT_start, double kT_end, int annealing_steps,
 			   bool refine_node_triplets)
 {
   if (refine && refine_period > 0 && !use_best && sample_stream == 0)
-    CLOGERR << "Warning: these annealing parameters may discard alignments!\n";
+    CLOGERR << "Warning: these annealing parameters may discard alignments! (use_best=false, refine=false, no stream to record alignment sampling transcript)\n";
 
   Handel_base* best = clone();
   Score best_score = alignment_score();
