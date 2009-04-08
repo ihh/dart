@@ -492,6 +492,38 @@ sub is_live {
     return $state ne $deadState && $state ne $unbornState;
 }
 
+# method to copy entire TKFST structure, removing all non-live states
+sub copy_live {
+    my ($self) = @_;
+    my @tkfst;  # new root(s)
+    my $parent;  # current parent
+    my @parent;  # parent stack
+    $self->traverse (
+	sub {
+	    # pre
+	    my ($node) = @_;
+	    if (is_live ($node->state)) {
+		my $copy = Node->new ("parent" => $parent,
+				      "state" => $node->state,
+				      "cols" => $node->cols,
+				      "species_state" => { %{$node->species_state} });
+		push @{$parent->child}, $copy if defined $parent;  # double-link the new tree
+		push @tkfst, $copy unless defined $parent;  # if no parent, then this is a root node
+		push @parent, $parent;  # put parent on stack
+		$parent = $copy;
+	    }
+	},
+	undef,
+	sub {
+	    # post
+	    my ($node) = @_;
+	    if (is_live ($node->state)) {
+		$parent = pop @parent;  # get parent from stack
+	    }
+	});
+    return @tkfst==1 ? $tkfst[0] : @tkfst;
+}
+
 # method to get alignment symbol for state, or undef
 sub align_symbol {
     my ($state, $pos) = @_;
@@ -606,34 +638,19 @@ sub make_stockholm {
 
 # make_tkfst_string method
 sub make_tkfst_string {
-    my ($self, $live_only) = @_;
+    my ($self) = @_;
     my $tkfst = "";
-    my $live = 1;
-    my @live_stack;
     $self->traverse
 	(sub { # pre
 	    my ($node) = @_;
-	    if (($node->state eq $deadState || $node->state eq $unbornState) && $live_only) {
-		push @live_stack, $live;
-		$live = 0;
-	    } elsif ($live) {
-		$tkfst .= "-" if @{$node->parent->child} == 1;
-		$tkfst .= $node->state;
-		$tkfst .= "(" if @{$node->child} > 1;
-	    }
+	    $tkfst .= $node->state;
+	    $tkfst .= "-" if @{$node->child} == 1;
+	    $tkfst .= "(" if @{$node->child} > 1;
 	 },
 	 sub { # mid
 	     my ($node, $n_child) = @_;
-	     if ($live) {
-		 $tkfst .= ")" if $n_child < @{$node->child} - 1;
-		 $tkfst .= "(" if $n_child < @{$node->child} - 2;
-	     }
-	 },
-	 sub { # post
-	     my ($node) = @_;
-	     if (($node->state eq $deadState || $node->state eq $unbornState) && $live_only) {
-		 $live = pop @live_stack;
-	     }
+	     $tkfst .= ")" if $n_child < @{$node->child} - 1;
+	     $tkfst .= "(" if $n_child < @{$node->child} - 2;
 	 });
     return $tkfst;
 }
@@ -922,7 +939,7 @@ sub evolve_tree {
 		    $seq =~ s/$gapchar//g;
 		    warn $tmpStock->to_string, "\$nodeName = $nodeName\n\$parentName = $parentName\n\$ss  = '$ss'\n\$seq = '$seq'\nlength(\$ss) != length(\$seq)" if length($ss) != length($seq);
 		    # make TKFST string
-		    my $tkfst_string = $self->make_tkfst_string (1);
+		    my $tkfst_string = $self->copy_live->make_tkfst_string;
 		    # print log message
 		    print HISTORY "$time $tkfst_string $seq $ss\n";
 		};
