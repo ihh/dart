@@ -79,16 +79,21 @@ die $usage unless @argv == 1;
 my ($filename) = @argv;
 
 # do we need GD or GD::SVG?
-my ($imagePackage, $imageClass, $fontClass, $imageOutputMethod, $imageFileSuffix);
+my ($imagePackage, $imageClass, $fontClass, $fontMethod, $imageOutputMethod, $imageFileSuffix);
 if (defined $mpegFile) {
     $imagePackage = $useSVG ? "GD::SVG" : "GD";
     $imageClass = $imagePackage . "::Image";
-    $fontClass = $imagePackage . "::Font";
+
+    # Changed $fontClass from "GD::Font" to "GD" since this now seems (empirically) to be the norm... in stark contrast to the documentation! IH, 4/7/09
+    # $fontClass = $imagePackage . "::Font";
+    # $fontMethod = "Giant";
+    $fontClass = $imagePackage;
+    $fontMethod = "gdGiantFont";
 
     $imageOutputMethod = $useSVG ? "svg" : "png";
     $imageFileSuffix = $useSVG ? $svgSuffix : $pngSuffix;
 
-    eval "use $imagePackage; use $imageClass; use $fontClass";
+    eval "use $imagePackage";
 }
 
 # read alignments
@@ -132,6 +137,7 @@ sub make_mpeg {
     my @frame;
     my ($width, $height) = (0, 0);
     for my $stock (@$db) {
+	warn "Preparing frame ", @frame+0, "\n";
 	my $stock_text = $stock->to_string ($cols);
 	my @stock_lines = split /\n/, $stock_text;
 	push @frame, \@stock_lines;
@@ -140,24 +146,27 @@ sub make_mpeg {
     }
 
     # font & dimensions
-    my $font = $fontClass->Giant;
+    my $font = $fontClass->$fontMethod;
     my $cw = $font->width;
     my $ch = $font->height;
     my ($xsize, $ysize) = ($width * $cw, $height * $ch);
 
     # image & colors
     my $im = $imageClass->new ($xsize, $ysize);
-    my $white = allocateBrightRange ($im, 255, 255, 255);
-    my $black = allocateBrightRange ($im, 0, 0, 0);
+    my $white = $im->colorAllocate (255, 255, 255);
+    my $black = $im->colorAllocate (0, 0, 0);
 
     # write frames
-    my $prefix = "$frameDir/$imagePrefix";
     my @ppm;
     for (my $n = 0; $n < @frame; ++$n) {
+	warn "Drawing frame $n\n";
+
 	clear ($im, $xsize, $ysize, $white);
-	for (my $n = 0; $n < @frame; ++$n) {
-	    drawString ($im, $font, 0, $n * $ch, $cw, $frame[$n], $black);
+	for (my $line = 0; $line < @{$frame[$n]}; ++$line) {
+	    drawString ($im, $font, 0, $line * $ch, $cw, $frame[$n]->[$line], $black);
 	}
+
+	my $prefix = "$frameDir/$imagePrefix$n";
 
 	my $img = "$prefix$imageFileSuffix";
 	my $ppm = "$prefix$ppmSuffix";
