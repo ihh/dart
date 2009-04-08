@@ -24,6 +24,7 @@ foreach my $fasta (@argv) {
     while (<FASTA>) {
 	if (/^\s*>\s*(\S+)/) {
 	    $name = $1;
+	    die "Duplicate name: $name" if defined $seq{$name};
 	    push @name, $name;
 	} else {
 	    if (/\S/ && !defined $name) {
