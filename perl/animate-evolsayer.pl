@@ -8,6 +8,7 @@ my $frameDir = "frames";  # frame directory
 my $convert_size = "200x200";  # size of frame images
 my $savePPM = 0;
 my $rnaplot_type = 1;
+my $tkfst = 1;
 
 # file suffices
 my $imgSuffix = "_ss.ps";  # suffix added by RNAplot
@@ -18,7 +19,7 @@ my $rnaplot = "RNAplot";
 my $convert = "convert";
 my $mpeg_encode = "mpeg_encode";
 
-# help message
+# usage message
 my $progname = $0;
 $progname =~ s/^.*?([^\/]+)$/$1/;
 
@@ -27,6 +28,7 @@ $usage .=   "\n";
 $usage .=   "Usage: $progname <.history file>\n";
 $usage .=   "              [-h]  print this message\n";
 $usage .=   "           [-rate]  frames per unit of evolutionary time (default is $frames_per_sub)\n";
+$usage .=   "        [-notkfst]  don't show TKFST string representation\n";
 $usage .=   "    [-mpeg <file>]  MPEG filename (default is $mpegFile)\n";
 $usage .=   " [-rnaplot <path>]  path to Vienna RNAplot program (default is '$rnaplot')\n";
 $usage .=   " [-convert <path>]  path to ImageMagick PNG-->PPM conversion program (default is '$convert')\n";
@@ -46,6 +48,8 @@ while (@ARGV) {
 	die $usage;
     } elsif ($arg eq "-rate") {
 	defined ($frames_per_sub = shift) or die $usage;
+    } elsif ($arg eq "-notkfst") {
+	$tkfst = 0;
     } elsif ($arg eq '-mpeg') {
 	defined ($mpegFile = shift) or die $usage;
     } elsif ($arg eq '-rnaplot') {
@@ -101,8 +105,11 @@ while (<HISTORY>) {
     my $prefix = "$frameDir/$n_frame";
     warn "Drawing frame at time $time ($prefix)\n";
 
+    my $rnaplot_command = "$rnaplot -o ps -t $rnaplot_type";
+    $rnaplot_command .= " --post '" . centered_text_ps($tkfst) . "'" if $tkfst;
+
     local *RNAPLOT;
-    open RNAPLOT, "| $rnaplot -o ps -t $rnaplot_type --post '0 0 moveto ($tkfst) show'";
+    open RNAPLOT, "| $rnaplot_command";
 
     for my $line (">$prefix", $seq, $ss, '@') {
 	print RNAPLOT "$line\n";
@@ -165,4 +172,19 @@ sub mpegEncode {
     close PARAM or die "Couldn't close param file '$paramFile': $!";
 
     system "$mpeg_encode $paramFile";
+}
+
+# Postscript for drawing TKFST string
+# 'cshow' and 'fsize' are defined in the RNAplot-generated Postscript:
+#  fsize: font size
+#  cshow: show string on top of stack, centered (uses fsize)
+sub centered_text_ps {
+    my ($text) = @_;
+    return join (" ",
+		 '1 0 0 setrgbcolor',
+		 '/fsize fsize 4 div def',
+		 '/Helvetica findfont fsize scalefont setfont',
+		 'xmin xmax add 2 div',
+		 'ymin ymax add 2 div',
+		 'moveto', "($text)", 'cshow');
 }
