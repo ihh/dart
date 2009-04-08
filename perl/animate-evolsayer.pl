@@ -175,14 +175,15 @@ sub mpegEncode {
 }
 
 # Postscript for drawing TKFST string
-# 'cshow' and 'fsize' are defined in the RNAplot-generated Postscript:
+# The following are defined in the RNAplot-generated Postscript:
+#  RED: { 1 0 0 }
 #  fsize: font size
 #  cshow: show string on top of stack, centered (uses fsize)
 sub centered_text_ps {
     my ($text) = @_;
     return join (" ",
-		 '1 0 0 setrgbcolor',
-		 '/fsize fsize 4 div def',
+		 'RED setrgbcolor',
+		 '/fsize size', "($text)", 'length div 1.5 mul def',
 		 '/Helvetica findfont fsize scalefont setfont',
 		 'xmin xmax add 2 div',
 		 'ymin ymax add 2 div',
