@@ -79,6 +79,9 @@ unless (@argv) {
 die $usage unless @argv == 1;
 my ($filename) = @argv;
 
+# check RNAplot
+die "Can't find $rnaplot executable" unless -x $rnaplot;
+
 # let's make a movie
 mkdir ($frameDir) unless -d $frameDir;
 
