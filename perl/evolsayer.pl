@@ -8,8 +8,10 @@
 # 2. Random number seeding seems fragile, for some reason. (Changing the command-line args, or modifying the code, seems to give different random numbers.)
 # 3. Initial TKFST generation is recursive, so Perl gives "Deep recursion..." warnings for big trees. Could fix this with an iterative implementation.
 
-# imports
+# standard library imports
 use Carp;
+
+# DART imports
 use Newick;
 use PhyloGram;
 use Stockholm;
@@ -17,6 +19,9 @@ use Stockholm;
 # special TKFST states
 my ($loopState, $stemState, $deadState, $unbornState) = qw(L S D I);
 my $specialStateRegexp = "[$loopState$stemState$deadState$unbornState]";
+
+# secondary structure character constants
+my ($lchar, $rchar, $sschar, $gapchar) = qw(< > . -);
 
 # get program name & directory
 my $progname = $0;
@@ -36,6 +41,9 @@ if (!defined $dartdir) {
     }
 }
 
+# filenames & suffices
+my $historySuffix = ".history";
+
 # initialize params (as of 12/8/2008, these are the evoldoer defaults)
 my $params = Params->new;
 $params->loop_length (9);
@@ -47,6 +55,7 @@ $params->subfile ("$dartdir/grammars/pfold-mix80.eg");
 
 # initialize other options
 my $verbose = 0;
+my $history = 0;
 my $rndseed = time;
 my $s_root = 0;
 
@@ -67,6 +76,7 @@ $usage .= "\t[-stemlen <float>]  mean length of stems (default ".$params->stem_l
 $usage .= "\t[-stemdel <float>]  deletion rate in stems (default ".$params->mu_stem.")\n";
 $usage .= "\t  [-pstem <float>]  probability of finding a stem inside a loop (default ".$params->stem_prob.")\n";
 $usage .= "\t          [-sroot]  force at least one stem, by rooting TKFST in state S rather than state L\n";
+$usage .= "\t        [-history]  record .history files during simulated evolution\n";
 $usage .= "\n";
 $usage .= "For description of TKF Structure Tree model, see:\n";
 $usage .= "\n";
@@ -99,6 +109,8 @@ while (@ARGV) {
 	defined ($params->stem_prob (shift)) or die $usage;
     } elsif ($arg eq "-sroot") {
 	$s_root = 1;
+    } elsif ($arg eq "-history") {
+	$history = 1;
     } else {
 	push @argv, $arg;
     }
@@ -510,7 +522,7 @@ sub make_stockholm {
 		if ($node->cols == 1) {
 		    # unpaired column
 		    push @lpos, $col;
-		    $col2ss[$col] = ".";
+		    $col2ss[$col] = $sschar;  #  "."
 		    $col2seq[$col] = align_symbol ($state, 0);
 		    while (my ($species, $state) = each %{$node->species_state}) {
 			$species_col2seq{$species}->[$col] = align_symbol ($state, 0);
@@ -520,7 +532,7 @@ sub make_stockholm {
 		} elsif ($node->cols == 2) {
 		    # left column of pair
 		    push @lpos, $col;
-		    $col2ss[$col] = "<";
+		    $col2ss[$col] = $lchar;  # "<"
 		    $col2seq[$col] = align_symbol ($state, 0);
 		    while (my ($species, $state) = each %{$node->species_state}) {
 			$species_col2seq{$species}->[$col] = align_symbol ($state, 0);
@@ -529,7 +541,7 @@ sub make_stockholm {
 
 		    # right column of pair
 		    unshift @rpos, $col;
-		    $col2ss[$col] = ">";
+		    $col2ss[$col] = $rchar;  # ">"
 		    $col2seq[$col] = align_symbol ($state, 1);
 		    while (my ($species, $state) = each %{$node->species_state}) {
 			$species_col2seq{$species}->[$col] = align_symbol ($state, 1);
@@ -569,7 +581,7 @@ sub make_stockholm {
     @cols = map ($empty{$_} ? () : $_, @cols);
     if (@cols == 0) {
 	@cols = (0);
-	$col2ss[0] = "-";
+	$col2ss[0] = $gapchar;  # "-"
     }
 
     # create & populate Stockholm object
@@ -594,19 +606,34 @@ sub make_stockholm {
 
 # make_tkfst_string method
 sub make_tkfst_string {
-    my ($self) = @_;
+    my ($self, $live_only) = @_;
     my $tkfst = "";
+    my $live = 1;
+    my @live_stack;
     $self->traverse
 	(sub { # pre
 	    my ($node) = @_;
-	    $tkfst .= $node->state;
-	    $tkfst .= "(" if @{$node->child} > 1;
-	    $tkfst .= "-" if @{$node->child} == 1;
-	},
+	    if (($node->state eq $deadState || $node->state eq $unbornState) && $live_only) {
+		push @live_stack, $live;
+		$live = 0;
+	    } elsif ($live) {
+		$tkfst .= $node->state;
+		$tkfst .= "(" if @{$node->child} > 1;
+		$tkfst .= "-" if @{$node->child} == 1;
+	    }
+	 },
 	 sub { # mid
 	     my ($node, $n_child) = @_;
-	     $tkfst .= ")" if $n_child < @{$node->child} - 1;
-	     $tkfst .= "(" if $n_child < @{$node->child} - 2;
+	     if ($live) {
+		 $tkfst .= ")" if $n_child < @{$node->child} - 1;
+		 $tkfst .= "(" if $n_child < @{$node->child} - 2;
+	     }
+	 },
+	 sub { # post
+	     my ($node) = @_;
+	     if (($node->state eq $deadState || $node->state eq $unbornState) && $live_only) {
+		 $live = pop @live_stack;
+	     }
 	 });
     return $tkfst;
 }
@@ -741,7 +768,10 @@ sub set_mutations {
 # method to evolve for a given branch length, using Gillespie's algorithm.
 # returns an event log summary: an array of [TAG,SUMMARY] tuples that can be added to a Stockholm file as #=GF TAG SUMMARY
 sub evolve {
-    my ($self, $params, $time) = @_;
+    my ($self, $params, $time, $history_callback) = @_;
+
+    # declare $time_left
+    my $time_left;
 
     # logging function
     my %log;
@@ -750,7 +780,14 @@ sub evolve {
 	my ($message, $node, @args) = @_;
 	++$log{$message}->{$node->state};
 	++$events;
-	print STDERR " $message at node state '", $node->state, "'" if $verbose;
+	my $time_now = $time - $time_left;
+	# description of event
+	print STDERR " $message at node state '", $node->state, "', time $time_now" if $verbose;
+	# call to $history_callback
+	if (defined $history_callback) {
+	    &$history_callback ($time_now, $message, $node, @args);
+	}
+	# number of events
 	warn "Logged $events events" if $events % 1000 == 0;
     };
 
@@ -763,8 +800,13 @@ sub evolve {
     };
     $self->traverse ($update_live);
 
+    # initial call to $history_callback
+    if (defined $history_callback) {
+	&$history_callback (0);
+    }
+
     # main loop
-    for (my $time_left = $time; $time_left > 0; ) {
+    for ($time_left = $time; $time_left > 0; ) {
 
 	# uncomment the following line to rebuild %live at every iteration
 	# (slow, but useful for debugging)
@@ -810,6 +852,11 @@ sub evolve {
     }
     print STDERR "\n" if $verbose;
 
+    # final call to $history_callback
+    if (defined $history_callback) {
+	&$history_callback ($time);
+    }
+
     # print event summary
     my @summary;
     push @summary, "Length $time.";
@@ -843,28 +890,59 @@ sub evolve_tree {
     # evolve
     for (my $tree_node = 0; $tree_node < $tree->nodes; ++$tree_node)
     {
+	my $nodeName = $node_id[$tree_node];
 	# evolve TKFST along a branch, unless this is the root
 	if ($tree_node == 0) {
-	    push @tag_summary, ['ROOT', $tkfst->make_tkfst_string];
+	    push @tag_summary, ['ROOT', $self->make_tkfst_string];
 	} else {
 	    # log
-	    print STDERR "Evolving sequence ", $node_id[$tree->parent->[$tree_node]], " into sequence ", $node_id[$tree_node] if $verbose;
+	    my $parentName = $node_id[$tree->parent->[$tree_node]];
+	    print STDERR "Evolving sequence $parentName into sequence $nodeName" if $verbose;
 
 	    # get parent TKFST
-	    $tkfst->restore_state ($node_id[$tree->parent->[$tree_node]]);
+	    $self->restore_state ($parentName);
+
+	    # open history file & create callback sub
+	    my $historyCallback;
+	    local *HISTORY;
+	    if ($history) {
+		open HISTORY, ">$nodeName$historySuffix";
+		$historyCallback = sub {
+		    my ($time, $message, $node, @args) = @_;
+		    # quick & dirty way to get sequence & structure strings, using make_stockholm method
+		    $self->save_state ($nodeName);
+		    my $tmpStock = $self->make_stockholm ($tree);
+		    my $ss = $tmpStock->gc_SS_cons;
+		    my $seq = $tmpStock->seqdata->{$nodeName};  # current state is stored under parentName
+		    # copy gaps from $seq to $ss, then remove all gaps... ugh
+		    for (my $pos = 0; $pos < length($seq); ++$pos) {
+			substr($ss,$pos,1) = $gapchar if substr($seq,$pos,1) eq $gapchar;
+		    }
+		    $ss =~ s/$gapchar//g;
+		    $seq =~ s/$gapchar//g;
+		    warn $tmpStock->to_string, "\$nodeName = $nodeName\n\$parentName = $parentName\n\$ss  = '$ss'\n\$seq = '$seq'\nlength(\$ss) != length(\$seq)" if length($ss) != length($seq);
+		    # make TKFST string
+		    my $tkfst_string = $self->make_tkfst_string (1);
+		    # print log message
+		    print HISTORY "$time $tkfst_string $seq $ss\n";
+		};
+	    }
 
 	    # evolve
 	    my $branch_length = $tree->branch_length->[$tree_node];
 	    if (defined $branch_length) {
-		my $summary = $tkfst->evolve ($params, $branch_length);
+		my $summary = $self->evolve ($params, $branch_length, $historyCallback);
 		push @tag_summary,
-		['BRANCH', "$summary  ($node_id[$tree->parent->[$tree_node]] -> $node_id[$tree_node])"],
-		[$tree->children($tree_node) > 0 ? 'NODE' : 'LEAF', $tkfst->make_tkfst_string];
+		['BRANCH', "$summary  ($parentName -> $nodeName)"],
+		[$tree->children($tree_node) > 0 ? 'NODE' : 'LEAF', $self->make_tkfst_string];
 	    }
+
+	    # close history file
+	    close HISTORY if $history;
 	}
 	
 	# save state for children (and for make_stockholm)
-	$tkfst->save_state ($node_id[$tree_node]);
+	$self->save_state ($nodeName);
     }
 
     # return summaries
