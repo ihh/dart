@@ -74,7 +74,7 @@ while (@ARGV) {
 }
 unless (@argv) {
     @argv = ('-');
-    warn "[waiting for alignments on standard input]\n";
+    warn "[waiting for .history file on standard input]\n";
 }
 die $usage unless @argv == 1;
 my ($filename) = @argv;
