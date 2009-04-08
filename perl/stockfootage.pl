@@ -63,6 +63,8 @@ while (@ARGV) {
 	defined ($mpeg_encode = shift) or die $usage;
     } elsif ($arg eq '-param') {
 	defined ($paramFile = shift) or die $usage;
+    } elsif ($arg eq '-framedir') {
+	defined ($frameDir = shift) or die $usage;
     } elsif ($arg eq '-saveppm') {
 	$savePPM = 1;
     } elsif ($arg eq '-svg') {
