@@ -104,10 +104,10 @@ while (<HISTORY>) {
     local *RNAPLOT;
     open RNAPLOT, "| $rnaplot -o ps -t $rnaplot_type --post '0 0 moveto ($tkfst) show'";
 
-    print RNAPLOT ">$prefix\n";
-    print RNAPLOT "$seq\n";
-    print RNAPLOT "$ss\n";
-    print RNAPLOT "\@\n";
+    for my $line (">$prefix", $seq, $ss, '@') {
+	print RNAPLOT "$line\n";
+#	warn "[rnaplot] $line\n";
+    }
 
     close RNAPLOT;
 
