@@ -617,9 +617,9 @@ sub make_tkfst_string {
 		push @live_stack, $live;
 		$live = 0;
 	    } elsif ($live) {
+		$tkfst .= "-" if @{$node->parent->child} == 1;
 		$tkfst .= $node->state;
 		$tkfst .= "(" if @{$node->child} > 1;
-		$tkfst .= "-" if @{$node->child} == 1;
 	    }
 	 },
 	 sub { # mid
