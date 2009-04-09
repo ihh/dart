@@ -8,7 +8,7 @@ my $frameDir = "frames";  # frame directory
 my $convert_size = "200x200";  # size of frame images
 my $savePPM = 0;
 my $rnaplot_type = 1;
-my $tkfst = 1;
+my $tkfst = 0;
 
 # file suffices
 my $imgSuffix = "_ss.ps";  # suffix added by RNAplot
@@ -28,7 +28,7 @@ $usage .=   "\n";
 $usage .=   "Usage: $progname <.history file>\n";
 $usage .=   "              [-h]  print this message\n";
 $usage .=   "           [-rate]  frames per unit of evolutionary time (default is $frames_per_sub)\n";
-$usage .=   "        [-notkfst]  don't show TKFST string representation\n";
+$usage .=   "          [-tkfst]  show TKFST string representation\n";
 $usage .=   "    [-mpeg <file>]  MPEG filename (default is $mpegFile)\n";
 $usage .=   " [-rnaplot <path>]  path to Vienna RNAplot program (default is '$rnaplot')\n";
 $usage .=   " [-convert <path>]  path to ImageMagick PNG-->PPM conversion program (default is '$convert')\n";
@@ -48,8 +48,8 @@ while (@ARGV) {
 	die $usage;
     } elsif ($arg eq "-rate") {
 	defined ($frames_per_sub = shift) or die $usage;
-    } elsif ($arg eq "-notkfst") {
-	$tkfst = 0;
+    } elsif ($arg eq "-tkfst") {
+	$tkfst = 1;
     } elsif ($arg eq '-mpeg') {
 	defined ($mpegFile = shift) or die $usage;
     } elsif ($arg eq '-rnaplot') {
