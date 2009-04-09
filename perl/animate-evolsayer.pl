@@ -8,7 +8,7 @@ my $frameDir = "frames";  # frame directory
 my $convert_size = "200x200";  # size of frame images
 my $savePPM = 0;
 my $rnaplot_type = 1;
-my $tkfst = 0;
+my $show_tkfst = 0;
 
 # file suffices
 my $imgSuffix = "_ss.ps";  # suffix added by RNAplot
@@ -49,7 +49,7 @@ while (@ARGV) {
     } elsif ($arg eq "-rate") {
 	defined ($frames_per_sub = shift) or die $usage;
     } elsif ($arg eq "-tkfst") {
-	$tkfst = 1;
+	$show_tkfst = 1;
     } elsif ($arg eq '-mpeg') {
 	defined ($mpegFile = shift) or die $usage;
     } elsif ($arg eq '-rnaplot') {
@@ -106,7 +106,7 @@ while (<HISTORY>) {
     warn "Drawing frame at time $time ($prefix)\n";
 
     my $rnaplot_command = "$rnaplot -o ps -t $rnaplot_type";
-    $rnaplot_command .= " --post '" . centered_text_ps($tkfst) . "'" if $tkfst;
+    $rnaplot_command .= " --post '" . centered_text_ps($tkfst) . "'" if $show_tkfst;
 
     local *RNAPLOT;
     open RNAPLOT, "| $rnaplot_command";
