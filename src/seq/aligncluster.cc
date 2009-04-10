@@ -57,6 +57,7 @@ int main (int argc, char** argv)
       for_const_contents(list<Stockholm>, stock_db.align, align1_tmp){
 	if ((i % nth) > 0) {
 		i++;
+		tmp_db.align.pop_front();
 		if(i > stock_db.align.size()){
 		  break;
 		}
@@ -87,22 +88,22 @@ int main (int argc, char** argv)
 	   	const int res_pairs12 = align1.residue_pair_overlap (align2);
 		const int res_pairs1 = align1.residue_pairs();
 		const int res_pairs2 = align2.residue_pairs();
-    	   	distance_matrix(i, j) = (float) res_pairs12 / (float) res_pairs1;
-		distance_matrix(j, i) = (float) res_pairs12 / (float) res_pairs2;
+    	   	distance_matrix(i / nth, j / nth) = (float) res_pairs12 / (float) res_pairs1;
+		distance_matrix(j / nth, i / nth) = (float) res_pairs12 / (float) res_pairs2;
 	   }
 	   else if(method.compare("PPV") == 0){
 	   	const int res_pairs12 = align1.residue_pair_overlap (align2);
 		const int res_pairs1 = align1.residue_pairs();
 		const int res_pairs2 = align2.residue_pairs();
-    	   	distance_matrix(i, j) = (float) res_pairs12 / (float) res_pairs2;
-		distance_matrix(j, i) = (float) res_pairs12 / (float) res_pairs1;
+    	   	distance_matrix(i / nth, j / nth) = (float) res_pairs12 / (float) res_pairs2;
+		distance_matrix(j / nth, i / nth) = (float) res_pairs12 / (float) res_pairs1;
 	   }
 	   else if(method.compare("TCS") == 0){
 	   	const int cols1 = align1.columns();
            	const int cols2 = align2.columns();
            	const int col_overlap = align1.column_overlap(align2);
-		distance_matrix(i,j) = col_overlap/cols1;
-		distance_matrix(j,i) = col_overlap/cols2;
+		distance_matrix(i / nth, j / nth) = col_overlap/cols1;
+		distance_matrix(j / nth, i / nth) = col_overlap/cols2;
 	   }
 	   else { //sanity check, should never reach here
 	   	THROWEXPR ("Invalid comparison method!");
@@ -123,7 +124,7 @@ int main (int argc, char** argv)
 	}
      }
      max = max / stock_db.size();
-     Stockholm final (*stock_db.align_index[max_index-1]);
+     Stockholm final (*stock_db.align_index[(max_index-1) * nth]);
      sstring tmp;
      final.add_gf_annot("Similarity Measure:", method);
      tmp << max;
