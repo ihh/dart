@@ -124,7 +124,7 @@ dpsw:
 
 # Utility programs
 utils:
-	cd $(SRCDIR)/seq; $(MAKE) -k $(RELEASE) dep wordcount cmpalign cmpfold
+	cd $(SRCDIR)/seq; $(MAKE) -k $(RELEASE) dep wordcount cmpalign cmpfold aligncluster
 	cd $(SRCDIR)/stemloc; $(MAKE) -k $(RELEASE) dep gc2gr-ss
 	cd $(SRCDIR)/tree; $(MAKE) -k $(RELEASE) dep bsupp drawpstree eztree reroot getinsertions
 	@echo All utilities built

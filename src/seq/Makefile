@@ -1,7 +1,7 @@
 # Requires GNU Make
 
 TESTS      = teststock
-TARGETS    = $(TESTS) wordcount cmpalign cmpfold
+TARGETS    = $(TESTS) wordcount cmpalign cmpfold aligncluster
 DIRNAME    = seq
 
 DEPS       = util newmat randlib
