@@ -262,21 +262,38 @@ void Indiegram::build_triplet_alignments()
 
     Named_profile np_x, np_y, np_z;
     double depth_x, depth_y, depth_z;
-    // X (row 0)
-    sstring seqname = tree_align.align.row_name[0];
-    np_x = *stock.np[stock.row_index[seqname]];
-    int node = tree_align.row2node[0];
-    depth_x = tree_align.tree.branch_depth (node);
-    // Y (row 1)
-    seqname = tree_align.align.row_name[1];
-    np_y = *stock.np[stock.row_index[seqname]];
-    node = tree_align.row2node[1];
-    depth_y = tree_align.tree.branch_depth (node);
-    // Z (row 2)
-    seqname = tree_align.align.row_name[2];
-    np_z = *stock.np[stock.row_index[seqname]];
-    node = tree_align.row2node[2];
-    depth_z = tree_align.tree.branch_depth (node);
+ 
+     // Note that X is row 0, Y is row 1 and Z is row 2
+ 
+     // get Named_profile objects
+     sstring seqname_x = tree_align.align.row_name[0];
+     np_x = *stock.np[stock.row_index[seqname_x]];
+     sstring seqname_y = tree_align.align.row_name[0];
+     np_y = *stock.np[stock.row_index[seqname_y]];
+     sstring seqname_z = tree_align.align.row_name[0];
+     np_z = *stock.np[stock.row_index[seqname_z]];
+ 
+     // get distances to MRCA (branch lengths in equivalent unrooted tree)
+ 
+     // is x the outgroup?
+     int node_x = tree_align.row2node[0];
+     int node_y = tree_align.row2node[1];
+     int node_z = tree_align.row2node[2];
+     if (tree_align.tree.parent[node_x] == tree_align.tree.root) {
+       depth_y = tree_align.tree.branch_length (node_y, tree_align.tree.parent[node_y]);
+       depth_z = tree_align.tree.branch_length (node_z, tree_align.tree.parent[node_z]);
+       depth_x = tree_align.tree.branch_depth (node_x) + (tree_align.tree.branch_depth (node_y) - depth_y);
+     } else if (tree_align.tree.parent[node_y] == tree_align.tree.root) {
+       depth_x = tree_align.tree.branch_length (node_x, tree_align.tree.parent[node_x]);
+       depth_z = tree_align.tree.branch_length (node_z, tree_align.tree.parent[node_z]);
+       depth_y = tree_align.tree.branch_depth (node_y) + (tree_align.tree.branch_depth (node_x) - depth_x);
+     } else if (tree_align.tree.parent[node_z] == tree_align.tree.root) {
+       depth_x = tree_align.tree.branch_length (node_x, tree_align.tree.parent[node_x]);
+       depth_y = tree_align.tree.branch_length (node_y, tree_align.tree.parent[node_y]);
+       depth_z = tree_align.tree.branch_depth (node_z) + (tree_align.tree.branch_depth (node_x) - depth_x);
+     } else {
+       THROWEXPR ("Unreachable: tree must be not be a 3-taxon binary phylogeny!");
+     }
 
     // initialize the SCFG
     Triplet_SCFG triplet_scfg (init_triplet_scfg (depth_x, depth_y, depth_z));
