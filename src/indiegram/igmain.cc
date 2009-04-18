@@ -268,9 +268,9 @@ void Indiegram::build_triplet_alignments()
      // get Named_profile objects
      sstring seqname_x = tree_align.align.row_name[0];
      np_x = *stock.np[stock.row_index[seqname_x]];
-     sstring seqname_y = tree_align.align.row_name[0];
+     sstring seqname_y = tree_align.align.row_name[1];
      np_y = *stock.np[stock.row_index[seqname_y]];
-     sstring seqname_z = tree_align.align.row_name[0];
+     sstring seqname_z = tree_align.align.row_name[2];
      np_z = *stock.np[stock.row_index[seqname_z]];
  
      // get distances to MRCA (branch lengths in equivalent unrooted tree)
