@@ -109,7 +109,7 @@ void Indiegram::init_foldenv (Fold_envelope& foldenv, const Named_profile& np, i
 {
   // log message
   CTAG(6, INDIEGRAM) << "Finding fold envelope for sequence '" << np.name << "'\n";
-  
+
   // initialize envelope from foldstring if passed
   if (foldstring != "")
     {
@@ -153,7 +153,7 @@ void Indiegram::init_foldenv (Fold_envelope& foldenv, const Named_profile& np, i
   // dump foldenv if requested
   if (CTAGGING(2,INDIEGRAM_FOLDENV))
     foldenv.dump (CL);
-  
+
   // log number of subseqs
   if (CTAGGING(6, INDIEGRAM_FOLDENV INDIEGRAM_ENVSIZE))
     CL << "Fold envelope for " << np.name << " has " << foldenv.subseqs() << " subseqs\n";
@@ -242,7 +242,7 @@ void Indiegram::build_triplet_alignments()
     CTAG (7,INDIEGRAM) << "\nProcessing alignment '" << align_id
 		       << "' (" << n_align+1 << " of " << align_db.size()
 		       << "): " << len << " columns\n";
-    
+
     // sanity checks: must be 3 leaves in the tree
     // and can only 3 seqs in alignment
     if (tree_align.tree.leaves() != 3) THROWEXPR ("There must be 3 leaves in the tree, but input alignment " << align_id << " has " << tree_align.tree.leaves() << " leaves.\n");
@@ -262,38 +262,32 @@ void Indiegram::build_triplet_alignments()
 
     Named_profile np_x, np_y, np_z;
     double depth_x, depth_y, depth_z;
- 
-     // Note that X is row 0, Y is row 1 and Z is row 2
- 
-     // get Named_profile objects
-     sstring seqname_x = tree_align.align.row_name[0];
-     np_x = *stock.np[stock.row_index[seqname_x]];
-     sstring seqname_y = tree_align.align.row_name[1];
-     np_y = *stock.np[stock.row_index[seqname_y]];
-     sstring seqname_z = tree_align.align.row_name[2];
-     np_z = *stock.np[stock.row_index[seqname_z]];
- 
-     // get distances to MRCA (branch lengths in equivalent unrooted tree)
- 
-     // is x the outgroup?
-     int node_x = tree_align.row2node[0];
-     int node_y = tree_align.row2node[1];
-     int node_z = tree_align.row2node[2];
-     if (tree_align.tree.parent[node_x] == tree_align.tree.root) {
-       depth_y = tree_align.tree.branch_length (node_y, tree_align.tree.parent[node_y]);
-       depth_z = tree_align.tree.branch_length (node_z, tree_align.tree.parent[node_z]);
-       depth_x = tree_align.tree.branch_depth (node_x) + (tree_align.tree.branch_depth (node_y) - depth_y);
-     } else if (tree_align.tree.parent[node_y] == tree_align.tree.root) {
-       depth_x = tree_align.tree.branch_length (node_x, tree_align.tree.parent[node_x]);
-       depth_z = tree_align.tree.branch_length (node_z, tree_align.tree.parent[node_z]);
-       depth_y = tree_align.tree.branch_depth (node_y) + (tree_align.tree.branch_depth (node_x) - depth_x);
-     } else if (tree_align.tree.parent[node_z] == tree_align.tree.root) {
-       depth_x = tree_align.tree.branch_length (node_x, tree_align.tree.parent[node_x]);
-       depth_y = tree_align.tree.branch_length (node_y, tree_align.tree.parent[node_y]);
-       depth_z = tree_align.tree.branch_depth (node_z) + (tree_align.tree.branch_depth (node_x) - depth_x);
-     } else {
-       THROWEXPR ("Unreachable: tree must be not be a 3-taxon binary phylogeny!");
-     }
+
+    // Note that X is row 0, Y is row 1 and Z is row 2
+
+    // get Named_profile objects
+    sstring seqname_x = tree_align.align.row_name[0];
+    np_x = *stock.np[stock.row_index[seqname_x]];
+    sstring seqname_y = tree_align.align.row_name[1];
+    np_y = *stock.np[stock.row_index[seqname_y]];
+    sstring seqname_z = tree_align.align.row_name[2];
+    np_z = *stock.np[stock.row_index[seqname_z]];
+
+    // check that we do indeed have a trifurcating tree
+    int node_x = tree_align.row2node[0];
+    int node_y = tree_align.row2node[1];
+    int node_z = tree_align.row2node[2];
+    if (tree_align.tree.parent[node_x] != tree_align.tree.root
+	|| tree_align.tree.parent[node_y] != tree_align.tree.root
+	|| tree_align.tree.parent[node_z] != tree_align.tree.root)
+      THROWEXPR ("This doesn't seem to be a trifurcating tree.");
+
+    // find the distances from the extant sequences to their MRCA
+    depth_x = tree_align.tree.branch_depth (node_x);
+    depth_y = tree_align.tree.branch_depth (node_y);
+    depth_z = tree_align.tree.branch_depth (node_z);
+
+    //    cerr << "depth_x = " << depth_x << "; depth_y = " << depth_y << "; depth_z = " << depth_z << endl;
 
     // initialize the SCFG
     Triplet_SCFG triplet_scfg (init_triplet_scfg (depth_x, depth_y, depth_z));
