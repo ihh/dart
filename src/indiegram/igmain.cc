@@ -6,6 +6,8 @@
 #include "indiegram/tripletscfgdp.h"
 #include "indiegram/igmain.h"
 
+//
+
 Indiegram::Indiegram (int argc, char** argv)
   : opts (argc, argv),
     alphabet (SCFG_alphabet),
