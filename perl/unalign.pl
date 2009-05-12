@@ -43,7 +43,7 @@ my @rev_parent = map ($_ < 0 ? $_ : (@parent - 1 - $_), reverse @parent);
 my $tree = Newick->new;
 @{$tree->parent} = @rev_parent;
 @{$tree->node_name} = @rev_name;
-@{$tree->branch_length} = map (1, @rev_name);
+@{$tree->branch_length} = (undef, map (1, 1..@rev_name));
 
 $stock->gf_NH ([$tree->to_string]);
 
