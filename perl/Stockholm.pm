@@ -975,7 +975,7 @@ Return true if a given (SEQNAME,column) co-ordinate is a gap.
 sub is_gap {
     my ($self, $row_name, $col) = @_;
     my $s = $self->seqdata->{$row_name};
-    my $c = substr ($self->seqdata->{$row_name}, $col, 1);
+    my $c = substr ($s, $col, 1);
     return $c =~ /[$gapCharsRegexp]/;
 }
 

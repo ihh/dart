@@ -1,17 +1,44 @@
 #!/usr/bin/perl -w
 
 use Stockholm::Database;
+use POSIX qw(ceil floor);
 
 # options
 my $delay_secs = .02;  # delay in seconds between "frames"
 my $cols;  # alignment columns per row
+my $pixels;  # use pixels, not text
 my $mpegFile;
 my $paramFile = "PARAM";  # parameter file that will be generated for mpeg_encode
 my $frameDir = "frames";  # frame directory
 my $imagePrefix = "img";  # frame image filename prefix
-
 my $savePPM = 0;
 my $useSVG = 0;
+
+# Rasmol color scheme
+my %rasRGB = ('D' => [230,10,10],
+	      'E' => [230,10,10],
+	      'C' => [230,230,0],
+	      'M' => [230,230,0],
+	      'K' => [20,90,255],
+	      'R' => [20,90,255],
+	      'S' => [250,150,0],
+	      'T' => [250,150,0],
+	      'F' => [50,50,170],
+	      'Y' => [50,50,170],
+	      'N' => [0,220,220],
+	      'Q' => [0,220,220],
+	      'G' => [235,235,235],
+	      'L' => [15,130,15],
+	      'V' => [15,130,15],
+	      'I' => [15,130,15],
+	      'A' => [200,200,200],
+	      'W' => [180,90,180],
+	      'H' => [130,130,210],
+	      'P' => [220,150,130],
+	      'B' => [160,160,160],
+	      'Z' => [160,160,160],
+	      'X' => [140,140,140],
+	      '*' => [60,60,60]);
 
 # file suffices
 my $pngSuffix = ".png";
@@ -33,6 +60,7 @@ $usage .=   "Usage: $progname <Stockholm file>\n";
 $usage .=   "              [-h]  print this message\n";
 $usage .=   "          [-delay]  frame delay in seconds (default is $delay_secs)\n";
 $usage .=   "       [-cols <N>]  number of columns per row\n";
+$usage .=   "         [-pixels]  draw characters as pixels, not text\n";
 $usage .=   "    [-mpeg <file>]  write MPEG to file\n";
 $usage .=   "   [-clear <path>]  path to 'clear screen' program (default is '$clear')\n";
 $usage .=   " [-convert <path>]  path to ImageMagick PNG-->PPM conversion program (default is '$convert')\n";
@@ -53,6 +81,8 @@ while (@ARGV) {
 	defined ($cols = shift) or die $usage;
     } elsif ($arg eq "-delay") {
 	defined ($delay_secs = shift) or die $usage;
+    } elsif ($arg eq '-pixels') {
+	$pixels = 1;
     } elsif ($arg eq '-mpeg') {
 	defined ($mpegFile = shift) or die $usage;
     } elsif ($arg eq '-clear') {
@@ -108,6 +138,7 @@ if (defined $mpegFile) {
     make_mpeg();
 } else {
     # text animations
+    die "If -pixels is specified, you must also specify the -mpeg option" if $pixels;
     warn "Animation has ", @$db+0, " alignment frames & will take ", $delay_secs * @$db, " seconds (plus display overhead)\n";
     warn "Calibrating delay loop... (should take 1 second)\n";
     $ticks_per_sec = 0;
@@ -137,35 +168,69 @@ sub make_mpeg {
 
     # prepare text for all frames
     my @frame;
-    my ($width, $height) = (0, 0);
-    for my $stock (@$db) {
-	warn "Preparing frame ", @frame+0, "\n";
-	my $stock_text = $stock->to_string ($cols);
-	my @stock_lines = split /\n/, $stock_text;
-	push @frame, \@stock_lines;
-	$width = max ($width, map (length, @stock_lines));
-	$height = max ($height, @stock_lines + 0);
-    }
+    my ($xsize, $ysize);
+    my ($cw, $ch, $font);
+    my $columns = max (map ($_->columns, @$db));  # columns
+    my $rows = max (map (@{$_->seqname} + 0, @$db));  # rows
+    if ($pixels) {
+	# compact: 1 pixel per alignment char
+	$cols = ceil (sqrt ($columns * $rows)) unless defined $cols;  # try to make image square
+	$xsize = min ($cols, $columns);
+	$ysize = $rows * int ($columns / $cols + 1);
+	$columns = ceil ($columns / $cols) * $cols;  # round up $columns to use all the space
+    } else {
+	# expanded: ($font->width * $font->height) pixels per alignment char
+	my ($width, $height) = (0, 0);
+	for my $stock (@$db) {
+	    warn "Preparing frame ", @frame+0, "\n";
+	    my $stock_text = $stock->to_string ($cols);
+	    my @stock_lines = split /\n/, $stock_text;
+	    push @frame, \@stock_lines;
+	    $width = max ($width, map (length, @stock_lines));
+	    $height = max ($height, @stock_lines + 0);
+	}
 
-    # font & dimensions
-    my $font = $fontClass->$fontMethod;
-    my $cw = $font->width;
-    my $ch = $font->height;
-    my ($xsize, $ysize) = ($width * $cw, $height * $ch);
+	# font & dimensions
+	$font = $fontClass->$fontMethod;
+	$cw = $font->width;
+	$ch = $font->height;
+	($xsize, $ysize) = ($width * $cw, $height * $ch);
+    }
 
     # image & colors
     my $im = $imageClass->new ($xsize, $ysize);
-    my $white = $im->colorAllocate (255, 255, 255);
     my $black = $im->colorAllocate (0, 0, 0);
+    my $white = $im->colorAllocate (255, 255, 255);
+
+    # Rasmol colors
+    my %imColor = map (($_ => $im->colorAllocate (@{$rasRGB{$_}})), keys %rasRGB);
 
     # write frames
     my @ppm;
-    for (my $n = 0; $n < @frame; ++$n) {
-	warn "Drawing frame $n\n";
+    for (my $n = 0; $n < @$db; ++$n) {
+	warn "Drawing frame $n/", @$db-1, "\n";
 
-	clear ($im, $xsize, $ysize, $white);
-	for (my $line = 0; $line < @{$frame[$n]}; ++$line) {
-	    drawString ($im, $font, 0, $line * $ch, $cw, $frame[$n]->[$line], $black);
+	clear ($im, $xsize, $ysize, $black);
+
+	if ($pixels) {
+	    my $stock = $db->[$n];
+	    my @seqname = sort @{$stock->seqname};
+	    for my $row (0 .. @seqname - 1) {
+		my $s = $stock->seqdata->{$seqname[$row]};
+		my $mul = $columns / $stock->columns;
+		for my $col (0 .. $stock->columns - 1) {
+		    my $c = uc substr ($s, $col, 1);
+		    if (exists $imColor{$c}) {
+			for my $x (int ($mul * $col) .. int ($mul * ($col + 1)) - 1) {
+			    $im->setPixel ($x % $cols, $row + $rows * int ($x / $cols), $imColor{$c});
+			}
+		    }
+		}
+	    }
+	} else {
+	    for (my $line = 0; $line < @{$frame[$n]}; ++$line) {
+		drawString ($im, $font, 0, $line * $ch, $cw, $frame[$n]->[$line], $white);
+	    }
 	}
 
 	my $prefix = "$frameDir/$imagePrefix$n";
@@ -193,6 +258,13 @@ sub make_mpeg {
 	    unlink $ppm;
 	}
     }
+}
+
+# min
+sub min {
+    my ($min, @x) = @_;
+    for my $x (@x) { $min = $x if $x < $min }
+    return $min;
 }
 
 # max
@@ -257,11 +329,11 @@ sub drawString {
 
 # subroutine to blank the frame
 sub clear {
-    my ($im, $xsize, $ysize, $white) = @_;
+    my ($im, $xsize, $ysize, $bgcol) = @_;
     if ($useSVG) {
 	allocateImage();
     } else {
-	$im->filledRectangle (0, 0, $xsize, $ysize, $white);
+	$im->filledRectangle (0, 0, $xsize, $ysize, $bgcol);
     }
 }
 
