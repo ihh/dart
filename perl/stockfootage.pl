@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use Stockholm::Database;
+use Newick;
 use POSIX qw(ceil floor);
 
 # options
@@ -215,7 +216,13 @@ sub make_mpeg {
 	if ($pixels) {
 	    my $stock = $db->[$n];
 	    my @seqname = sort @{$stock->seqname};
-	    for my $row (0 .. @seqname - 1) {
+	    my @rowOrder = (0 .. @seqname - 1);
+	    if (@{$stock->gf_NH}) {
+		my $tree = Newick->from_string (join ("", @{$stock->gf_NH}));
+		my %rowIndex = map (($seqname[$_] => $_), @rowOrder);
+		@rowOrder = map ((defined($_) ? ($_) : ()), map ($rowIndex{$_}, @{$tree->node_name}));
+	    }
+	    for my $row (@rowOrder) {
 		my $s = $stock->seqdata->{$seqname[$row]};
 		my $mul = $columns / $stock->columns;
 		for my $col (0 .. $stock->columns - 1) {
