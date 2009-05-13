@@ -27,17 +27,17 @@ struct HMMoC_adapter_options
   static inline int diagonal0_1(const Alignment_path::Sequence_coords& pos,
 				const Alignment_path::Sequence_coords& len,
 				int inc = 0)
-  { return ((pos[1] + inc) * len[0] + len[1]/2) / len[1]; } //return diagonal position in dim 0 given position in dim 1
+  { return ((pos[1] + inc) * len[0] + len[1]/2) / max (len[1], 1); } //return diagonal position in dim 0 given position in dim 1
 
   static inline int diagonal1_2(const Alignment_path::Sequence_coords& pos,
 				const Alignment_path::Sequence_coords& len,
 				int inc = 0)
-  { return ((pos[2] + inc) * len[1] + len[2]/2) / len[2]; } //return diagonal position in dim 1 given position in dim 2
+  { return ((pos[2] + inc) * len[1] + len[2]/2) / max (len[2], 1); } //return diagonal position in dim 1 given position in dim 2
 
   static inline int diagonal2_3(const Alignment_path::Sequence_coords& pos,
 				const Alignment_path::Sequence_coords& len,
 				int inc = 0)
-  { return ((pos[3] + inc) * len[2] + len[3]/2) / len[3]; } //return diagonal position in dim 2 given position in dim 3
+  { return ((pos[3] + inc) * len[2] + len[3]/2) / max (len[3], 1); } //return diagonal position in dim 2 given position in dim 3
 
 
 };

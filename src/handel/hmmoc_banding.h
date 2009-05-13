@@ -32,16 +32,16 @@ class TwoDBanding : Banding<2> {
 
  private:
 
-  int iLen0, iLen1;
+  int iLen0, iLen1, iDiv1;
   int iWidth;
   Position pos;
   int iLastRow;
 
-  int diagonal(int p1) { return (p1 * iLen0 + iLen1/2) / iLen1; }
+  int diagonal(int p1) { return (p1 * iLen0 + iLen1/2) / iDiv1; }
 
  public:
 
-  TwoDBanding( int iLen0, int iLen1, int iWidth ) : iLen0(iLen0), iLen1(iLen1), iWidth(iWidth) {}
+  TwoDBanding( int iLen0, int iLen1, int iWidth ) : iLen0(iLen0), iLen1(iLen1), iDiv1(iLen1 ? iLen1 : 1), iWidth(iWidth) {}
 
   Position& forwardIterator() {
 
@@ -107,17 +107,17 @@ class ThreeDBanding : Banding<3> {
 
  private:
 
-  int iLen0, iLen1, iLen2;
+  int iLen0, iLen1, iLen2, iDiv1, iDiv2;
   int iDiameter;
   Position pos;
   int iLastRow;
 
-  int diagonal0_1(int p1) { return (p1 * iLen0 + iLen1/2) / iLen1; } //return diagonal position in dim 0 given position in dim 1
-  int diagonal1_2(int p2) { return (p2 * iLen1 + iLen2/2) / iLen2; } //return diagonal position in dim 1 given position in dim 2
+  int diagonal0_1(int p1) { return (p1 * iLen0 + iLen1/2) / iDiv1; } //return diagonal position in dim 0 given position in dim 1
+  int diagonal1_2(int p2) { return (p2 * iLen1 + iLen2/2) / iDiv2; } //return diagonal position in dim 1 given position in dim 2
 
  public:
 
-  ThreeDBanding( int iLen0, int iLen1, int iLen2, int iDiameter ) : iLen0(iLen0), iLen1(iLen1), iLen2(iLen2), iDiameter(iDiameter) {}
+  ThreeDBanding( int iLen0, int iLen1, int iLen2, int iDiameter ) : iLen0(iLen0), iLen1(iLen1), iLen2(iLen2), iDiv1(iLen1 ? iLen1 : 1), iDiv2(iLen2 ? iLen2 : 1), iDiameter(iDiameter) {}
 
   Position& forwardIterator() {
 
@@ -202,18 +202,18 @@ class FourDBanding : Banding<3> {
 
  private:
 
-  int iLen0, iLen1, iLen2, iLen3;
+  int iLen0, iLen1, iLen2, iLen3, iDiv1, iDiv2, iDiv3;
   int iDiameter;
   Position pos;
   int iLastRow;
 
-  int diagonal0_1(int p1) { return (p1 * iLen0 + iLen1/2) / iLen1; } //return diagonal position in dim 0 given position in dim 1
-  int diagonal1_2(int p2) { return (p2 * iLen1 + iLen2/2) / iLen2; } //return diagonal position in dim 1 given position in dim 2
-  int diagonal2_3(int p3) { return (p3 * iLen2 + iLen3/2) / iLen3; } //return diagonal position in dim 2 given position in dim 3
+  int diagonal0_1(int p1) { return (p1 * iLen0 + iLen1/2) / iDiv1; } //return diagonal position in dim 0 given position in dim 1
+  int diagonal1_2(int p2) { return (p2 * iLen1 + iLen2/2) / iDiv2; } //return diagonal position in dim 1 given position in dim 2
+  int diagonal2_3(int p3) { return (p3 * iLen2 + iLen3/2) / iDiv3; } //return diagonal position in dim 2 given position in dim 3
 
  public:
 
-  FourDBanding( int iLen0, int iLen1, int iLen2, int iDiameter ) : iLen0(iLen0), iLen1(iLen1), iLen2(iLen2), iDiameter(iDiameter) {}
+  FourDBanding( int iLen0, int iLen1, int iLen2, int iLen3, int iDiameter ) : iLen0(iLen0), iLen1(iLen1), iLen2(iLen2), iLen3(iLen3), iDiv1(iLen1 ? iLen1 : 1), iDiv2(iLen2 ? iLen2 : 1), iDiv3(iLen3 ? iLen3 : 1), iDiameter(iDiameter) {}
 
   Position& forwardIterator() {
 
