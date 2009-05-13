@@ -4,15 +4,32 @@ use Stockholm;
 use Newick;
 use SequenceIterator qw(iterseq);
 
-unless (@ARGV) {
-    @ARGV = qw(-);
-    warn "[waiting for FASTA file on standard input]\n";
-}
-die "\n$0\n\nGiven a FASTA file, make a dummy Stockholm alignment,\nwherein all sequences are in fact unaligned.\n\nUsage: $0 <FASTA file>\n\n"
-    if @ARGV != 1 || grep (/^(-h|-help|--help)$/, @ARGV);
-my ($fasta) = @ARGV;
+# command-line switches
+my $randomize;
 
-my (@name, @seq, @offset);
+my $usage = "\n$0\n\nGiven a FASTA file, make a dummy Stockholm alignment,\nwherein all sequences are in fact unaligned.\n\nUsage: $0 [-rnd] <FASTA file>\n\nOptions:\n -rnd  Randomize input order (& hence tree)\n\n";
+
+# parse cmd-line opts
+my @argv;
+while (@ARGV) {
+    my $arg = shift;
+    if ($arg =~ /^(-h|-help|--help)$/) {
+	die $usage;
+    } elsif ($arg eq "-rnd") {
+	$randomize = 1;
+    } else {
+	push @argv, $arg;
+    }
+}
+unless (@argv) {
+    @argv = ('-');
+    warn "[waiting for alignments on standard input]\n";
+}
+die $usage unless @argv == 1;
+my ($fasta) = @argv;
+
+# read FASTA
+my (@name, @seq, @length);
 my $offset = 0;
 iterseq ($fasta,
 	 sub {
@@ -21,12 +38,33 @@ iterseq ($fasta,
 	     push @name, $name;
 	     push @seq, $seq;
 	     push @offset, $offset;
-	     $offset += length $seq;
+	     push @length, length $seq;
 	 });
 
+# randomize?
+if ($randomize) {
+    # Fisher-Yates shuffle
+    my @order = (0 .. @name - 1);
+    for my $i (0 .. @name - 2) {
+	my $j = $i + int (rand (@name - $i));
+	if ($i != $j) {
+	    @order[$i,$j] = @order[$j,$i];
+	}
+    }
+    @name = @name[@order];
+    @seq = @seq[@order];
+    @length = @length[@order];
+}
+
+# calculate indentation offsets
+my $offset = 0;
+my @offset = (0, map ($offset += $_, @length));
+pop @offset;
+
+# create alignment
 my $stock = Stockholm->new;
 for my $i (0..@name-1) {
-    $stock->add_row ($name[$i], ("." x $offset[$i]) . $seq[$i] . ("." x ($offset - $offset[$i] - length($seq[$i]))));
+    $stock->add_row ($name[$i], ("." x $offset[$i]) . $seq[$i] . ("." x ($offset - $offset[$i] - $length[$i])));
 }
 
 my @parent = map (-1, @name);
