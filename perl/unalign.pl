@@ -7,7 +7,7 @@ use SequenceIterator qw(iterseq);
 # command-line switches
 my $randomize;
 
-my $usage = "\n$0\n\nGiven a FASTA file, make a dummy Stockholm alignment,\nwherein all sequences are in fact unaligned.\n\nUsage: $0 [-rnd] <FASTA file>\n\nOptions:\n -rnd  Randomize input order (& hence tree)\n\n";
+my $usage = "\n$0\n\nGiven a FASTA file, make a dummy Stockholm alignment(+tree),\nwherein all sequences are in fact unaligned.\n\nUsage: $0 [-rnd] <FASTA file>\n\nOptions:\n -rnd  Randomize input order (& hence tree)\n\n";
 
 # parse cmd-line opts
 my @argv;
