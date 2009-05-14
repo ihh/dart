@@ -30,14 +30,12 @@ my ($fasta) = @argv;
 
 # read FASTA
 my (@name, @seq, @length);
-my $offset = 0;
 iterseq ($fasta,
 	 sub {
 	     my ($name, $seq) = @_;
 	     $name =~ s/ .*//;
 	     push @name, $name;
 	     push @seq, $seq;
-	     push @offset, $offset;
 	     push @length, length $seq;
 	 });
 
