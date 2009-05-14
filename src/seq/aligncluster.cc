@@ -1,14 +1,17 @@
 #include "seq/stockholm.h"
 #include "newmat/newmat.h"
+#include "util/vector_output.h"
 #include <string.h>
 
 int main (int argc, char** argv)
 {
   INIT_OPTS_LIST (opts, argc, argv, 2, "[options] (AMA|SPS|PPV|TCS) <stockholm database>", "Alignment database centroid tool");
  
-  int nth = 1;
+  int nth;
+  bool find_auto;
   opts.newline(); 
   opts.add ("n -only-nth", nth = 1, "only use every nth alignment in distance matrix");  
+  opts.add ("auto", find_auto = true, "output time-averaged alignment similarity as a function of lag");  
   //bool flat_format;
   //bool scores_only;
 
@@ -58,7 +61,7 @@ int main (int argc, char** argv)
 	if ((i % nth) > 0) {
 		i++;
 		tmp_db.align.pop_front();
-		if(i > stock_db.align.size()){
+		if(i > (int) stock_db.align.size()){
 		  break;
 		}
 		continue;
@@ -70,7 +73,7 @@ int main (int argc, char** argv)
       	for_const_contents(list<Stockholm>, tmp_db.align, align2_tmp){
 	   if((j % nth) > 0) {
 		j++;
-		if(j > stock_db.align.size()){
+		if(j > (int) stock_db.align.size()){
 		  break;
 		}
 		continue;
@@ -113,22 +116,43 @@ int main (int argc, char** argv)
 	i++;
      }
      
+     // find centroid
      float max = 0.0;
-     int max_index;
+     int max_index = -1;
      CLOG(4) << "Finding centroid...\n";
      for(int x = 1; x <= stock_db.size() / nth; x++){
      	const float this_sum = distance_matrix.Row(x).Sum();
-	if (this_sum > max){
+	if (max_index < 0 || this_sum > max){
 		max = this_sum;
 		max_index = x;
 	}
      }
      max = max / stock_db.size();
+
+     // create alignment; annotate similarity & avg similarity
      Stockholm final (*stock_db.align_index[(max_index-1) * nth]);
      sstring tmp;
-     final.add_gf_annot("Similarity Measure:", method);
+     final.add_gf_annot("Similarity Measure:", method);  // CODE SMELL: Stockholm tags can't include spaces!
      tmp << max;
-     final.add_gf_annot("Average Similarity:", tmp);
+     final.add_gf_annot("Average Similarity:", tmp);  // CODE SMELL: Stockholm tags can't include spaces!
+
+     // annotate alignment with stationary autocorrelation-like measure, if requested
+     if (find_auto) {
+       vector<double> autovec;
+       const int matrix_size = stock_db.size() / nth;
+       for (int lag = 0; lag < matrix_size; lag++) {
+	 double total = 0.;
+	 for (int i = 1; i <= matrix_size - lag; i++)
+	   total += distance_matrix (i, i + lag);
+	 const double time_avg = total / (double) (matrix_size - lag);
+	 autovec.push_back (time_avg);
+       }
+       sstring autovec_string;
+       autovec_string << autovec;
+       final.add_gf_annot("AutoSimilarity", autovec_string);  // CODE SMELL: Stockholm tag should be shorter & defined up top as a constant
+     }
+
+      // output final alignment
      final.write_Stockholm(cout); 
  
   }
