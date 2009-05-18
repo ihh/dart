@@ -951,7 +951,7 @@ Score Handel_base::alignment_emit_score() const
 
 Score Handel_base::alignment_score() const
 {
-  return alignment_path_score() + alignment_emit_score();
+  return ScorePMul (alignment_path_score(), alignment_emit_score());
 }
 
 Score Handel_base::conditioned_alignment_path_score (Node dad, Node grumpa) const

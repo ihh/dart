@@ -1,6 +1,6 @@
 #include "handel/rivas.h"
 
-// uncomment the following #define to enable D->I transitions
+// comment the following #define to enable D->I transitions
 // #define ALLOW_DELETE_TO_INSERT_TRANSITIONS
 
 // number of parameter-sets to sample from the prior, for each parameter-sampling step
