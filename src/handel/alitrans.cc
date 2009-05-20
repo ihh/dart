@@ -510,6 +510,7 @@ Score Transducer_alignment::conditioned_branch_path_score (const Node_pair& bran
 {
   Pair_transducer_scores trans = ((Transducer_alignment&)*this).branch_pair_trans_sc (tree.branch_length (branch));  // cast away const
   Pairwise_path path (align.path, node2row[branch.first], node2row[branch.second], true);
+  // TODO: create Pairwise_path_IDsorted subclass, where insertion-deletion adjacencies are sorted with all I's before D's
   return trans.pairwise_path_score (path);
 }
 
