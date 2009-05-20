@@ -34,6 +34,13 @@ struct Pair_transducer_factory : Grammar_state_enum
 struct Transducer_alignment
   : Handel_base, Pair_transducer_factory, Transducer_state_type_enum
 {
+  // Sorted_pairwise_path : subclass of Pairwise_path, where insertion-deletion adjacencies are sorted with all I's before D's
+  // this subclass is used by virtual conditioned_branch_path_score method, so that I-D sorting is irrelevant to score
+  struct Sorted_pairwise_path : Pairwise_path
+  {
+    Sorted_pairwise_path (const Alignment_path& path, int anc_row, int desc_row);
+  };
+
   // data
   // flag to indicate whether to use Redelings-Suchard proposal scheme
   bool use_Redelings_Suchard;
@@ -71,6 +78,7 @@ struct Transducer_alignment
 
   // inherited virtual methods
   // return conditional alignment path score for a branch
+  // this method uses Sorted_pairwise_path to ensure that I-D sorting is irrelevant to score
   Score conditioned_branch_path_score (const Node_pair& branch) const;
 
   // common implementations of sample/optimise methods
