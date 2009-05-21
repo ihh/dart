@@ -233,12 +233,15 @@ struct Pairwise_path : Alignment_path
   inline void append_column (const vector<bool>& col_data);
 
   // methods to count match columns & overlap
-  int match_columns() const;
-  int match_overlap (const Pairwise_path& p) const;  // returns number of overlapping match columns
+  int match_columns() const;  // returns total number of match columns
+  int match_overlap (const Pairwise_path& p) const;  // returns number of overlapping match columns for two paths through the same (lengths of) sequences
 
   // not-very-useful method for finding mean displacement of match columns from central diagonal
   // (used for ordered over-relaxation attempt)
   double mean_match_displacement() const;
+
+  // method for sorting columns such that insertions are collected before deletions
+  void sort_indels();
   
   // shorthand composition operators
   Pairwise_path& operator*= (const Pairwise_path& p2);

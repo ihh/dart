@@ -507,61 +507,12 @@ void Transducer_alignment::dump (ostream &out)
   return;
 }
 
-Transducer_alignment::Sorted_pairwise_path::Sorted_pairwise_path (const Alignment_path& path, int anc_row, int desc_row)
-  : Pairwise_path (path, anc_row, desc_row, true)
-{
-  // pre log
-  if (CTAGGING(2,SORTED_PAIRWISE_PATH))
-    {
-      CL << "Sorting the following pairwise path:\n";
-      vector<sstring> row_name (2);
-      row_name[0] << "Anc";
-      row_name[1] << "Des";
-      show (CL, row_name);
-    }      
-
-  // move I's before D's
-  int last_nondel_col = -1;
-  int n_shunts = 0;
-  for (int col = 0; col < columns(); ++col)
-    {
-      const bool is_insert = !parent()[col] && child()[col];
-      const bool is_delete = parent()[col] && !child()[col];
-      if (is_insert && last_nondel_col >= 0 && last_nondel_col < col - 1)  // try to shunt this column left?
-	{
-	  for (int r = 0; r < rows(); ++r)
-	    {
-	      // have to do the swap explicitly, since STL's swap<> template apparently can't handle std::_Bit_reference as a type... sigh (IH, 5/20/09)
-	      const bool tmp = row(r)[last_nondel_col+1];
-	      row(r)[last_nondel_col+1] = row(r)[col];
-	      row(r)[col] = tmp;
-	    }
-	  ++last_nondel_col;
-	  ++n_shunts;
-	}
-      else if (!is_delete)
-	last_nondel_col = col;
-    }
-
-  // post log
-  if (n_shunts && CTAGGING(4,SORTED_PAIRWISE_PATH))
-    CL << "Shunted " << n_shunts << " insert columns leftwards past delete columns\n";
-
-  if (CTAGGING(2,SORTED_PAIRWISE_PATH))
-    {
-      CL << "Sorted pairwise path (" << n_shunts << " insert columns moved):\n";
-      vector<sstring> row_name (2);
-      row_name[0] << "Anc";
-      row_name[1] << "Des";
-      show (CL, row_name);
-    }
-}
-
 Score Transducer_alignment::conditioned_branch_path_score (const Node_pair& branch) const
 {
   Pair_transducer_scores trans = ((Transducer_alignment&)*this).branch_pair_trans_sc (tree.branch_length (branch));  // cast away const
-  // if sorting of insert-delete columns is important, use Pairwise_path instead of Sorted_pairwise_path
-  Sorted_pairwise_path path (align.path, node2row[branch.first], node2row[branch.second]);
+  Pairwise_path path (align.path, node2row[branch.first], node2row[branch.second], true);
+  if (sort_indels)
+    path.sort_indels();
   return trans.pairwise_path_score (path);
 }
 
