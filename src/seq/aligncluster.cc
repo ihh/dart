@@ -3,6 +3,10 @@
 #include "util/vector_output.h"
 #include <string.h>
 
+#define Stockholm_method_tag 			"SimMeth"
+#define Stockholm_average_similarity_tag	"AvSim"
+#define Stockholm_autosimilarity_tag		"AutoSim"
+
 bool skip_alignment(ifstream& in);
 
 int main (int argc, char** argv)
@@ -69,7 +73,6 @@ int main (int argc, char** argv)
 	else {
 	  Sequence_database seq_db;
 	  Stockholm align1; 
-	  CLOG(3) <<"Reading align "<<i<<"\n";
 	  align1.read_Stockholm(file1, seq_db);
 	  ifstream file2(filename.c_str());
 	  for(int j = 1; j <= runlength; j++){
@@ -84,13 +87,11 @@ int main (int argc, char** argv)
 	    else {
 		Stockholm align2;
 		Sequence_database sec_db;
-		CLOG(3) <<"Reading align "<<j<<"\n";
 		align2.read_Stockholm(file2, sec_db);
 		if(method.compare("AMA") == 0){
 		  CLOG(3) << "Preforming comparison "<< i/nth<<", "<<j/nth<<"\n";
 		  distance_matrix(i / nth, j / nth) = align1.ama_similarity(align2);
 		  distance_matrix(j / nth, i / nth) = distance_matrix(i / nth ,j / nth);
-		  CLOG(3) << "Comparison " << i<<", "<<j<<" done\n";
 		}
 	        else if(method.compare("SPS") == 0){	
 		  const int res_pairs12 = align1.residue_pair_overlap (align2);
@@ -146,9 +147,9 @@ int main (int argc, char** argv)
      Sequence_database new_db;
      final.read_Stockholm(final_file, new_db);
      sstring tmp;
-     final.add_gf_annot("SimMeth:", method);  // CODE SMELL: Stockholm tags can't include spaces!
+     final.add_gf_annot(Stockholm_method_tag, method);  
      tmp << max;
-     final.add_gf_annot("AvSim:", tmp);  // CODE SMELL: Stockholm tags can't include spaces!
+     final.add_gf_annot(Stockholm_average_similarity_tag, tmp);  
 
      // annotate alignment with stationary autocorrelation-like measure, if requested
      if (find_auto) {
@@ -163,7 +164,7 @@ int main (int argc, char** argv)
        }
        sstring autovec_string;
        autovec_string << autovec;
-       final.add_gf_annot("AutoSim:", autovec_string);  // CODE SMELL: Stockholm tag should be shorter & defined up top as a constant
+       final.add_gf_annot(Stockholm_autosimilarity_tag, autovec_string);
      }
 
       // output final alignment
