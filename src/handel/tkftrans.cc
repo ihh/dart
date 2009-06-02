@@ -74,7 +74,7 @@ Pair_transducer_scores TKF91_transducer_factory::branch_pair_trans_sc (double ti
 
   const double alpha = exp (-mu * time);
   const double beta = (lambda * (1 - exp ((lambda - mu) * time))) / (mu - lambda * exp ((lambda - mu) * time));
-  const double gamma = 1. + ((1 - exp (-mu * time)) * (mu - lambda * exp ((lambda - mu) * time))) / (-mu * (1 - exp ((lambda - mu) * time)));
+  const double gamma = 1. -  (mu * (1 - exp ((lambda - mu) * time))) / ((1 - exp (-mu * time)) * (mu - lambda * exp ((lambda - mu) * time)));
 
   branch.transition (Start, 0) = Prob2Score (beta);
   branch.transition (Start, 1) = Prob2Score (1. - beta);

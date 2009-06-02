@@ -1045,9 +1045,12 @@ void Handel_base::show_node_score_breakdown (ostream& out, Node node)
 
   for_iterator (Phylogeny::Relative_iter, rel, tree.relatives_begin(node), tree.relatives_end(node))
     {
-      ScorePMulAcc (p_nbr, conditioned_branch_path_score (Phylogeny::Node_pair (node, *rel)));
-      ScorePMulAcc (p_rest, conditioned_alignment_path_score (*rel, node));
-      if (node2row[*rel] != -1) nbr_rows.push_back (node2row[*rel]);
+      const Score branch_sc = conditioned_branch_path_score (Phylogeny::Node_pair (node, *rel));
+      const Score path_sc = conditioned_alignment_path_score (*rel, node);
+      ScorePMulAcc (p_nbr, branch_sc);
+      ScorePMulAcc (p_rest, path_sc);
+      if (node2row[*rel] != -1)
+	nbr_rows.push_back (node2row[*rel]);
     }
 
   o << "(";
