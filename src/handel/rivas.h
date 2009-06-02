@@ -2,7 +2,6 @@
 #define RIVAS_TRANSDUCER_FACTORY_INCLUDED
 
 #include "handel/alitrans.h"
-#include "irrev/irrev_em_matrix.h"
 #include "util/rnd.h"
 #include "util/score.h"
 #include "randlib/randlib.h"
@@ -11,7 +10,7 @@
 // Implements a class of time-parametric transducers described in the following article:
 // Rivas E. Evolutionary models for insertions and deletions in a probabilistic modeling framework.
 // BMC Bioinformatics. 2005 Mar 21;6(1):63. 
-struct Rivas_transducer_factory : Transducer_alignment
+struct Rivas_transducer_factory : Transducer_alignment_with_subst_model
 {
   // data
   Pair_transducer_scores prior;
@@ -19,9 +18,6 @@ struct Rivas_transducer_factory : Transducer_alignment
 
   // banding coefficient variables
   double del_rate, mean_del_size;
-
-  // substitution model
-  Irrev_EM_matrix subst_model;
 
   // geometric equilibrium length parameter
   const double gamma_val;
@@ -40,9 +36,6 @@ struct Rivas_transducer_factory : Transducer_alignment
 
   // gamma method
   double gamma() const { return gamma_val; }
-
-  // submat_factory method
-  Substitution_matrix_factory& submat_factory() const { return (Substitution_matrix_factory&) subst_model; }
 
   // clone method
   Rivas_transducer_factory* clone();

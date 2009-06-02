@@ -5,6 +5,7 @@
 #include "handel/handelalign.h"
 #include "handel/recorder.h"
 #include "handel/hmmoc_adapter_opts.h"
+#include "irrev/irrev_em_matrix.h"
 
 // default banding coefficient -- estimated using t/simband.pl
 #define DEFAULT_BANDING_COEFFICIENT 10.
@@ -22,7 +23,7 @@ struct Pair_transducer_factory : Grammar_state_enum
   virtual Pair_transducer_scores branch_pair_trans_sc (double time)
   = 0;  // returns conditionally-normalised "branch" transducer
 
-  // virtual banding method
+  // virtual banding methods
   virtual double gap_rate() = 0;
   virtual double mean_gap_size() = 0;
 
@@ -105,5 +106,22 @@ struct Transducer_alignment
 
 
 };
+
+// derived class of Transducer_alignment, holding a substitution model
+struct Transducer_alignment_with_subst_model : Transducer_alignment
+{
+  // substitution model
+  Irrev_EM_matrix subst_model;
+
+  // constructor
+  Transducer_alignment_with_subst_model() :
+    Transducer_alignment(),
+    subst_model (1, 2)  // dummy binary alphabet
+  { }
+
+  // submat_factory method (virtual from Handel_base)
+  Substitution_matrix_factory& submat_factory() const { return (Substitution_matrix_factory&) subst_model; }
+};
+
 
 #endif /* ALITRANS_INCLUDED */

@@ -58,7 +58,6 @@ Rivas_transducer_factory::Rivas_transducer_factory (int branch_states, double ga
   branch (branch_states),
   del_rate (0.),
   mean_del_size (0.),
-  subst_model (1, 2),  // dummy binary alphabet
   gamma_val (gamma_val)
 {
   // initialise prior transducer

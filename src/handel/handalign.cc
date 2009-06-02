@@ -1,5 +1,6 @@
 #include "handel/transducer.h"
 #include "handel/rivas.h"
+#include "handel/tkftrans.h"
 #include "handel/alitrans.h"
 #include "handel/recorder.h"
 
@@ -47,6 +48,7 @@ int main(int argc, char* argv[])
   double gap_len;
   sstring long_gap_cpt_weight_str;
   double long_gap_len;
+  bool tkf91;
 
   // set up path to subst model
   sstring subst_model_filename, subst_model_help_string;
@@ -79,6 +81,7 @@ int main(int argc, char* argv[])
   opts.newline();
   opts.add ("m -subst-model", subst_model_filename, subst_model_help_string.c_str(), false);
   opts.add ("p -prot-model", prot_model_alias.c_str(), prot_model_help_string.c_str(), false);
+  opts.add ("tkf91", tkf91 = false, "use TKF91 model instead of long indel model");
 
   opts.newline();
   opts.print_title ("Control of MCMC sampler");
@@ -167,9 +170,11 @@ int main(int argc, char* argv[])
       stock.read_Stockholm (align_file, seqs);
 
       // create Transducer_alignment
-      Rivas_transducer_factory* trans_ptr = 0;
+      Transducer_alignment_with_subst_model* trans_ptr = 0;
       const double gamma = 1 - 1 / (mean_seq_len + 1);
-      if (long_gap_cpt_weight_str.size())
+      if (tkf91)
+	trans_ptr = new TKF91_transducer_factory (gamma * delete_rate, delete_rate);
+      else if (long_gap_cpt_weight_str.size())
 	{
 	  vector<double> cpt_weight, cpt_gap_extend;
 	  const double long_gap_cpt_weight = long_gap_cpt_weight_str.to_double();
@@ -184,7 +189,7 @@ int main(int argc, char* argv[])
 	}
       else
 	trans_ptr = new Affine_transducer_factory (gamma, delete_rate, 1. - 1. / (gap_len + 1.));
-      Rivas_transducer_factory& trans (*trans_ptr);
+      Transducer_alignment_with_subst_model& trans (*trans_ptr);
 
       // populate Transducer_alignment
       trans.hmmoc_opts = hmmoc_opts;
