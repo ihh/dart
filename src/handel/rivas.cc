@@ -358,6 +358,7 @@ Affine_transducer_factory::Affine_transducer_factory (double gamma, double delet
   : Rivas_transducer_factory (5, gamma)
 {
   set_transitions(gamma, delete_rate, del_extend_prob);
+  sort_indels = true;
 }
 
 void Convex_transducer_factory::set_transitions (double gamma_val, double delete_rate, const vector<double>& cpt_weight, const vector<double>& cpt_del_extend)
@@ -462,5 +463,6 @@ void Convex_transducer_factory::set_transitions (double gamma_val, double delete
 Convex_transducer_factory::Convex_transducer_factory (double gamma, double delete_rate, const vector<double>& cpt_weight, const vector<double>& cpt_del_extend)
   : Rivas_transducer_factory (2 + 3 * cpt_weight.size(), gamma)
 {
-  set_transitions(gamma, delete_rate, cpt_weight, cpt_del_extend );
+  set_transitions (gamma, delete_rate, cpt_weight, cpt_del_extend);
+  sort_indels = true;
 }

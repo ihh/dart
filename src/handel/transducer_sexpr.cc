@@ -129,7 +129,7 @@ Transducer_SExpr_file::Transducer_SExpr_file (SExpr& transducer_file_sexpr)
 
 	    // figure out state label
 	    if (this_dim)
-	      this_pair_emit.resize (alphabet_size, alphabet_size, PFunc (1.));
+	      this_pair_emit.resize (alphabet_size, this_dim > 1 ? alphabet_size : 1, PFunc (1.));
 	    SExpr* this_emit_label_sexpr = (**state_sexpr).find (TSEXPR_LABEL);
 	    sstring this_emit_label;
 	    if (this_emit_label_sexpr)

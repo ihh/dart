@@ -4,18 +4,22 @@ TKF91_transducer_factory::TKF91_transducer_factory (double lambda, double mu)
   : Transducer_alignment_with_subst_model(),
     lambda (lambda),
     mu (mu)
-{ }
+{
+  sort_indels = false;  // TKF91 transducer has something to say about indel ordering
+}
 
 Pair_transducer_scores TKF91_transducer_factory::prior_pair_trans_sc()
 {
-  Pair_transducer_scores prior (1);
+  Pair_transducer_scores prior (2);
 
   prior.state_type[0] = Transducer_state_type_enum::TransducerInsertType;
+  prior.state_type[1] = Transducer_state_type_enum::TransducerWaitType;
 
   prior.alphabet_size = subst_model.m();
   prior.alloc_pair_emit (Prob2Score(1.));
 
   prior.state_name[0] = "I";
+  prior.state_name[1] = "W";
 
   for (int s = 0; s < prior.states(); ++s)
     if (prior.state_type[s] != TransducerWaitType)
@@ -26,10 +30,12 @@ Pair_transducer_scores TKF91_transducer_factory::prior_pair_trans_sc()
     prior.insert_val(0,i) = Prob2Score(ins[i]);
 
   prior.transition (Start, 0) = Prob2Score (lambda / mu);
-  prior.transition (Start, End) = Prob2Score (1. - lambda / mu);
+  prior.transition (Start, 1) = Prob2Score (1. - lambda / mu);
 
   prior.transition (0, 0) = Prob2Score (lambda / mu);
-  prior.transition (0, End) = Prob2Score (1. - lambda / mu);
+  prior.transition (0, 1) = Prob2Score (1. - lambda / mu);
+
+  prior.transition (1, End) = Prob2Score (1.);
 
   return prior;
 }
