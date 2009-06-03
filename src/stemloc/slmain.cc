@@ -46,7 +46,7 @@ void Stemloc::init_opts()
 
   opts.newline();
   opts.add ("nf -nfold", pairwise_nfold = -1, "number of folds to sample; -1 to unlimit");
-  opts.add ("rf -rndfold", random_fold = false, "sample folds stochastically, rather than using <nf> best hits");
+  opts.add ("rf -rndfold", random_fold = false, "sample <nf> folds stochastically, rather than using <nf> best hits");
   opts.add ("cf -cachefold", cache_fold = true, "cache fold envelopes: memory-hungry but fast");
   opts.add ("len -maxstemlen", max_subseq_len = -1, "maximum length of envelope subsequences; -1 to unlimit");
   opts.add ("loop -minlooplen", min_loop_len = 3, "minimum length of loop regions");
@@ -57,7 +57,7 @@ void Stemloc::init_opts()
   opts.newline();
   opts.add ("na -nalign", pairwise_nalign = 100, "number of alignments to sample; -1 to unlimit");
   opts.add ("mb -megabytes", max_megabytes = 0, "truncate <na> so Pair-SCFG uses at most this many megabytes", false);
-  opts.add ("ra -rndalign", random_align = false, "sample alignments stochastically, rather than using <na> best hits");
+  opts.add ("ra -rndalign", random_align = false, "sample <na> alignments stochastically, rather than using <na> best hits");
   opts.add ("band -bandalign", align_band = -1, "band size for pairwise alignment; -1 to unlimit");
 
   opts.newline();
