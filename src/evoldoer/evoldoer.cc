@@ -17,6 +17,9 @@ int main (int argc, char** argv)
       INIT_OPTS_LIST (opts, argc, argv, -1, "[options] <sequence file(s)>",
 		      "pairwise RNA structural alignment using TKF structure tree");
 
+      bool conditional;
+      bool odds_ratio;
+
       sstring loop_subst_model_filename;
       sstring stem_subst_model_filename;
       sstring grammar_filename;
@@ -35,6 +38,8 @@ int main (int argc, char** argv)
       opts.add ("ss -stem-subst",  stem_subst_model_filename, "covariant dinucleotide substitution model for stems (xrate chain format)", false);
       opts.add ("sp -stem-prob",   params.stem_prob,   "stem probability");
       opts.add ("g -grammar",      grammar_filename,   "save TKFST grammar to file (stemloc pair-SCFG format)", false);
+      opts.add ("c -conditional",  conditional = false, "compute conditional probabilities, i.e. P(descendant|ancestor)", true, "j -joint", "compute joint grammar, i.e. P(ancestor,descendant)");
+      opts.add ("r -odds-ratio",   odds_ratio = false,  "use odds ratios instead of probabilities, i.e. P(sequence|TKFST) / P(sequence|loopModel)", false);
 
       opts.newline();
       opts.print_title ("Envelope generation options");
@@ -137,10 +142,10 @@ int main (int argc, char** argv)
       const Pair_CFG_scores tkf_pair_hmm_cfg (tkf_pair_hmm);
 
       // create a TKF structure tree Single SCFG
-      const TKFST_single_CFG tkfst_single_cfg (params, true);
+      const TKFST_single_CFG tkfst_single_cfg (params, odds_ratio);
 
       // create a TKF structure tree Pair SCFG
-      const TKFST_pair_CFG tkfst_pair_cfg (params, t, false, true);
+      const TKFST_pair_CFG tkfst_pair_cfg (params, t, conditional, odds_ratio);
 
       // save TKFST pair SCFG to file, if asked
       if (grammar_filename.size())
