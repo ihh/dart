@@ -1,3 +1,5 @@
+;; identical to the loop model in tkfst.cc
+;; differs from the loop model in grammars/pfold-loopmodel.eg by one element (g->u)
 (alphabet
  (name RNA)
  (token (a c g u))

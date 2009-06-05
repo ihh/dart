@@ -1,3 +1,5 @@
+;; identical to the stem model in tkfst.cc
+;; identical to the stem model in grammars/pfold-stemmodel.eg
 (alphabet
  (name RNA)
  (token (a c g u))
