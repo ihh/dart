@@ -68,6 +68,7 @@ TKFST_stem_matrix::TKFST_stem_matrix()
   sstring bkstem;
   bkstem << "1 16\n"
 	 << "a c g u A C G U b d h v B D H V\n"
+	 << "0.001167 0.001806 0.001058 0.177977 0.001806 0.000391 0.266974 0.000763 0.001058 0.266974 0.000406 0.049043 0.177977 0.000763 0.049043 0.002793\n"
 	 << "-3.606 0.42 0.589 0.617 0.42 0 0.132 0.019 0.589 0.132 0 0.026 0.617 0.019 0.026 0\n"
 	 << "0.271 -6.069 0.068 2.861 0.024 0.079 0.008 0.01 0.003 2.135 0 0.401 0.124 0.008 0.057 0.02\n"
 	 << "0.65 0.116 -2.49 0.257 0.006 0 0.734 0 0.097 0.06 0 0.024 0.29 0.019 0.237 0\n"
@@ -591,6 +592,9 @@ void TKFST_Triplet_SCFG::init_emit_unpaired_states()
 	pr += p1(wl) * m1_x(wl,xl);
       emit[IL_ML_e_e][emit_idx] = Prob2Score (pr);
       emit[L_IL_WL_WL][emit_idx] = Prob2Score (p1(xl));
+#ifdef DART_DEBUG
+      CL << "emit[L_IL_WL_WL][" << SCFG_alphabet.int2char (xl) << "] = " << Prob2Score (p1(xl)) << endl;
+#endif /* DART_DEBUG */
       emit[L_IL_WL_e][emit_idx] = Prob2Score (p1(xl));
       emit[L_IL_e_WL][emit_idx] = Prob2Score (p1(xl));
       emit[L_IL_e_e][emit_idx] = Prob2Score (p1(xl));
@@ -635,6 +639,9 @@ void TKFST_Triplet_SCFG::init_emit_unpaired_states()
 	  for (int wl = 0; wl < SCFG_alphabet_size; ++wl)
 	    pr += p1(wl) * m1_x(wl,xl) * m1_y(wl,yl) * m1_z(wl,zl);
 	  emit[IL_ML_ML_ML][emit_idx] = Prob2Score (pr);
+#ifdef DART_DEBUG
+	  CL << "emit[IL_ML_ML_ML][" << SCFG_alphabet.int2char (xl) << "," << SCFG_alphabet.int2char (yl) << "," << SCFG_alphabet.int2char (zl) << "] = " << Prob2Score (pr) << endl;
+#endif /* DART_DEBUG */
 	}
 
   // state initialization: EmitXLZL
@@ -922,6 +929,10 @@ void TKFST_Triplet_SCFG::init_emit_paired_states()
 	  for (int zl = 0; zl < SCFG_alphabet_size; ++zl)
 	    for (int zr = 0; zr < SCFG_alphabet_size; ++zr)
 	      {
+#ifdef DART_DEBUG
+		CL << "emit[IS_MS_MS_MS][" << SCFG_alphabet.int2char (xl) << SCFG_alphabet.int2char (xr) << "," << SCFG_alphabet.int2char (yl) << SCFG_alphabet.int2char (yr) << "," << SCFG_alphabet.int2char (zl) << SCFG_alphabet.int2char (zr) << ",]:" << endl;
+#endif /* DART_DEBUG */
+
 		int emit_idx = (*this).emit_idx (EmitXLRYLRZLR, xl, xr, yl, yr, zl, zr);
 		Prob pr;
 		int xlr = (*this).emit_idx (EmitXLR, xl, xr, 0, 0, 0, 0);
@@ -934,8 +945,14 @@ void TKFST_Triplet_SCFG::init_emit_paired_states()
 		      // hack to create an emit_idx hash for (wl,wr)
 		      int wlr = (*this).emit_idx (EmitXLR, wl, wr, 0, 0, 0, 0);
 		      pr += p2(wlr) * m2_x(wlr,xlr) * m2_y(wlr,ylr) * m2_z(wlr,zlr);
+#ifdef DART_DEBUG
+		      CL << "p2("<<wlr<<") * m2_x("<<wlr<<","<<xlr<<") * m2_y("<<wlr<<","<<ylr<<") * m2_z("<<wlr<<","<<zlr<<") = " << p2(wlr) * m2_x(wlr,xlr) * m2_y(wlr,ylr) * m2_z(wlr,zlr) << " (pr = " << pr << ")" << endl;
+#endif /* DART_DEBUG */
 		    }
 		emit[IS_MS_MS_MS][emit_idx] = Prob2Score (pr);
+#ifdef DART_DEBUG
+		CL << "emit[IS_MS_MS_MS][" << SCFG_alphabet.int2char (xl) << SCFG_alphabet.int2char (xr) << "," << SCFG_alphabet.int2char (yl) << SCFG_alphabet.int2char (yr) << "," << SCFG_alphabet.int2char (zl) << SCFG_alphabet.int2char (zr) << ",] = " << Prob2Score (pr) << endl;
+		#endif /* DART_DEBUG */
 	      }
 
   // state initialization: EmitXLRZLR
