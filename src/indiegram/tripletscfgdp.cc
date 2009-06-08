@@ -96,6 +96,14 @@ Triplet_SCFG_filter::Triplet_SCFG_filter (const Triplet_SCFG& scfg, const SCFG_s
 	  // destination states
 	  allowed_dest_states[ft] = scfg.selected_outgoing_states (allowed_in_states[ft]);
 	  allowed_src_states[ft] = scfg.selected_incoming_states (allowed_in_states[ft]);
+	  if (CTAGGING (-1,INDIEGRAM_DP)) {
+	    if ((xflag == Subseq::CFLAG_NONE) && (yflag == Subseq::CFLAG_NONE) && (zflag == Subseq::CFLAG_NONE)) {
+	      CL << "allowed_in_states[" << ft << "] = ";
+	      for (vector<int>::const_iterator s = allowed_in_states[ft].begin(); s != allowed_in_states[ft].end(); ++s)
+		CL << *s << "(" << state_type_string (scfg.state_type[*s]) << "), ";
+	      CL << endl;
+	    }
+	  }
 	}
 
 }
@@ -369,6 +377,7 @@ void Triplet_DP_matrix_base::show_compact (ostream& o) const
 
 	  for (int s = 0; s < scfg.num_states(); ++s)
 	    {
+
 	      Score sc = read_cell (s, subseq_idx_x, subseq_idx_y, subseq_idx_z);
 	      if (sc > -InfinityScore)
 		{
