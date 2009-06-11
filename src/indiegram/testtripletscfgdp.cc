@@ -338,7 +338,7 @@ void test_deterministically()
   vector<int> state_path (state_array, state_array + 15);
   // get the corresponding parse tree and alignment
   Triplet_SCFG_parse_tree parse_tree = scfg.parse (state_path);
-  Triplet_SCFG_alignment alignment = parse_tree.alignment (scfg.state_type, np_x, np_y, np_z);
+  Triplet_SCFG_alignment alignment = parse_tree.alignment (scfg.state_type, scfg.state_type_ancestral_map, np_x, np_y, np_z);
 
 
   // The below is for by-hand score calculation, nothing more.
@@ -456,7 +456,7 @@ void test_deterministically()
     cyk_tree.show (cout, &(scfg.state_type));
     // and alignment
     // of course could also get this as cyk.alignment();
-    Triplet_SCFG_alignment cyk_alignment = cyk_tree.alignment (scfg.state_type, np_x, np_y, np_z);
+    Triplet_SCFG_alignment cyk_alignment = cyk_tree.alignment (scfg.state_type, scfg.state_type_ancestral_map, np_x, np_y, np_z);
     cyk_alignment.score = cyk_sc; // store score also
     cout << "\nAlignment:\n";
     alignment.show (cout);
@@ -519,7 +519,7 @@ void test_deterministically()
     cyk_tree.show (cout, &(scfg.state_type));
     // and alignment
     // of course could also get this as cyk.alignment();
-    Triplet_SCFG_alignment cyk_alignment = cyk_tree.alignment (scfg.state_type, np_x, np_y, np_z);
+    Triplet_SCFG_alignment cyk_alignment = cyk_tree.alignment (scfg.state_type, scfg.state_type_ancestral_map, np_x, np_y, np_z);
     cyk_alignment.score = cyk_sc;
     cout << "\nAlignment:\n";
     alignment.show (cout);

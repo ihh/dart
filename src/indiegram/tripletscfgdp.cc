@@ -96,6 +96,19 @@ Triplet_SCFG_filter::Triplet_SCFG_filter (const Triplet_SCFG& scfg, const SCFG_s
 	  // destination states
 	  allowed_dest_states[ft] = scfg.selected_outgoing_states (allowed_in_states[ft]);
 	  allowed_src_states[ft] = scfg.selected_incoming_states (allowed_in_states[ft]);
+
+	  // debugging...
+#ifdef DART_DEBUG
+	  if (CTAGGING (-1,INDIEGRAM_DP)) {
+	    if ((xflag == Subseq::CFLAG_NONE) && (yflag == Subseq::CFLAG_NONE) && (zflag == Subseq::CFLAG_NONE)) {
+	      CL << "allowed_in_states[" << ft << "] = ";
+	      for (vector<int>::const_iterator s = allowed_in_states[ft].begin(); s != allowed_in_states[ft].end(); ++s)
+		CL << *s << "(" << state_type_string (scfg.state_type[*s]) << "), ";
+	      CL << endl;
+	    }
+	  }
+#endif /* DART_DEBUG */
+
 	}
 
 }
@@ -369,6 +382,7 @@ void Triplet_DP_matrix_base::show_compact (ostream& o) const
 
 	  for (int s = 0; s < scfg.num_states(); ++s)
 	    {
+
 	      Score sc = read_cell (s, subseq_idx_x, subseq_idx_y, subseq_idx_z);
 	      if (sc > -InfinityScore)
 		{
@@ -848,15 +862,15 @@ void Triplet_CYK_matrix::fill()
 #ifdef DART_DEBUG
 				      if (((subseq_x.len == 0) && (subseq_y.len == 0) && (subseq_z.len == 0)) || ((subseq_x.len == seqlen_x) && (subseq_y.len == seqlen_y) && (subseq_z.len == seqlen_z)))
 					{
-					  cerr << "(" << subseq_x.terser_desc() << ", "<< subseq_y.terser_desc() << ", "<< subseq_z.terser_desc() << "):\n";
-					  cerr << "  allowed_in_states  = ";
+					  CL << "(" << subseq_x.terser_desc() << ", "<< subseq_y.terser_desc() << ", "<< subseq_z.terser_desc() << "):\n";
+					  CL << "  allowed_in_states  = ";
 					  for_const_contents (vector<int>, allowed_in_states (subseq_x, subseq_y, subseq_z), s)
 					    {
 					      sstring state_desc; // state description
 					      state_desc << *s << '(' << state_type_string (scfg.state_type[*s]) << ')';
-					      cerr << state_desc << ", ";
+					      CL << state_desc << ", ";
 					    }
-					  cerr << "\n";
+					  CL << "\n";
 					}
 #endif /* DART_DEBUG */
 
@@ -944,7 +958,7 @@ void Triplet_CYK_matrix::fill()
 					  // debugging
 #ifdef DART_DEBUG
 					  if (((subseq_x.len == 0) && (subseq_y.len == 0) && (subseq_z.len == 0)) || ((subseq_x.len == seqlen_x) && (subseq_y.len == seqlen_y) && (subseq_z.len == seqlen_z)))
-					    cerr << "     " << *s << " => " << score << "\n";
+					    CL << "     " << *s << " => " << score << "\n";
 #endif /* DART_DEBUG */
 
 					  // now store the score

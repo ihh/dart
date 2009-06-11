@@ -98,7 +98,7 @@ int main (int argc, char** argv)
       parse_tree.show (cout, &(scfg.state_type));
 
       // alignment
-      Triplet_SCFG_alignment alignment = parse_tree.alignment (scfg.state_type, np_x, np_y, np_z);
+      Triplet_SCFG_alignment alignment = parse_tree.alignment (scfg.state_type, scfg.state_type_ancestral_map, np_x, np_y, np_z);
       cout << "\nAlignment:\n";
       alignment.show (cout);
 
