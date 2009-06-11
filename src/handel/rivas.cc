@@ -3,10 +3,8 @@
 // comment the following #define to enable D->I transitions
 // #define ALLOW_DELETE_TO_INSERT_TRANSITIONS
 
-// number of parameter-sets to sample from the prior, for each parameter-sampling step
-// 1024 parameter samples takes embarrassingly long, but is probably necessary. There are 5 parameters for the 2-cpt long indel model, and 1024=4^5.
-// So, 1024 samples is 4 independent samples of each parameter. Any fewer seems like it might undersample the prior.
-#define PRIOR_SAMPLES_PER_PARAM_SAMPLING_STEP 1024
+// number of times to sample parameters during parameter-sampling step
+#define PRIOR_SAMPLES 100
 
 // static inits
 // May want to allow these to be configurable from cmdline?
@@ -309,49 +307,73 @@ sstring Convex_transducer_factory::indel_parameter_string() const
 
 void Affine_transducer_factory::sample_indel_params()
 {
-  vector<Score> scores;
-  vector<Prob> probs;
-  vector<Affine_transducer_factory_param_container> params;
-  CTAG(5, PARAM_SAMPLE) << "Proposing new parameters\n";
-  for (int i = 0; i < PRIOR_SAMPLES_PER_PARAM_SAMPLING_STEP; i++){
-     params.push_back(propose_indel_params());
-     set_transitions(params[i].gamma_param, params[i].delete_rate_param, params[i].delete_extend_prob_param);
-     const Score align_sc = alignment_path_score();
-     scores.push_back (align_sc);
-     CTAG(3, PARAM_SAMPLE) << "param_set #" << i << " (" << -Score2Bits(align_sc)
-			   << " bits): gamma=" << params[i].gamma_param
-			   << ",delete_rate="  << params[i].delete_rate_param
-			   << ",delete_extend=" << params[i].delete_extend_prob_param << "\n";
-  }
-  probs = Score2ProbVecNorm(scores);
-  int index = Rnd::choose(probs);
-  set_transitions(params[index].gamma_param, params[index].delete_rate_param, params[index].delete_extend_prob_param);
-  CTAG(5, PARAM_SAMPLE) << "New parameters chosen (score " << -Score2Bits(scores[index]) << " bits, postprob " << -Prob2Bits(probs[index])
-			<< " bits): gamma=" << gamma_param
-			<< ",delete_rate=" << delete_rate_param << ",delete_extend=" <<delete_extend_prob_param<<"\n";
+  Score old_sc = alignment_path_score();
+
+  for (int sample = 0; sample < PRIOR_SAMPLES; ++sample)
+    {
+      Affine_transducer_factory_param_container
+	old_params = *this,
+	new_params = propose_indel_params();
+
+      set_transitions (new_params.gamma_param, new_params.delete_rate_param, new_params.delete_extend_prob_param);
+      const Score new_sc = alignment_path_score();
+
+      CTAG(5, PARAM_SAMPLE) << "Sampled parameters ("
+			    << sample+1 << " of " << PRIOR_SAMPLES
+			    << "): gamma=" << gamma_param
+			    << " delete_rate=" << delete_rate_param
+			    << " delete_extend=" << delete_extend_prob_param
+			    << " new_bitscore=" << Score2Bits(new_sc)
+			    << " old_bitscore=" << Score2Bits(old_sc)
+			    << "; move ";
+  
+      if (new_sc > old_sc ? true : Rnd::decide (Score2Prob (ScorePMul (new_sc, -old_sc))))
+	{
+	  CL << "accepted\n";
+	  old_sc = new_sc;
+	}
+      else
+	{
+	  CL << "rejected\n";
+	  set_transitions (old_params.gamma_param, old_params.delete_rate_param, old_params.delete_extend_prob_param);
+	}
+    }
 }
 
 void Convex_transducer_factory::sample_indel_params()
 {
-  vector<Score> scores;
-  vector<Prob> probs;
-  vector<Convex_transducer_factory_param_container> params;
-  CTAG(5, PARAM_SAMPLE) << "Proposing new parameters\n";
-  for (int i = 0; i < PRIOR_SAMPLES_PER_PARAM_SAMPLING_STEP; i++){
-     params.push_back(propose_indel_params());
-     set_transitions(params[i].gamma_param, params[i].delete_rate_param, params[i].cpt_weight_param, params[i].cpt_delete_extend);
-     const Score align_sc = alignment_path_score();
-     scores.push_back (align_sc);
-     CTAG(3, PARAM_SAMPLE) << "param_set #" << i << " (" << -Score2Bits(align_sc)
-			   << " bits): gamma="<< params[i].gamma_param << ",delete_rate=" << params[i].delete_rate_param
-			   << ",weight=(" << cpt_weight_param << "),delete_extend=(" << cpt_delete_extend << ")\n";
-  }
-  probs = Score2ProbVecNorm(scores);
-  int index = Rnd::choose(probs);
-  set_transitions(params[index].gamma_param, params[index].delete_rate_param, params[index].cpt_weight_param, params[index].cpt_delete_extend);
-  CTAG(5, PARAM_SAMPLE) << "New parameters chosen (score " << -Score2Bits(scores[index]) << " bits, postprob " << -Prob2Bits(probs[index])
-			<< " bits): gamma="<< gamma_param << ",delete_rate=" << delete_rate_param
-			<< ",weight=(" << cpt_weight_param << "),delete_extend=(" << cpt_delete_extend << ")\n";
+  for (int sample = 0; sample < PRIOR_SAMPLES; ++sample)
+    {
+      Score old_sc = alignment_path_score();
+
+      Convex_transducer_factory_param_container
+	old_params = *this,
+	new_params = propose_indel_params();
+
+      set_transitions (new_params.gamma_param, new_params.delete_rate_param, new_params.cpt_weight_param, new_params.cpt_delete_extend);
+      const Score new_sc = alignment_path_score();
+
+      CTAG(5, PARAM_SAMPLE) << "Sampled parameters ("
+			    << sample+1 << " of " << PRIOR_SAMPLES
+			    << "): gamma=" << gamma_param
+			    << " delete_rate=" << delete_rate_param
+			    << " cpt_weight=(" << cpt_weight_param
+			    << ") delete_extend=(" << cpt_delete_extend
+			    << ") new_bitscore=" << Score2Bits(new_sc)
+			    << " old_bitscore=" << Score2Bits(old_sc)
+			    << "; move ";
+  
+      if (new_sc > old_sc ? true : Rnd::decide (Score2Prob (ScorePMul (new_sc, -old_sc))))
+	{
+	  CL << "accepted\n";
+	  old_sc = new_sc;
+	}
+      else
+	{
+	  CL << "rejected\n";
+	  set_transitions (old_params.gamma_param, old_params.delete_rate_param, old_params.cpt_weight_param, old_params.cpt_delete_extend);
+	}
+    }
 }
 
 Affine_transducer_factory::Affine_transducer_factory (double gamma, double delete_rate, double del_extend_prob)
