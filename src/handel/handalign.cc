@@ -37,6 +37,7 @@ int main(int argc, char* argv[])
   sstring annealing_steps_total;
   bool use_Redelings_Suchard;
   bool use_time_dependent_banding;
+  double banding_coefficient;
   bool force_binary;
   sstring exec_filename;
   sstring mcmc_sample_filename;
@@ -132,7 +133,7 @@ int main(int argc, char* argv[])
   hmmoc_opts.init_opts_list (opts, false);  // don't offer the option to dump the HMMoC file
 
   opts.add ("tb -time-band", use_time_dependent_banding = false, "use time-dependent banding, if & when it gives a tighter band", false);
-
+  opts.add ("bc -band-coeff", banding_coefficient = DEFAULT_BANDING_COEFFICIENT, "time-dependent banding coefficient: determines width of band");
 
   try
     {
@@ -195,6 +196,7 @@ int main(int argc, char* argv[])
       trans.hmmoc_opts = hmmoc_opts;
       trans.use_Redelings_Suchard = use_Redelings_Suchard;
       trans.use_banding_coefficient = use_time_dependent_banding;
+      trans.banding_coefficient = banding_coefficient;
       trans.dotfile_recorder.directory = dotfile_dir;
       trans.composition_recorder.directory = comp_dir;
 
