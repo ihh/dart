@@ -7,9 +7,15 @@
  ;; initial low seed probability for transitions
  (&define SEED .001)
 
- ;; Here is an overview of the entire RNA-decoder phylo-grammar.
+ ;; Here is an overview of the entire RNA-decoder phylo-grammar, including:
+ ;;  - Pseudoterminal tuples, corresponding to covariant substitution matrices.
+ ;;  - Trainable parameters.
+ ;;  - Constant parameters.
+ ;;  - Production rules.
+
 
  ;; Pseudoterminal tuples, corresponding to covariant substitution matrices:
+
  ;; (NUC) (LNUC RNUC)
  ;; for C = 1 to CLASSES:
  ;;   (NULC)
@@ -17,6 +23,7 @@
  ;;   (LX) (NSX)
  ;;   for Y = 0 to 2:
  ;;      (PP_LXY PP_RXY)
+
 
  ;; Trainable parameters:
 
@@ -43,8 +50,6 @@
  ;;       PPIJ (const-pgroup)
  ;;       for {K,L} in {a,c,g,t}, with IJ != KL
  ;;          PPIJ2KL (const-rate)
-
-
 
 
  ;; Production rules:
@@ -98,7 +103,7 @@
 
 
 
- ;; Now the actual code.
+ ;; Now the actual code, arranged by production rule.
 
  ;; high-level subgrammar
  ;; begin -> pre_ns | pre_s
@@ -112,11 +117,11 @@
 
  ;; pre_s -> struct inter_ns_s | end
  (nonterminal (name pre_s))
- (transform (prob SEED) (from (pre_s)) (to (struct/bif/inter_ns_s)))
+ (transform (prob SEED) (from (pre_s)) (to (struct-bif-inter_ns_s)))
  (transform (prob SEED) (from (pre_s)) (to ()))
 
- (nonterminal (name struct/bif/inter_ns_s))
- (transform (prob SEED) (from (struct/bif/inter_ns_s)) (to (struct inter_ns_s)))
+ (nonterminal (name struct-bif-inter_ns_s))
+ (transform (prob SEED) (from (struct-bif-inter_ns_s)) (to (struct inter_ns_s)))
 
  ;; inter_ns_s -> pre_ns | pre_s
  (nonterminal (name inter_ns_s))
@@ -189,10 +194,10 @@
  ;; for fns0->fns1->fns2->fns0->... cycle, see loop over reading frames
 
  ;; fns0* -> fl(1,1) fns2
- (transform (prob SEED) (from (fns0*)) (to (fl11/bif/fns2)))
+ (transform (prob SEED) (from (fns0*)) (to (fl11-bif-fns2)))
 
- (nonterminal (name (fl11/bif/fns2)))
- (transform (from (fl11/bif/fns2)) (to (fl11 fns2)))
+ (nonterminal (name fl11-bif-fns2))
+ (transform (from (fl11-bif-fns2)) (to (fl11 fns2)))
 
  ;; fns2* -> end
  (transform (prob SEED) (from (fns2*)) (to ()))
