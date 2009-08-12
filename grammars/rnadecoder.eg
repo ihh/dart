@@ -7,28 +7,116 @@
  ;; initial low seed probability for transitions
  (&define SEED .001)
 
+ ;; Here is an overview of the entire RNA-decoder phylo-grammar.
+
+ ;; Pseudoterminal tuples, corresponding to covariant substitution matrices:
+ ;; (NUC) (LNUC RNUC)
+ ;; for C = 1 to CLASSES:
+ ;;   (NULC)
+ ;; for X = 0 to 2:
+ ;;   (LX) (NSX)
+ ;;   for Y = 0 to 2:
+ ;;      (PP_LXY PP_RXY)
+
+ ;; Trainable parameters:
+
+ ;; for I in {a,c,g,t}
+ ;;    nulprobI (pgroup)
+ ;;    NSI (pgroup)
+ ;;    for J in {a,c,g,t} with J != I
+ ;;       nulrateI2J (rate)
+ ;;       NSI2J (rate)
+
+ ;; for X = 0 to 2
+ ;;    LmulX (rate)
+ ;;    for Y = 0 to 2
+ ;;       PPmulXY (rate)
+
+
+ ;; Constant parameters:
+
+ ;; for I in {a,c,g,t}
+ ;;    LI (const-pgroup)
+ ;;    for J in {a,c,g,t} with J != I
+ ;;       LI2J (const-rate)
+ ;;    for J in {a,c,g,t}
+ ;;       PPIJ (const-pgroup)
+ ;;       for {K,L} in {a,c,g,t}, with IJ != KL
+ ;;          PPIJ2KL (const-rate)
+
+
+
+
+ ;; Production rules:
+
+ ;; begin -> pre_ns | pre_s
+ ;; pre_ns -> nonstruct pre_s
+ ;; pre_s -> struct inter_ns_s | end
+ ;; inter_ns_s -> pre_ns | pre_s
+
+ ;; nonstruct -> ns1 | ns2 | ... | nsCLASSES
+ ;; for C = 1 to CLASSES:
+ ;;    nonstruct -> nsC
+ ;;    nsC -> NULC nsC*
+ ;;    nsC* -> nsC
+ ;;           | end
+ ;;    for D = 1 to CLASSES:
+ ;;       nsC* -> nsD
+
+ ;; struct -> pfoldS | fns0
+
+ ;; for X = 0 to 2:
+ ;;    fns(X) -> NSX fns*(X)
+ ;;    fns*(X) -> fns(X+1)
+ ;;    for Y = 0 to 2:
+ ;;       fl(X,Y) -> flX(X,Y)
+ ;;                | flY(X,Y)
+ ;;                | fpp(X,Y)
+ ;;       flX(X,Y) -> LX flX*(X,Y)
+ ;;       flX*(X,Y) -> flX(X+1,Y)
+ ;;                  | flY(X+1,Y)
+ ;;                  | fpp(X+1,Y)
+ ;;                  | end
+ ;;       flY(X,Y) -> flY*(X,Y) ~LY
+ ;;       flY*(X,Y) -> flX(X,Y-1)
+ ;;                  | flY(X,Y-1)
+ ;;                  | fpp(X,Y-1)
+ ;;                  | end
+ ;;       fpp(X,Y) -> PP_LXY fpp*(X,Y) PP_RXY
+ ;;       fpp*(X,Y) -> flX(X+1,Y-1)
+ ;;                  | flY(X+1,Y-1)
+ ;;                  | fpp(X+1,Y-1)
+
+ ;; fns2* -> end
+ ;; fns0* -> fl(1,1) fns2
+
+ ;; pfoldS -> pfoldL | pfoldB
+ ;; pfoldF -> LNUC pfoldF* RNUC
+ ;; pfoldF* -> pfoldF | pfoldL pfoldS
+ ;; pfoldL -> pfoldF | pfoldU
+ ;; pfoldU -> NUC
+
+
+
+ ;; Now the actual code.
+
  ;; high-level subgrammar
  ;; begin -> pre_ns | pre_s
  (nonterminal (name begin))
  (transform (prob SEED) (from (begin)) (to (pre_ns)))
  (transform (prob SEED) (from (begin)) (to (pre_s)))
 
- ;; pre_ns -> pre_ns | nonstruct pre_ns
+ ;; pre_ns -> nonstruct pre_s
  (nonterminal (name pre_ns))
- (transform (prob SEED) (from (pre_ns)) (to (pre_ns)))
- (transform (prob SEED) (from (pre_ns)) (to (bif_ns)))
+ (transform (from (pre_ns)) (to (nonstruct pre_s)))
 
- (nonterminal (name bif_ns))
- (transform (prob SEED) (from (bif_ns)) (to (nonstruct pre_s)))
-
- ;; pre_s -> pre_ns | struct inter_ns_s | end
+ ;; pre_s -> struct inter_ns_s | end
  (nonterminal (name pre_s))
- (transform (prob SEED) (from (pre_s)) (to (pre_ns)))
- (transform (prob SEED) (from (pre_s)) (to (bif_s)))
+ (transform (prob SEED) (from (pre_s)) (to (struct/bif/inter_ns_s)))
  (transform (prob SEED) (from (pre_s)) (to ()))
 
- (nonterminal (name bif_s))
- (transform (prob SEED) (from (bif_s)) (to (struct inter_ns_s)))
+ (nonterminal (name struct/bif/inter_ns_s))
+ (transform (prob SEED) (from (struct/bif/inter_ns_s)) (to (struct inter_ns_s)))
 
  ;; inter_ns_s -> pre_ns | pre_s
  (nonterminal (name inter_ns_s))
@@ -52,7 +140,7 @@
 				     ((. nulrate i 2 j) SEED)))))
 
  ;; nonstruct
- ;; nonstruct -> ns_1 | ns_2 | ... | ns_CLASSES
+ ;; nonstruct -> ns1 | ns2 | ... | nsCLASSES
  (nonterminal (name nonstruct))
 
  (&define CLASSES 3)
@@ -76,7 +164,7 @@
 							((. nulratemul X)
 							 (. nulrate i 2 j))))))))
 
-	   ;; ns_X -> NULX ns_X*
+	   ;; nsX -> NULX nsX*
 	   (transform
 	    (from ((. ns X)))
 	    (to ((. NUL X) (. ns X *)))
@@ -84,11 +172,11 @@
 	    (annotate (row SS_cons) (column (. NUL X)) (label ,))
 	    (annotate (row RdFrame) (column (. NUL X)) (label ,)))
 
-	   ;; ns_X -> end
+	   ;; nsX* -> end
 	   (transform (prob SEED) (from ((. ns X *))) (to ()))
 
 	   (&foreach-integer Y (1 CLASSES)
-			     ;; ns_X -> ns_Y
+			     ;; nsX -> nsY
 			     (transform (prob SEED) (from ((. ns X *))) (to ((. ns Y))))))
 
 
@@ -101,8 +189,10 @@
  ;; for fns0->fns1->fns2->fns0->... cycle, see loop over reading frames
 
  ;; fns0* -> fl(1,1) fns2
- (transform (prob SEED) (from (fns0*)) (to (fns_bif)))
- (transform (from (fns_bif)) (to (fl11 fns2)))
+ (transform (prob SEED) (from (fns0*)) (to (fl11/bif/fns2)))
+
+ (nonterminal (name (fl11/bif/fns2)))
+ (transform (from (fl11/bif/fns2)) (to (fl11 fns2)))
 
  ;; fns2* -> end
  (transform (prob SEED) (from (fns2*)) (to ()))
