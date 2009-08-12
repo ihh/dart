@@ -63,8 +63,7 @@
  ;; for C = 1 to CLASSES:
  ;;    nonstruct -> nsC
  ;;    nsC -> NULC nsC*
- ;;    nsC* -> nsC
- ;;           | end
+ ;;    nsC* -> end
  ;;    for D = 1 to CLASSES:
  ;;       nsC* -> nsD
 
