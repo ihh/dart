@@ -229,8 +229,8 @@ bool Log_stream::Log_directive::process (int level, const char* src_file, int sr
 {
   if (filename_pattern.Match (src_file) && level >= lowest_level && level <= highest_level && src_line >= start_line && src_line <= end_line)
     {
-      if ((stderr_or_logfile & 1 == 1) && stderr_ret == -1) stderr_ret = on ? 1 : 0;
-      if ((stderr_or_logfile & 2 == 2) && file_ret == -1) file_ret = on ? 1 : 0;
+      if ((stderr_or_logfile & 1) && stderr_ret == -1) stderr_ret = on ? 1 : 0;
+      if ((stderr_or_logfile & 2) && file_ret == -1) file_ret = on ? 1 : 0;
       dirstr_match = filename_pattern[1];
       return stderr_or_logfile ? 1 : 0;
     }

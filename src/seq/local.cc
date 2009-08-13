@@ -17,7 +17,8 @@ void Local_alignment::read_MUL (istream& in, Sequence_database& db)
       input.getline(in).chomp();
       if (!re_ignore.Match(input.c_str()) && re.Match(input.c_str()) && re.SubStrings() == 2)
 	{
-	  db.push_back(Named_profile());
+	  Named_profile tmp_np;
+	  db.push_back(tmp_np);
 	  Named_profile& np_cur = db.back();
 
 	  np_cur.name = re[1];

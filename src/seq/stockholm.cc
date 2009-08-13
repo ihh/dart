@@ -81,7 +81,8 @@ void Stockholm::read_Stockholm (istream& in, Sequence_database& db, int max_line
 
 	  if (is_new_row)
 	    {
-	      db.push_back (Named_profile());
+	      Named_profile tmp_np;
+	      db.push_back (tmp_np);
 	      np_cur = &db.back();
 	      np_cur->name = name;
 

@@ -118,13 +118,13 @@ array2d<double> Hasegawa_matrix_factory::rate_matrix() const
 array2d<double> Hasegawa_matrix_factory::create_conditional_substitution_matrix (double time)
 {
   array2d<double> sub = Hasegawa_likelihood_matrix (transition_rate, transversion_rate, time, base_frequency, false, true, do_ivratio_correction);
-  if (CLOGGING(-1)) clog_stream << "Hasegawa substitution matrix at t=" << time << ":\n" << sub;
+  if (CLOGGING(-1)) CL << "Hasegawa substitution matrix at t=" << time << ":\n" << sub;
   if (CLOGGING(-2))
     {
       array2d_to_Matrix_adaptor submat (sub);
       vector_to_RowVector_adaptor p (base_frequency);
-      clog_stream << "Prior: " << p;
-      clog_stream << "Hasegawa substitution matrix * prior: " << p * submat.t();
+      CL << "Prior: " << p;
+      CL << "Hasegawa substitution matrix * prior: " << p * submat.t();
     }
   return sub;
 }
@@ -133,7 +133,7 @@ array2d<double> Hasegawa_matrix_factory::create_conditional_substitution_matrix 
 array2d<double> Hasegawa_matrix_factory::differentiate_conditional_substitution_matrix (double time)
 {
   array2d<double> sub = Hasegawa_likelihood_matrix (transition_rate, transversion_rate, time, base_frequency, true, true, do_ivratio_correction);
-  if (CLOGGING(-1)) clog_stream << "Time derivative of Hasegawa substitution matrix at t=" << time << ":\n" << sub;
+  if (CLOGGING(-1)) CL << "Time derivative of Hasegawa substitution matrix at t=" << time << ":\n" << sub;
   return sub;
 }
 

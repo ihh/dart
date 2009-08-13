@@ -9,7 +9,7 @@ class istream_get_iterator
 				const istream_get_iterator&__y) {
     return (__x._M_stream == __y._M_stream &&
 	    __x._M_end_marker == __y._M_end_marker) ||
-      __x._M_end_marker == false && __y._M_end_marker == false;
+      (__x._M_end_marker == false && __y._M_end_marker == false);
   }
   
   friend inline bool operator!=(const istream_get_iterator&__x,

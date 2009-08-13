@@ -874,26 +874,29 @@ void Alignment::read_MUL (istream& in, Sequence_database& db)
       sstring input;
       input.getline(in).chomp();
       if (!re_ignore.Match(input.c_str()))
-	if (re.Match(input.c_str()) && re.SubStrings() == 2)
-	  {
-	    db.push_back(Named_profile());
-	    Named_profile& np_cur = db.back();
+	{
+	  if (re.Match(input.c_str()) && re.SubStrings() == 2)
+	    {
+	      Named_profile tmp_np;
+	      db.push_back(tmp_np);
+	      Named_profile& np_cur = db.back();
 	    
-	    np_cur.name = re[1];
-	    gapped_seq.push_back (re[2]);
+	      np_cur.name = re[1];
+	      gapped_seq.push_back (re[2]);
 	    
-	    Biosequence& g = gapped_seq.back();
-	    remove_copy_if (g.begin(), g.end(), back_inserter(np_cur.seq), Alignment::is_gap_char);
+	      Biosequence& g = gapped_seq.back();
+	      remove_copy_if (g.begin(), g.end(), back_inserter(np_cur.seq), Alignment::is_gap_char);
 	    
-	    vector<bool> seq_step_flags;
-	    transform (g.begin(), g.end(), back_inserter(seq_step_flags), not1(ptr_fun(Alignment::is_gap_char)));
+	      vector<bool> seq_step_flags;
+	      transform (g.begin(), g.end(), back_inserter(seq_step_flags), not1(ptr_fun(Alignment::is_gap_char)));
 	    
-	    prof.push_back (&np_cur.prof_sc);
-	    row_name.push_back (np_cur.name);
-	    path.append_row (seq_step_flags);
-	  }
-	else if (input.size())
-	  CLOGERR << "Warning: couldn't parse the following alignment input line: \"" << input << "\"\n";
+	      prof.push_back (&np_cur.prof_sc);
+	      row_name.push_back (np_cur.name);
+	      path.append_row (seq_step_flags);
+	    }
+	  else if (input.size())
+	    CLOGERR << "Warning: couldn't parse the following alignment input line: \"" << input << "\"\n";
+	}
     }
   path.make_flush();
 }
