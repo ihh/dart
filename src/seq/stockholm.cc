@@ -732,8 +732,10 @@ sstring Stockholm::get_name() const
 }
 
 Stockade::Stockade (int rows, int cols)
-  : align (rows, cols), np (rows)
+  : align (rows, cols)
 {
+  Named_profile tmp_np;
+  np = vector<Named_profile> (rows, tmp_np);
   for (int i = 0; i < (int) np.size(); ++i)
     align.np[i] = &np[i];
 }
@@ -745,8 +747,10 @@ Stockade::Stockade (const Stockade& s)
 }
 
 Stockade::Stockade (const Stockholm& s)
-  : align (s), np (s.rows())
+  : align (s)
 {
+  Named_profile tmp_np;
+  np = vector<Named_profile> (s.rows(), tmp_np);
   for (int i = 0; i < s.rows(); ++i)
     {
       np[i] = Named_profile (*s.np[i]);

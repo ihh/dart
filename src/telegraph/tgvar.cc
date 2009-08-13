@@ -88,10 +88,12 @@ void Telegraph_PScores_adaptor::read (istream& in, bool ignore_unknown_params, b
 	  gvname_string << groupname_string << '[' << varname_string << ']';
 	  // map the GVNAME to one of DART's PVar's
 	  if (str2pvar.find (gvname_string) == str2pvar.end())
-	    if (ignore_unknown_params)
-	      continue;
-	    else
-	      THROWEXPR ("Unknown parameter name in Telegraph parameter file: " << gvname_string);
+	    {
+	      if (ignore_unknown_params)
+		continue;
+	      else
+		THROWEXPR ("Unknown parameter name in Telegraph parameter file: " << gvname_string);
+	    }
 	  const PVar pv = str2pvar[gvname_string];
 	  // check we haven't already seen this PVar
 	  if (seen_pvar.find (pv) != seen_pvar.end())

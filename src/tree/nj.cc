@@ -54,7 +54,7 @@ void NJ_tree::build (const Node_name_vec& nn, const array2d<double>& distance_ma
       // find minimal compensated distance (with avg distances subtracted off)
       bool first_pair = TRUE;
       double min_dist = 0;
-      Node min_i, min_j;
+      Node min_i = -1, min_j = -1;
       set<Node>::const_iterator node_i_p, node_j_p, active_nodes_end_p;
       active_nodes_end_p = active_nodes.end();
       for (node_i_p = active_nodes.begin(); node_i_p != active_nodes_end_p; ++node_i_p)

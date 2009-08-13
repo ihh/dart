@@ -220,7 +220,6 @@ ECFG_EM_matrix::ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock,
   : ECFG_matrix (ecfg, stock, env),
     asp (asp),
 
-    colmat (ecfg.states()),
     use_fast_prune (use_fast_prune),
     fast_prune (ecfg.states()),
     fill_up_flag (true),
@@ -240,6 +239,10 @@ ECFG_EM_matrix::ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock,
       this->use_fast_prune = use_fast_prune = false;
       CL << "Switched off fast_prune\n";
     }
+
+  // create colmat vector of Column_matrix objects
+  Column_matrix tmp_colmat;
+  colmat = vector<Column_matrix> (ecfg.states(), tmp_colmat);
 
   // allocate emit_loglike
   if (CTAGGING(3,ALLOC))
