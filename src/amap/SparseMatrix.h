@@ -291,7 +291,7 @@ class SparseMatrix {
   }
 
   float GetGapPosterior(int seqNum, int position) const {
-    assert(seqNum == 0 && position <= seq1Length || seqNum == 1 && position <= seq2Length);
+    assert((seqNum == 0 && position <= seq1Length) || (seqNum == 1 && position <= seq2Length));
     return gapPosteriors[position + seqNum * (seq1Length + 1)];
   }
 

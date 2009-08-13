@@ -239,7 +239,7 @@ public:
   inline int emit_dyr (int type) const { return (type & EmitYR) >> ShiftYR; }
 
   inline int emit_xylr_offset (int xl, int xr, int yl, int yr) const
-  { return (((yr&3)<<2 + (yl&3))<<2 + (xr&3))<<2 + (xl&3); }  // assumes CFG_alphabet_size == 4
+  { return ((((yr&3)<<2) | ((yl&3))<<2) | ((xr&3))<<2) | (xl&3); }  // assumes CFG_alphabet_size == 4
 
   inline void decode_xylr_offset (int offset, int& xl, int& xr, int& yl, int& yr) const
   { xl=offset&3; offset>>=2; xr=offset&3; offset>>=2; yl=offset&3; offset>>=2; yr=offset&3; }

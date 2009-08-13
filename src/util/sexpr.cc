@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "util/sexpr.h"
 #include "util/logfile.h"
 

@@ -16,6 +16,8 @@
 #include <map>
 #include <queue>
 #include <iostream>
+#include <limits>
+
 #include "MultiSequence.h"
 #include "SparseMatrix.h"
 
@@ -820,9 +822,9 @@ class MultiSequenceDag {
 	      colors += '1';
 	    else if (oldPtrs[j][colPos[j]] == -consensus) 
 	      colors += '2';
-	    else if (isNuc && (nucGroup[(int) oldPtrs[j][colPos[j]] - 'A'] == consensus || consensus >= 'A' && nucSim[(int) consensus - 'A'][(int) oldPtrs[j][colPos[j]] - 'A']))  // -- RKB 4/19/08
+	    else if (isNuc && (nucGroup[(int) oldPtrs[j][colPos[j]] - 'A'] == consensus || (consensus >= 'A' && nucSim[(int) consensus - 'A'][(int) oldPtrs[j][colPos[j]] - 'A'])))  // -- RKB 4/19/08
 	      colors += '3';
-	    else if (!isNuc && (pepGroup[(int) oldPtrs[j][colPos[j]] - 'A'] == consensus || consensus >= 'A' && pepSim[(int) consensus - 'A'][(int) oldPtrs[j][colPos[j]] - 'A'])) 
+	    else if (!isNuc && (pepGroup[(int) oldPtrs[j][colPos[j]] - 'A'] == consensus || (consensus >= 'A' && pepSim[(int) consensus - 'A'][(int) oldPtrs[j][colPos[j]] - 'A']))) 
 	      colors += '3';
 	    else
 	      colors += '0';
@@ -876,8 +878,8 @@ class MultiSequenceDag {
     Edge *edge;
     int guiFrame = 0;
     cerr << "Creating candidate edge list" << endl;
-    if (outputForGUI && guiStartWeight == std::numeric_limits<float>::max()) {
-      cout << "Weight " << std::numeric_limits<float>::max() << endl << 
+    if (outputForGUI && guiStartWeight == numeric_limits<float>::max()) {
+      cout << "Weight " << numeric_limits<float>::max() << endl << 
 	this->GetSequences() << endl;
     }
 

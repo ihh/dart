@@ -34,12 +34,10 @@ class Matrix_to_multi_array_adaptor : public multi_array<double>
 class multi_array_to_Matrix_adaptor : public Matrix
 {
  public:
-  struct Dim_exception : Dart_exception { const char* what() const { return "Dimensionality mismatch"; } };
-
   multi_array_to_Matrix_adaptor (const multi_array<double>& array) :
     Matrix (array.rank() == 2 ? array.dim()[1] : 1, array.rank() == 2 ? array.dim()[0] : 1)
     {
-      if (array.rank() != 2) THROW Dim_exception();
+      if (array.rank() != 2) THROWEXPR ("Dimensionality mismatch");
       for (int i = 0; i < array.dim()[1]; i++)
 	for (int j = 0; j < array.dim()[0]; j++)
 	  (*this) (i+1, j+1) = ((multi_array<double>&) array) (j, i);

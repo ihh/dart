@@ -54,7 +54,7 @@ Stockade AMAP_adapter::get_alignment (float gapFactor /* = 1 */, float edgeWeigh
   bool useTgf = true;
 
   // control GUI output
-  float guiStartWeight = std::numeric_limits<float>::max();
+  float guiStartWeight = numeric_limits<float>::max();
   int guiStepSize = 1;
 
   // log posteriors in AMAP format if requested

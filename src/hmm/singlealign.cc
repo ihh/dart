@@ -2,7 +2,8 @@
 
 void Single_HMM_alignment::emit_row (const sstring& name, Sequence_database& db)
 {
-  db.push_back(Named_profile());
+  Named_profile tmp_np;
+  db.push_back(tmp_np);
   Named_profile& np = db.back();
 
   row_name.push_back (np.name = name);

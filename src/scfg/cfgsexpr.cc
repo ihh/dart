@@ -28,15 +28,17 @@ void PCFG_builder::init_null_pgroups (SExpr& model_sexpr, PScores& pscores, SymP
     null_emit = pscores.new_alphabet_group (alph, CFG_NULL_EMIT);
 
   if (!want_HMM)
-    if (SExpr* null_extend_sexpr = model_sexpr.find (CFG_NULL_EXTEND, 1))
-      {
-	PGroup tmp_null_extend = init_pgroup (pscores, sym2pvar, null_extend_sexpr->value(), (set<int>*) 0, false, true, true);
-	if (tmp_null_extend.group_size != 2)
-	  THROWEXPR ("In (" << *null_extend_sexpr << "):\nNull extend pgroup needs to be boolean");
-	null_extend = Boolean_group (tmp_null_extend.group_idx);
-      }
-    else
-      null_extend = pscores.new_boolean_group (CFG_NULL_EXTEND);
+    {
+      if (SExpr* null_extend_sexpr = model_sexpr.find (CFG_NULL_EXTEND, 1))
+	{
+	  PGroup tmp_null_extend = init_pgroup (pscores, sym2pvar, null_extend_sexpr->value(), (set<int>*) 0, false, true, true);
+	  if (tmp_null_extend.group_size != 2)
+	    THROWEXPR ("In (" << *null_extend_sexpr << "):\nNull extend pgroup needs to be boolean");
+	  null_extend = Boolean_group (tmp_null_extend.group_idx);
+	}
+      else
+	null_extend = pscores.new_boolean_group (CFG_NULL_EXTEND);
+    }
 }
 
 Odds_PCFG PCFG_builder::init_grammar (SExpr& model_sexpr, PScores& pscores, set<int>& pad_states_ret, set<int>& mutable_pgroups_ret, bool want_single, bool want_HMM)

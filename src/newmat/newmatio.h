@@ -9,6 +9,8 @@
 #define WANT_STREAM
 #endif
 
+#include <iostream>
+
 #include "newmat.h"
 
 #ifdef use_namespace

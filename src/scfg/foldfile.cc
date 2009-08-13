@@ -9,7 +9,8 @@ Fold_file::Fold_file (const char* filename, Sequence_database& seq_db) : np_ptr 
   instr.getline (infile);
   vector<sstring> f = instr.split();
   if (f.size() != 2) THROWEXPR ("Bad first line in fold file");
-  seq_db.push_back (Named_profile());
+  Named_profile tmp_np;
+  seq_db.push_back (tmp_np);
   Named_profile& the_np = seq_db.back();
   the_np.name = f[0];
   the_np.seq = f[1];
