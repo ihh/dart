@@ -1,4 +1,10 @@
-;; RNA-decoder grammar
+;; RNA-decoder grammar.
+;; This xrate file reproduces the grammar described in the following paper:
+;;  A comparative method for finding and folding RNA secondary structures within protein-coding regions.
+;;  Pedersen JS, Meyer IM, Forsberg R, Simmonds P, Hein J.
+;;  Nucleic Acids Res. 2004 Sep 24;32(16):4925-36.
+;;  http://www.ncbi.nlm.nih.gov/pubmed/15448187
+
 (grammar
  (name RNA-decoder)
  (update-rates 1)
@@ -12,7 +18,6 @@
  ;;  - Trainable parameters.
  ;;  - Constant parameters.
  ;;  - Production rules.
-
 
  ;; Pseudoterminal tuples, corresponding to covariant substitution matrices:
 
