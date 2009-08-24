@@ -107,8 +107,11 @@ void TKF_emit_align::emit (bool use_expected_len)
 {
   make_empty_alignment();    // just to set up the maps
 
-  tkf = vector<TKF_sequence> (tree.nodes(), TKF_sequence());
-  np = vector<Named_profile> (tree.nodes(), Named_profile());
+  TKF_sequence tmp_seq;
+  Named_profile tmp_np;
+
+  tkf = vector<TKF_sequence> (tree.nodes(), tmp_seq);
+  np = vector<Named_profile> (tree.nodes(), tmp_np);
   
   Alignment_path::Decomposition decomp;
   for_iterator (Phylogeny::Branch_iter, b,
