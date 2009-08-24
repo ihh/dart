@@ -121,7 +121,7 @@ while (<HISTORY>) {
     my $img = "$prefix$imgSuffix";
     my $ppm = "$prefix$ppmSuffix";
 
-    system "$convert -size $convert_size $img $ppm";
+    system "$convert -depth 8 -size $convert_size $img $ppm";   # the "-depth 8" ensures the max color index is 255 not 65535, preventing mpeg_encode from barfing
     push @ppm, $ppm;
 
     ++$n_frame;

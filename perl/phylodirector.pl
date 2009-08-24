@@ -830,7 +830,7 @@ sub save {
     print IMG $im->$imageOutputMethod;
     close IMG or die "Couldn't close '$img': $!";
 
-    system "$convert $img $ppm";
+    system "$convert -depth 8 $img $ppm";
     push @ppm, $ppm;
 
     clear();
