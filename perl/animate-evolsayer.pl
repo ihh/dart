@@ -9,6 +9,7 @@ my $convert_size = "200x200";  # size of frame images
 my $savePPM = 0;
 my $rnaplot_type = 1;
 my $show_tkfst = 0;
+my $use_color = 1;
 
 # file suffices
 my $imgSuffix = "_ss.ps";  # suffix added by RNAplot
@@ -120,6 +121,9 @@ while (<HISTORY>) {
 
     my $img = "$prefix$imgSuffix";
     my $ppm = "$prefix$ppmSuffix";
+
+# EEK, hack (adds colored text) - IH, 8/24/09
+    system "perl -i -pe 's:getinterval cshow:getinterval seqcolor dup /a eq { 0 1 0 setrgbcolor } if dup /c eq { 0 0 1 setrgbcolor } if dup /g eq { .8 .5 0 setrgbcolor } if dup /t eq { 1 0 0 setrgbcolor } if dup /u eq { 1 0 0 setrgbcolor } if cshow:' $img";
 
     system "$convert -depth 8 -size $convert_size $img $ppm";   # the "-depth 8" ensures the max color index is 255 not 65535, preventing mpeg_encode from barfing
     push @ppm, $ppm;
