@@ -12,11 +12,13 @@
 
 // typedefs
 
-typedef int    Score; // Scores really HAVE to be integers, because DP tracebacks do equality tests which may fail on floating points
-typedef double Prob;
-typedef long double Rate;  /* changed from "double" to "long double" to fix xrate large-matrix precision problems at suggestion of Peter Schattner -- 12/15/2008, IH   */
-typedef double Loge;
-typedef double Log2;
+typedef double Prob;       // a Prob represents a probability
+typedef long double Rate;  // a Rate represents a rate (changed from "double" to "long double" to fix xrate large-matrix precision problems at suggestion of Peter Schattner -- 12/15/2008, IH)
+
+typedef int    Score;  // a Score is a log-probability in base 2^.001, rounded to the nearest integer
+typedef double Scorf;  // a Scorf is a log-probability in base 2^.001, not rounded
+typedef double Loge;   // a Loge is a log-probability in base e
+typedef double Log2;   // a Log2 is a log-probability in base 2
 
 // public global constant macros
 // the only guaranteed relationship between the infinity's is:    Score2Nats(InfinityScore) <= InfinityLoge
