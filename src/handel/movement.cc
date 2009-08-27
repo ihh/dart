@@ -477,12 +477,17 @@ void Handel_movement::dump_composition (ostream& out)
       // TODO: refactor the following loop over proposal compositions, in preparation for move-dependent banding
       // (i.e. banding the DP step using a band that is centered on the previous alignment)
       // Summary of changes:
-      //  -- add a boolean member variable (use_move_dependent_band) determining move-dependent banding behavior
+      // -- prior to implementing any changes, run handalign with R-S sampling turned on for branch-, node- and flip-moves, logging everything, and recording compositions (for later comparison)
+      //  -- add a method (Alignment_path Transducer_SExpr_file::path2centroid(NodePathMap&)) which converts a Transducer_SExpr_file::NodePathMap into an Alignment_path (via Alignment_path::Decomposition)
+      //  -- add Transducer_SExpr_file member variables specifying move-dependent banding behavior (boolean use_move_dependent_band; Alignment_path centroid; int move_dependent_band_width)
+      //   -- add code to Transducer_SExpr_file for reading & writing these properties
+      //   -- add Handel_movement views onto these variables (boolean use_move_dependent_band(); Alignment_path centroid(); int move_dependent_band_width())
       //  -- when use_move_dependent_band==true, the following loop over proposal compositions should be wrapped by a two-pass loop
-      //   -- on the first pass, the forward compositions are sampled and new_path is populated; on the second pass, the inverse compositions are sampled
-      //   -- this is required because the inverse compositions will have alignment bands that depend on new_path
-      //   -- the "virgin_proposal" flag should only be true if alignment banding is turned off, OR (equivalently) if the forward & inverse alignment bands are identical
-      //  -- create a new lightweight class describing the alignment band (maybe just an Alignment_path describing the band centroid; delegate as much of the picky co-ordinate work to HMMoC as possible)
+      //   -- on the first pass, the forward compositions are sampled and new_path is populated (using pc.old_path as a centroid); on the second pass, the inverse compositions are sampled (using new_path as a centroid)
+      //    -- the two-pass approach is required because the inverse compositions will have alignment bands that depend on new_path
+      //   -- the "virgin_proposal" flag should only be true if alignment banding is turned off
+      //   -- for each of prop_move and inv_move, need to extract the appropriate rows from the appropriate centroid, and populate the appropriate Transducer_SExpr_file objects appropriately
+      //   -- add code to HMMoC_adapter to pass the centroid & band width to HMMoC if use_move_dependent_band is true (at run-time, not compile-time)
 
       // loop over proposal compositions
       Transducer_SExpr_file::NodePathMap new_path = pc.path;  // the newly-sampled path
