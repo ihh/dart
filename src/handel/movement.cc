@@ -469,14 +469,24 @@ void Handel_movement::dump_composition (ostream& out)
       if (evaluate_redelings_suchard_inverse_move && !got_old_loglike)
 	{
 	  if (composition.free_clique < 0)
-	    THROWEXPR ("Redelings-Suchard MCMC kernel requires at least some branch paths unspecified");
+	    THROWEXPR ("Redelings-Suchard MCMC kernel requires that at least some branch paths be resampled, but all branch paths were completely constrained");
 
 	  THROWEXPR ("Redelings-Suchard MCMC kernel requires complete specification of old state, but the following branch paths were unspecified:\n" << pathless_branch_names);
 	}
 
+      // TODO: refactor the following loop over proposal compositions, in preparation for move-dependent banding
+      // (i.e. banding the DP step using a band that is centered on the previous alignment)
+      // Summary of changes:
+      //  -- add a boolean member variable (use_move_dependent_band) determining move-dependent banding behavior
+      //  -- when use_move_dependent_band==true, the following loop over proposal compositions should be wrapped by a two-pass loop
+      //   -- on the first pass, the forward compositions are sampled and new_path is populated; on the second pass, the inverse compositions are sampled
+      //   -- this is required because the inverse compositions will have alignment bands that depend on new_path
+      //   -- the "virgin_proposal" flag should only be true if alignment banding is turned off, OR (equivalently) if the forward & inverse alignment bands are identical
+      //  -- create a new lightweight class describing the alignment band (maybe just an Alignment_path describing the band centroid; delegate as much of the picky co-ordinate work to HMMoC as possible)
+
       // loop over proposal compositions
-      Transducer_SExpr_file::NodePathMap new_path = pc.path;
-      set<int> node_set, branches_seen;
+      Transducer_SExpr_file::NodePathMap new_path = pc.path;  // the newly-sampled path
+      set<int> node_set, branches_seen;  // data structures to track which nodes/branches have been visited so far
       for_const_contents (Transducer_SExpr_file::RedSuchSchedule, pc.proposal_branches, branches)
 	{
 	  // figure out which branches are constrained and which are unconstrained; also which nodes are included, and which is the proposal root
