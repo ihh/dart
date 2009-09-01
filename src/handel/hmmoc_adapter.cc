@@ -9,7 +9,10 @@
 
 // TODO
 // -- implement centroid bands in HMMoC
-// -- if use_centroid_band is true, pass the peeled_obs rows of centroid & the centroid band width to HMMoC (at run-time, not compile-time)
+//  -- only need to implement band for 2D case (since it's integrated with Redelings-Suchard)
+//  -- base on TwoDBanding; introduce vector<int> minRow, maxRow (in place of diagonal method)
+// -- if use_centroid_band is true, use the peeled_obs rows of centroid & the centroid band width to pass minRow[] and maxRow[] to HMMoC (at run-time, not compile-time)
+// -- also need a method to check whether a given Alignment_path is in the band (to be checked in movement.cc)
 
 // defs for hmmoc file
 
