@@ -33,6 +33,8 @@ struct Handel_movement
   bool optacc;
   bool want_expected_counts;
   bool propose_redelings_suchard_move, evaluate_redelings_suchard_inverse_move;
+  bool use_centroid;
+  int centroid_band_width;
 
   // HMMoC adapter options
   HMMoC_adapter_options hmmoc_opts;
@@ -98,6 +100,7 @@ struct Handel_movement
     want_expected_counts(false),
     propose_redelings_suchard_move(false),
     evaluate_redelings_suchard_inverse_move(false),
+    use_centroid(false),
     old_path_is_outside_hmmoc_band(false),
     old_loglike (0),
     peeling_loglike (0),

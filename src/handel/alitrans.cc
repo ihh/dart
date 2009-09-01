@@ -104,6 +104,15 @@ void Transducer_alignment::sample_subtree (const vector<int>& nodes_to_sample,
 	{
 	  move.evaluate_redelings_suchard_inverse_move = is_old_subtree;
 	  move.propose_redelings_suchard_move = is_new_subtree;
+	  // currently, centroid banding is not implemented for node-flipping moves, where the old & new alignments have different underlying trees
+	  // the book-keeping gets a little more complicated in this case:
+	  // 1. we would need to handle the new subtree before the old subtree (the opposite of the way we currently do it)
+	  // 2. we would need to pass the old & new centroids to the Handel_movement object, rather than having Handel_movement compute them internally
+	  if (use_centroid_band && available_subtrees.size() == 1)
+	    {
+	      move.use_centroid = true;
+	      move.centroid_band_width = centroid_band_width;
+	    }
 	}
       else if (viterbi)
 	move.viterbi = true;

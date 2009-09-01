@@ -38,6 +38,8 @@ int main(int argc, char* argv[])
   bool use_Redelings_Suchard;
   bool use_time_dependent_banding;
   double banding_coefficient;
+  bool use_centroid_band;
+  int centroid_band_width;
   bool force_binary;
   sstring exec_filename;
   sstring mcmc_sample_filename;
@@ -134,6 +136,8 @@ int main(int argc, char* argv[])
 
   opts.add ("tb -time-band", use_time_dependent_banding = false, "use time-dependent banding, if & when it gives a tighter band", false);
   opts.add ("bc -band-coeff", banding_coefficient = DEFAULT_BANDING_COEFFICIENT, "time-dependent banding coefficient: determines width of band");
+  opts.add ("cb -centroid-band", use_centroid_band = false, "use centroid banding (Redelings-Suchard MCMC only)", false);
+  opts.add ("cbw -centroid-band-width", centroid_band_width = 20, "width of centroid band");
 
   try
     {
@@ -197,6 +201,8 @@ int main(int argc, char* argv[])
       trans.use_Redelings_Suchard = use_Redelings_Suchard;
       trans.use_banding_coefficient = use_time_dependent_banding;
       trans.banding_coefficient = banding_coefficient;
+      trans.use_centroid_band = use_centroid_band;
+      trans.centroid_band_width = centroid_band_width;
       trans.dotfile_recorder.directory = dotfile_dir;
       trans.composition_recorder.directory = comp_dir;
 

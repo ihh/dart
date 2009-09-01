@@ -10,6 +10,9 @@
 // default banding coefficient -- estimated using t/simband.pl
 #define DEFAULT_BANDING_COEFFICIENT 10.
 
+// default centroid band width
+#define DEFAULT_CENTROID_BAND_WIDTH 20
+
 // Pair transducer factory: the base class for the transducer MCMC aligner
 struct Pair_transducer_factory : Grammar_state_enum
 {
@@ -42,11 +45,15 @@ struct Transducer_alignment
   // flag to indicate whether to use Redelings-Suchard proposal scheme
   bool use_Redelings_Suchard;
 
-  // banding coefficient, and flag to indicate whether to use it
+  // time-dependent banding coefficient, and flag to indicate whether to use it
   // phylocomposer's banding coefficient (B) is related to this banding coefficient (C) by the following formula:
   // B = C * mean_deletion_size * deletion_opening_probability
-  double banding_coefficient;
   bool use_banding_coefficient;
+  double banding_coefficient;
+
+  // centroid banding
+  bool use_centroid_band;
+  int centroid_band_width;
 
   // HMMoC adapter options
   HMMoC_adapter_options hmmoc_opts;
@@ -56,8 +63,10 @@ struct Transducer_alignment
   Transducer_alignment()
     : sort_indels(true),
       use_Redelings_Suchard (false),
+      use_banding_coefficient (false),
       banding_coefficient (DEFAULT_BANDING_COEFFICIENT),
-      use_banding_coefficient (false)
+      use_centroid_band (false),
+      centroid_band_width (DEFAULT_CENTROID_BAND_WIDTH)
   { }
 
   // resample part of a multiple alignment

@@ -414,6 +414,32 @@ Transducer_SExpr_file::Transducer_SExpr_file (SExpr& transducer_file_sexpr)
 	}
     }
 
+  // read centroid band
+  SExpr* centroid_sexpr = transducer_file_sexpr.find (TSEXPR_CENTROID);
+  if (centroid_sexpr)
+    {
+      use_centroid_band = true;
+      centroid_band_width = (*centroid_sexpr) (TSEXPR_CENTROID_WIDTH).get_atom().to_int();
+      SExpr& align_path_sexpr = (*centroid_sexpr) (TSEXPR_CENTROID_PATH);
+      if (align_path_sexpr.is_list() && !align_path_sexpr.is_empty_list())
+	{
+	  const int cols = align_path_sexpr.child.size();
+	  const int rows = align_path_sexpr[0].child.size();
+	  if (rows != etree.nodes())
+	    THROWEXPR ("Number of rows in centroid (" << rows << ") does not match number of nodes in tree (" << etree.nodes() << ")");
+	  centroid = Alignment_path (rows, cols);
+	  int col = 0;
+	  for_const_contents (list<SExpr>, align_path_sexpr.child, col_sexpr)
+	    {
+	      for (int row = 0; row < rows; ++row)
+		centroid.row(row)[col] = (bool) ((SExpr&)(*col_sexpr))[row].get_atom().to_int();
+	      ++col;
+	    }
+	}
+    }
+  else
+    use_centroid_band = false;
+
   // set up cliques
   setup_cliques();
 
@@ -480,7 +506,8 @@ Transducer_SExpr_file::Transducer_SExpr_file (const vector<sstring>& alphabet,
     branch_trans (branch_trans),
     prof (prof),
     path (path),
-    old_path (old_path)
+    old_path (old_path),
+    use_centroid_band (false)
 {
   init();
 }
@@ -496,7 +523,8 @@ Transducer_SExpr_file::Transducer_SExpr_file (const Transducer_SExpr_file& trans
     path (trans.path),
     old_path (trans.old_path),
     proposal_branches (trans.proposal_branches),
-    band_coeff (trans.band_coeff)
+    band_coeff (trans.band_coeff),
+    use_centroid_band (false)
 {
   init();
 }
@@ -920,6 +948,16 @@ void Transducer_SExpr_file::show_tree (ostream& out, int base_indent, bool show_
 	}
       out << ")\n";
     }
+
+  // print centroid
+  if (use_centroid_band)
+    {
+      out << base_indent_string << '(' << TSEXPR_CENTROID << '\n'
+	  << base_indent_string << " (" << TSEXPR_CENTROID_WIDTH << ' ' << centroid_band_width << ")\n"
+	  << base_indent_string << " (" << TSEXPR_CENTROID_PATH << '\n';
+      show_alignment_path (centroid, out, base_indent + 2);
+      out << "))\n";
+    }
 }
 
 void Transducer_SExpr_file::show_path_with_tree (const EHMM_transducer_funcs& ehmm, const vector<int>& path, Loge path_ll, ostream& out, int base_indent)
@@ -1340,6 +1378,14 @@ Transducer_SExpr_file Transducer_SExpr_file::peel_constrained (Loge& peeling_log
   subtree_transducer_sexpr_file.proposal_branches = subtree_proposal_branches;
   subtree_transducer_sexpr_file.band_coeff = subtree_band_coeff;
 
+  // centroid
+  if (use_centroid_band)
+    {
+      subtree_transducer_sexpr_file.use_centroid_band = true;
+      subtree_transducer_sexpr_file.centroid_band_width = centroid_band_width;
+      subtree_transducer_sexpr_file.centroid = Subalignment_path (centroid, subtree_nodes, true);
+    }
+
   // rebuild tree names
   subtree_transducer_sexpr_file.rebuild_tree_names (subtree_tape_name, subtree_branch_name, subtree_branch_trans_name);
 
@@ -1566,6 +1612,27 @@ vector<Score_profile*> Transducer_SExpr_file::make_seq_vec()
   return seq;
 }
 
+void Transducer_SExpr_file::show_alignment_path (const Alignment_path& align_path, ostream& out, int base_indent)
+{
+  const sstring indent_string (base_indent, ' ');
+  out << indent_string << '(';
+  for (int col = 0; col < align_path.columns(); ++col)
+    {
+      if (col > 0)
+	out << '\n' << indent_string << ' ';
+      out << '(';
+      for (int row = 0; row < align_path.rows(); ++row)
+	{
+	  if (row > 0)
+	    out << ' ';
+	  out << (align_path(row,col) ? '1' : '0');
+	}
+      out << ')';
+    }
+  out << ')';
+}
+
+
 vector<int> Transducer_SExpr_file::observed_nodes()
 {
   vector<int> obs;
@@ -1677,40 +1744,7 @@ Stockade Transducer_SExpr_file::stockade()
     }
 
   // create Alignment_path (via Alignment_path::Decomposition)
-  Alignment_path::Decomposition decomp;
-  for (int node = 1; node < etree.nodes(); ++node)
-    {
-      Pairwise_path pair_path;
-      if (path.find (node) == path.end())
-	{
-	  // no path found, so assume an all-gap alignment
-	  if (prof.find (etree.parent[node]) != prof.end())
-	    {
-	      const int parent_len = prof[etree.parent[node]].size();
-	      for (int n = 0; n < parent_len; ++n)
-		pair_path.append_column (1, 0);
-	    }
-
-	  if (prof.find (node) != prof.end())
-	    {
-	      const int child_len = prof[node].size();
-	      for (int n = 0; n < child_len; ++n)
-		pair_path.append_column (0, 1);
-	    }
-	}
-      else
-	{
-	  // path found, so convert state path into pairwise alignment
-	  pair_path = branch_trans[node].state2align_path (path[node], true);
-	}
-
-      const Alignment_path::Row_pair row_pair (etree.parent[node], node);
-      decomp[row_pair] = pair_path;
-    }
-
-  // build the multi-alignment path out of the decomposition
-  Alignment_path align_path;
-  align_path.compose_and_log (decomp, false, true);
+  Alignment_path align_path = alignment_path (path);
 
   // create Stockade
   Stockade stockade (align_path.rows(), align_path.columns());
@@ -1756,6 +1790,50 @@ Stockade Transducer_SExpr_file::stockade()
   // return
   return stockade;
 }
+
+
+Alignment_path Transducer_SExpr_file::alignment_path (NodePathMap& path)
+{
+  // create Alignment_path (via Alignment_path::Decomposition)
+  Alignment_path::Decomposition decomp;
+  for (int node = 1; node < etree.nodes(); ++node)
+    {
+      Pairwise_path pair_path;
+      if (path.find (node) == path.end())
+	{
+	  // no path found, so assume an all-gap alignment
+	  if (prof.find (etree.parent[node]) != prof.end())
+	    {
+	      const int parent_len = prof[etree.parent[node]].size();
+	      for (int n = 0; n < parent_len; ++n)
+		pair_path.append_column (1, 0);
+	    }
+
+	  if (prof.find (node) != prof.end())
+	    {
+	      const int child_len = prof[node].size();
+	      for (int n = 0; n < child_len; ++n)
+		pair_path.append_column (0, 1);
+	    }
+	}
+      else
+	{
+	  // path found, so convert state path into pairwise alignment
+	  pair_path = branch_trans[node].state2align_path (path[node], true);
+	}
+
+      const Alignment_path::Row_pair row_pair (etree.parent[node], node);
+      decomp[row_pair] = pair_path;
+    }
+
+  // build the multi-alignment path out of the decomposition
+  Alignment_path align_path;
+  align_path.compose_and_log (decomp, false, true);
+
+  // return
+  return align_path;
+}
+
 
 Loge Transducer_SExpr_file::get_path_loglike (const NodePathMap& path_map) const
 {

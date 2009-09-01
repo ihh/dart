@@ -7,6 +7,10 @@
 #include "util/unixenv.h"
 #include "util/nullstream.h"
 
+// TODO
+// -- implement centroid bands in HMMoC
+// -- if use_centroid_band is true, pass the peeled_obs rows of centroid & the centroid band width to HMMoC (at run-time, not compile-time)
+
 // defs for hmmoc file
 
 #define HMMOC_AUTHOR          "Handel-HMMoC Adapter"
@@ -1013,7 +1017,7 @@ bool HMMoC_adapter::exec_recursion_and_traceback (Score& final_sc, vector<vector
       code << "    }\n";
     }
 
-  // read band diameter
+  // read time-dependent band diameter
   code << "  cparam >> " << HMMOC_BANDID << ";\n";
 
   // read emit & trans params

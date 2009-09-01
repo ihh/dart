@@ -72,6 +72,10 @@
 #define TSEXPR_HASTINGS   "hastings-bits"
 #define TSEXPR_HTERM      "hastings-term-bits"
 
+#define TSEXPR_CENTROID        "dp-band-centroid"
+#define TSEXPR_CENTROID_WIDTH  "width"
+#define TSEXPR_CENTROID_PATH   "path"
+
 #define TSEXPR_TOKEN_PREFIX     "$"
 #define TSEXPR_ESC_TOKEN_PREFIX "\\$"   /* escaped version of TSEXPR_TOKEN_PREFIX, for regexps */
 #define TSEXPR_BRANCH_INFIX     ":"

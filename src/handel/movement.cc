@@ -5,6 +5,9 @@ void Handel_movement::read_composition (const vector<sstring>& filenames)
 {
   SExpr_file sexpr_file (filenames);
   composition = Transducer_SExpr_file (sexpr_file.sexpr);
+  // copy centroid params in from Transducer_SExpr_file
+  use_centroid = composition.use_centroid_band;
+  centroid_band_width = composition.centroid_band_width;
 }
 
 void Handel_movement::dump_composition (ostream& out)
@@ -474,353 +477,361 @@ void Handel_movement::dump_composition (ostream& out)
 	  THROWEXPR ("Redelings-Suchard MCMC kernel requires complete specification of old state, but the following branch paths were unspecified:\n" << pathless_branch_names);
 	}
 
-      // TODO: refactor the following loop over proposal compositions, in preparation for move-dependent banding
-      // (i.e. banding the DP step using a band that is centered on the previous alignment)
-      // Summary of changes:
-      // -- prior to implementing any changes, run handalign with R-S sampling turned on for branch-, node- and flip-moves, logging everything, and recording compositions (for later comparison)
-      //  -- add a method (Alignment_path Transducer_SExpr_file::path2centroid(NodePathMap&)) which converts a Transducer_SExpr_file::NodePathMap into an Alignment_path (via Alignment_path::Decomposition)
-      //  -- add Transducer_SExpr_file member variables specifying move-dependent banding behavior (boolean use_move_dependent_band; Alignment_path centroid; int move_dependent_band_width)
-      //   -- add code to Transducer_SExpr_file for reading & writing these properties
-      //   -- add Handel_movement views onto these variables (boolean use_move_dependent_band(); Alignment_path centroid(); int move_dependent_band_width())
-      //  -- when use_move_dependent_band==true, the following loop over proposal compositions should be wrapped by a two-pass loop
-      //   -- on the first pass, the forward compositions are sampled and new_path is populated (using pc.old_path as a centroid); on the second pass, the inverse compositions are sampled (using new_path as a centroid)
-      //    -- the two-pass approach is required because the inverse compositions will have alignment bands that depend on new_path
-      //   -- the "virgin_proposal" flag should only be true if alignment banding is turned off
-      //   -- for each of prop_move and inv_move, need to extract the appropriate rows from the appropriate centroid, and populate the appropriate Transducer_SExpr_file objects appropriately
-      //   -- add code to HMMoC_adapter to pass the centroid & band width to HMMoC if use_move_dependent_band is true (at run-time, not compile-time)
-
       // loop over proposal compositions
       Transducer_SExpr_file::NodePathMap new_path = pc.path;  // the newly-sampled path
-      set<int> node_set, branches_seen;  // data structures to track which nodes/branches have been visited so far
-      for_const_contents (Transducer_SExpr_file::RedSuchSchedule, pc.proposal_branches, branches)
+      const int passes = use_centroid ? 2 : 1;
+      for (int pass = 0; pass < passes; ++pass)
 	{
-	  // figure out which branches are constrained and which are unconstrained; also which nodes are included, and which is the proposal root
-	  vector<int> cons_branch, uncons_branch;
-	  int root = pc.etree.nodes();
-	  for_const_contents (vector<int>, *branches, b)
+	  const bool first_pass = (pass == 0);
+	  const bool last_pass = (pass == passes - 1);
+	  set<int> node_set, branches_seen;  // data structures to track which nodes/branches have been visited so far
+	  for_const_contents (Transducer_SExpr_file::RedSuchSchedule, pc.proposal_branches, branches)
 	    {
-	      const int parent = pc.etree.parent[*b];
-	      node_set.insert (*b);
-	      if (*b < root)
-		root = *b;
-	      if (parent >= 0)
+	      // figure out which branches are constrained and which are unconstrained; also which nodes are included, and which is the proposal root
+	      vector<int> cons_branch, uncons_branch;
+	      int root = pc.etree.nodes();
+	      for_const_contents (vector<int>, *branches, b)
 		{
-		  node_set.insert (parent);
-		  if (parent < root)
-		    root = parent;
-		}
-	      if (branches_seen.find (*b) == branches_seen.end())
-		{
-		  uncons_branch.push_back (*b);
-		  branches_seen.insert (*b);
-		}
-	      else
-		cons_branch.push_back (*b);
-	    }
-	  if (root == pc.etree.nodes())
-	    THROWEXPR ("Couldn't find root of proposal subtree");
-
-	  // build node index maps between full<-->proposal trees
-	  const vector<int> node_prop2full (node_set.begin(), node_set.end());
-	  vector<int> node_full2prop;
-	  for (int n_full = 0; n_full < pc.etree.nodes(); ++n_full)
-	    {
-	      const int n_prop = find (node_prop2full.begin(), node_prop2full.end(), n_full) - node_prop2full.begin();
-	      node_full2prop.push_back (n_prop == (int) node_prop2full.size() ? -1 : n_prop);
-	    }
-
-	  // build ETree
-	  ETree prop_etree = pc.etree.subtree (node_prop2full);
-
-	  // populate branch_trans, branch_trans_name, prof, path, branch_name & tape_name for proposal composition
-	  // also create path & old_path for "inverse move" composition (other side of Hastings ratio)
-	  Transducer_SExpr_file::NodePathMap prop_path, inv_path, inv_old_path;
-	  const Transducer_SExpr_file::NodePathMap dummy_path;  // always empty
-	  Transducer_SExpr_file::NodeProfileMap prop_prof;
-	  vector<sstring> prop_branch_trans_name (prop_etree.nodes());
-	  vector<Pair_transducer_funcs> prop_branch_trans (prop_etree.nodes());
-	  vector<sstring> prop_branch_name (prop_etree.nodes());
-	  map<int,sstring> prop_tape_name;
-	  map<int,double> prop_band_coeff;
-
-	  // prop_prof
-	  for (int n_prop = 0; n_prop < (int) node_prop2full.size(); ++n_prop)
-	    if (pc.prof.find (node_prop2full[n_prop]) != pc.prof.end())
-	      prop_prof[n_prop] = pc.prof[node_prop2full[n_prop]];
-
-	  // prop_path: constrained branches
-	  for_const_contents (vector<int>, cons_branch, b_full)
-	    prop_path[node_full2prop[*b_full]] = new_path[*b_full];
-
-	  // inv_path: constrained branches
-	  for_const_contents (vector<int>, cons_branch, b_full)
-	    if (pc.old_path.find (*b_full) != pc.old_path.end())
-	      inv_path[node_full2prop[*b_full]] = pc.old_path[*b_full];
-
-	  // inv_old_path == prop_path ?  (i.e. is new_path identical to old_path on the constrained branches?)
-	  // if so, this is a "virgin proposal", allowing us to re-use some calculations between prop_move and inv_move
-	  const bool virgin_proposal = inv_old_path == prop_path;
-	  const bool calc_old_path_ll_during_prop_step = virgin_proposal && propose_redelings_suchard_move && evaluate_redelings_suchard_inverse_move;
-
-	  // inv_old_path (or inv_path if virgin proposal): unconstrained branches
-	  for_const_contents (vector<int>, uncons_branch, b_full)
-	    if (pc.old_path.find (*b_full) != pc.old_path.end())
-	      (calc_old_path_ll_during_prop_step ? inv_path : inv_old_path)[node_full2prop[*b_full]] = pc.old_path[*b_full];
-
-	  // prop_band_coeff
-	  for_const_contents (vector<int>, uncons_branch, b_full)
-	    if (pc.band_coeff.find (*b_full) != pc.band_coeff.end())
-	      prop_band_coeff[node_full2prop[*b_full]] = pc.band_coeff[*b_full];
-
-	  // prop_branch_trans
-	  for_const_contents (vector<int>, *branches, b_full)
-	    {
-	      const int b_prop = node_full2prop[*b_full];
-	      if (b_prop >= 0)
-		{
-		  prop_branch_trans[b_prop] = pc.branch_trans[*b_full];
-		  prop_branch_trans_name[b_prop] = pc.branch_trans_name[*b_full];
-		}
-	    }
-
-	  // prop_branch_name, prop_tape_name
-	  for (int n_prop = 1; n_prop < prop_etree.nodes(); ++n_prop)
-	    {
-	      prop_branch_name[n_prop] = pc.branch_name[node_prop2full[n_prop]];
-	      prop_tape_name[n_prop] = pc.tape_name[node_prop2full[n_prop]];
-	    }
-
-	  // if we have a new root, place singleton transducer on root branch; otherwise, use root transducer from full tree
-	  if (root == 0)
-	    {
-	      prop_branch_trans[0] = pc.branch_trans[0];
-	      prop_branch_trans_name[0] = pc.branch_trans_name[0];
-	      prop_branch_name[0] = pc.branch_name[0];
-	      prop_tape_name[0] = pc.tape_name[0];
-	      // copy across path and/or old_path for root branch
-	      if (pc.path.find (0) != pc.path.end())
-		prop_path[0] = inv_path[0] = pc.path[0];
-	      else if (pc.old_path.find (0) != pc.old_path.end())
-		inv_old_path[0] = pc.old_path[0];
-	    }
-	  else
-	    {
-	      Singleton_transducer_funcs sing_funcs (pc.alphabet_size);
-	      prop_branch_trans[0] = sing_funcs;
-	      prop_branch_trans_name[0] = sstring (Singleton_transducer_name);
-	      // place an all-insert path on the root branch, so it's properly constrained
-	      if (prop_prof.find (0) != prop_prof.end())
-		prop_path[0] = inv_path[0] = vector<int> (prop_prof[0].size(), sing_funcs.insert_state());
-	    }
-
-	  // proposal move
-	  if (propose_redelings_suchard_move)
-	    {
-	      // build composition
-	      // for economy, if this was a "virgin proposal", then use this composition to evaluate the score of inv_old_path
-	      Transducer_SExpr_file prop_comp (pc.alphabet, pc.pscores, prop_etree, prop_branch_trans, prop_prof, prop_path, calc_old_path_ll_during_prop_step ? inv_old_path : dummy_path);
-	      prop_comp.rebuild_tree_names (prop_tape_name, prop_branch_name, prop_branch_trans_name);
-	      prop_comp.band_coeff = prop_band_coeff;
-
-	      if (CTAGGING(1,REDSUCH_DEBUG))
-		{
-		  typedef map<int,sstring> NameMap;
-		  for_const_contents (NameMap, prop_tape_name, ptn)
-		    CL << "prop_tape_name[" << ptn->first << "] = " << ptn->second << '\n';
-		  for_const_contents (NameMap, prop_comp.tape_name, ptn)
-		    CL << "prop_comp.tape_name[" << ptn->first << "] = " << ptn->second << '\n';
-		}
-
-	      // do the move
-	      Handel_movement prop_move;
-	      prop_move.composition = prop_comp;
-	      prop_move.nforward = 1;  // compute forward score & sample 1 path
-	      prop_move.hmmoc_opts = hmmoc_opts;
-	      prop_move.use_hmmoc_for_forward = use_hmmoc_for_forward;
-	      prop_move.composite = true;  // we will want to see the composite transducer in the event of an error
-
-	      sstring prop_comp_output;
-	      try {
-		prop_move.dump_composition (prop_comp_output);
-	      } catch (const Dart_exception& e) {
-		CLOGERR << e.what() << "Proposal composition:\n" << prop_comp_output;
-		THROWEXPR ("Proposal error");
-	      }
-	      if (CTAGGING(1,REDSUCH_PROPOSAL))
-		CL << "Proposal composition:\n" << prop_comp_output;
-
-	      // check for out-of-band old_path
-	      if (calc_old_path_ll_during_prop_step)
-		old_path_is_outside_hmmoc_band = old_path_is_outside_hmmoc_band || prop_move.old_path_is_outside_hmmoc_band;
-
-	      // get the trace & stick it in new_path
-	      const vector<int>& prop_trace = prop_move.fwd_trace[0];
-	      const vector<vector<int> > prop_branch_path = prop_move.ehmm_scores.branch_paths (prop_trace);
-
-	      vector<int> node_prop2free (node_prop2full.size(), -1);
-	      int total_free = 0;
-	      for_const_contents (set<int>, prop_move.composition.free_clique_set(), n)
-		node_prop2free[*n] = total_free++;
-
-	      for_const_contents (vector<int>, uncons_branch, n_full)
-		{
-		  const int n_prop = node_full2prop[*n_full];
-		  const int n_free = node_prop2free[n_prop];
-		  const vector<int>& n_path = prop_branch_path[n_free];
-		  if (CTAGGING(1,REDSUCH_PATH))
-		    CL << "Copying path for branch " << prop_branch_name[n_prop] << " (" << n_path << ")\n";
-		  new_path[*n_full] = n_path;
-		}
-
-	      // store Hastings ratio term (denominator)
-	      Transducer_SExpr_file& ppc = prop_move.peeled_composition;
-	      Transducer_SExpr_file::NodePathMap prop_path_map = ppc.get_path_map (prop_move.ehmm_funcs, prop_trace);
-	      const Loge prop_path_ll = NatsPMul (ppc.get_path_loglike (prop_path_map), prop_move.peeling_loglike);
-	      hastings_term.push_back (-NatsPMul (prop_path_ll, -prop_move.fwd_ll));
-
-	      // store Hastings ratio term (numerator)
-	      if (calc_old_path_ll_during_prop_step)
-		hastings_term.push_back (NatsPMul (prop_move.old_loglike, -prop_move.fwd_ll));
-
-	      // display prop_comp
-	      out << "\n(" << TSEXPR_PROPOSAL;
-	      prop_comp.show_tree (out, 1, false);
-	      out << ' ';
-	      if (calc_old_path_ll_during_prop_step)
-		prop_move.dump_raw_loglike (out, TSEXPR_OLD_SCORE, prop_move.old_loglike);
-	      prop_move.dump_raw_loglike (out, TSEXPR_FSCORE, prop_move.fwd_ll);
-	      prop_move.dump_peeled_composite_trace (out, TSEXPR_FPATH, prop_trace, prop_path_ll);
-	      out << ")\n";
-	      out.flush();
-	    }
-
-	  // inverse move
-	  if (evaluate_redelings_suchard_inverse_move && !calc_old_path_ll_during_prop_step)
-	    {
-	      // build composition
-	      Transducer_SExpr_file inv_comp (pc.alphabet, pc.pscores, prop_etree, prop_branch_trans, prop_prof, inv_path, inv_old_path);
-	      inv_comp.rebuild_tree_names (prop_tape_name, prop_branch_name, prop_branch_trans_name);
-	      inv_comp.band_coeff = prop_band_coeff;
-
-	      // do the move
-	      Handel_movement inv_move;
-	      inv_move.composition = inv_comp;
-	      inv_move.nforward = 0;  // compute forward score, but don't sample any paths
-	      inv_move.hmmoc_opts = hmmoc_opts;
-	      inv_move.use_hmmoc_for_forward = use_hmmoc_for_forward;
-	      inv_move.composite = true;  // we will want to see the composite transducer in the event of an error
-
-	      sstring inv_comp_output;
-	      try {
-		inv_move.dump_composition (inv_comp_output);
-	      } catch (const Dart_exception& e) {
-		CLOGERR << e.what() << "Inverse proposal composition:\n" << inv_comp_output;
-		THROWEXPR ("Inverse proposal error");
-	      }
-	      if (CTAGGING(1,REDSUCH_PROPOSAL))
-		CL << "Inverse proposal composition:\n" << inv_comp_output;
-
-	      // check for out-of-band old_path
-	      old_path_is_outside_hmmoc_band = old_path_is_outside_hmmoc_band || inv_move.old_path_is_outside_hmmoc_band;
-
-	      // store Hastings ratio term (numerator)
-	      hastings_term.push_back (NatsPMul (inv_move.old_loglike, -inv_move.fwd_ll));
-
-	      // display inv_comp
-	      out << "\n(" << TSEXPR_INVERSE;
-	      inv_comp.show_tree (out, 1, false);
-	      out << ' ';
-	      inv_move.dump_raw_loglike (out, TSEXPR_OLD_SCORE, inv_move.old_loglike);
-	      inv_move.dump_raw_loglike (out, TSEXPR_FSCORE, inv_move.fwd_ll);
-	      out << ")\n";
-	      out.flush();
-	    }
-	}
-
-      // store proposed path, print score, etc
-      if (propose_redelings_suchard_move)
-	{
-	  // map node indices from peeled_composition to main composition
-	  const set<int>& free_clique_set = composition.free_clique_set();
-	  const vector<int> free_clique_vec (free_clique_set.begin(), free_clique_set.end());
-	  for (int n = 0; n < pc.etree.nodes(); ++n)
-	    {
-	      if (new_path.find (n) == new_path.end())
-		THROWEXPR ("Failed to propose a path for node " << n);
-	      if (CTAGGING(1,REDSUCH_PATH))
-		CL << "Copying path from peeled-node #" << n << " (" << pc.tape_name[n]
-		   << ") to unpeeled-node #" << free_clique_vec[n] << " (" << composition.tape_name[free_clique_vec[n]]
-		   << "): (" << new_path[n] << ")\n";
-	      redsuch_path[free_clique_vec[n]] = new_path[n];
-	    }
-
-	  // get score of new_path
-	  redsuch_ll = NatsPMul (pc.get_path_loglike (new_path), peeling_loglike);
-
-	  // display path (creating composite path only if we have an EHMM with which to look up composite states)
-	  if (ehmm_funcs_defined)
-	    {
-	      // compose new_path; place in redsuch_trace
-	      vector<vector<int> > branch_path;
-	      for (int n = 0; n < pc.etree.nodes(); ++n)
-		branch_path.push_back (redsuch_path[n]);
-
-	      redsuch_trace = ehmm_funcs.composite_path (branch_path);
-
-	      // debug: check that composite_path worked
-	      if (CTAGGING(1,REDSUCH_COMPOSITE_PATH))
-		{
-		  const vector<vector<int> > bp = ehmm_funcs.branch_paths (redsuch_trace);
-		  CTAG(1,REDSUCH_COMPOSITE_PATH) << "Comparing original branch paths to decomposed composite path (" << pc.etree.nodes() << " nodes):\n";
-		  for (int n = 0; n < pc.etree.nodes(); ++n)
+		  const int parent = pc.etree.parent[*b];
+		  node_set.insert (*b);
+		  if (*b < root)
+		    root = *b;
+		  if (parent >= 0)
 		    {
-		      CL << "  redsuch_path[" << n << "]:";
-		      for_const_contents (vector<int>, redsuch_path[n], s)
-			CL << ' ' << ehmm_funcs.branch_transducer[n].get_state_name(*s);
-		      CL << '\n';
-		      CL << "           bp[" << n << "]:";
-		      for_const_contents (vector<int>, bp[n], s)
-			CL << ' ' << ehmm_funcs.branch_transducer[n].get_state_name(*s);
-		      CL << '\n';
-		      CL << (bp[n] == redsuch_path[n] ? " (identical)\n" : " (different!)\n");
+		      node_set.insert (parent);
+		      if (parent < root)
+			root = parent;
+		    }
+		  if (branches_seen.find (*b) == branches_seen.end())
+		    {
+		      uncons_branch.push_back (*b);
+		      branches_seen.insert (*b);
+		    }
+		  else
+		    cons_branch.push_back (*b);
+		}
+	      if (root == pc.etree.nodes())
+		THROWEXPR ("Couldn't find root of proposal subtree");
+
+	      // build node index maps between full<-->proposal trees
+	      const vector<int> node_prop2full (node_set.begin(), node_set.end());
+	      vector<int> node_full2prop;
+	      for (int n_full = 0; n_full < pc.etree.nodes(); ++n_full)
+		{
+		  const int n_prop = find (node_prop2full.begin(), node_prop2full.end(), n_full) - node_prop2full.begin();
+		  node_full2prop.push_back (n_prop == (int) node_prop2full.size() ? -1 : n_prop);
+		}
+
+	      // build ETree
+	      ETree prop_etree = pc.etree.subtree (node_prop2full);
+
+	      // populate branch_trans, branch_trans_name, prof, path, branch_name & tape_name for proposal composition
+	      // also create path & old_path for "inverse move" composition (other side of Hastings ratio)
+	      Transducer_SExpr_file::NodePathMap prop_path, inv_path, inv_old_path;
+	      const Transducer_SExpr_file::NodePathMap dummy_path;  // always empty
+	      Transducer_SExpr_file::NodeProfileMap prop_prof;
+	      vector<sstring> prop_branch_trans_name (prop_etree.nodes());
+	      vector<Pair_transducer_funcs> prop_branch_trans (prop_etree.nodes());
+	      vector<sstring> prop_branch_name (prop_etree.nodes());
+	      map<int,sstring> prop_tape_name;
+	      map<int,double> prop_band_coeff;
+
+	      // prop_prof
+	      for (int n_prop = 0; n_prop < (int) node_prop2full.size(); ++n_prop)
+		if (pc.prof.find (node_prop2full[n_prop]) != pc.prof.end())
+		  prop_prof[n_prop] = pc.prof[node_prop2full[n_prop]];
+
+	      // prop_path: constrained branches
+	      for_const_contents (vector<int>, cons_branch, b_full)
+		prop_path[node_full2prop[*b_full]] = new_path[*b_full];
+
+	      // inv_path: constrained branches
+	      for_const_contents (vector<int>, cons_branch, b_full)
+		if (pc.old_path.find (*b_full) != pc.old_path.end())
+		  inv_path[node_full2prop[*b_full]] = pc.old_path[*b_full];
+
+	      // inv_path == prop_path ?  (i.e. is new_path identical to old_path on the constrained branches?)
+	      // if so, this is a "virgin proposal", allowing us to re-use some calculations between prop_move and inv_move
+	      const bool virgin_proposal = inv_path == prop_path;
+	      const bool calc_old_path_ll_during_prop_step = virgin_proposal && !use_centroid && propose_redelings_suchard_move && evaluate_redelings_suchard_inverse_move;
+
+	      // inv_old_path: unconstrained branches
+	      inv_old_path = inv_path;
+	      for_const_contents (vector<int>, uncons_branch, b_full)
+		if (pc.old_path.find (*b_full) != pc.old_path.end())
+		  inv_old_path[node_full2prop[*b_full]] = pc.old_path[*b_full];
+
+	      // prop_band_coeff
+	      for_const_contents (vector<int>, uncons_branch, b_full)
+		if (pc.band_coeff.find (*b_full) != pc.band_coeff.end())
+		  prop_band_coeff[node_full2prop[*b_full]] = pc.band_coeff[*b_full];
+
+	      // prop_branch_trans
+	      for_const_contents (vector<int>, *branches, b_full)
+		{
+		  const int b_prop = node_full2prop[*b_full];
+		  if (b_prop >= 0)
+		    {
+		      prop_branch_trans[b_prop] = pc.branch_trans[*b_full];
+		      prop_branch_trans_name[b_prop] = pc.branch_trans_name[*b_full];
 		    }
 		}
 
-	      // display redsuch_trace
-	      dump_peeled_composite_trace (out, TSEXPR_RSPATH, redsuch_trace, redsuch_ll);
+	      // prop_branch_name, prop_tape_name
+	      for (int n_prop = 1; n_prop < prop_etree.nodes(); ++n_prop)
+		{
+		  prop_branch_name[n_prop] = pc.branch_name[node_prop2full[n_prop]];
+		  prop_tape_name[n_prop] = pc.tape_name[node_prop2full[n_prop]];
+		}
+
+	      // if we have a new root, place singleton transducer on root branch; otherwise, use root transducer from full tree
+	      if (root == 0)
+		{
+		  prop_branch_trans[0] = pc.branch_trans[0];
+		  prop_branch_trans_name[0] = pc.branch_trans_name[0];
+		  prop_branch_name[0] = pc.branch_name[0];
+		  prop_tape_name[0] = pc.tape_name[0];
+		  // copy across path and/or old_path for root branch
+		  if (pc.path.find (0) != pc.path.end())
+		    prop_path[0] = inv_path[0] = pc.path[0];
+		  else if (pc.old_path.find (0) != pc.old_path.end())
+		    inv_old_path[0] = pc.old_path[0];
+		}
+	      else
+		{
+		  Singleton_transducer_funcs sing_funcs (pc.alphabet_size);
+		  prop_branch_trans[0] = sing_funcs;
+		  prop_branch_trans_name[0] = sstring (Singleton_transducer_name);
+		  // place an all-insert path on the root branch, so it's properly constrained
+		  if (prop_prof.find (0) != prop_prof.end())
+		    prop_path[0] = inv_path[0] = vector<int> (prop_prof[0].size(), sing_funcs.insert_state());
+		}
+
+	      // proposal move
+	      if (propose_redelings_suchard_move && first_pass)
+		{
+		  // build composition
+		  // for economy, if this was a "virgin proposal", then use this composition to evaluate the score of inv_old_path
+		  Transducer_SExpr_file prop_comp (pc.alphabet, pc.pscores, prop_etree, prop_branch_trans, prop_prof, prop_path, calc_old_path_ll_during_prop_step ? inv_old_path : dummy_path);
+		  prop_comp.rebuild_tree_names (prop_tape_name, prop_branch_name, prop_branch_trans_name);
+		  prop_comp.band_coeff = prop_band_coeff;
+
+		  if (use_centroid)
+		    {
+		      prop_comp.use_centroid_band = true;
+		      prop_comp.centroid_band_width = centroid_band_width;
+		      Alignment_path full_centroid = pc.alignment_path (pc.old_path);
+		      prop_comp.centroid = Subalignment_path (full_centroid, node_prop2full, true);
+		    }
+
+		  if (CTAGGING(1,REDSUCH_DEBUG))
+		    {
+		      typedef map<int,sstring> NameMap;
+		      for_const_contents (NameMap, prop_tape_name, ptn)
+			CL << "prop_tape_name[" << ptn->first << "] = " << ptn->second << '\n';
+		      for_const_contents (NameMap, prop_comp.tape_name, ptn)
+			CL << "prop_comp.tape_name[" << ptn->first << "] = " << ptn->second << '\n';
+		    }
+
+		  // do the move
+		  Handel_movement prop_move;
+		  prop_move.composition = prop_comp;
+		  prop_move.nforward = 1;  // compute forward score & sample 1 path
+		  prop_move.hmmoc_opts = hmmoc_opts;
+		  prop_move.use_hmmoc_for_forward = use_hmmoc_for_forward;
+		  prop_move.composite = true;  // we will want to see the composite transducer in the event of an error
+
+		  sstring prop_comp_output;
+		  try {
+		    prop_move.dump_composition (prop_comp_output);
+		  } catch (const Dart_exception& e) {
+		    CLOGERR << e.what() << "Proposal composition:\n" << prop_comp_output;
+		    THROWEXPR ("Proposal error");
+		  }
+		  if (CTAGGING(1,REDSUCH_PROPOSAL))
+		    CL << "Proposal composition:\n" << prop_comp_output;
+
+		  // check for out-of-band old_path
+		  if (calc_old_path_ll_during_prop_step)
+		    old_path_is_outside_hmmoc_band = old_path_is_outside_hmmoc_band || prop_move.old_path_is_outside_hmmoc_band;
+
+		  // get the trace & stick it in new_path
+		  const vector<int>& prop_trace = prop_move.fwd_trace[0];
+		  const vector<vector<int> > prop_branch_path = prop_move.ehmm_scores.branch_paths (prop_trace);
+
+		  vector<int> node_prop2free (node_prop2full.size(), -1);
+		  int total_free = 0;
+		  for_const_contents (set<int>, prop_move.composition.free_clique_set(), n)
+		    node_prop2free[*n] = total_free++;
+
+		  for_const_contents (vector<int>, uncons_branch, n_full)
+		    {
+		      const int n_prop = node_full2prop[*n_full];
+		      const int n_free = node_prop2free[n_prop];
+		      const vector<int>& n_path = prop_branch_path[n_free];
+		      if (CTAGGING(1,REDSUCH_PATH))
+			CL << "Copying path for branch " << prop_branch_name[n_prop] << " (" << n_path << ")\n";
+		      new_path[*n_full] = n_path;
+		    }
+
+		  // store Hastings ratio term (denominator)
+		  Transducer_SExpr_file& ppc = prop_move.peeled_composition;
+		  Transducer_SExpr_file::NodePathMap prop_path_map = ppc.get_path_map (prop_move.ehmm_funcs, prop_trace);
+		  const Loge prop_path_ll = NatsPMul (ppc.get_path_loglike (prop_path_map), prop_move.peeling_loglike);
+		  hastings_term.push_back (-NatsPMul (prop_path_ll, -prop_move.fwd_ll));
+
+		  // store Hastings ratio term (numerator)
+		  if (calc_old_path_ll_during_prop_step)
+		    hastings_term.push_back (NatsPMul (prop_move.old_loglike, -prop_move.fwd_ll));
+
+		  // display prop_comp
+		  out << "\n(" << TSEXPR_PROPOSAL;
+		  prop_comp.show_tree (out, 1, false);
+		  out << ' ';
+		  if (calc_old_path_ll_during_prop_step)
+		    prop_move.dump_raw_loglike (out, TSEXPR_OLD_SCORE, prop_move.old_loglike);
+		  prop_move.dump_raw_loglike (out, TSEXPR_FSCORE, prop_move.fwd_ll);
+		  prop_move.dump_peeled_composite_trace (out, TSEXPR_FPATH, prop_trace, prop_path_ll);
+		  out << ")\n";
+		  out.flush();
+		}
+
+	      // inverse move
+	      if (evaluate_redelings_suchard_inverse_move && !calc_old_path_ll_during_prop_step && last_pass)
+		{
+		  // build composition
+		  Transducer_SExpr_file inv_comp (pc.alphabet, pc.pscores, prop_etree, prop_branch_trans, prop_prof, inv_path, inv_old_path);
+		  inv_comp.rebuild_tree_names (prop_tape_name, prop_branch_name, prop_branch_trans_name);
+		  inv_comp.band_coeff = prop_band_coeff;
+
+		  if (use_centroid)
+		    {
+		      inv_comp.use_centroid_band = true;
+		      inv_comp.centroid_band_width = centroid_band_width;
+		      Alignment_path full_centroid = pc.alignment_path (new_path);
+		      inv_comp.centroid = Subalignment_path (full_centroid, node_prop2full, true);
+		    }
+
+		  // do the move
+		  Handel_movement inv_move;
+		  inv_move.composition = inv_comp;
+		  inv_move.nforward = 0;  // compute forward score, but don't sample any paths
+		  inv_move.hmmoc_opts = hmmoc_opts;
+		  inv_move.use_hmmoc_for_forward = use_hmmoc_for_forward;
+		  inv_move.composite = true;  // we will want to see the composite transducer in the event of an error
+
+		  sstring inv_comp_output;
+		  try {
+		    inv_move.dump_composition (inv_comp_output);
+		  } catch (const Dart_exception& e) {
+		    CLOGERR << e.what() << "Inverse proposal composition:\n" << inv_comp_output;
+		    THROWEXPR ("Inverse proposal error");
+		  }
+		  if (CTAGGING(1,REDSUCH_PROPOSAL))
+		    CL << "Inverse proposal composition:\n" << inv_comp_output;
+
+		  // check for out-of-band old_path
+		  old_path_is_outside_hmmoc_band = old_path_is_outside_hmmoc_band || inv_move.old_path_is_outside_hmmoc_band;
+
+		  // store Hastings ratio term (numerator)
+		  hastings_term.push_back (NatsPMul (inv_move.old_loglike, -inv_move.fwd_ll));
+
+		  // display inv_comp
+		  out << "\n(" << TSEXPR_INVERSE;
+		  inv_comp.show_tree (out, 1, false);
+		  out << ' ';
+		  inv_move.dump_raw_loglike (out, TSEXPR_OLD_SCORE, inv_move.old_loglike);
+		  inv_move.dump_raw_loglike (out, TSEXPR_FSCORE, inv_move.fwd_ll);
+		  out << ")\n";
+		  out.flush();
+		}
 	    }
-	  else
+
+	  // store proposed path, print score, etc
+	  if (propose_redelings_suchard_move && first_pass)
 	    {
-	      if (CTAGGING(1,REDSUCH_PATH))
-		for_const_contents (Transducer_SExpr_file::NodePathMap, redsuch_path, np)
-		  CL << "redsuch_path[" << np->first << "] = (" << np->second << ")\n";
-	      dump_unpeeled_node_path_map (out, TSEXPR_RSPATH, redsuch_path, redsuch_ll);
+	      // map node indices from peeled_composition to main composition
+	      const set<int>& free_clique_set = composition.free_clique_set();
+	      const vector<int> free_clique_vec (free_clique_set.begin(), free_clique_set.end());
+	      for (int n = 0; n < pc.etree.nodes(); ++n)
+		{
+		  if (new_path.find (n) == new_path.end())
+		    THROWEXPR ("Failed to propose a path for node " << n);
+		  if (CTAGGING(1,REDSUCH_PATH))
+		    CL << "Copying path from peeled-node #" << n << " (" << pc.tape_name[n]
+		       << ") to unpeeled-node #" << free_clique_vec[n] << " (" << composition.tape_name[free_clique_vec[n]]
+		       << "): (" << new_path[n] << ")\n";
+		  redsuch_path[free_clique_vec[n]] = new_path[n];
+		}
+
+	      // get score of new_path
+	      redsuch_ll = NatsPMul (pc.get_path_loglike (new_path), peeling_loglike);
+
+	      // display path (creating composite path only if we have an EHMM with which to look up composite states)
+	      if (ehmm_funcs_defined)
+		{
+		  // compose new_path; place in redsuch_trace
+		  vector<vector<int> > branch_path;
+		  for (int n = 0; n < pc.etree.nodes(); ++n)
+		    branch_path.push_back (redsuch_path[n]);
+
+		  redsuch_trace = ehmm_funcs.composite_path (branch_path);
+
+		  // debug: check that composite_path worked
+		  if (CTAGGING(1,REDSUCH_COMPOSITE_PATH))
+		    {
+		      const vector<vector<int> > bp = ehmm_funcs.branch_paths (redsuch_trace);
+		      CTAG(1,REDSUCH_COMPOSITE_PATH) << "Comparing original branch paths to decomposed composite path (" << pc.etree.nodes() << " nodes):\n";
+		      for (int n = 0; n < pc.etree.nodes(); ++n)
+			{
+			  CL << "  redsuch_path[" << n << "]:";
+			  for_const_contents (vector<int>, redsuch_path[n], s)
+			    CL << ' ' << ehmm_funcs.branch_transducer[n].get_state_name(*s);
+			  CL << '\n';
+			  CL << "           bp[" << n << "]:";
+			  for_const_contents (vector<int>, bp[n], s)
+			    CL << ' ' << ehmm_funcs.branch_transducer[n].get_state_name(*s);
+			  CL << '\n';
+			  CL << (bp[n] == redsuch_path[n] ? " (identical)\n" : " (different!)\n");
+			}
+		    }
+
+		  // display redsuch_trace
+		  dump_peeled_composite_trace (out, TSEXPR_RSPATH, redsuch_trace, redsuch_ll);
+		}
+	      else
+		{
+		  if (CTAGGING(1,REDSUCH_PATH))
+		    for_const_contents (Transducer_SExpr_file::NodePathMap, redsuch_path, np)
+		      CL << "redsuch_path[" << np->first << "] = (" << np->second << ")\n";
+		  dump_unpeeled_node_path_map (out, TSEXPR_RSPATH, redsuch_path, redsuch_ll);
+		}
+
+	      // store Hastings ratio term (numerator)
+	      hastings_term.push_back (redsuch_ll);
 	    }
 
-	  // store Hastings ratio term (numerator)
-	  hastings_term.push_back (redsuch_ll);
-	}
+	  // store Hastings ratio term for old path (denominator)
+	  if (evaluate_redelings_suchard_inverse_move && last_pass)
+	    hastings_term.push_back (-old_loglike);
 
-      // store Hastings ratio term for old path (denominator)
-      if (evaluate_redelings_suchard_inverse_move)
-	hastings_term.push_back (-old_loglike);
-
-      // display Hastings ratio terms
-      if (hastings_term.size())
-	{
-	  vector<Log2> hastings_term_bits;
-	  Loge log_hastings_ratio = 0.;
-	  for_const_contents (vector<Loge>, hastings_term, h_ll)
+	  // display Hastings ratio terms
+	  if (hastings_term.size() && last_pass)
 	    {
-	      NatsPMulAcc (log_hastings_ratio, *h_ll);
-	      hastings_term_bits.push_back (Nats2Bits (*h_ll));
-	    }
-	  out << "\n(" << TSEXPR_HTERM << " (" << hastings_term_bits
-	      << "))\n";
+	      vector<Log2> hastings_term_bits;
+	      Loge log_hastings_ratio = 0.;
+	      for_const_contents (vector<Loge>, hastings_term, h_ll)
+		{
+		  NatsPMulAcc (log_hastings_ratio, *h_ll);
+		  hastings_term_bits.push_back (Nats2Bits (*h_ll));
+		}
+	      out << "\n(" << TSEXPR_HTERM << " (" << hastings_term_bits
+		  << "))\n";
 
-	  // if we have all the necessary parts, then compute & print Hastings ratio
-	  if (propose_redelings_suchard_move && evaluate_redelings_suchard_inverse_move)
-	    out << '(' << TSEXPR_HASTINGS << ' ' << -Nats2Bits (min (log_hastings_ratio, 0.)) << ")\n";
+	      // if we have all the necessary parts, then compute & print Hastings ratio
+	      if (propose_redelings_suchard_move && evaluate_redelings_suchard_inverse_move)
+		out << '(' << TSEXPR_HASTINGS << ' ' << -Nats2Bits (min (log_hastings_ratio, 0.)) << ")\n";
+	    }
 	}
     }
 }

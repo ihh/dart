@@ -89,6 +89,11 @@ struct Transducer_SExpr_file : TSpaceEnum, Transducer_state_type_enum, Grammar_s
   // composite transducer name
   sstring composite_name;
 
+  // move-dependent banding behavior
+  bool use_centroid_band;
+  Alignment_path centroid;
+  int centroid_band_width;
+
   // methods
   // constructors
   Transducer_SExpr_file() : etree(0) { }  // override default ETree constructor, which automatically creates one node
@@ -222,9 +227,15 @@ struct Transducer_SExpr_file : TSpaceEnum, Transducer_state_type_enum, Grammar_s
   sstring score_sexpr (Score sc);
   sstring score_sexpr (Loge ll);
 
+  // output method for alignment paths (for move-dependent banding)
+  void show_alignment_path (const Alignment_path& align_path, ostream& out, int base_indent = 0);
+
   // adapter methods
   // method to return the Stockholm alignment implied by path & prof
   Stockade stockade();
+
+  // method to return the Alignment_path implied by a given path & etree
+  Alignment_path alignment_path (NodePathMap& path);
 };
 
 
