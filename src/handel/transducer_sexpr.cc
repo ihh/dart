@@ -1618,8 +1618,6 @@ void Transducer_SExpr_file::show_alignment_path (const Alignment_path& align_pat
   out << indent_string << '(';
   for (int col = 0; col < align_path.columns(); ++col)
     {
-      if (col > 0)
-	out << '\n' << indent_string << ' ';
       out << '(';
       for (int row = 0; row < align_path.rows(); ++row)
 	{
