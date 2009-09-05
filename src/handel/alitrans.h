@@ -11,7 +11,7 @@
 #define DEFAULT_BANDING_COEFFICIENT 10.
 
 // default centroid band width
-#define DEFAULT_CENTROID_BAND_WIDTH 20
+#define DEFAULT_CENTROID_BAND_WIDTH 60
 
 // Pair transducer factory: the base class for the transducer MCMC aligner
 struct Pair_transducer_factory : Grammar_state_enum

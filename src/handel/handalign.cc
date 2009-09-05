@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
   opts.add ("tb -time-band", use_time_dependent_banding = false, "use time-dependent banding, if & when it gives a tighter band", false);
   opts.add ("bc -band-coeff", banding_coefficient = DEFAULT_BANDING_COEFFICIENT, "time-dependent banding coefficient: determines width of band");
   opts.add ("cb -centroid-band", use_centroid_band = false, "use centroid banding (Redelings-Suchard MCMC only)", false);
-  opts.add ("cbw -centroid-band-width", centroid_band_width = 20, "width of centroid band");
+  opts.add ("cbw -centroid-band-width", centroid_band_width = DEFAULT_CENTROID_BAND_WIDTH, "width of centroid band");
 
   try
     {
