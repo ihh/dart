@@ -37,7 +37,7 @@ class TwoDBanding : Banding<2> {
   Position pos;
   int iLastRow;
 
-  int diagonal(int p1) { return (p1 * iLen0 + iLen1/2) / iDiv1; }
+  inline int diagonal(int p1) { return (p1 * iLen0 + iLen1/2) / iDiv1; }
 
  public:
 
@@ -103,6 +103,90 @@ class TwoDBanding : Banding<2> {
 };
 
 
+// Implements a fixed-width band around a caller-specified centroid.
+class TwoDCentroidBanding : Banding<2> {
+
+ private:
+
+  int iLen0, iLen1, iDiv1;
+  int iWidth;
+  Position pos;
+  int iLastRow;
+  vector<int> centroid;
+
+  inline int diagonal(int p1) { return centroid[p1]; }
+
+ public:
+
+  TwoDCentroidBanding( int iLen0, int iLen1, int iWidth ) : iLen0(iLen0), iLen1(iLen1), iDiv1(iLen1 ? iLen1 : 1), iWidth(iWidth), centroid(iLen1+1) {
+    for (int p1 = 0; p1 <= iLen1; ++p1)
+      centroid[p1] = (p1 * iLen0 + iLen1/2) / iDiv1;
+  }
+
+  TwoDCentroidBanding( int iLen0, int iLen1, int iWidth, vector<int> centroid )
+    : iLen0(iLen0), iLen1(iLen1), iDiv1(iLen1 ? iLen1 : 1), iWidth(iWidth), centroid(centroid) { }
+
+  Position& forwardIterator() {
+
+    pos[0] = pos[1] = 0;
+    iLastRow = iLen0;
+    return pos;
+
+  }
+
+  Position& backwardIterator() {
+
+    pos[0] = iLen0;
+    pos[1] = iLen1;
+    iLastRow = 0;
+    return pos;
+
+  }
+
+  bool hasNextForward() {
+
+    if (pos[0] < iLen0 && pos[0] < (iWidth-1)/2 + max( diagonal(pos[1]+1)-1, diagonal(pos[1]))) {
+      ++pos[0];
+      return true;
+    }
+    if (pos[1]<iLen1) {
+      ++pos[1];
+      pos[0] = max(0, diagonal(pos[1]) - iWidth/2);
+      return true;
+    }
+    return false;
+  }
+
+  bool hasNextBackward() {
+
+    if (pos[0] > 0 && pos[0] > diagonal(pos[1]) - iWidth/2) {
+      --pos[0];
+      return true;
+    }
+    if (pos[1]>0) {
+      --pos[1];
+      pos[0] = min(iLen0, (iWidth-1)/2 + max( diagonal(pos[1]+1)-1, diagonal(pos[1])));
+      return true;
+    }
+    return false;
+  }
+
+  bool lastColumnEntry() {
+
+    return pos[0] == iLastRow;
+
+  }
+
+  void warning() {
+
+    cout << "Warning - out of bounds at position (" << pos[0] << "," << pos[1] << ")" << endl;
+
+  }
+
+};
+
+
+// 3D diagonal band
 class ThreeDBanding : Banding<3> {
 
  private:
@@ -112,8 +196,8 @@ class ThreeDBanding : Banding<3> {
   Position pos;
   int iLastRow;
 
-  int diagonal0_1(int p1) { return (p1 * iLen0 + iLen1/2) / iDiv1; } //return diagonal position in dim 0 given position in dim 1
-  int diagonal1_2(int p2) { return (p2 * iLen1 + iLen2/2) / iDiv2; } //return diagonal position in dim 1 given position in dim 2
+  inline int diagonal0_1(int p1) { return (p1 * iLen0 + iLen1/2) / iDiv1; } //return diagonal position in dim 0 given position in dim 1
+  inline int diagonal1_2(int p2) { return (p2 * iLen1 + iLen2/2) / iDiv2; } //return diagonal position in dim 1 given position in dim 2
 
  public:
 
@@ -198,6 +282,8 @@ class ThreeDBanding : Banding<3> {
 
 };
 
+
+// 4D diagonal band
 class FourDBanding : Banding<3> {
 
  private:
@@ -207,9 +293,9 @@ class FourDBanding : Banding<3> {
   Position pos;
   int iLastRow;
 
-  int diagonal0_1(int p1) { return (p1 * iLen0 + iLen1/2) / iDiv1; } //return diagonal position in dim 0 given position in dim 1
-  int diagonal1_2(int p2) { return (p2 * iLen1 + iLen2/2) / iDiv2; } //return diagonal position in dim 1 given position in dim 2
-  int diagonal2_3(int p3) { return (p3 * iLen2 + iLen3/2) / iDiv3; } //return diagonal position in dim 2 given position in dim 3
+  inline int diagonal0_1(int p1) { return (p1 * iLen0 + iLen1/2) / iDiv1; } //return diagonal position in dim 0 given position in dim 1
+  inline int diagonal1_2(int p2) { return (p2 * iLen1 + iLen2/2) / iDiv2; } //return diagonal position in dim 1 given position in dim 2
+  inline int diagonal2_3(int p3) { return (p3 * iLen2 + iLen3/2) / iDiv3; } //return diagonal position in dim 2 given position in dim 3
 
  public:
 

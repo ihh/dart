@@ -8,11 +8,8 @@
 #include "util/nullstream.h"
 
 // TODO
-// -- implement centroid bands in HMMoC
-//  -- only need to implement band for 2D case (since it's integrated with Redelings-Suchard)
-//  -- base on TwoDBanding; introduce vector<int> minRow, maxRow (in place of diagonal method)
-// -- if use_centroid_band is true, use the peeled_obs rows of centroid & the centroid band width to pass minRow[] and maxRow[] to HMMoC (at run-time, not compile-time)
-// -- also need a method to check whether a given Alignment_path is in the band (to be checked in movement.cc)
+// -- if use_centroid_band is true, use the peeled_obs rows of centroid & the centroid band width to pass centroid[] to HMMoC (at run-time, not compile-time)
+// -- complain loudly if the centroid Alignment_path has any gaps larger than the centroid band width
 
 // defs for hmmoc file
 
@@ -26,6 +23,7 @@
 #define HMMOC_SEQID_PREFIX    "hSeq"
 #define HMMOC_LENID_PREFIX    "hLen"
 #define HMMOC_BANDID          "hBandDiameter"
+#define HMMOC_CENTROID_ID     "hCentroid"
 #define HMMOC_IDXID_PREFIX    "hIndex"
 #define HMMOC_SEQID_PREFIX    "hSeq"
 #define HMMOC_SYMID_PREFIX    "hSym"
@@ -217,18 +215,24 @@ void HMMoC_adapter::dump_hmmoc_model (ostream& out, const char* cpp_filename_pre
   // initialize banding
   band_diameter = 0;  // default value of zero indicates that we do not have a valid band
   const int dim = (int) peeled_obs.size();
-  if (dim >= 2 && dim <= 4)
+  const bool use_centroid = (dim == 2 && peeled.use_centroid_band);
+  if (use_centroid)
+    band_diameter = peeled.centroid_band_width;
+  else
     {
-      // get upper limit of band diameter
-      band_diameter = (dim == 2 ? two_d_banding : (dim == 3 ? three_d_banding : four_d_banding));
-    }
+      if (dim >= 2 && dim <= 4)
+	{
+	  // get upper limit of band diameter
+	  band_diameter = (dim == 2 ? two_d_banding : (dim == 3 ? three_d_banding : four_d_banding));
+	}
 
-  // get alternative (length-dependent) band diameter using banding coefficients, if available
-  if (peeled.has_all_banding_coefficients())
-    {
-      const long coeff_band_diameter = peeled.get_band_diameter();
-      if (coeff_band_diameter < band_diameter || band_diameter == 0)
-	band_diameter = coeff_band_diameter;
+      // get alternative (length-dependent) band diameter using banding coefficients, if available
+      if (peeled.has_all_banding_coefficients())
+	{
+	  const long coeff_band_diameter = peeled.get_band_diameter();
+	  if (coeff_band_diameter < band_diameter || band_diameter == 0)
+	    band_diameter = coeff_band_diameter;
+	}
     }
 
   // do we have a valid band?
@@ -242,11 +246,13 @@ void HMMoC_adapter::dump_hmmoc_model (ostream& out, const char* cpp_filename_pre
       // print hmmoc stuff
       out << "<code id=\"initializeBanding\" init=\"includeBandingHeader\">\n\t";
 
-      out << (dim == 2 ? "TwoDBanding" : (dim == 3 ? "ThreeDBanding" : "FourDBanding"))
-	  << " bandingInstance (" << sstring::join (peeled_len_id, ", ") << ", " << HMMOC_BANDID << ");\n";
-      out << "</code>\n";
+      out << (use_centroid ? "TwoDCentroidBanding" : (dim == 2 ? "TwoDBanding" : (dim == 3 ? "ThreeDBanding" : "FourDBanding")))
+	  << " bandingInstance (" << sstring::join (peeled_len_id, ", ") << ", " << HMMOC_BANDID;
+      if (use_centroid)
+	out << ", " << HMMOC_CENTROID_ID;
+      out << ");\n</code>\n";
       out << "<banding id=\"" << HMMOC_BLOCK_PREFIX << "2Banding\">\n\t";
-      out << "<code init=\"initializeBanding\">" << "bandingInstance" << "</code>\n\t";
+      out << "<code init=\"initializeBanding\">bandingInstance</code>\n\t";
       for (int n = 0; n < dim; ++n)
 	out << "<code type=\"coordinate\" output=\"" << peeled_seq_name[n] << "\" value=\"" << n << "\"/>\n\t";
       out << "</banding>";
@@ -652,6 +658,40 @@ void HMMoC_adapter::dump_hmmoc_params_to_file (const char* param_filename)
 	}
     }
 
+  // write centroid
+  if (peeled.use_centroid_band)
+    {
+      if (peeled_obs.size() != 2)
+	THROWEXPR ("Can't currently do centroid banding except for pairwise case");
+      const int seqLen0 = peeled_seq[peeled_obs[0]]->size();
+      const int seqLen1 = peeled_seq[peeled_obs[1]]->size();
+      vector<int> pos0max (seqLen1 + 1, 0), pos0min (seqLen1 + 1, seqLen0);
+      const Subalignment_path centroid (peeled.centroid, peeled_obs, true);
+      vector<int> pos = centroid.create_seq_coords();
+      for (int col = 0; col <= centroid.columns(); ++col)
+	{
+	  pos0min[pos[1]] = min (pos0min[pos[1]], pos[0]);
+	  pos0max[pos[1]] = max (pos0max[pos[1]], pos[0]);
+	  centroid.inc_seq_coords (pos, col);
+	}
+      pos0max[seqLen1] = max (pos0max[seqLen1], seqLen0);
+      for (int pos1 = 0; pos1 <= seqLen1; ++pos1)
+	{
+	  const int gap_size = pos0max[pos1] - pos0min[pos1];
+	  if (gap_size > band_diameter)
+	    {
+	      CLOGERR << "Warning: gap of size " << gap_size << " exceeds centroid band diameter!\n";
+	      // strictly speaking,
+	      // 1. we should abort the move if gap_size > band_diameter (possibly only if strict_banded_reversibility is set in HMMoC_adapter_options);
+	      // 2. we should check the size of gaps in seq0, not just gaps in seq1 (as we currently do).
+	      // instead, we cheat and widen the band (NB this violates detailed balance, so you better hope it doesn't happen too often...)
+	      CLOGERR << "Bumping centroid band diameter from " << band_diameter << " to " << gap_size << "; THIS WILL VIOLATE DETAILED BALANCE\n";
+	      band_diameter = gap_size;
+	    }
+	  write_param ((long) ((pos0min[pos1] + pos0max[pos1]) / 2), param_string);
+	}
+    }
+
   // write band diameter
   write_param (band_diameter, param_string);
 
@@ -971,6 +1011,9 @@ bool HMMoC_adapter::exec_recursion_and_traceback (Score& final_sc, vector<vector
   // banding
   code << "long " << HMMOC_BANDID << ";\n";
 
+  if (peeled.use_centroid_band)
+    code << "vector<int> " << HMMOC_CENTROID_ID << ";\n";
+
   // double[][] F_matrix: Felsenstein scratch-space
   // (use BFloat instead of double? I guess not: shouldn't need to worry about code underflow when calculating an individual state's emit score.)
   code << "double " << HMMOC_FMATRIX
@@ -1020,7 +1063,13 @@ bool HMMoC_adapter::exec_recursion_and_traceback (Score& final_sc, vector<vector
       code << "    }\n";
     }
 
-  // read time-dependent band diameter
+  // read centroid
+  if (peeled.use_centroid_band)
+    code << "  " << HMMOC_CENTROID_ID << " = vector<int> (" << peeled_len_id[1] << ");\n"
+	 << "  for (int cPos = 0; cPos <= " << peeled_len_id[1] << "; ++cPos)\n"
+	 << "    cparam >> " << HMMOC_CENTROID_ID << "[cPos];\n";
+
+  // read band diameter
   code << "  cparam >> " << HMMOC_BANDID << ";\n";
 
   // read emit & trans params
