@@ -672,7 +672,7 @@ Returns success of operation (1 for success, 0 for failure)
 # other).  The caller is responsible for making sure the set of columns passed
 # in does not mess up the annoation.
 #
-# Arguments: a list of scalar, 1-based column indices to drop.
+# Arguments: a list of scalar, zero-based column indices to drop.
 #
 # Returns success of operation (1 for success, 0 for failure)
 #
