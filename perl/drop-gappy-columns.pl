@@ -125,10 +125,11 @@ if ($drop_annot_gaps)
 else
   {
     # drop columns only based on gappiness
-    for (my $col = 0; $col < $stk->columns(); $col++) #fixed off by one error - $col used to start at 1 -LEB 10/30/2008
+    for (my $col = 1; $col <= $stk->columns(); $col++)  # NB: 1-based indexing!
       {
 	my $gap_count = 0;
-	foreach my $nuc (split (//, $stk->get_column($col)))  # for each nuc in col, used to be $col-1 -LEB 10/30/2008
+	# for each nuc in col...
+        foreach my $nuc (split (//, $stk->get_column($col-1)))  # to 0-based
 	  {
 	    # does the nuc character match any gap character?
 	    my $gapmap = join ('', map {$_ eq $nuc ? 1 : 0} @gaps);
@@ -147,12 +148,7 @@ else
 # duplicates in the dropped columns list
 #
 @dropped_columns = remove_duplicates(@dropped_columns);
-#debugging code - LEB 10/30/2008
-#print "DROPPED COLS:"; 
-#foreach (@dropped_columns){
-#	print $_, " ";
-#}
-#print "\n";
+
 # RNA only:
 # For any base pair with a nucleotide in a dropped column (as determined by the
 # annotation on the '#=GC SS_cons' line), either drop the column it is paired
@@ -270,7 +266,7 @@ if (scalar(@dropped_columns))
 	  scalar(@dropped_columns), " columns: @dropped_columns\n"
 	    if $d;
 
-	if ($stk->drop_columns(@dropped_columns))
+	if ($stk->drop_columns(map {$_-1} @dropped_columns))  # to 0-based
 	  {
 	    if ($out_file)
 	      {
@@ -515,6 +511,12 @@ sub parse_params {
 	}
     }
 
+  # sanity check
+  if (defined $unpaired_char) {
+    if ($rna_ss != 1) {
+      print_usage ("You can only use the -p option if -r is also set.");
+    }
+  }
 }
 
 
