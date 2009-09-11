@@ -1,3 +1,3 @@
 rm comp/* nocb/*
-handalign tiny.stk -ff 0 -ts 10 -c comp -rs -ha -hk -hc /tmp/hc -log 5 -logcopy comp/LOG -cb
-handalign tiny.stk -ff 0 -ts 10 -c nocb -rs -ha -hk -hc /tmp/hc -log 5 -logcopy nocb/LOG
+handalign tiny.stk -node -c comp -rs -ha -hk -hc /tmp/hc -log 5 -logcopy comp/LOG -cb
+handalign tiny.stk -node -c nocb -rs -ha -hk -hc /tmp/hc -log 5 -logcopy nocb/LOG
