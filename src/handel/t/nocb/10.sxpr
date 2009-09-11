@@ -864,7 +864,7 @@
 
 (hastings-term-bits (
   (-0.004 1/P{[XYZ->XY]_new|other_branches}])
-  (-3.648 P{[XYZ->XY]_old|other_branches})
+  (-3.65 P{[XYZ->XY]_old|other_branches})
   (33.969 P{[XYZ->XY]_new|other_branches})
   (-33.967 1/P{[XYZ->XY]_old|other_branches})))
 (hastings-bits -0)

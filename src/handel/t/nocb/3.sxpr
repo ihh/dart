@@ -859,7 +859,7 @@
 
 (hastings-term-bits (
   (-0.001 1/P{[UV->U]_new|other_branches}])
-  (-0.285 P{[UV->U]_old|other_branches})
+  (-0.283 P{[UV->U]_old|other_branches})
   (33.967 P{[UV->U]_new|other_branches})
   (-33.967 1/P{[UV->U]_old|other_branches})))
 (hastings-bits -0)

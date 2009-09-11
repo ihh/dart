@@ -717,7 +717,7 @@ void Handel_movement::dump_composition (ostream& out)
 		  // store Hastings ratio term (numerator)
 		  if (calc_old_path_ll_during_prop_step)
 		    {
-		      hastings_term.push_back (NatsPMul (prop_move.old_loglike, -prop_move.fwd_ll));
+		      hastings_term.push_back (NatsPMul3 (prop_move.old_loglike, -prop_move.peeling_loglike, -prop_move.fwd_ll));
 
 		      // use_centroid==false, so no need for band_desc
 		      if (use_centroid)
@@ -785,7 +785,7 @@ void Handel_movement::dump_composition (ostream& out)
 		  old_path_is_outside_hmmoc_band = old_path_is_outside_hmmoc_band || inv_move.old_path_is_outside_hmmoc_band;
 
 		  // store Hastings ratio term (numerator)
-		  hastings_term.push_back (NatsPMul (inv_move.old_loglike, -inv_move.fwd_ll));
+		  hastings_term.push_back (NatsPMul3 (inv_move.old_loglike, -inv_move.peeling_loglike, -inv_move.fwd_ll));
 
 		  samp_desc.clear();
 		  cond_desc.clear();

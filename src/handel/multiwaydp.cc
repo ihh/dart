@@ -185,16 +185,9 @@ void Transducer_peeler::peel (const Transducer_tree_emission& emit, double weigh
 
   // Now the actual code...
 
-  // pre-fill G_matrix from node_scores, like F_matrix
+  // pre-fill G_matrix with zeroes
   for (int n = 0; n < (int) emit.node_scores.size(); ++n)
-    if (emit.node_scores[n])
-      {
-	fill (G_matrix[n].begin(), G_matrix[n].end(), -InfinityScore);
-	for_const_contents (Symbol_score_map, *emit.node_scores[n], sym_sc)
-	  G_matrix[n][sym_sc->first] = sym_sc->second;
-      }
-    else
-      fill (G_matrix[n].begin(), G_matrix[n].end(), 0);
+    fill (G_matrix[n].begin(), G_matrix[n].end(), 0);
 
   // initialize G_matrix at inserter [-->ysym]
   Pair_transducer_scores& itrans = branch_transducer[emit.inserter];

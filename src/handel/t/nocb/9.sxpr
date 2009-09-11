@@ -927,7 +927,7 @@
   (-0.011 1/P{[UVWXYZ->UV]_new,[UV->U]_new|other_branches}])
   (-3.695 P{[UVWXYZ->UV]_old,[UV->U]_old|other_branches})
   (-0.002 1/P{[UV->V]_new|[UVWXYZ->UV]_new,[UV->U]_new,other_branches}])
-  (0.002 P{[UV->V]_old|[UVWXYZ->UV]_old,[UV->U]_old,other_branches})
+  (-9.827 P{[UV->V]_old|[UVWXYZ->UV]_old,[UV->U]_old,other_branches})
   (23.281 P{[UVWXYZ->UV]_new,[UV->U]_new,[UV->V]_new|other_branches})
   (-33.967 1/P{[UVWXYZ->UV]_old,[UV->U]_old,[UV->V]_old|other_branches})))
 (hastings-bits -0)
