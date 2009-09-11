@@ -147,7 +147,7 @@ for my $stock (@$db) {
   $stock->gc_SS_cons ($ss_cons);
 
   # drop conflicting cols if requested
-  if ($drop) { $stock->drop_columns (map {$_+1} @conflicts); } # 1-based indexing
+  if ($drop) { $stock->drop_columns (@conflicts); }
   assert_ss_valid ($stock->gc_SS_cons);
   while (my ($seqname, $ss) = each %{$stock->gr_SS}) {
     assert_ss_valid ($ss);

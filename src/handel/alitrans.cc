@@ -124,6 +124,7 @@ void Transducer_alignment::sample_subtree (const vector<int>& nodes_to_sample,
       dotfile_recorder.save (move.ehmm_scores);
 
       // check for out-of-band old_path
+      // (this is just for absolute bands; we check for adaptive(centroid) band overflows below. this should all be in one place. urgghhhhh)
       if (move.old_path_is_outside_hmmoc_band)
 	{
 	  CLOGERR << "WARNING: current alignment path is outside HMMoC adapter's banding constraint; "
@@ -161,6 +162,7 @@ void Transducer_alignment::sample_subtree (const vector<int>& nodes_to_sample,
 
 		      Pairwise_path branch_path;
 		      vector<bool> branch_path_column (2);
+		      int max_gap_len = 0, current_ins_len = 0, current_del_len = 0;
 		      for (int pos = 0; pos < (int) branch_trace.size(); ++pos)
 			{
 			  const int s = branch_trace[pos];
@@ -169,10 +171,35 @@ void Transducer_alignment::sample_subtree (const vector<int>& nodes_to_sample,
 			      const int t = branch_trans.state_type[s];
 			      for (int n = 0; n < 2; ++n)
 				branch_path_column[n] = Transducer_state_type_enum::type_node_emit (t, n - 1);   // euch: "n-1" is because this method is really designed for composite transducers, not pair transducers (and composite transducers have an "extra" node at n=0, representing the subroot)
+			      // check for gap length
+			      const bool is_ins = !branch_path_column[0] && branch_path_column[1];
+			      const bool is_del = branch_path_column[0] && !branch_path_column[1];
+			      if (is_ins)
+				++current_ins_len;
+			      else if (is_del)
+				++current_del_len;
+			      else
+				{
+				  max_gap_len = max (max (max_gap_len, current_ins_len), current_del_len);
+				  current_ins_len = current_del_len = 0;
+				}
+			      // append column to branch_path
 			      branch_path.append_column (branch_path_column);
 			    }
+			  max_gap_len = max (max (max_gap_len, current_ins_len), current_del_len);
 			}
 
+		      // check if max_gap_len is larger than adaptive band
+		      if (max_gap_len > centroid_band_width)
+			{
+			  CLOGERR << "WARNING: largest gap in current alignment path is greater than HMMoC adapter's centroid band width; "
+				  << (hmmoc_opts.strict_banded_reversibility ? "skipping this move" : "proceeding anyway")
+				  << '\n';
+			  if (hmmoc_opts.strict_banded_reversibility)
+			    return;
+			}
+
+		      // store
 		      decomp[Alignment_path::Row_pair (row_p, row_n)] = branch_path;
 		    }
 		}
