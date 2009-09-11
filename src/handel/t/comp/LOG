@@ -1,25 +1,25 @@
 
-<log date="2009/11/09" time="12:55:02" file="opts_list.cc" line=368 level=5 tags="OPTS"/>
+<log date="2009/11/09" time="12:57:30" file="opts_list.cc" line=368 level=5 tags="OPTS"/>
 Parsed command line: handalign tiny.stk -node -c comp -rs -ha -hk -hc /tmp/hc -log 5 -logcopy comp/LOG -cb
-<log date="2009/11/09" time="12:55:02" file="handalign.cc" line=156 level=8/>
+<log date="2009/11/09" time="12:57:30" file="handalign.cc" line=156 level=8/>
 Calculated score lookup tables (scores stored in 1/1000 bit units, inf=987654321)
-<log date="2009/11/09" time="12:55:02" file="handalign.cc" line=173 level=7/>
+<log date="2009/11/09" time="12:57:30" file="handalign.cc" line=173 level=7/>
 Reading initial alignment
-<log date="2009/11/09" time="12:55:02" file="biosequence.cc" line=1094 level=6 tags="BIOSEQ"/>
+<log date="2009/11/09" time="12:57:30" file="biosequence.cc" line=1094 level=6 tags="BIOSEQ"/>
 Sequence_database: converting ASCII sequences to score profiles
-<log date="2009/11/09" time="12:55:02" file="phylogeny.cc" line=629 level=8/>
+<log date="2009/11/09" time="12:57:30" file="phylogeny.cc" line=629 level=8/>
 Warning: had to split/merge some nodes, to make tree strictly binary
-<log date="2009/11/09" time="12:55:02" file="rnd.cc" line=49 level=8 tags="RND"/>
+<log date="2009/11/09" time="12:57:31" file="rnd.cc" line=49 level=8 tags="RND"/>
 Random number seed = 1234567890
-<log date="2009/11/09" time="12:55:02" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
+<log date="2009/11/09" time="12:57:31" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
 Sampling sequence at internal node 'XYZ'
-<log date="2009/11/09" time="12:55:02" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="12:57:31" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 4-node transducer.
 Here are the nodes I'm sampling: WXYZ, XYZ, XY, Z.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="12:55:02" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="12:57:31" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *S(Insert(Delete))
  *W(MWait(MWait))
@@ -27,31 +27,31 @@ Eliminating the following "null" states:
  *W(MWait(DWait))
  *W(DWait(DWait))
  *I(Insert(Delete))
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=916 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=916 level=5 tags="HMMOC_ADAPTER"/>
 HMMoC adapter: attempting to load compiled-binary cache index from file '/tmp/hc'
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=942 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=942 level=5 tags="HMMOC_ADAPTER"/>
 HMMoC adapter: loaded 6 cache entries
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc42083.dat
-<log date="2009/11/09" time="12:55:02" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc42227.dat
+<log date="2009/11/09" time="12:57:31" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.1
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=683 level=10 tags="ERROR_TAG"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=683 level=10 tags="ERROR_TAG"/>
 Warning: gap of size 8 exceeds centroid band diameter!
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=688 level=10 tags="ERROR_TAG"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=688 level=10 tags="ERROR_TAG"/>
 Bumping centroid band diameter from 2 to 8; THIS WILL VIOLATE DETAILED BALANCE
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.1 /tmp/handel2hmmoc42083.dat
-<log date="2009/11/09" time="12:55:02" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.1 /tmp/handel2hmmoc42227.dat
+<log date="2009/11/09" time="12:57:31" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *S(Insert(Delete))
  *W(MWait(MWait))
@@ -59,35 +59,35 @@ Eliminating the following "null" states:
  *W(MWait(DWait))
  *W(DWait(DWait))
  *I(Insert(Delete))
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.2
-<log date="2009/11/09" time="12:55:02" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.2 /tmp/handel2hmmoc42083.dat
-<log date="2009/11/09" time="12:55:03" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.2 /tmp/handel2hmmoc42227.dat
+<log date="2009/11/09" time="12:57:31" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="12:55:03" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="12:55:03" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.3
-<log date="2009/11/09" time="12:55:03" file="hmmoc_adapter.cc" line=683 level=10 tags="ERROR_TAG"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=683 level=10 tags="ERROR_TAG"/>
 Warning: gap of size 6 exceeds centroid band diameter!
-<log date="2009/11/09" time="12:55:03" file="hmmoc_adapter.cc" line=688 level=10 tags="ERROR_TAG"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=688 level=10 tags="ERROR_TAG"/>
 Bumping centroid band diameter from 2 to 6; THIS WILL VIOLATE DETAILED BALANCE
-<log date="2009/11/09" time="12:55:03" file="hmmoc_adapter.cc" line=683 level=10 tags="ERROR_TAG"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=683 level=10 tags="ERROR_TAG"/>
 Warning: gap of size 8 exceeds centroid band diameter!
-<log date="2009/11/09" time="12:55:03" file="hmmoc_adapter.cc" line=688 level=10 tags="ERROR_TAG"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=688 level=10 tags="ERROR_TAG"/>
 Bumping centroid band diameter from 6 to 8; THIS WILL VIOLATE DETAILED BALANCE
-<log date="2009/11/09" time="12:55:03" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.3 /tmp/handel2hmmoc42083.dat
-<log date="2009/11/09" time="12:55:03" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
-Hastings ratio = 1.17057e-11; move rejected
-<log date="2009/11/09" time="12:55:03" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="12:57:31" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.3 /tmp/handel2hmmoc42227.dat
+<log date="2009/11/09" time="12:57:31" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+Hastings ratio = 1.78279e-12; move rejected
+<log date="2009/11/09" time="12:57:31" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #1: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="12:55:03" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="12:57:31" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -103,5 +103,5 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="12:55:03" file="handalign.cc" line=344 level=6/>
+<log date="2009/11/09" time="12:57:31" file="handalign.cc" line=344 level=6/>
 Sampling phase complete

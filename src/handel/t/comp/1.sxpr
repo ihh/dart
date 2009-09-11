@@ -996,6 +996,6 @@
   (27.307 1/P{[XYZ->Z]_new|[WXYZ->XYZ]_new,[XYZ->XY]_new,band60{[XYZ->Z]_old},other_branches}])
   (118.852 P{[WXYZ->XYZ]_new,[XYZ->XY]_new,[XYZ->Z]_new|other_branches})
   (-18.994 P{[WXYZ->XYZ]_old,[XYZ->XY]_old|band60{[WXYZ->XYZ]_new},band60{[XYZ->XY]_new},other_branches})
-  (-2.71 P{[XYZ->Z]_old|[WXYZ->XYZ]_old,[XYZ->XY]_old,band60{[XYZ->Z]_new},other_branches})
+  (0.005 P{[XYZ->Z]_old|[WXYZ->XYZ]_old,[XYZ->XY]_old,band60{[XYZ->Z]_new},other_branches})
   (-33.967 1/P{[WXYZ->XYZ]_old,[XYZ->XY]_old,[XYZ->Z]_old|other_branches})))
-(hastings-bits 36.314)
+(hastings-bits 39.029)
