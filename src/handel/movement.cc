@@ -698,6 +698,7 @@ void Handel_movement::dump_composition (ostream& out)
 		  const Loge prop_path_ll = NatsPMul (ppc.get_path_loglike (prop_path_map), prop_move.peeling_loglike);
 		  hastings_term.push_back (-NatsPMul (prop_path_ll, -prop_move.fwd_ll));
 
+		  /* fuckfuckfuck (debugging stuff)
 		  if (prop_path_ll > prop_move.fwd_ll)
 		    {
 		      ofstream fuck1 ("FUCK1");
@@ -716,6 +717,7 @@ void Handel_movement::dump_composition (ostream& out)
 
 		      CLOGERR << "BAD: prop_path_ll > prop_move.fwd_ll\n";
 		    }
+		  */
 
 		  samp_desc.clear();
 		  cond_desc.clear();

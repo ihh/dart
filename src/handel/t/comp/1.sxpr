@@ -848,24 +848,24 @@
   (width 60)
   (path
    ((1 1 1)(1 1 1))))
- (forward-bits 7.283)
+ (forward-bits 2.708)
 
 (forward-path
- (state ((*S(Start(Start))) (*S(Insert(Match))) (*I(Match(Delete))) (*I(Insert(Delete))) (*I(Insert(Delete))) (*I(Insert(Delete))) (*I(Insert(Delete))) (*I(Insert(Match))) (*I(Insert(Delete))) (*I(Insert(Delete))) (*I(Insert(Delete))) (*I(Delete(DWait))) (*W(DWait(DWait))) (*E(End(End)))))
- (type (start (XYZ XY) (WXYZ XYZ) (XYZ) (XYZ) (XYZ) (XYZ) (XYZ XY) (XYZ) (XYZ) (XYZ) (WXYZ) wait end))
- (path-bits 61.457)
+ (state ((*S(Start(Start))) (*I(Match(Match))) (*I(Match(Match))) (*W(MWait(MWait))) (*E(End(End)))))
+ (type (start (WXYZ XYZ XY) (WXYZ XYZ XY) wait end))
+ (path-bits 2.715)
  
   (branch (name $0:WXYZ)
    (state (*I *I))
    (type (insert insert))
    
    (branch (name WXYZ:XYZ)
-    (state (Insert Match Insert Insert Insert Insert Insert Insert Insert Insert Delete))
-    (type (insert match insert insert insert insert insert insert insert insert delete))
+    (state (Match Match))
+    (type (match match))
     
     (branch (name XYZ:XY)
-     (state (Match Delete Delete Delete Delete Delete Match Delete Delete Delete))
-     (type (match delete delete delete delete delete match delete delete delete))))))
+     (state (Match Match))
+     (type (match match))))))
 )
 
 (proposal-composition
@@ -875,11 +875,11 @@
   (bit-profile (((a 1.327) (c 6.202) (g 0.798) (t 6.201))
                 ((a 1.327) (c 6.202) (g 0.798) (t 6.201))))
   (branch (from WXYZ) (to XYZ) (name WXYZ:XYZ) (transducer WXYZ:XYZ)
-   (state (Insert Match Insert Insert Insert Insert Insert Insert Insert Insert Delete))
-   (type (insert match insert insert insert insert insert insert insert insert delete))
+   (state (Match Match))
+   (type (match match))
    (branch (from XYZ) (to XY) (name XYZ:XY) (transducer XYZ:XY)
-    (state (Match Delete Delete Delete Delete Delete Match Delete Delete Delete))
-    (type (match delete delete delete delete delete match delete delete delete))
+    (state (Match Match))
+    (type (match match))
     (bit-profile (((a 0.003) (c 9.753) (g 9.753) (t 9.753))
                   ((a 0.003) (c 9.753) (g 9.753) (t 9.753)))))
    (branch (from XYZ) (to Z) (name XYZ:Z) (transducer XYZ:Z)
@@ -895,39 +895,39 @@
   (width 60)
   (path
    ((1 1 1 1)(1 1 1 1))))
- (forward-bits 125.961)
+ (forward-bits 13.765)
 
 (forward-path
- (state ((*S(Start)) (*I(Delete)) (*I(Delete)) (*I(Delete)) (*I(Delete)) (*I(Delete)) (*I(Delete)) (*I(Match)) (*I(Insert)) (*I(Delete)) (*I(Delete)) (*I(Delete)) (*W(DWait)) (*E(End))))
- (type (start (XYZ) (XYZ) (XYZ) (XYZ) (XYZ) (XYZ) (XYZ Z) (Z) (XYZ) (XYZ) (XYZ) wait end))
- (path-bits 98.654)
+ (state ((*S(Start)) (*I(Match)) (*I(Match)) (*W(MWait)) (*E(End))))
+ (type (start (XYZ Z) (XYZ Z) wait end))
+ (path-bits 13.77)
  
   (branch (name $0:XYZ)
-   (state (*I *I *I *I *I *I *I *I *I *I))
-   (type (insert insert insert insert insert insert insert insert insert insert))
+   (state (*I *I))
+   (type (insert insert))
    
    (branch (name XYZ:Z)
-    (state (Delete Delete Delete Delete Delete Delete Match Insert Delete Delete Delete))
-    (type (delete delete delete delete delete delete match insert delete delete delete)))))
+    (state (Match Match))
+    (type (match match)))))
 )
 
 (proposal-path
- (path-bits 118.852)
+ (path-bits 33.969)
  
   (branch (name $0:WXYZ)
    (state (*I *I))
    (type (insert insert))
    
    (branch (name WXYZ:XYZ)
-    (state (Insert Match Insert Insert Insert Insert Insert Insert Insert Insert Delete))
-    (type (insert match insert insert insert insert insert insert insert insert delete))
+    (state (Match Match))
+    (type (match match))
     
     (branch (name XYZ:XY)
-     (state (Match Delete Delete Delete Delete Delete Match Delete Delete Delete))
-     (type (match delete delete delete delete delete match delete delete delete)))
+     (state (Match Match))
+     (type (match match)))
     (branch (name XYZ:Z)
-     (state (Delete Delete Delete Delete Delete Delete Match Insert Delete Delete Delete))
-     (type (delete delete delete delete delete delete match insert delete delete delete))))))
+     (state (Match Match))
+     (type (match match))))))
 
 (inverse-proposal-composition
  (branch (from $0) (to WXYZ) (name $0:WXYZ) (transducer *SINGLETON)
@@ -953,9 +953,9 @@
  (dp-band-centroid
   (width 60)
   (path
-   ((0 1 1)(1 1 0)(0 1 0)(0 1 0)(0 1 0)(0 1 0)(0 1 1)(0 1 0)(0 1 0)(0 1 0)(1 0 0))))
+   ((1 1 1)(1 1 1))))
  (old-path-bits 2.715)
-(forward-bits 21.709)
+(forward-bits 2.708)
 )
 
 (inverse-proposal-composition
@@ -986,16 +986,16 @@
  (dp-band-centroid
   (width 60)
   (path
-   ((0 1 1 0)(1 1 0 0)(0 1 0 0)(0 1 0 0)(0 1 0 0)(0 1 0 0)(0 1 1 1)(0 0 0 1)(0 1 0 0)(0 1 0 0)(0 1 0 0)(1 0 0 0))))
+   ((1 1 1 1)(1 1 1 1))))
  (old-path-bits 13.770)
 (forward-bits 13.765)
 )
 
 (hastings-term-bits (
-  (-54.174 1/P{[WXYZ->XYZ]_new,[XYZ->XY]_new|band60{[WXYZ->XYZ]_old},band60{[XYZ->XY]_old},other_branches}])
-  (27.307 1/P{[XYZ->Z]_new|[WXYZ->XYZ]_new,[XYZ->XY]_new,band60{[XYZ->Z]_old},other_branches}])
-  (118.852 P{[WXYZ->XYZ]_new,[XYZ->XY]_new,[XYZ->Z]_new|other_branches})
-  (-18.994 P{[WXYZ->XYZ]_old,[XYZ->XY]_old|band60{[WXYZ->XYZ]_new},band60{[XYZ->XY]_new},other_branches})
+  (-0.007 1/P{[WXYZ->XYZ]_new,[XYZ->XY]_new|band60{[WXYZ->XYZ]_old},band60{[XYZ->XY]_old},other_branches}])
+  (-0.005 1/P{[XYZ->Z]_new|[WXYZ->XYZ]_new,[XYZ->XY]_new,band60{[XYZ->Z]_old},other_branches}])
+  (33.969 P{[WXYZ->XYZ]_new,[XYZ->XY]_new,[XYZ->Z]_new|other_branches})
+  (0.007 P{[WXYZ->XYZ]_old,[XYZ->XY]_old|band60{[WXYZ->XYZ]_new},band60{[XYZ->XY]_new},other_branches})
   (0.005 P{[XYZ->Z]_old|[WXYZ->XYZ]_old,[XYZ->XY]_old,band60{[XYZ->Z]_new},other_branches})
   (-33.967 1/P{[WXYZ->XYZ]_old,[XYZ->XY]_old,[XYZ->Z]_old|other_branches})))
-(hastings-bits 39.029)
+(hastings-bits 0.002)
