@@ -830,12 +830,12 @@
  (profile UV)
  (branch ($0:UV)))
  (old-path-bits 0.319)
-(forward-bits 0.604)
+(forward-bits 0.317)
 
 (forward-path
  (state ((*S(Start)) (*I(Match)) (*I(Match)) (*W(MWait)) (*E(End))))
  (type (start (UV V) (UV V) wait end))
- (path-bits 0.605)
+ (path-bits 0.319)
  
   (branch (name $0:UV)
    (state (*I *I))
@@ -858,8 +858,8 @@
     (type (match match)))))
 
 (hastings-term-bits (
-  (-0.001 1/P{[UV->V]_new|other_branches}])
-  (-0.283 P{[UV->V]_old|other_branches})
+  (-0.002 1/P{[UV->V]_new|other_branches}])
+  (0.004 P{[UV->V]_old|other_branches})
   (33.967 P{[UV->V]_new|other_branches})
   (-33.967 1/P{[UV->V]_old|other_branches})))
-(hastings-bits -0)
+(hastings-bits 0.002)

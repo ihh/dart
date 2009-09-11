@@ -844,12 +844,12 @@
  (profile UVWXYZ)
  (branch ($0:UVWXYZ)))
  (old-path-bits 9.829)
-(forward-bits 13.524)
+(forward-bits 9.821)
 
 (forward-path
  (state ((*S(Start(Start))) (*I(Match(Match))) (*I(Match(Match))) (*W(MWait(MWait))) (*E(End(End)))))
  (type (start (UVWXYZ UV U) (UVWXYZ UV U) wait end))
- (path-bits 13.535)
+ (path-bits 9.829)
  
   (branch (name $0:UVWXYZ)
    (state (*I *I))
@@ -889,12 +889,12 @@
  (profile UV)
  (branch ($0:UVWXYZ(UVWXYZ:UV(UV:U)))))
  (old-path-bits 10.148)
-(forward-bits 10.146)
+(forward-bits 0.078)
 
 (forward-path
  (state ((*S(Start)) (*I(Match)) (*I(Match)) (*W(MWait)) (*E(End))))
  (type (start (UV V) (UV V) wait end))
- (path-bits 10.148)
+ (path-bits 0.078)
  
   (branch (name $0:UV)
    (state (*I *I))
@@ -924,10 +924,10 @@
      (type (match match))))))
 
 (hastings-term-bits (
-  (-0.011 1/P{[UVWXYZ->UV]_new,[UV->U]_new|other_branches}])
-  (-3.695 P{[UVWXYZ->UV]_old,[UV->U]_old|other_branches})
-  (-0.002 1/P{[UV->V]_new|[UVWXYZ->UV]_new,[UV->U]_new,other_branches}])
-  (-9.827 P{[UV->V]_old|[UVWXYZ->UV]_old,[UV->U]_old,other_branches})
+  (-0.008 1/P{[UVWXYZ->UV]_new,[UV->U]_new|other_branches}])
+  (0.008 P{[UVWXYZ->UV]_old,[UV->U]_old|other_branches})
+  (-1.28137e-15 1/P{[UV->V]_new|[UVWXYZ->UV]_new,[UV->U]_new,other_branches}])
+  (0.241 P{[UV->V]_old|[UVWXYZ->UV]_old,[UV->U]_old,other_branches})
   (23.281 P{[UVWXYZ->UV]_new,[UV->U]_new,[UV->V]_new|other_branches})
   (-33.967 1/P{[UVWXYZ->UV]_old,[UV->U]_old,[UV->V]_old|other_branches})))
 (hastings-bits -0)

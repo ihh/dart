@@ -761,8 +761,8 @@
    (type (match match))
    (sequence (a a)))
   (branch (from WXYZ) (to XYZ) (name WXYZ:XYZ) (transducer WXYZ:XYZ)
-   (old-state (Match Match))
-   (type (match match))
+   (old-state (Match Insert Delete))
+   (type (match insert delete))
    (branch (from XYZ) (to XY) (name XYZ:XY) (transducer XYZ:XY)
     (old-state (Match Match))
     (type (match match))
@@ -794,7 +794,7 @@
  (WXYZ:XYZ XYZ:XY)
  (WXYZ:XYZ XYZ:XY XYZ:Z))
 
-(old-path-bits 33.967)
+(old-path-bits 54.993)
 
 (peeled-composition
  (branch (from $0) (to WXYZ) (name $0:WXYZ) (transducer *SINGLETON)
@@ -803,8 +803,8 @@
   (bit-profile (((a 1.327) (c 6.202) (g 0.798) (t 6.201))
                 ((a 1.327) (c 6.202) (g 0.798) (t 6.201))))
   (branch (from WXYZ) (to XYZ) (name WXYZ:XYZ) (transducer WXYZ:XYZ)
-   (old-state (Match Match))
-   (type (match match))
+   (old-state (Match Insert Delete))
+   (type (match insert delete))
    (branch (from XYZ) (to XY) (name XYZ:XY) (transducer XYZ:XY)
     (old-state (Match Match))
     (type (match match))
@@ -847,13 +847,13 @@
  (dp-band-centroid
   (width 60)
   (path
-   ((1 1 1)(1 1 1))))
- (forward-bits 5.344)
+   ((1 1 1)(0 1 1)(1 0 0))))
+ (forward-bits 2.708)
 
 (forward-path
  (state ((*S(Start(Start))) (*I(Match(Match))) (*I(Match(Match))) (*W(MWait(MWait))) (*E(End(End)))))
  (type (start (WXYZ XYZ XY) (WXYZ XYZ XY) wait end))
- (path-bits 5.349)
+ (path-bits 2.715)
  
   (branch (name $0:WXYZ)
    (state (*I *I))
@@ -894,25 +894,25 @@
  (dp-band-centroid
   (width 60)
   (path
-   ((1 1 1 1)(1 1 1 1))))
- (forward-bits 13.765)
+   ((1 1 1 1)(0 1 1 1)(1 0 0 0))))
+ (forward-bits 9.170)
 
 (forward-path
- (state ((*S(Start)) (*I(Match)) (*I(Match)) (*W(MWait)) (*E(End))))
- (type (start (XYZ Z) (XYZ Z) wait end))
- (path-bits 13.77)
+ (state ((*S(Start)) (*I(Match)) (*I(Insert)) (*I(Delete)) (*W(DWait)) (*E(End))))
+ (type (start (XYZ Z) (Z) (XYZ) wait end))
+ (path-bits 25.285)
  
   (branch (name $0:XYZ)
    (state (*I *I))
    (type (insert insert))
    
    (branch (name XYZ:Z)
-    (state (Match Match))
-    (type (match match)))))
+    (state (Match Insert Delete))
+    (type (match insert delete)))))
 )
 
 (proposal-path
- (path-bits 33.969)
+ (path-bits 48.057)
  
   (branch (name $0:WXYZ)
    (state (*I *I))
@@ -926,8 +926,8 @@
      (state (Match Match))
      (type (match match)))
     (branch (name XYZ:Z)
-     (state (Match Match))
-     (type (match match))))))
+     (state (Match Insert Delete))
+     (type (match insert delete))))))
 
 (inverse-proposal-composition
  (branch (from $0) (to WXYZ) (name $0:WXYZ) (transducer *SINGLETON)
@@ -936,8 +936,8 @@
   (bit-profile (((a 1.327) (c 6.202) (g 0.798) (t 6.201))
                 ((a 1.327) (c 6.202) (g 0.798) (t 6.201))))
   (branch (from WXYZ) (to XYZ) (name WXYZ:XYZ) (transducer WXYZ:XYZ)
-   (old-state (Match Match))
-   (type (match match))
+   (old-state (Match Insert Delete))
+   (type (match insert delete))
    (branch (from XYZ) (to XY) (name XYZ:XY) (transducer XYZ:XY)
     (old-state (Match Match))
     (type (match match))
@@ -954,8 +954,8 @@
   (width 60)
   (path
    ((1 1 1)(1 1 1))))
- (old-path-bits 2.715)
-(forward-bits 5.344)
+ (old-path-bits 23.615)
+(forward-bits 2.708)
 )
 
 (inverse-proposal-composition
@@ -965,8 +965,8 @@
   (bit-profile (((a 1.327) (c 6.202) (g 0.798) (t 6.201))
                 ((a 1.327) (c 6.202) (g 0.798) (t 6.201))))
   (branch (from WXYZ) (to XYZ) (name WXYZ:XYZ) (transducer WXYZ:XYZ)
-   (state (Match Match))
-   (type (match match))
+   (state (Match Insert Delete))
+   (type (match insert delete))
    (branch (from XYZ) (to XY) (name XYZ:XY) (transducer XYZ:XY)
     (state (Match Match))
     (type (match match))
@@ -986,16 +986,16 @@
  (dp-band-centroid
   (width 60)
   (path
-   ((1 1 1 1)(1 1 1 1))))
- (old-path-bits 13.770)
-(forward-bits 13.765)
+   ((1 1 1 1)(0 0 0 1)(1 1 1 0))))
+ (old-path-bits 34.795)
+(forward-bits 33.569)
 )
 
 (hastings-term-bits (
-  (-0.005 1/P{[WXYZ->XYZ]_new,[XYZ->XY]_new|band60{[WXYZ->XYZ]_old},band60{[XYZ->XY]_old},other_branches}])
-  (-0.005 1/P{[XYZ->Z]_new|[WXYZ->XYZ]_new,[XYZ->XY]_new,band60{[XYZ->Z]_old},other_branches}])
-  (33.969 P{[WXYZ->XYZ]_new,[XYZ->XY]_new,[XYZ->Z]_new|other_branches})
-  (-2.629 P{[WXYZ->XYZ]_old,[XYZ->XY]_old|band60{[WXYZ->XYZ]_new},band60{[XYZ->XY]_new},other_branches})
-  (-2.71 P{[XYZ->Z]_old|[WXYZ->XYZ]_old,[XYZ->XY]_old,band60{[XYZ->Z]_new},other_branches})
-  (-33.967 1/P{[WXYZ->XYZ]_old,[XYZ->XY]_old,[XYZ->Z]_old|other_branches})))
+  (-0.007 1/P{[WXYZ->XYZ]_new,[XYZ->XY]_new|band60{[WXYZ->XYZ]_old},band60{[XYZ->XY]_old},other_branches}])
+  (-16.115 1/P{[XYZ->Z]_new|[WXYZ->XYZ]_new,[XYZ->XY]_new,band60{[XYZ->Z]_old},other_branches}])
+  (48.057 P{[WXYZ->XYZ]_new,[XYZ->XY]_new,[XYZ->Z]_new|other_branches})
+  (20.907 P{[WXYZ->XYZ]_old,[XYZ->XY]_old|band60{[WXYZ->XYZ]_new},band60{[XYZ->XY]_new},other_branches})
+  (-22.389 P{[XYZ->Z]_old|[WXYZ->XYZ]_old,[XYZ->XY]_old,band60{[XYZ->Z]_new},other_branches})
+  (-54.993 1/P{[WXYZ->XYZ]_old,[XYZ->XY]_old,[XYZ->Z]_old|other_branches})))
 (hastings-bits -0)

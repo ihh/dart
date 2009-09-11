@@ -1,45 +1,43 @@
 
-<log date="2009/11/09" time="08:43:44" file="opts_list.cc" line=368 level=5 tags="OPTS"/>
+<log date="2009/11/09" time="11:58:02" file="opts_list.cc" line=368 level=5 tags="OPTS"/>
 Parsed command line: handalign tiny.stk -ff 0 -ts 10 -c nocb -rs -ha -hk -hc /tmp/hc -log 5 -logcopy nocb/LOG
-<log date="2009/11/09" time="08:43:44" file="handalign.cc" line=156 level=8/>
+<log date="2009/11/09" time="11:58:02" file="handalign.cc" line=156 level=8/>
 Calculated score lookup tables (scores stored in 1/1000 bit units, inf=987654321)
-<log date="2009/11/09" time="08:43:44" file="handalign.cc" line=173 level=7/>
+<log date="2009/11/09" time="11:58:02" file="handalign.cc" line=173 level=7/>
 Reading initial alignment
-<log date="2009/11/09" time="08:43:44" file="biosequence.cc" line=1094 level=6 tags="BIOSEQ"/>
+<log date="2009/11/09" time="11:58:02" file="biosequence.cc" line=1094 level=6 tags="BIOSEQ"/>
 Sequence_database: converting ASCII sequences to score profiles
-<log date="2009/11/09" time="08:43:44" file="phylogeny.cc" line=629 level=8/>
+<log date="2009/11/09" time="11:58:02" file="phylogeny.cc" line=629 level=8/>
 Warning: had to split/merge some nodes, to make tree strictly binary
-<log date="2009/11/09" time="08:43:44" file="rnd.cc" line=49 level=8 tags="RND"/>
+<log date="2009/11/09" time="11:58:03" file="rnd.cc" line=49 level=8 tags="RND"/>
 Random number seed = 1234567890
-<log date="2009/11/09" time="08:43:44" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
 Sampling alignment of branch 'WXYZ'--'XYZ', kT=1
-<log date="2009/11/09" time="08:43:44" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:03" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 2-node transducer.
 Here are the nodes I'm sampling: WXYZ, XYZ.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:43:44" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:03" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="08:43:44" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:43:44" file="hmmoc_adapter.cc" line=916 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=916 level=5 tags="HMMOC_ADAPTER"/>
 HMMoC adapter: attempting to load compiled-binary cache index from file '/tmp/hc'
-<log date="2009/11/09" time="08:43:44" file="hmmoc_adapter.cc" line=942 level=5 tags="HMMOC_ADAPTER"/>
-HMMoC adapter: loaded 6 cache entries
-<log date="2009/11/09" time="08:43:44" file="hmmoc_adapter.cc" line=753 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC as follows: /usr/local/hmmoc/bin/hmmoc /tmp/handel2hmmoc.xml
-<log date="2009/11/09" time="08:43:45" file="hmmoc_adapter.cc" line=782 level=5 tags="HMMOC_ADAPTER"/>
-Running C++ compiler as follows: /usr/bin/g++ -O3 -ffast-math -finline-limit=1000 -lstdc++ -I/usr/local/hmmoc/include /usr/local/hmmoc/include/algebras.cc -o /tmp/handel2hmmoc.0 /tmp/handel2hmmoc.cc
-<log date="2009/11/09" time="08:43:51" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:43:51" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
-Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:43:51" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=942 level=5 tags="HMMOC_ADAPTER"/>
+HMMoC adapter: loaded 8 cache entries
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:03" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+Hastings ratio = 0.998615; move accepted
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #1: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:43:51" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -55,29 +53,29 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:43:51" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
 Sampling alignment of branch 'UVWXYZ'--'UV', kT=1
-<log date="2009/11/09" time="08:43:51" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:03" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 2-node transducer.
 Here are the nodes I'm sampling: UVWXYZ, UV.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:43:52" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:03" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="08:43:52" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:43:52" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="08:43:52" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:43:52" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:03" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
 Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:43:52" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #2: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:43:52" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -93,29 +91,29 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:43:52" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
 Sampling alignment of branch 'UV'--'U', kT=1
-<log date="2009/11/09" time="08:43:52" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:03" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 2-node transducer.
 Here are the nodes I'm sampling: UV, U.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:43:52" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:03" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="08:43:52" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:43:52" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="08:43:52" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:43:52" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
-Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:43:52" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:03" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:03" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+Hastings ratio = 0.998615; move accepted
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #3: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:43:52" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -131,15 +129,15 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:43:52" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
+<log date="2009/11/09" time="11:58:03" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
 Sampling sequence at internal node 'XYZ'
-<log date="2009/11/09" time="08:43:52" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:03" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 4-node transducer.
 Here are the nodes I'm sampling: WXYZ, XYZ, XY, Z.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:43:52" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:04" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *S(Insert(Delete))
  *W(MWait(MWait))
@@ -147,29 +145,27 @@ Eliminating the following "null" states:
  *W(MWait(DWait))
  *W(DWait(DWait))
  *I(Insert(Delete))
-<log date="2009/11/09" time="08:43:52" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:04" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:43:52" file="hmmoc_adapter.cc" line=753 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC as follows: /usr/local/hmmoc/bin/hmmoc /tmp/handel2hmmoc.xml
-<log date="2009/11/09" time="08:43:53" file="hmmoc_adapter.cc" line=782 level=5 tags="HMMOC_ADAPTER"/>
-Running C++ compiler as follows: /usr/bin/g++ -O3 -ffast-math -finline-limit=1000 -lstdc++ -I/usr/local/hmmoc/include /usr/local/hmmoc/include/algebras.cc -o /tmp/handel2hmmoc.1 /tmp/handel2hmmoc.cc
-<log date="2009/11/09" time="08:44:13" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.1 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:44:13" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:04" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.1
+<log date="2009/11/09" time="11:58:04" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.1 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:04" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="08:44:13" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:04" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:44:13" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:04" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="08:44:13" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:44:13" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:04" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:04" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
 Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:44:13" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:04" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #4: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:44:13" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:04" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -185,38 +181,38 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:44:13" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
+<log date="2009/11/09" time="11:58:04" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
 Sampling sequence at internal node 'UVWXYZ'
-<log date="2009/11/09" time="08:44:13" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:04" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 3-node transducer.
 Here are the nodes I'm sampling: UVWXYZ, UV, WXYZ.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:44:13" file="transducer.h" line=1118 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:04" file="transducer.h" line=1118 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Silently dropping the following states:
  Start(Insert,DWait)
-<log date="2009/11/09" time="08:44:13" file="transducer.h" line=1118 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:04" file="transducer.h" line=1118 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Silently dropping the following states:
  Start(Insert,DWait)
-<log date="2009/11/09" time="08:44:13" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:04" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  Wait(MWait,MWait)
  Wait(DWait,MWait)
  Wait(MWait,DWait)
  Wait(DWait,DWait)
  Emit(Delete,Delete)
-<log date="2009/11/09" time="08:44:13" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:04" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:44:13" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:04" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.4
-<log date="2009/11/09" time="08:44:13" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.4 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:44:13" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:04" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.4 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:04" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
 Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:44:13" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:04" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #5: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:44:13" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:04" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -232,29 +228,29 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:44:13" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
+<log date="2009/11/09" time="11:58:04" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
 Sampling alignment of branch 'XYZ'--'Z', kT=1
-<log date="2009/11/09" time="08:44:13" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:04" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 2-node transducer.
 Here are the nodes I'm sampling: XYZ, Z.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:44:14" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:05" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="08:44:14" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:05" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:44:14" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:05" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="08:44:14" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:44:14" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:05" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:05" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
 Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:44:14" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:05" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #6: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:44:14" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:05" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -270,29 +266,29 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:44:14" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
+<log date="2009/11/09" time="11:58:05" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
 Sampling alignment of branch 'UV'--'V', kT=1
-<log date="2009/11/09" time="08:44:14" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:05" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 2-node transducer.
 Here are the nodes I'm sampling: UV, V.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:44:14" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:05" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="08:44:14" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:05" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:44:14" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:05" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="08:44:14" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:44:14" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
-Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:44:14" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:05" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:05" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+Hastings ratio = 0.998615; move accepted
+<log date="2009/11/09" time="11:58:05" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #7: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:44:14" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:05" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -308,29 +304,29 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:44:14" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
+<log date="2009/11/09" time="11:58:05" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
 Sampling alignment of branch 'XY'--'X', kT=1
-<log date="2009/11/09" time="08:44:14" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:05" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 2-node transducer.
 Here are the nodes I'm sampling: XY, X.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:44:14" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:05" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="08:44:14" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:05" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:44:14" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:05" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="08:44:14" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:44:14" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
-Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:44:14" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:05" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:05" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+Hastings ratio = 0.997231; move accepted
+<log date="2009/11/09" time="11:58:05" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #8: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:44:14" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:05" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -346,15 +342,15 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:44:14" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
+<log date="2009/11/09" time="11:58:05" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
 Sampling sequence at internal node 'UV'
-<log date="2009/11/09" time="08:44:14" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:05" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 4-node transducer.
 Here are the nodes I'm sampling: UVWXYZ, UV, U, V.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:44:15" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:06" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *S(Insert(Delete))
  *W(MWait(MWait))
@@ -362,27 +358,27 @@ Eliminating the following "null" states:
  *W(MWait(DWait))
  *W(DWait(DWait))
  *I(Insert(Delete))
-<log date="2009/11/09" time="08:44:15" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:06" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:44:15" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:06" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.1
-<log date="2009/11/09" time="08:44:15" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.1 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:44:15" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:06" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.1 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:06" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="08:44:15" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:06" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:44:15" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:06" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="08:44:15" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:44:15" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:06" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:06" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
 Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:44:15" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:06" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #9: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:44:15" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:06" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -398,29 +394,29 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:44:15" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
+<log date="2009/11/09" time="11:58:06" file="handelbase.cc" line=126 level=5 tags="MCMC SAMPLE_BRANCH"/>
 Sampling alignment of branch 'XYZ'--'XY', kT=1
-<log date="2009/11/09" time="08:44:15" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:06" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 2-node transducer.
 Here are the nodes I'm sampling: XYZ, XY.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="08:44:15" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="11:58:06" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="08:44:15" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:06" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="08:44:15" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="11:58:06" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
 Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="08:44:15" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc38644.dat
-<log date="2009/11/09" time="08:44:15" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="11:58:06" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc40698.dat
+<log date="2009/11/09" time="11:58:06" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
 Hastings ratio = 1; move accepted
-<log date="2009/11/09" time="08:44:15" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="11:58:06" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #10: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="08:44:15" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="11:58:06" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -436,5 +432,5 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="08:44:15" file="handalign.cc" line=344 level=6/>
+<log date="2009/11/09" time="11:58:06" file="handalign.cc" line=344 level=6/>
 Sampling phase complete

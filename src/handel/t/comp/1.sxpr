@@ -836,32 +836,32 @@
   (width 60)
   (path
    ((1 1)(1 1))))
- (forward-bits 4.772)
+ (forward-bits 3.348)
 
 (forward-path
- (state ((*S(Start)) (*I(Match)) (*I(Match)) (*W(MWait)) (*E(End))))
- (type (start (WXYZ XYZ) (WXYZ XYZ) wait end))
- (path-bits 4.776)
+ (state ((*S(Start)) (*I(Match)) (*I(Insert)) (*I(Delete)) (*W(DWait)) (*E(End))))
+ (type (start (WXYZ XYZ) (XYZ) (WXYZ) wait end))
+ (path-bits 23.487)
  
   (branch (name $0:WXYZ)
    (state (*I *I))
    (type (insert insert))
    
    (branch (name WXYZ:XYZ)
-    (state (Match Match))
-    (type (match match)))))
+    (state (Match Insert Delete))
+    (type (match insert delete)))))
 )
 
 (proposal-path
- (path-bits 33.969)
+ (path-bits 54.994)
  
   (branch (name $0:WXYZ)
    (state (*I *I))
    (type (insert insert))
    
    (branch (name WXYZ:XYZ)
-    (state (Match Match))
-    (type (match match)))))
+    (state (Match Insert Delete))
+    (type (match insert delete)))))
 
 (inverse-proposal-composition
  (branch (from $0) (to WXYZ) (name $0:WXYZ) (transducer *SINGLETON)
@@ -883,14 +883,14 @@
  (dp-band-centroid
   (width 60)
   (path
-   ((1 1)(1 1))))
+   ((1 1)(0 1)(1 0))))
  (old-path-bits 2.462)
-(forward-bits 4.772)
+(forward-bits 2.462)
 )
 
 (hastings-term-bits (
-  (-0.004 1/P{[WXYZ->XYZ]_new|band60{[WXYZ->XYZ]_old},other_branches}])
-  (33.969 P{[WXYZ->XYZ]_new|other_branches})
-  (-2.31 P{[WXYZ->XYZ]_old|band60{[WXYZ->XYZ]_new},other_branches})
+  (-20.139 1/P{[WXYZ->XYZ]_new|band60{[WXYZ->XYZ]_old},other_branches}])
+  (54.994 P{[WXYZ->XYZ]_new|other_branches})
+  (-0 P{[WXYZ->XYZ]_old|band60{[WXYZ->XYZ]_new},other_branches})
   (-33.967 1/P{[WXYZ->XYZ]_old|other_branches})))
-(hastings-bits -0)
+(hastings-bits 0.888)
