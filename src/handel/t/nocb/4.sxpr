@@ -895,12 +895,12 @@
  (profile XYZ)
  (branch ($0:WXYZ(WXYZ:XYZ(XYZ:XY)))))
  (old-path-bits 13.770)
-(forward-bits 11.316)
+(forward-bits 13.765)
 
 (forward-path
  (state ((*S(Start)) (*I(Match)) (*I(Match)) (*W(MWait)) (*E(End))))
  (type (start (XYZ Z) (XYZ Z) wait end))
- (path-bits 11.322)
+ (path-bits 13.77)
  
   (branch (name $0:XYZ)
    (state (*I *I))
@@ -932,8 +932,8 @@
 (hastings-term-bits (
   (-0.007 1/P{[WXYZ->XYZ]_new,[XYZ->XY]_new|other_branches}])
   (0.007 P{[WXYZ->XYZ]_old,[XYZ->XY]_old|other_branches})
-  (-0.006 1/P{[XYZ->Z]_new|[WXYZ->XYZ]_new,[XYZ->XY]_new,other_branches}])
-  (-0.261 P{[XYZ->Z]_old|[WXYZ->XYZ]_old,[XYZ->XY]_old,other_branches})
+  (-0.005 1/P{[XYZ->Z]_new|[WXYZ->XYZ]_new,[XYZ->XY]_new,other_branches}])
+  (-2.71 P{[XYZ->Z]_old|[WXYZ->XYZ]_old,[XYZ->XY]_old,other_branches})
   (33.969 P{[WXYZ->XYZ]_new,[XYZ->XY]_new,[XYZ->Z]_new|other_branches})
   (-33.967 1/P{[WXYZ->XYZ]_old,[XYZ->XY]_old,[XYZ->Z]_old|other_branches})))
 (hastings-bits -0)

@@ -187,14 +187,7 @@ void Transducer_peeler::peel (const Transducer_tree_emission& emit, double weigh
 
   // pre-fill G_matrix with zeroes
   for (int n = 0; n < (int) emit.node_scores.size(); ++n)
-    if (emit.node_scores[n])
-      {
-	fill (G_matrix[n].begin(), G_matrix[n].end(), -InfinityScore);
-	for_const_contents (Symbol_score_map, *emit.node_scores[n], sym_sc)
-	  G_matrix[n][sym_sc->first] = sym_sc->second;
-      }
-    else
-      fill (G_matrix[n].begin(), G_matrix[n].end(), 0);
+    fill (G_matrix[n].begin(), G_matrix[n].end(), 0);
 
   // initialize G_matrix at inserter [-->ysym]
   Pair_transducer_scores& itrans = branch_transducer[emit.inserter];
@@ -222,15 +215,24 @@ void Transducer_peeler::peel (const Transducer_tree_emission& emit, double weigh
       Pair_transducer_counts* btc = branch_trans_counts[*n];
 
       vector<Score> branch_sc (alphabet_size, -InfinityScore);
+      const Symbol_score_map* parent_node_scores = emit.node_scores[p];
       for (int psym = 0; psym < alphabet_size; ++psym)
 	{
 	  // Take product of G_matrix and E_matrix:
-	  // GE[psym] = G[parent][psym] \prod_{siblings} E[sibling][psym]
+	  // GE[psym] = G[parent][psym] (\prod_{siblings} E[sibling][psym]) * emit.node_scores[parent][psym]
 	  // = parent_sc
 	  Score parent_sc = G_matrix[p][psym];
 	  for_const_contents (vector<ENode>, siblings, s)
 	    if (*s != *n)
 	      ScorePMulAcc (parent_sc, E_matrix[*s][psym]);
+	  if (parent_node_scores)
+	    {
+	      const Symbol_score_map::const_iterator psym_iter = parent_node_scores->find (psym);
+	      if (psym_iter != parent_node_scores->end())
+		ScorePMulAcc (parent_sc, psym_iter->second);
+	      else
+		parent_sc = -InfinityScore;
+	    }
 
 	  // accumulate GE[psym]*match[psym->nsym] messages in G_matrix[nsym]
 	  for (int nsym = 0; nsym < alphabet_size; ++nsym)

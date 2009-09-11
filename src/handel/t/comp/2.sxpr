@@ -895,12 +895,12 @@
   (width 60)
   (path
    ((1 1 1 1)(0 1 1 1)(1 0 0 0))))
- (forward-bits 9.170)
+ (forward-bits 11.873)
 
 (forward-path
  (state ((*S(Start)) (*I(Match)) (*I(Insert)) (*I(Delete)) (*W(DWait)) (*E(End))))
  (type (start (XYZ Z) (Z) (XYZ) wait end))
- (path-bits 25.285)
+ (path-bits 27.859)
  
   (branch (name $0:XYZ)
    (state (*I *I))
@@ -988,14 +988,14 @@
   (path
    ((1 1 1 1)(0 0 0 1)(1 1 1 0))))
  (old-path-bits 34.795)
-(forward-bits 33.569)
+(forward-bits 34.793)
 )
 
 (hastings-term-bits (
   (-0.007 1/P{[WXYZ->XYZ]_new,[XYZ->XY]_new|band60{[WXYZ->XYZ]_old},band60{[XYZ->XY]_old},other_branches}])
-  (-16.115 1/P{[XYZ->Z]_new|[WXYZ->XYZ]_new,[XYZ->XY]_new,band60{[XYZ->Z]_old},other_branches}])
+  (-15.986 1/P{[XYZ->Z]_new|[WXYZ->XYZ]_new,[XYZ->XY]_new,band60{[XYZ->Z]_old},other_branches}])
   (48.057 P{[WXYZ->XYZ]_new,[XYZ->XY]_new,[XYZ->Z]_new|other_branches})
   (20.907 P{[WXYZ->XYZ]_old,[XYZ->XY]_old|band60{[WXYZ->XYZ]_new},band60{[XYZ->XY]_new},other_branches})
-  (-22.389 P{[XYZ->Z]_old|[WXYZ->XYZ]_old,[XYZ->XY]_old,band60{[XYZ->Z]_new},other_branches})
+  (-23.613 P{[XYZ->Z]_old|[WXYZ->XYZ]_old,[XYZ->XY]_old,band60{[XYZ->Z]_new},other_branches})
   (-54.993 1/P{[WXYZ->XYZ]_old,[XYZ->XY]_old,[XYZ->Z]_old|other_branches})))
 (hastings-bits -0)
