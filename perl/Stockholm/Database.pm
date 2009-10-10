@@ -44,13 +44,14 @@ Creates an empty Stockholm::Database object.
 sub new {
     my ($class) = @_;
     my $self = [];
-    bless $self, $class;
+    bless ($self, ref($class) ? $class : ref($class));
     return $self;
 }
 
 =head2 align_callback
 
-    Stockholm::Database->align_callback (sub
+    Stockholm::Database->align_callback ("RfamSeedAlignments.stock",
+    				         sub
 					 {
 					     my $stock = shift;  # Stockholm object
 					     # ...do something with the alignment...

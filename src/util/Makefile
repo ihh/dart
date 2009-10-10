@@ -1,5 +1,8 @@
 # Requires GNU Make
 
+logtags.h:
+	perl make-logtags.pl >$@
+
 TESTS      = testpiper testcatch testsqrt testlogprob
 TARGETS    = $(TESTS)
 DIRNAME    = util

@@ -1,4 +1,0 @@
-all:
-	cd src/newmat; make
-	cd src/randlib; make
-	cd src/kimono; make dep kimono

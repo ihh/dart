@@ -1,6 +1,5 @@
 # All Targets
 # NB indiegram is not included in the target list by default, since it takes forever to compile
-# empath & kimono are also no longer included, since they are rarely used
 all: stemloc xrate xgram xfold xprot simgram handel evoldoer psw weighbor utils
 	@echo All targets built
 
@@ -68,26 +67,14 @@ test:
 	cd $(SRCDIR)/scfg; $(MAKE) $(RELEASE) test
 
 # stemloc: multiple alignment of RNA sequences
-# the default (pseudo-stemloc) is commented out while I fix the bifurcation iterators -- IH, 12/13/06
-# StemLoc Stemloc stemloc: pseudovec-bifurc-stemloc
-StemLoc Stemloc stemloc: explicit-bifurc-stemloc
-
-# pseudo-stemloc
-# Use bifurcation "pseudovector" iterators (slimmest build)
-# These are experimental and are known not to work. Recommended that you avoid them.
-pseudovec-bifurc-stemloc:
-	cd $(SRCDIR)/stemloc; $(MAKE) -k $(RELEASE) pseudovec_bifurc dep stemloc
-
-# explicit-bifurc-stemloc
-# Explicitly enumerate bifurcations in fold envelope (faster, but uses O(L^3) space)
-explicit-bifurc-stemloc:
-	cd $(SRCDIR)/stemloc; $(MAKE) -k $(RELEASE) explicit_bifurc dep stemloc
+StemLoc Stemloc stemloc:
+	cd $(SRCDIR)/stemloc; $(MAKE) -k $(RELEASE) dep stemloc
 
 # dense-stemloc
 # Use dense(faster,fatter) rather than sparse(slower,slimmer) DP matrices for Pair SCFGs
 # Also uses explicit enumeration of bifurcations (see above)
 dense-stemloc:
-	cd $(SRCDIR)/stemloc; $(MAKE) -k $(RELEASE) alloc_dense explicit_bifurc dep stemloc
+	cd $(SRCDIR)/stemloc; $(MAKE) -k $(RELEASE) alloc_dense dep stemloc
 
 
 # evoldoer: pairwise statistical alignment of RNA sequences
@@ -103,15 +90,6 @@ indiegram:
 # simgram: generate simulated sample alignments from xrate grammars
 xgram xfold xprot simgram:
 	cd $(SRCDIR)/ecfg; $(MAKE) -k $(RELEASE) dep $@
-
-# Cis-regulatory motif-finding programs
-# kimono: microarray clustering and motif-finding
-Kimono kimono:
-	cd $(SRCDIR)/kimono; $(MAKE) -k $(RELEASE) dep kimono kmeans
-
-# empath: motif-finding
-Empath empath:
-	cd $(SRCDIR)/empath; $(MAKE) -k $(RELEASE) dep empath
 
 # Probabilistic Smith-Waterman (PSW) implementations
 psw: ppsw dpsw
