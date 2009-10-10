@@ -1691,7 +1691,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 #AC_CONFIG_SRCDIR([misc/stl_vector.h])
-ac_config_headers="$ac_config_headers config.h"
+ac_config_headers="$ac_config_headers src/config.h"
 
 
 # Checks for programs.
@@ -5786,7 +5786,6 @@ done
 
 ac_config_files="$ac_config_files Makefile src/Weighbor/Makefile src/amap/Makefile src/ecfg/Makefile src/evoldoer/Makefile src/handel/Makefile src/hmm/Makefile src/hsm/Makefile src/indiegram/Makefile src/irrev/Makefile src/newmat/Makefile src/psw/Makefile src/randlib/Makefile src/scfg/Makefile src/seq/Makefile src/stemloc/Makefile src/telegraph/Makefile src/tkf/Makefile src/tree/Makefile src/util/Makefile"
 
-#AC_CONFIG_SUBDIRS([data/phylocomposer])
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -6339,7 +6338,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
+    "src/config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Weighbor/Makefile") CONFIG_FILES="$CONFIG_FILES src/Weighbor/Makefile" ;;
     "src/amap/Makefile") CONFIG_FILES="$CONFIG_FILES src/amap/Makefile" ;;

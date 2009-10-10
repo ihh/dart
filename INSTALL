@@ -3,6 +3,7 @@ INSTALLATION
 
 Type the following...
 
+	./configure
 	make all
 
 ...to make all targets.
