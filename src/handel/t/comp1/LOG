@@ -1,25 +1,25 @@
 
-<log date="2009/11/09" time="14:09:17" file="opts_list.cc" line=368 level=5 tags="OPTS"/>
-Parsed command line: handalign tiny.stk -node -c nocb -rs -ha -hk -hc /tmp/hc-nocb -log 5 -logcopy nocb/LOG
-<log date="2009/11/09" time="14:09:17" file="handalign.cc" line=156 level=8/>
+<log date="2009/11/09" time="14:12:10" file="opts_list.cc" line=368 level=5 tags="OPTS"/>
+Parsed command line: handalign tiny.stk -node -c comp1 -rs -ha -hk -hc /tmp/hc-comp -log 5 -logcopy comp1/LOG -cb
+<log date="2009/11/09" time="14:12:10" file="handalign.cc" line=156 level=8/>
 Calculated score lookup tables (scores stored in 1/1000 bit units, inf=987654321)
-<log date="2009/11/09" time="14:09:17" file="handalign.cc" line=173 level=7/>
+<log date="2009/11/09" time="14:12:10" file="handalign.cc" line=173 level=7/>
 Reading initial alignment
-<log date="2009/11/09" time="14:09:17" file="biosequence.cc" line=1094 level=6 tags="BIOSEQ"/>
+<log date="2009/11/09" time="14:12:10" file="biosequence.cc" line=1094 level=6 tags="BIOSEQ"/>
 Sequence_database: converting ASCII sequences to score profiles
-<log date="2009/11/09" time="14:09:17" file="phylogeny.cc" line=629 level=8/>
+<log date="2009/11/09" time="14:12:10" file="phylogeny.cc" line=629 level=8/>
 Warning: had to split/merge some nodes, to make tree strictly binary
-<log date="2009/11/09" time="14:09:17" file="rnd.cc" line=49 level=8 tags="RND"/>
+<log date="2009/11/09" time="14:12:10" file="rnd.cc" line=49 level=8 tags="RND"/>
 Random number seed = 1234567890
-<log date="2009/11/09" time="14:09:17" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
+<log date="2009/11/09" time="14:12:10" file="handelbase.cc" line=80 level=5 tags="MCMC SAMPLE_NODE"/>
 Sampling sequence at internal node 'XYZ'
-<log date="2009/11/09" time="14:09:17" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="14:12:10" file="alitrans.cc" line=78 level=6 tags="HANDEL"/>
 Sampling a 4-node transducer.
 Here are the nodes I'm sampling: WXYZ, XYZ, XY, Z.
 Here's the tree I'm using:
 ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
 
-<log date="2009/11/09" time="14:09:17" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="14:12:11" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *S(Insert(Delete))
  *W(MWait(MWait))
@@ -27,17 +27,19 @@ Eliminating the following "null" states:
  *W(MWait(DWait))
  *W(DWait(DWait))
  *I(Insert(Delete))
-<log date="2009/11/09" time="14:09:17" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="14:12:11" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="14:09:17" file="hmmoc_adapter.cc" line=916 level=5 tags="HMMOC_ADAPTER"/>
-HMMoC adapter: attempting to load compiled-binary cache index from file '/tmp/hc-nocb'
-<log date="2009/11/09" time="14:09:17" file="hmmoc_adapter.cc" line=942 level=5 tags="HMMOC_ADAPTER"/>
-HMMoC adapter: loaded 2 cache entries
-<log date="2009/11/09" time="14:09:17" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
-Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.0
-<log date="2009/11/09" time="14:09:17" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc44552.dat
-<log date="2009/11/09" time="14:09:17" file="movement.cc" line=666 level=10 tags="ERROR_TAG"/>
+<log date="2009/11/09" time="14:12:11" file="hmmoc_adapter.cc" line=916 level=5 tags="HMMOC_ADAPTER"/>
+HMMoC adapter: attempting to load compiled-binary cache index from file '/tmp/hc-comp'
+<log date="2009/11/09" time="14:12:11" file="hmmoc_adapter.cc" line=946 level=5 tags="HMMOC_ADAPTER"/>
+HMMoC adapter: cache index file '/tmp/hc-comp' not found -- soldiering on
+<log date="2009/11/09" time="14:12:11" file="hmmoc_adapter.cc" line=753 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC as follows: /usr/local/hmmoc/bin/hmmoc /tmp/handel2hmmoc.xml
+<log date="2009/11/09" time="14:12:12" file="hmmoc_adapter.cc" line=782 level=5 tags="HMMOC_ADAPTER"/>
+Running C++ compiler as follows: /usr/bin/g++ -O3 -ffast-math -finline-limit=1000 -lstdc++ -I/usr/local/hmmoc/include /usr/local/hmmoc/include/algebras.cc -o /tmp/handel2hmmoc.0 /tmp/handel2hmmoc.cc
+<log date="2009/11/09" time="14:12:29" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.0 /tmp/handel2hmmoc44604.dat
+<log date="2009/11/09" time="14:12:29" file="movement.cc" line=666 level=10 tags="ERROR_TAG"/>
 prop_comp_output:
 (token (a c g t))
 
@@ -492,7 +494,6 @@ prop_comp_output:
  (transition (from MWait) (to Delete) (bit-value 9.829) (label XY:MWait>Delete))
 
  (transition (from Match) (to MWait) (bit-value 0.001) (label XY:Match>MWait))
-<log time="14:09:18"/>
  (transition (from Match) (to Insert) (bit-value 9.913) (label XY:Match>Insert))
 
  (transition (from DWait) (to End) (bit-value -0) (label XY:DWait>End))
@@ -512,11 +513,7 @@ prop_comp_output:
  (bit-profile (((a 1.327) (c 6.202) (g 0.798) (t 6.201))
                ((a 1.327) (c 6.202) (g 0.798) (t 6.201))))
  (branch (from WXYZ) (to XYZ) (name WXYZ:XYZ) (transducer WXYZ:XYZ)
-  (old-state (Match Match))
-  (type (match match))
   (branch (from XYZ) (to XY) (name XYZ:XY) (transducer XYZ:XY)
-   (old-state (Match Match))
-   (type (match match))
    (bit-profile (((a 0.003) (c 9.753) (g 9.753) (t 9.753))
                  ((a 0.003) (c 9.753) (g 9.753) (t 9.753)))))
  )
@@ -526,8 +523,10 @@ prop_comp_output:
 (constrained-subtree
  (profile WXYZ)
  (branch ($0:WXYZ)))
-
-(old-path-bits 2.715)
+(dp-band-centroid
+ (width 60)
+ (path
+  ((1 1 1)(1 1 1))))
 
 (peeled-composition
  (branch (from $0) (to WXYZ) (name $0:WXYZ) (transducer *SINGLETON)
@@ -536,11 +535,7 @@ prop_comp_output:
   (bit-profile (((a 1.327) (c 6.202) (g 0.798) (t 6.201))
                 ((a 1.327) (c 6.202) (g 0.798) (t 6.201))))
   (branch (from WXYZ) (to XYZ) (name WXYZ:XYZ) (transducer WXYZ:XYZ)
-   (old-state (Match Match))
-   (type (match match))
    (branch (from XYZ) (to XY) (name XYZ:XY) (transducer XYZ:XY)
-    (old-state (Match Match))
-    (type (match match))
     (bit-profile (((a 0.003) (c 9.753) (g 9.753) (t 9.753))
                   ((a 0.003) (c 9.753) (g 9.753) (t 9.753)))))
   )
@@ -550,6 +545,10 @@ prop_comp_output:
  (constrained-subtree
  (profile WXYZ)
  (branch ($0:WXYZ)))
+ (dp-band-centroid
+  (width 60)
+  (path
+   ((1 1 1)(1 1 1))))
  (peeled-bits -0.000)
 )
 (composite-name-format ($0:WXYZ(WXYZ:XYZ(XYZ:XY))))
@@ -707,17 +706,19 @@ prop_comp_output:
      (state (Match Match))
      (type (match match))))))
 
-<log date="2009/11/09" time="14:09:18" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+<log date="2009/11/09" time="14:12:29" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
 Eliminating the following "null" states:
  *W(MWait)
  *W(DWait)
-<log date="2009/11/09" time="14:09:18" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+<log date="2009/11/09" time="14:12:30" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
 Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
-<log date="2009/11/09" time="14:09:18" file="hmmoc_adapter.cc" line=739 level=5 tags="HMMOC_ADAPTER"/>
-Generated HMMoC model found in cache, using pre-compiled binary: /tmp/handel2hmmoc.1
-<log date="2009/11/09" time="14:09:18" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
-Running HMMoC-generated program as follows: /tmp/handel2hmmoc.1 /tmp/handel2hmmoc44552.dat
-<log date="2009/11/09" time="14:09:18" file="movement.cc" line=666 level=10 tags="ERROR_TAG"/>
+<log date="2009/11/09" time="14:12:30" file="hmmoc_adapter.cc" line=753 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC as follows: /usr/local/hmmoc/bin/hmmoc /tmp/handel2hmmoc.xml
+<log date="2009/11/09" time="14:12:30" file="hmmoc_adapter.cc" line=782 level=5 tags="HMMOC_ADAPTER"/>
+Running C++ compiler as follows: /usr/bin/g++ -O3 -ffast-math -finline-limit=1000 -lstdc++ -I/usr/local/hmmoc/include /usr/local/hmmoc/include/algebras.cc -o /tmp/handel2hmmoc.1 /tmp/handel2hmmoc.cc
+<log date="2009/11/09" time="14:12:36" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.1 /tmp/handel2hmmoc44604.dat
+<log date="2009/11/09" time="14:12:36" file="movement.cc" line=666 level=10 tags="ERROR_TAG"/>
 prop_comp_output:
 (token (a c g t))
 
@@ -1231,8 +1232,6 @@ prop_comp_output:
    (bit-profile (((a 0.003) (c 9.753) (g 9.753) (t 9.753))
                  ((a 0.003) (c 9.753) (g 9.753) (t 9.753)))))
   (branch (from XYZ) (to Z) (name XYZ:Z) (transducer XYZ:Z)
-   (old-state (Match Match))
-   (type (match match))
    (sequence (g g)))
  )
 )
@@ -1241,8 +1240,10 @@ prop_comp_output:
 (constrained-subtree
  (profile XYZ)
  (branch ($0:WXYZ(WXYZ:XYZ(XYZ:XY)))))
-
-(old-path-bits 13.770)
+(dp-band-centroid
+ (width 60)
+ (path
+  ((1 1 1 1)(1 1 1 1))))
 
 (peeled-composition
  (branch (from $0) (to XYZ) (name $0:XYZ) (transducer *SINGLETON)
@@ -1251,8 +1252,6 @@ prop_comp_output:
   (bit-profile (((a 0.010) (c 12.134) (g 7.291) (t 12.133))
                 ((a 0.010) (c 12.134) (g 7.291) (t 12.133))))
   (branch (from XYZ) (to Z) (name XYZ:Z) (transducer XYZ:Z)
-   (old-state (Match Match))
-   (type (match match))
    (sequence (g g)))
  )
  (unconstrained-subtree
@@ -1260,6 +1259,10 @@ prop_comp_output:
  (constrained-subtree
  (profile XYZ)
  (branch ($0:XYZ)))
+ (dp-band-centroid
+  (width 60)
+  (path
+   ((1 1)(1 1))))
  (peeled-bits 2.715)
 )
 (composite-name-format ($0:XYZ(XYZ:Z)))
@@ -1322,11 +1325,39 @@ prop_comp_output:
     (state (Match Match))
     (type (match match)))))
 
-<log date="2009/11/09" time="14:09:18" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
+<log date="2009/11/09" time="14:12:36" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+Eliminating the following "null" states:
+ *S(Insert(Delete))
+ *W(MWait(MWait))
+ *W(DWait(MWait))
+ *W(MWait(DWait))
+ *W(DWait(DWait))
+ *I(Insert(Delete))
+<log date="2009/11/09" time="14:12:36" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
+<log date="2009/11/09" time="14:12:36" file="hmmoc_adapter.cc" line=753 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC as follows: /usr/local/hmmoc/bin/hmmoc /tmp/handel2hmmoc.xml
+<log date="2009/11/09" time="14:12:37" file="hmmoc_adapter.cc" line=782 level=5 tags="HMMOC_ADAPTER"/>
+Running C++ compiler as follows: /usr/bin/g++ -O3 -ffast-math -finline-limit=1000 -lstdc++ -I/usr/local/hmmoc/include /usr/local/hmmoc/include/algebras.cc -o /tmp/handel2hmmoc.2 /tmp/handel2hmmoc.cc
+<log date="2009/11/09" time="14:12:54" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.2 /tmp/handel2hmmoc44604.dat
+<log date="2009/11/09" time="14:12:54" file="transducer.cc" line=263 level=5 tags="TRANSDUCER TRANSDUCER_ELIM TRANSDUCER_ELIM_STATES"/>
+Eliminating the following "null" states:
+ *W(MWait)
+ *W(DWait)
+<log date="2009/11/09" time="14:12:54" file="hmmoc_adapter.cc" line=160 level=5 tags="HMMOC_ADAPTER"/>
+Dumping HMMoC model to file '/tmp/handel2hmmoc.xml'
+<log date="2009/11/09" time="14:12:54" file="hmmoc_adapter.cc" line=753 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC as follows: /usr/local/hmmoc/bin/hmmoc /tmp/handel2hmmoc.xml
+<log date="2009/11/09" time="14:12:55" file="hmmoc_adapter.cc" line=782 level=5 tags="HMMOC_ADAPTER"/>
+Running C++ compiler as follows: /usr/bin/g++ -O3 -ffast-math -finline-limit=1000 -lstdc++ -I/usr/local/hmmoc/include /usr/local/hmmoc/include/algebras.cc -o /tmp/handel2hmmoc.3 /tmp/handel2hmmoc.cc
+<log date="2009/11/09" time="14:13:00" file="hmmoc_adapter.cc" line=820 level=5 tags="HMMOC_ADAPTER"/>
+Running HMMoC-generated program as follows: /tmp/handel2hmmoc.3 /tmp/handel2hmmoc44604.dat
+<log date="2009/11/09" time="14:13:00" file="alitrans.cc" line=310 level=6 tags="HANDEL"/>
 Hastings ratio = 0.998615; move accepted
-<log date="2009/11/09" time="14:09:18" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
+<log date="2009/11/09" time="14:13:01" file="handelbase.cc" line=550 level=7 tags="HANDEL HANDEL_ANNEAL"/>
 Annealing iteration #1: score = -33.967 bits, kT = 1
-<log date="2009/11/09" time="14:09:18" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
+<log date="2009/11/09" time="14:13:01" file="handelbase.cc" line=557 level=5 tags="HANDSAMPLE"/>
 Sampled alignment:
 # STOCKHOLM 1.0
 #=GF NH ((U:0.0100000000,V:0.0100000000)UV:0.0200000000,(W:0.1000000000,((X:0.1000000000,Y:0.1000000000)XY:0.0100000000,Z:0.0500000000)XYZ:0.0200000000)WXYZ:0.0500000000)UVWXYZ;
@@ -1342,5 +1373,5 @@ XYZ    **
 WXYZ   **
 UVWXYZ **
 //
-<log date="2009/11/09" time="14:09:18" file="handalign.cc" line=344 level=6/>
+<log date="2009/11/09" time="14:13:01" file="handalign.cc" line=344 level=6/>
 Sampling phase complete

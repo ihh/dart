@@ -698,6 +698,27 @@ void Handel_movement::dump_composition (ostream& out)
 		  const Loge prop_path_ll = NatsPMul (ppc.get_path_loglike (prop_path_map), prop_move.peeling_loglike);
 		  hastings_term.push_back (-NatsPMul (prop_path_ll, -prop_move.fwd_ll));
 
+		  /* fuckfuckfuck (debugging stuff)
+		  if (prop_path_ll > prop_move.fwd_ll)
+		    {
+		      ofstream fuck1 ("FUCK1");
+		      EHMM_transducer_funcs fuck1_funcs = prop_move.composition.build_composite();
+		      prop_move.composition.show_defs (fuck1);
+		      prop_move.composition.show_tree (fuck1);
+		      prop_move.composition.show_composite (fuck1_funcs, fuck1);
+		      fuck1.close();
+
+		      ofstream fuck2 ("FUCK2");
+		      EHMM_transducer_funcs fuck2_funcs = prop_move.peeled_composition.build_composite();
+		      prop_move.peeled_composition.show_defs (fuck2);
+		      prop_move.peeled_composition.show_tree (fuck2);
+		      prop_move.peeled_composition.show_composite (fuck2_funcs, fuck2);
+		      fuck1.close();
+
+		      CLOGERR << "BAD: prop_path_ll > prop_move.fwd_ll\n";
+		    }
+		  */
+
 		  samp_desc.clear();
 		  cond_desc.clear();
 		  for_contents (vector<int>, cons_branch, n)
