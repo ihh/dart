@@ -1,3 +1,0 @@
-rm comp1/* comp2/* /tmp/hc-comp
-handalign tiny.stk -node -c comp1 -rs -ha -hk -hc /tmp/hc-comp -log 5 -logcopy comp1/LOG -cb
-handalign tiny.stk -node -c comp2 -rs -ha -hk -hc /tmp/hc-comp -log 5 -logcopy comp2/LOG -cb
