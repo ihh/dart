@@ -1,6 +1,8 @@
 #include "handel/movement.h"
 #include "handel/hmmoc_adapter.h"
 
+#include "util/map_keys.h"
+
 void Handel_movement::read_composition (const vector<sstring>& filenames)
 {
   SExpr_file sexpr_file (filenames);
@@ -462,6 +464,9 @@ void Handel_movement::dump_composition (ostream& out)
     {
       Transducer_SExpr_file& pc (peeled_composition);  // shorthand
 
+      sstring old_desc, prop_desc, band_s;   // output work vars
+      vector<sstring> samp_desc, cond_desc;  // output work vars
+
       // check validity
       if (pc.path.size() > 1 || (pc.path.size() == 1 && pc.path.find(0) == pc.path.end()))  // this test should always be false, due to earlier code
 	THROWEXPR ("Redelings-Suchard kernel only implemented for peeled composition");  // should be unreachable
@@ -480,6 +485,7 @@ void Handel_movement::dump_composition (ostream& out)
       // loop over proposal compositions
       Transducer_SExpr_file::NodePathMap new_path = pc.path;  // the newly-sampled path
       const int passes = use_centroid ? 2 : 1;
+      map<int,sstring> branch_new_desc, branch_old_desc, branch_band_old_desc, branch_band_new_desc;
       for (int pass = 0; pass < passes; ++pass)
 	{
 	  const bool first_pass = (pass == 0);
@@ -493,6 +499,18 @@ void Handel_movement::dump_composition (ostream& out)
 	      for_const_contents (vector<int>, *branches, b)
 		{
 		  const int parent = pc.etree.parent[*b];
+
+		  sstring desc, new_desc, old_desc, new_band_desc, old_band_desc;
+		  desc << '[' << pc.tape_name[parent] << "->" << pc.tape_name[*b] << ']';
+		  new_desc << desc << "_new";
+		  old_desc << desc << "_old";
+		  old_band_desc << "band" << centroid_band_width << '{' << old_desc << '}';
+		  new_band_desc << "band" << centroid_band_width << '{' << new_desc << '}';
+		  branch_new_desc[*b] = new_desc;
+		  branch_old_desc[*b] = old_desc;
+		  branch_band_new_desc[*b] = new_band_desc;
+		  branch_band_old_desc[*b] = old_band_desc;
+
 		  node_set.insert (*b);
 		  if (*b < root)
 		    root = *b;
@@ -502,6 +520,7 @@ void Handel_movement::dump_composition (ostream& out)
 		      if (parent < root)
 			root = parent;
 		    }
+
 		  if (branches_seen.find (*b) == branches_seen.end())
 		    {
 		      uncons_branch.push_back (*b);
@@ -645,8 +664,7 @@ void Handel_movement::dump_composition (ostream& out)
 		  try {
 		    prop_move.dump_composition (prop_comp_output);
 		  } catch (const Dart_exception& e) {
-		    CLOGERR << e.what() << "Proposal composition:\n" << prop_comp_output;
-		    THROWEXPR ("Proposal error");
+		    THROWEXPR ("Proposal composition:\n" << prop_comp_output << "\nProposal error: " << e.what());
 		  }
 		  if (CTAGGING(1,REDSUCH_PROPOSAL))
 		    CL << "Proposal composition:\n" << prop_comp_output;
@@ -680,9 +698,64 @@ void Handel_movement::dump_composition (ostream& out)
 		  const Loge prop_path_ll = NatsPMul (ppc.get_path_loglike (prop_path_map), prop_move.peeling_loglike);
 		  hastings_term.push_back (-NatsPMul (prop_path_ll, -prop_move.fwd_ll));
 
+		  /* fuckfuckfuck (debugging stuff)
+		  if (prop_path_ll > prop_move.fwd_ll)
+		    {
+		      ofstream fuck1 ("FUCK1");
+		      EHMM_transducer_funcs fuck1_funcs = prop_move.composition.build_composite();
+		      prop_move.composition.show_defs (fuck1);
+		      prop_move.composition.show_tree (fuck1);
+		      prop_move.composition.show_composite (fuck1_funcs, fuck1);
+		      fuck1.close();
+
+		      ofstream fuck2 ("FUCK2");
+		      EHMM_transducer_funcs fuck2_funcs = prop_move.peeled_composition.build_composite();
+		      prop_move.peeled_composition.show_defs (fuck2);
+		      prop_move.peeled_composition.show_tree (fuck2);
+		      prop_move.peeled_composition.show_composite (fuck2_funcs, fuck2);
+		      fuck1.close();
+
+		      CLOGERR << "BAD: prop_path_ll > prop_move.fwd_ll\n";
+		    }
+		  */
+
+		  samp_desc.clear();
+		  cond_desc.clear();
+		  for_contents (vector<int>, cons_branch, n)
+		    cond_desc.push_back (branch_new_desc[*n]);
+		  for_contents (vector<int>, uncons_branch, n)
+		    {
+		      samp_desc.push_back (branch_new_desc[*n]);
+		      if (use_centroid)
+			cond_desc.push_back (branch_band_old_desc[*n]);
+		    }
+		  cond_desc.push_back (sstring ("other_branches"));
+
+		  prop_desc.clear();
+		  prop_desc << "1/P{" << sstring::join (samp_desc, ",") << '|' << sstring::join (cond_desc, ",") << "}]";
+		  hastings_term_desc.push_back (prop_desc);
+
 		  // store Hastings ratio term (numerator)
 		  if (calc_old_path_ll_during_prop_step)
-		    hastings_term.push_back (NatsPMul (prop_move.old_loglike, -prop_move.fwd_ll));
+		    {
+		      hastings_term.push_back (NatsPMul (prop_move.old_loglike, -prop_move.fwd_ll));
+
+		      // use_centroid==false, so no need for band_desc
+		      if (use_centroid)
+			THROWEXPR ("failed assertion use_centroid==false");
+
+		      samp_desc.clear();
+		      cond_desc.clear();
+		      for_contents (vector<int>, cons_branch, n)
+			cond_desc.push_back (branch_old_desc[*n]);
+		      for_contents (vector<int>, uncons_branch, n)
+			samp_desc.push_back (branch_old_desc[*n]);
+		      cond_desc.push_back (sstring ("other_branches"));
+
+		      old_desc.clear();
+		      old_desc << "P{" << sstring::join (samp_desc, ",") << '|' << sstring::join (cond_desc, ",") << "}";
+		      hastings_term_desc.push_back (old_desc);
+		    }
 
 		  // display prop_comp
 		  out << "\n(" << TSEXPR_PROPOSAL;
@@ -724,8 +797,7 @@ void Handel_movement::dump_composition (ostream& out)
 		  try {
 		    inv_move.dump_composition (inv_comp_output);
 		  } catch (const Dart_exception& e) {
-		    CLOGERR << e.what() << "Inverse proposal composition:\n" << inv_comp_output;
-		    THROWEXPR ("Inverse proposal error");
+		    THROWEXPR ("Inverse proposal composition:\n" << inv_comp_output << "\nInverse proposal error: " << e.what());
 		  }
 		  if (CTAGGING(1,REDSUCH_PROPOSAL))
 		    CL << "Inverse proposal composition:\n" << inv_comp_output;
@@ -736,6 +808,22 @@ void Handel_movement::dump_composition (ostream& out)
 		  // store Hastings ratio term (numerator)
 		  hastings_term.push_back (NatsPMul (inv_move.old_loglike, -inv_move.fwd_ll));
 
+		  samp_desc.clear();
+		  cond_desc.clear();
+		  for_contents (vector<int>, cons_branch, n)
+		    cond_desc.push_back (branch_old_desc[*n]);
+		  for_contents (vector<int>, uncons_branch, n)
+		    {
+		      samp_desc.push_back (branch_old_desc[*n]);
+		      if (use_centroid)
+			cond_desc.push_back (branch_band_new_desc[*n]);
+		    }
+		  cond_desc.push_back (sstring ("other_branches"));
+
+		  old_desc.clear();
+		  old_desc << "P{" << sstring::join (samp_desc, ",") << '|' << sstring::join (cond_desc, ",") << '}';
+		  hastings_term_desc.push_back (old_desc);
+
 		  // display inv_comp
 		  out << "\n(" << TSEXPR_INVERSE;
 		  inv_comp.show_tree (out, 1, false);
@@ -745,7 +833,7 @@ void Handel_movement::dump_composition (ostream& out)
 		  out << ")\n";
 		  out.flush();
 		}
-	    }
+	    }  // end of loop over proposal branches
 
 	  // store proposed path, print score, etc
 	  if (propose_redelings_suchard_move && first_pass)
@@ -809,11 +897,25 @@ void Handel_movement::dump_composition (ostream& out)
 
 	      // store Hastings ratio term (numerator)
 	      hastings_term.push_back (redsuch_ll);
+
+	      samp_desc = map_values (branch_new_desc);
+
+	      prop_desc.clear();
+	      prop_desc << "P{" << sstring::join (samp_desc, ",") << "|other_branches}";
+	      hastings_term_desc.push_back (prop_desc);
 	    }
 
 	  // store Hastings ratio term for old path (denominator)
 	  if (evaluate_redelings_suchard_inverse_move && last_pass)
-	    hastings_term.push_back (-old_loglike);
+	    {
+	      hastings_term.push_back (-old_loglike);
+
+	      samp_desc = map_values (branch_old_desc);
+
+	      old_desc.clear();
+	      old_desc << "1/P{" << sstring::join (samp_desc, ",") << "|other_branches}";
+	      hastings_term_desc.push_back (old_desc);
+	    }
 
 	  // display Hastings ratio terms
 	  if (hastings_term.size() && last_pass)
@@ -823,10 +925,12 @@ void Handel_movement::dump_composition (ostream& out)
 	      for_const_contents (vector<Loge>, hastings_term, h_ll)
 		{
 		  NatsPMulAcc (log_hastings_ratio, *h_ll);
-		  hastings_term_bits.push_back (Nats2Bits (*h_ll));
+		  hastings_term_bits.push_back (-Nats2Bits (*h_ll));
 		}
-	      out << "\n(" << TSEXPR_HTERM << " (" << hastings_term_bits
-		  << "))\n";
+	      out << "\n(" << TSEXPR_HTERM << " (";
+	      for (int n = 0; n < (int) hastings_term.size(); ++n)
+		out << "\n  (" << hastings_term_bits[n] << ' ' << hastings_term_desc[n] << ')';
+	      out << "))\n";
 
 	      // if we have all the necessary parts, then compute & print Hastings ratio
 	      if (propose_redelings_suchard_move && evaluate_redelings_suchard_inverse_move)

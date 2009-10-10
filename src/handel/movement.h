@@ -82,6 +82,7 @@ struct Handel_movement
   vector<int> redsuch_trace;  // path through ehmm_funcs
   Loge redsuch_ll;
   vector<Loge> hastings_term;
+  vector<sstring> hastings_term_desc;
 
   // constructor
   // default behavior: show composite transducer, but do not do any DP

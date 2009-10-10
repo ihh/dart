@@ -7,7 +7,7 @@ my $no_tag = "<none>";
 sub ctags {
     my ($line) = @_;
     my @tags;
-    while ($line =~ /(CLOG|CLOGGING|CTAG|CTAGGING)\s*\(\s*(\-?\s*\d+)\s*,?\s*([^\)]*?)\s*\)/g) {
+    while ($line =~ /(CLOG|CLOGGING|CTAG|CTAGGING)\s*\(\s*(\-?\s*\d+)\s*,?\s*([^\)<]*?)\s*\)/g) {
 	push @tags, [$1, $2, $3];
     }
     foreach my $tag (@tags) {
@@ -21,8 +21,8 @@ sub ctags {
 
 # main program
 my $prog = $0;
-my $progdir;
-my $progname;
+my $progdir = ".";
+my $progname = $prog;
 if ($prog =~ /^(.*)\/([^\/]+)/) {
     ($progdir, $progname) = ($1, $2);
 }
@@ -112,18 +112,17 @@ my $tagsperrow = max (int ($colwidth / ($maxtaglen + 1)), 1);
 my $cols = int (@realtags / $tagsperrow);
 ++$cols if @realtags % $tagsperrow;
 
-print "const char* all_log_tags = \"\\n";
+print "const char* all_log_tags = \"\\n\"";
 for (my $i = 0; $i < $cols; ++$i) {
     for (my $j = $i; $j < @realtags; $j += $cols) {
 	pprint ($realtags[$j], $maxtaglen + 1);
     }
-    print "\\n";
 }
-print "\";\n";
+print ";\n";
 
-print "const char* all_log_tag_info = \"\\n";
-pprint ("Tag", $maxtaglen + 1, "Level", 6, "Module", $maxsrcdirlen + 1, "File#line\\n");
-pprint ("---", $maxtaglen + 1, "-----", 6, "------", $maxsrcdirlen + 1, "---------\\n");
+print "const char* all_log_tag_info = \"\\n\"";
+pprint ("Tag", $maxtaglen + 1, "Level", 6, "Module", $maxsrcdirlen + 1, "File#line");
+pprint ("---", $maxtaglen + 1, "-----", 6, "------", $maxsrcdirlen + 1, "---------");
 foreach my $tag (@tags) {
     my $outblock = [];
     my @instance = sort { $$b[0] <=> $$a[0] || $$a[1] cmp $$b[1] || $$a[2] cmp $$b[2] || $$a[3] <=> $$b[3] } @{$taginfo{$tag}};  # sort by decreasing log level, increasing source dir/file/line
@@ -131,10 +130,10 @@ foreach my $tag (@tags) {
     for (my $i = 0; $i < @instance; ++$i) {
 #	warn "tag=$tag inst=@{$instance[$i]}\n";
 	my $inst = $instance[$i];
-	pprint ($i == 0 ? $tag : "", $maxtaglen + 1, $$inst[0], -3, "", 3, $$inst[1], $maxsrcdirlen + 1, "$$inst[2]\#$$inst[3]\\n");
+	pprint ($i == 0 ? $tag : "", $maxtaglen + 1, $$inst[0], -3, "", 3, $$inst[1], $maxsrcdirlen + 1, "$$inst[2]\#$$inst[3]");
     }
 }
-print "\";\n";
+print ";\n";
 
 print "\n";
 print "#endif /* LOGTAGS_INCLUDED */\n";
@@ -156,6 +155,7 @@ sub max {
 
 # padded print function
 sub pprint {
+    print "\n\"";
     while (@_) {
 	my $text = shift;
 	my $width = shift;
@@ -166,4 +166,5 @@ sub pprint {
 	    print " " x (-$width - length($text)), $text;
 	}
     }
+    print "\\n\"";
 }

@@ -169,8 +169,10 @@ struct Subseq : Subseq_coords, Fold_char_enum, Connection_enum, Stream_saver
     void init_pseudovecs();
   };
 
-  // include Bifurcation iterator & pseudovector code
-#include "scfg/bifurc_iter.h"
+  // Bifurcation typedefs
+  typedef vector<Bifurc_in> Bifurc_in_pseudovec;
+  typedef vector<Bifurc_out_l> Bifurc_outl_pseudovec;
+  typedef vector<Bifurc_out_r> Bifurc_outr_pseudovec;
 
   // Bifurcation connections
   Bifurc_in_pseudovec bif_in;

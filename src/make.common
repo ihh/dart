@@ -47,7 +47,7 @@ endif
 endif
 
 # Dummy pseudotargets for 'make debug ...', 'make release ...', etc:
-debug release noopt profile alloc_dense pseudovec_bifurc explicit_bifurc:
+debug release noopt profile alloc_dense:
 	echo Compiling in '$@' mode
 
 # macros
@@ -63,20 +63,8 @@ D1 =
 M1 =
 endif
 
-ifneq (,$(findstring pseudovec_bifurc,$(MAKECMDGOALS)))
-# 'pseudovec_bifurc' was specified or default
-# Store bifurcations using "pseudovector" iterators (O(L^2) memory; slower)
-D2 = -DDART_USE_BIFURCATION_PSEUDOVECTORS
-M2 = pseudovec_bifurc
-else
-# 'explicit_bifurc' was specified or default
-# Store bifurcations explicitly (takes O(L^3) memory)
-D2 =
-M2 = explicit_bifurc
-endif
-
-DEFINES = $(D1) $(D2)
-MAKEARGS = $(DEBUGDIR) $(M1) $(M2)
+DEFINES = $(D1)
+MAKEARGS = $(DEBUGDIR) $(M1)
 
 # files, dirs & stuff
 

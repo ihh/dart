@@ -176,7 +176,7 @@ void Indiegram::sample_folds (Fold_envelope& foldenv, const Named_profile& np, i
   const Named_profile dummy_np_y;
 
   if (nfold < 0)  // if full fold envelope, don't sample
-    CTAG(6,INDIEGRAM_PREFOLD << "Using banded fold envelope for sequence '" << np.name << "'\n");
+    CTAG(6,INDIEGRAM_PREFOLD) << "Using banded fold envelope for sequence '" << np.name << "'\n";
   else  // if not, sample folds
     {
       CTAG(6,INDIEGRAM_PREFOLD) << "Pre-foldings sequence '" << np.name << "'\n";

@@ -2,6 +2,7 @@
 #define MAP_KEYS_INCLUDED
 
 #include <map>
+#include <vector>
 #include <algorithm>
 
 template <class Key, class T, class Compare, class Alloc>
