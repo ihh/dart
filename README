@@ -10,7 +10,7 @@ http://biowiki.org/dart
 INSTALLATION
 ============
 
-Type "make all".
+Type "./configure; make all".
 
 See INSTALL file for more info.
 
