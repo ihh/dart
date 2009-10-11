@@ -55,16 +55,17 @@ debug release noopt profile alloc_dense:
 ifneq (,$(findstring alloc_dense,$(MAKECMDGOALS)))
 # 'alloc_dense' was specified
 # Use dense(fast,fat) DP matrices for Pair SCFGs
-D1 = -DDART_USE_DENSE_CFGDP_ALLOCATORS
-M1 = alloc_dense
+DDENSE = -DDART_USE_DENSE_CFGDP_ALLOCATORS
+MDENSE = alloc_dense
 else
 # Use sparse(slow,slim) DP matrices for Pair SCFGs
-D1 =
-M1 =
+DDENSE =
+MDENSE =
 endif
 
-DEFINES = $(D1)
-MAKEARGS = $(DEBUGDIR) $(M1)
+INCLUDES = -include $(SRCDIR)/config.h
+DEFINES = $(DDENSE)
+MAKEARGS = $(DEBUGDIR) $(MDENSE)
 
 # files, dirs & stuff
 
@@ -97,8 +98,8 @@ CPPLIBS    = -lstdc++
 THISLIB    = -l$(LIBNAME)
 LIBRARIES  = $(DARTLIBS) $(GFXLIBS) $(MATHLIBS) $(CPPLIBS)
 
-PPFLAGS    = $(INCDIRS) $(DEFINES)
-CCFLAGS    = $(INCDIRS) $(DEBUGFLAGS) $(DEFINES) -Wall
+PPFLAGS    = $(INCDIRS) $(DEFINES) $(INCLUDES)
+CCFLAGS    = $(INCDIRS) $(DEBUGFLAGS) $(DEFINES) $(INCLUDES) -Wall
 LDFLAGS    = $(DEBUGFLAGS) $(LIBDIRS) $(STATIC)
 ARFLAGS    = -rcvs
 
