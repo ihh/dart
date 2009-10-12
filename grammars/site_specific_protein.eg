@@ -1,6 +1,6 @@
-;; This phylo-HMM has #COLUMNS states.
+;; This phylo-HMM has &COLUMNS states.
 ;; Each state has its own Markov chain for generating an alignment column.
-;; Each chain is parameterized by one rate parameter and a probability distribution over #TOKENS.
+;; Each chain is parameterized by one rate parameter and a probability distribution over &TOKENS.
 ;; Each column's substitution model thus follows the idea of (Felsenstein, 1981)
 ;; and the overall construct is something like (Bruno, 1996).
 (grammar
@@ -15,7 +15,7 @@
  (transform
   (from (START))
   (to (?
-       (= #COLUMNS 0)
+       (= &COLUMNS 0)
        ()  ;; if zero columns, alignment is empty: just goto end state
        (NONTERM1)))  ;; otherwise, goto NONTERM1
   )
@@ -23,7 +23,7 @@
  ;; Main loop over columns
  (&foreach-integer
   COLUMN
-  (1 #COLUMNS)
+  (1 &COLUMNS)
   (&warn Generating column COLUMN ...)
 
   ;; First, define the parameters for COLUMN, and their priors.
@@ -45,7 +45,7 @@
    ((&foreach-token
      TOK
      ((. Freq COLUMN TOK)
-      (/ 1 #TOKENS))))  ;; seed with flat frequency distribution
+      (/ 1 &TOKENS))))  ;; seed with flat frequency distribution
    )
 
   ;; Pseudocounts for the frequency parameters (effectively specifying a Dirichlet prior)
@@ -93,9 +93,9 @@
    ;; The following "minlen" and "maxlen" clauses help the DP run more efficiently,
    ;; by avoiding computation of the emission likelihoods except at the one subsequence where it matters.
    ;; The "len" in this co-ordinate scheme refers to the length of the Inside subsequence,
-   ;; which is (1 + #COLUMNS - COLUMN).
-   (minlen (+ 1 (- #COLUMNS COLUMN)))
-   (maxlen (+ 1 (- #COLUMNS COLUMN)))
+   ;; which is (1 + &COLUMNS - COLUMN).
+   (minlen (+ 1 (- &COLUMNS COLUMN)))
+   (maxlen (+ 1 (- &COLUMNS COLUMN)))
    )
 
   ;; Transition to next COLUMN
@@ -103,7 +103,7 @@
   (transform
    (from ((. NONTERM COLUMN *)))
    (to (?
-        (< COLUMN #COLUMNS)  ;; still more columns to go?
+        (< COLUMN &COLUMNS)  ;; still more columns to go?
         ((. NONTERM (+ COLUMN 1)))  ;; yes, so goto next column
         ()  ;; no, so goto end state
 	)

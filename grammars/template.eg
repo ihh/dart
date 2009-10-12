@@ -21,9 +21,9 @@
 ;; (. LIST)                         -- concatenates a list of atoms into a single atom, e.g. (. A B C) evaluates to ABC
 ;; (+ LIST)                         -- sums the integer values of LIST, e.g. (+ 1 4 -3) evaluates to 2
 ;; (* LIST)                         -- multiplies the integer values of LIST, e.g. (* 5 2 3) evaluates to 30
-;; #NODES                           -- number of nodes on the tree
-;; #LEAVES                          -- number of leaves
-;; #BRANCHES                        -- number of branches = #NODES - 1
+;; &NODES                           -- number of nodes on the tree
+;; &LEAVES                          -- number of leaves
+;; &BRANCHES                        -- number of branches = &NODES - 1
 
 
 (grammar
@@ -55,7 +55,7 @@
 
   (foreach-branch  ;; note that one foreach construct can be nested inside another...
    NODE2
-   (transform (from ((. S- NODE *))) (to ((. S- NODE2))) (prob (1 / #BRANCHES)))
+   (transform (from ((. S- NODE *))) (to ((. S- NODE2))) (prob (1 / &BRANCHES)))
    )
 
   (transform (from ((. T- NODE))) (to ((. I- NODE) (. T- NODE *))))

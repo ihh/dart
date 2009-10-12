@@ -17,7 +17,7 @@
  (pgroup
 
   ;; Initial distribution over states
-  ((&foreach-token TOK ((. p TOK) (/ 1 #TOKENS))))
+  ((&foreach-token TOK ((. p TOK) (/ 1 &TOKENS))))
   ;; The above expression should evaluate to
   ;; ((pa .25) (pc .25) (pg .25) (pt .25))
 

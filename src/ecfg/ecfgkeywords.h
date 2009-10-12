@@ -98,11 +98,11 @@
 #define EG_FOREACH_LEAF     "&foreach-leaf"
 #define EG_FOREACH_ANCESTOR "&foreach-ancestor"
 
-#define EG_TOKENS    "#TOKENS"
-#define EG_NODES     "#NODES"
-#define EG_LEAVES    "#LEAVES"
-#define EG_ANCESTORS "#ANCESTORS"
-#define EG_BRANCHES  "#BRANCHES"
-#define EG_COLUMNS   "#COLUMNS"
+#define EG_TOKENS    "&TOKENS"
+#define EG_NODES     "&NODES"
+#define EG_LEAVES    "&LEAVES"
+#define EG_ANCESTORS "&ANCESTORS"
+#define EG_BRANCHES  "&BRANCHES"
+#define EG_COLUMNS   "&COLUMNS"
 
 #endif /* ECFG_SEXPR_KEYWORDS */

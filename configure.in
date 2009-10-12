@@ -13,6 +13,10 @@ AC_PROG_LN_S
 
 # Checks for libraries.
 
+# Commented out because it doesn't get expanded.
+# Look for autoconf macros in guile distribution?
+# PKG_CHECK_MODULES([GUILE], [guile-1.8])
+
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT

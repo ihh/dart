@@ -6,7 +6,7 @@
 ;; 
 ;; It was also used by Rob Bradley and Gabriel Wu for measuring rates for the
 ;; 12-fly paper submission, further described here:
-;;   http://biowiki.org/twiki/bin/viewauth/Main/FlyNcRna#Rate_Measurements
+;;   http://biowiki.org/twiki/bin/viewauth/Main/FlyNcRna&Rate_Measurements
 ;;
 
 (grammar

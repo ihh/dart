@@ -34,7 +34,7 @@
       j
       (&foreach-token
        k
-       ((. P i j k _ NODE) (/ 1 (* #TOKENS #TOKENS #TOKENS)))
+       ((. P i j k _ NODE) (/ 1 (* &TOKENS &TOKENS &TOKENS)))
        )
       )
      )

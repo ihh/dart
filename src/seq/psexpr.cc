@@ -380,7 +380,7 @@ PGroup PFunc_builder::init_pgroup (PScores& pscores, SymPVar& sym2pvar, SExpr& p
   return g;
 }
 
-const sstring plus_string("+"), times_string("*"), div_string("/"), hash_string ("#"), pow_string ("^");
+const sstring plus_string("+"), times_string("*"), div_string("/"), const_string (PK_CONST), pow_string ("^");
 PFunc PFunc_builder::init_pfunc (const SymPVar& sym2pvar, SExpr& pfunc_sexpr, int offset)
 {
   if (CTAGGING(-2,INIT_PFUNC))
@@ -443,11 +443,11 @@ PFunc PFunc_builder::init_pfunc (const SymPVar& sym2pvar, SExpr& pfunc_sexpr, in
 		    THROWEXPR ("Bad binary arithmetic operator sequence (//) in S-expression " << pfunc_sexpr);
 		  div = true;
 		}
-	      else if (child_iter->is_atom() && child_iter->atom == hash_string)
+	      else if (child_iter->is_atom() && child_iter->atom == const_string)
 		{
 		  // #
 		  if (++child_iter == pfunc_sexpr.child.end())
-		    THROWEXPR ("Isolated # in S-expression " << pfunc_sexpr);
+		    THROWEXPR ("Isolated '" << const_string << "' in S-expression " << pfunc_sexpr);
 
 		  // inert PVar
 		  PFunc h = init_pfunc (sym2pvar, *child_iter, 0);

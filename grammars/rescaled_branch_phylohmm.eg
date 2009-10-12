@@ -13,7 +13,7 @@
  (pgroup
 
   ;; Initial distribution over states
-  ((&foreach-token TOK ((. p TOK) (/ 1 #TOKENS))))
+  ((&foreach-token TOK ((. p TOK) (/ 1 &TOKENS))))
 
   ;; Probability of staying in the same branch-scale class, or leaving
   ((stayProb .9) (leaveProb .1))
@@ -74,12 +74,12 @@
   (transform
    (from (START))
    (to ((. SCALE_ NODE)))
-   (prob (+ 1 (/ 1 #BRANCHES))))
+   (prob (+ 1 (/ 1 &BRANCHES))))
 
   (transform
    (from (REGULAR*))
    (to ((. SCALE_ NODE)))
-   (prob leaveProb * (/ 1 (+ 1 #BRANCHES))))
+   (prob leaveProb * (/ 1 (+ 1 &BRANCHES))))
 
   (transform
    (from ((. SCALE_ NODE)))
@@ -96,7 +96,7 @@
   (transform
    (from ((. SCALE_ NODE *)))
    (to (REGULAR))
-   (prob leaveProb * (/ 1 (+ 1 #BRANCHES))))
+   (prob leaveProb * (/ 1 (+ 1 &BRANCHES))))
 
   ;; transitions
   (&foreach-branch
@@ -107,7 +107,7 @@
     (prob (?
 	   (= NODE DEST_NODE)
 	   (stayProb)
-	   (leaveProb * (/ 1 (+ 1 #BRANCHES)))
+	   (leaveProb * (/ 1 (+ 1 &BRANCHES)))
 	   )
 	  ))
    )
@@ -118,7 +118,7 @@
  (transform
   (from (START))
   (to (REGULAR))
-  (prob (/ 1 (+ 1 #BRANCHES))))
+  (prob (/ 1 (+ 1 &BRANCHES))))
 
  ;; Add a START->END transition, so empty alignments don't have zero likelihood
  (transform

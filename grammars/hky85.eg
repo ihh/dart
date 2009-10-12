@@ -45,10 +45,10 @@
 
   ;; "unobserved" mutations that are needed to accumulate probabilistic counts correctly
   ;; the "#" symbol is used to prevent unwanted accumulation of rate counts
-  (mutate (from (a)) (to (a)) (rate (piA + piG) * (# beta) + (piA + piC + piT) * (# alpha)))
-  (mutate (from (c)) (to (c)) (rate (piC + piT) * (# beta) + (piA + piC + piG) * (# alpha)))
-  (mutate (from (g)) (to (g)) (rate (piA + piG) * (# beta) + (piC + piG + piT) * (# alpha)))
-  (mutate (from (t)) (to (t)) (rate (piC + piT) * (# beta) + (piA + piG + piT) * (# alpha)))
+  (mutate (from (a)) (to (a)) (rate (piA + piG) * (const beta) + (piA + piC + piT) * (const alpha)))
+  (mutate (from (c)) (to (c)) (rate (piC + piT) * (const beta) + (piA + piC + piG) * (const alpha)))
+  (mutate (from (g)) (to (g)) (rate (piA + piG) * (const beta) + (piC + piG + piT) * (const alpha)))
+  (mutate (from (t)) (to (t)) (rate (piC + piT) * (const beta) + (piA + piG + piT) * (const alpha)))
 
  )  ;; end chain X
 )  ;; end grammar
