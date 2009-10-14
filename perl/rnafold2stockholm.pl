@@ -2,7 +2,7 @@
 
 # convert RNAfold output to Stockholm
 
-my $name;
+my $name = "AnonymousSequence";
 my (%seq, %ss, @name);
 while (<>) {
     if (/^\s*>\s*(\S+)/) {
@@ -11,6 +11,7 @@ while (<>) {
 	$seq{$name} = $ss{$name} = "";
 	push @name, $name;
     } elsif (defined $name) {
+	push @name, $name unless @name > 0;  # handle the case of anonymous sequences
 	if (/^\s*(\S+)\s*$/) {
 	    $seq{$name} .= $1;
 	} elsif (/^\s*([\(\)\.]+)\s+\(\s*[0-9\.\-]+\)/) {
