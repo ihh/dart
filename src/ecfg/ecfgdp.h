@@ -52,11 +52,15 @@ struct ECFG_EM_matrix : ECFG_matrix
   vector<const char*> align_annot;   // accessed as align_annot[feature]
   array2d<const char*> state_annot;  // accessed as state_annot(state,feature)
 
+  // emit log-likelihoods for each (subseq,state) pair.
+  // filling this data structure is expensive, but the structure can be re-used between CYK, Inside & Outside algorithms.
+  // in theory the algorithm to fill the structure can be parallelized....
+  array2d<Loge> emit_loglike;  // accessed as emit_loglike(subseq_idx,state)
+
   // workspace
   vector<Column_matrix> colmat;   // "scratch" Column_matrix's, indexed by state
   bool use_fast_prune;  // set this to use fast pruning algorithm
   vector<Fast_prune> fast_prune;  // faster implementation of the pruning algorithm; only used if use_fast_prune is TRUE
-  array2d<Loge> emit_loglike;  // accessed as emit_loglike(subseq_idx,state)
   bool fill_up_flag;  // clear this flag if emit_loglike() is precomputed
   vector<Subseq::Bifurc_in> bif_in;
 
