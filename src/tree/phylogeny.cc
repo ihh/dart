@@ -92,50 +92,6 @@ void Phylogeny::clear()
   _first_internal_node = _sorted_nodes.end();
 }
 
-Phylogeny::Node_pair2set_map Phylogeny::leaves_below (Node top, Node parent_of_top) const
-{
-  // Rob has reported bugs with this code... pending further investigation as of 5/16/2007... IH
-  Node_pair2set_map leaves_below;
-  Branch_iter branch_iter = branches_begin (top, parent_of_top);
-  Branch_iter branch_end = branches_end ();
-  while (branch_iter != branch_end)
-    {
-      Node_set& lb = leaves_below[*branch_iter];
-      Node first = (*branch_iter).first, second = (*branch_iter).second;
-      if (is_leaf(second)) lb.insert(second);
-      else
-	{
-	  Child_iter child_iter = children_begin (second, first);
-	  Child_iter child_end = children_end (second, first);
-	  while (child_iter != child_end)
-	    {
-	      Node_set& child_lb = leaves_below[Node_pair (second, *child_iter)];
-	      lb.insert (child_lb.begin(), child_lb.end());
-	      ++child_iter;
-	    }
-	}
-      ++branch_iter;
-    }
-  return leaves_below;
-}
-
-Phylogeny::Node_set2pair_map Phylogeny::leaf_partition_sets() const
-{
-  Node_set2pair_map lps;
-  for_tmp_contents (Node_pair2set_map, leaves_below(), lb_iter)
-    {
-      // find the complement of (*lb_iter).second
-      //
-      Node_set complement (leaves_begin(), leaves_end());
-      for_const_contents (Node_set, (*lb_iter).second, i)
-	complement.erase(*i);
-
-      Node_pair pair = (*lb_iter).first;
-      lps[(*lb_iter).second] = pair;
-      lps[complement] = pair.swap();
-    }
-  return lps;
-}
 
 
 Phylogeny::Node_directory Phylogeny::node_directory (const Node_name_vec& node_name)
@@ -295,40 +251,6 @@ void Phylogeny::move_node (Node n, Node old_neighbour, Node new_neighbour, doubl
 {
   remove_branch (n, old_neighbour);
   add_branch (n, new_neighbour, new_branch_length);
-}
-
-Phylogeny::Branch_support PHYLIP_tree::calculate_branch_support (istream& test_file) const
-{
-  Node_directory node_dir = node_directory (node_name);
-
-  CLOGTOP << "Finding taxa partitions ..." << FLUSH;
-  Node_set2pair_map partitions = leaf_partition_sets ();
-  CLOGTOP << " done\n" << FLUSH;
-  
-  Branch_support support;
-
-  while (!test_file.eof())
-    {
-      PHYLIP_tree test_tree;
-      test_tree.read (test_file);
-      test_file >> EAT_WHITE;
-  
-      CLOGTOP << "Read test tree #" << ++support.total << "; comparing taxa partitions ..." << FLUSH;
-
-      Phylogeny::Node_map test2me = Phylogeny::node_remapper (test_tree.node_name, node_dir);
-
-      int hits = 0, maxhits = 0;
-      for_tmp_contents (Node_pair2set_map, test_tree.leaves_below(), test_iter)
-	{
-	  Node_set2pair_map::iterator p_iter = partitions.find (remap_node_set ((*test_iter).second, test2me));
-
-	  if (p_iter != partitions.end()) { ++support.hits [Undirected_pair ((*p_iter).second)]; ++hits; }
-	  ++maxhits;
-	}
-      CLOGTOP << " hit reference tree with " << hits << " out of " << maxhits << " branches\n" << FLUSH;
-    }
-  
-  return support;
 }
 
 PHYLIP_tree::PHYLIP_tree() :
@@ -630,4 +552,21 @@ bool PHYLIP_tree::force_binary()
 
   // return
   return tree_changed;
+}
+
+vector<Phylogeny::Node> PHYLIP_tree::leaf_vector() {
+  vector<Node> lvec;
+  for (Phylogeny::Node_const_iter iter = leaves_begin(); iter != leaves_end(); ++iter)
+    if (*iter != root)
+      lvec.push_back(*iter);
+  return lvec;
+}
+
+vector<Phylogeny::Node> PHYLIP_tree::ancestor_vector() {
+  vector<Node> avec;
+  if (is_leaf(root))
+    avec.push_back(root);
+  for (Phylogeny::Node_const_iter iter = internals_begin(); iter != internals_end(); ++iter)
+    avec.push_back(*iter);
+  return avec;
 }

@@ -8,7 +8,7 @@ TESTS      =
 TARGETS    = $(TESTS) myguile
 DIRNAME    = guile
 
-DEPS       = 
+DEPS       = ecfg scfg hmm hsm irrev tree seq util newmat randlib
 
 CCDIR      = $(shell pwd)
 SRCDIR     = $(CCDIR)/..

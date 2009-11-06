@@ -172,7 +172,7 @@ public:
   int size() const { return align.size(); }
 
   // I/O methods
-  void read (istream& in, Sequence_database& seq_db, int max_line = 0);		// pk accept long input lines
+  void read (istream& in, Sequence_database& seq_db, int max_line = 0);		// increase max_line to accept long input lines
   void write (ostream& out) const;
 
   // builder method

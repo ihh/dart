@@ -26,7 +26,7 @@ void Stockholm::update_row_index()
     row_index[row_name[i]] = i;
 }
 
-void Stockholm::read_Stockholm (istream& in, Sequence_database& db, int max_line)	// pk accept long input lines
+void Stockholm::read_Stockholm (istream& in, Sequence_database& db, int max_line)	// increase max_line to accept long input lines
 {
   clear();
 

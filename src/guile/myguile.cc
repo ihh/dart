@@ -19,13 +19,13 @@
  */
 
 #include <libguile.h>
-#include "image-type.h"
+#include "guile/stockholm-type.h"
 
 static void
 inner_main (void *closure, int argc, char **argv)
 {
   /* module initializations would go here */
-  init_image_type();
+  init_stockholm_type();
   scm_shell (argc, argv);
 }
 

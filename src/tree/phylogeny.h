@@ -341,18 +341,6 @@ class Phylogeny
   Node_vector find_parents (Node dad, Node grumpa = -1) const
     { Node_vector v (nodes(), -1); for (Branch_iter b = branches_begin (dad, grumpa, 1, 1); b != branches_end(); ++b) v[(*b).second] = (*b).first; return v; }
 
-  // leaves_below: for each (directed) branch, returns the set of leaf nodes below that branch
-  // NB actually only returns half of all possible sets of leaf nodes (branches point away from specified 'dad' node)
-  //
-  // POSSIBLY BUGGY CODE! awaiting bug report from RB... IH, 5/16/2007
-  //
-  Node_pair2set_map leaves_below (Node dad = 0, Node grumpa = -1) const;
-
-  // leaf_partition_sets: for each possible set of leaf nodes, finds the corresponding directed branch
-  // NB includes both branch orientations, so each branch is effectively included twice
-  //
-  Node_set2pair_map leaf_partition_sets() const;
-
   // static methods for mapping node indices from one tree to another given node names
   //
   static Node_directory node_directory (const Node_name_vec& node_name);   // permits reverse lookup by node name
@@ -429,6 +417,12 @@ class PHYLIP_tree : public Phylogeny
 
   // find sum of branch lengths from root to a node
   double branch_depth (Node n) const { double d = 0; while (n != root) { d += branch_length (n, parent[n]); n = parent[n]; } return d; }
+
+  // sets of leaves and ancestors
+  // NB this can return slightly different results from the leaves_*() and internals_*() iterators in the superclass,
+  // because the root may not be an internal node (and therefore would be counted as a leaf by the superclass, but an ancestor by this class)
+  vector<Node> leaf_vector();
+  vector<Node> ancestor_vector();
   
   // I/O
   // read() method: reads a New Hampshire format tree (probably not a strict parser).
@@ -451,9 +445,6 @@ class PHYLIP_tree : public Phylogeny
     out << Stockholm_New_Hampshire_tag << ' ';
     write (out, 0);
   }
-
-  // bootstrapping kind of stuff
-  Branch_support calculate_branch_support (istream& test_file) const;
 
   // structures & functions relating to text specification of nodes & branches
   struct Node_specifier_exception : Standard_exception
