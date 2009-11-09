@@ -77,14 +77,14 @@ struct ECFG_main
   void init_opts (const char* desc);
 
   // top-level run method for xrate
-  void run (ostream& alignment_output_stream);
+  void run_xrate (ostream& alignment_output_stream);
 
-  // alternate top-level methods for embedded invocation (currently placeholders)
-  Stockholm estimate_tree(const ECFG_scores& ecfg, Stockholm& stock);
-  ECFG_scores train_grammar(const ECFG_scores& ecfg, Stockholm_database& stock);
-  Stockholm annotate_alignment(const ECFG_scores& ecfg, Stockholm& stock);
+  // alternate top-level run methods for embedded invocation (currently placeholders)
+  Stockholm run_tree_estimation (const ECFG_scores& ecfg, Stockholm& stock);
+  ECFG_scores run_grammar_training (const ECFG_scores& ecfg, Stockholm_database& stock);
+  Stockholm run_alignment_annotation (const ECFG_scores& ecfg, Stockholm& stock);
 
-  // lower-level methods called by run()
+  // lower-level methods called by run_*()
   // comments indicate required modifications for embedded invocation
   void parse_opts();  // can be skipped
   void read_alignments();  // must be called; add optional argument to allow direct specification of an alignment?

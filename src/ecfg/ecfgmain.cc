@@ -106,7 +106,7 @@ void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstri
   stock.add_gf_annot (score_tag, score_string);
 }
 
-void ECFG_main::run (ostream& alignment_output_stream)
+void ECFG_main::run_xrate (ostream& alignment_output_stream)
 {
   try
     {
