@@ -27,7 +27,7 @@ int main (int argc, char* argv[])
   ecfg_main.init_opts ("annotate alignments and estimate evolutionary rates\n");
 
   // run
-  ecfg_main.run();
+  ecfg_main.run(cout);
 
   // delete grammars
   for_contents (ECFG_map, ecfg_main.ecfg_map, sg)

@@ -150,7 +150,7 @@ sexpr_to_scm (SExpr* sexpr)
   return scm;
 }
 
-// test function that converts an SCM to an SExpr, and back again
+// test function that converts a Guile SCM to a Dart SExpr, and back again
 static SCM
 test_convert_scm (SCM scm) {
   SExpr* sexpr = scm_to_sexpr(scm);
@@ -159,6 +159,8 @@ test_convert_scm (SCM scm) {
   return scm2;
 }
 
+
+// main guile initialization routine
 void
 init_stockholm_type (void)
 {

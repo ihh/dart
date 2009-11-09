@@ -6,6 +6,7 @@
 #include "util/rnd.h"
 #include "util/vector_output.h"
 #include "tree/subdistmat.h"
+#include "hsm/branch_length_em.h"
 #include "ecfg/pfold.h"
 #include "ecfg/ecfgdp.h"
 
@@ -15,10 +16,8 @@ struct ECFG_main
   typedef map<sstring,ECFG_scores*> ECFG_map;
 
   // data
+  // command-line option parser
   Opts_list opts;
-  const Alphabet* alph;
-  ECFG_chain* tree_estimation_chain;  // contains matrix for doing neighbor-joining, branch-length EM
-  ECFG_map ecfg_map;  // list of grammars
 
   // command-line params
   bool annotate;
@@ -48,25 +47,53 @@ struct ECFG_main
 
   double min_branch_len;
 
-  vector<sstring> grammar_list;
+  // alphabet & grammar data
+  const Alphabet* alph;
+  Empty_alphabet user_alphabet;
+
   sstring default_grammars;
+  vector<sstring> grammar_list; // grammar names
+  vector<ECFG_scores*> grammar;  // grammar objects
+  ECFG_map ecfg_map;  // map from grammar names to grammar objects
 
-  vector<ECFG_scores*> grammar;  // actual ECFG objects
+  const ECFG_chain* tree_estimation_chain;  // contains matrix for doing neighbor-joining, branch-length EM
 
-  // constructor
+  // alignment data
+  Sequence_database seq_db;
+  Stockholm_database stock_db;
+  vector<sstring> training_alignment_filename;
+  EM_tree_alignment_database align_db;
+  vector<Aligned_score_profile> asp_vec;
+
+  // constructors
   ECFG_main (int argc, char** argv);
 
-  // method to add grammar
+  // add a preset grammar
+  // call this as many times as you like after constructing the object
   void add_grammar (const char* name, ECFG_scores* ecfg);
 
-  // method to annotate a score
-  void annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const;
-
-  // opts-list initialiser
+  // initialise opts-list
+  // call this after constructing & adding preset grammars
   void init_opts (const char* desc);
 
-  // method
-  void run();
+  // top-level run method
+  void run (ostream* alignment_output_stream = 0);
+  void run(ostream& s) { run(&s); }
+
+  // lower-level methods called by run()
+  void parse_opts();
+  void read_alignments();
+  void estimate_trees();
+  void read_grammars();
+  void convert_sequences();
+  void train_grammars();
+  void annotate_alignments (ostream* align_stream = 0);
+
+  // helper to add a particular score annotation to an alignment
+  void annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const;
+
+  // helper to test if any trees are missing
+  bool missing_trees() const;
 };
 
 #endif /* ECFG_MAIN_INCLUDED */

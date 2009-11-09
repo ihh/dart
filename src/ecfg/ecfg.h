@@ -313,6 +313,9 @@ struct ECFG_scores : ECFG<Score>
   // method to set max_len for infix states, and issue warnings for non-prefix and non-suffix states with excessive max_len
   void set_infix_len (int max_subseq_len);
 
+  // method to return a pointer to the first single-pseudoterminal chain in this grammar, or null if there is no such chain
+  const ECFG_chain* first_single_pseudoterminal_chain() const;
+
   // helpers
   vector<int> nonemit_states_unsorted() const;
   vector<int> nonemit_states() const;  // sorted topologically; throws exception if null cycle detected

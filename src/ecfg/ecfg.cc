@@ -314,6 +314,15 @@ void ECFG_scores::set_infix_len (int max_subseq_len)
 	    << '\n';
 }
 
+const ECFG_chain* ECFG_scores::first_single_pseudoterminal_chain() const
+{
+  for (int m = 0; m < (int) matrix_set.chain.size(); ++m)
+    if (matrix_set.chain[m].word_len == 1)
+      return &matrix_set.chain[m];
+  return (ECFG_chain*) 0;
+}
+
+
 vector<int> ECFG_scores::nonemit_states_unsorted() const
 {
   vector<int> result;
