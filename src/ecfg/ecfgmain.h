@@ -76,18 +76,23 @@ struct ECFG_main
   // call this after constructing & adding preset grammars
   void init_opts (const char* desc);
 
-  // top-level run method
-  void run (ostream* alignment_output_stream = 0);
-  void run(ostream& s) { run(&s); }
+  // top-level run method for xrate
+  void run (ostream& alignment_output_stream);
+
+  // alternate top-level methods for embedded invocation (currently placeholders)
+  Stockholm estimate_tree(const ECFG_scores& ecfg, Stockholm& stock);
+  ECFG_scores train_grammar(const ECFG_scores& ecfg, Stockholm_database& stock);
+  Stockholm annotate_alignment(const ECFG_scores& ecfg, Stockholm& stock);
 
   // lower-level methods called by run()
-  void parse_opts();
-  void read_alignments();
-  void estimate_trees();
-  void read_grammars();
-  void convert_sequences();
-  void train_grammars();
-  void annotate_alignments (ostream* align_stream = 0);
+  // comments indicate required modifications for embedded invocation
+  void parse_opts();  // can be skipped
+  void read_alignments();  // must be called; add optional argument to allow direct specification of an alignment?
+  void estimate_trees();  // can be skipped; add optional argument to allow direct specification of a tree-estimation grammar?
+  void read_grammars();  // must be called (but can use a default grammar); add optional argument to allow direct specification of a grammar?
+  void convert_sequences();  // must be called if train_grammars() or annotate_alignments() is to be called
+  void train_grammars();  // can be skipped
+  void annotate_alignments (ostream* align_stream = 0);  // can be skipped
 
   // helper to add a particular score annotation to an alignment
   void annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const;

@@ -106,17 +106,24 @@ void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstri
   stock.add_gf_annot (score_tag, score_string);
 }
 
-void ECFG_main::run (ostream* alignment_output_stream)
+void ECFG_main::run (ostream& alignment_output_stream)
 {
   try
     {
       parse_opts();
       read_alignments();
-      estimate_trees();
+
+      if (tree_estimation_chain != 0 || tree_grammar_filename.size() > 0 || missing_trees())
+	estimate_trees();
+
       read_grammars();
       convert_sequences();
-      train_grammars();
-      annotate_alignments (alignment_output_stream);
+
+      if (train.size() > 0)
+	train_grammars();
+
+      if (annotate || report_sumscore)
+	annotate_alignments (&alignment_output_stream);
     }
   catch (const Dart_exception& e)
     {
@@ -164,7 +171,7 @@ void ECFG_main::read_alignments()
       }
 
   // initialise Tree_alignment_database
-  align_db.initialise_from_Stockholm_database (stock_db, FALSE);
+  align_db.initialise_from_Stockholm_database (stock_db, false);
 }
 
 void ECFG_main::estimate_trees() {
@@ -299,8 +306,6 @@ void ECFG_main::convert_sequences()
 void ECFG_main::train_grammars()
 {
   // do training
-  if (train.size())
-    {
       if (missing_trees())
 	THROWEXPR("All alignments must be annotated with trees before training can begin");
 
@@ -325,6 +330,8 @@ void ECFG_main::train_grammars()
 	  }
 
       // save
+  if (train.size())
+    {
       ofstream train_file (train.c_str());
       for (int n = 0; n < (int) grammar.size(); ++n)
 	{
@@ -341,12 +348,12 @@ void ECFG_main::train_grammars()
 	  ECFG_builder::ecfg2stream (train_file, *alph, *grammar[n], stock_db.size() ? &trainer[n]->counts : (ECFG_counts*) 0);
 	}
       ECFG_builder::alphabet2stream (train_file, *alph);
+    }
 
       // delete
       for_const_contents (vector<ECFG_trainer*>, trainer, t)
 	if (*t)
 	  delete *t;
-    }
 }
 
 void ECFG_main::annotate_alignments (ostream* align_stream)
@@ -495,8 +502,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	    }
 
 	  // do Inside algorithm, if requested
-	  const bool has_GFF = ecfg.has_GFF();
-	  const bool want_inside = report_sumscore || has_GFF;
+	  const bool want_GFF = annotate && ecfg.has_GFF();
+	  const bool want_inside = report_sumscore || want_GFF;
 	  if (want_inside)
 	    {
 	      CTAG(6,XFOLD) << "Running Inside algorithm using grammar '" << ecfg_name << "'\n";
