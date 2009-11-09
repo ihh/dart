@@ -22,6 +22,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   // initialise an Alphabet and a bunch of grammars
   static void init_grammars (Alphabet& alph, vector<ECFG_scores*>& ecfgs, SExpr& grammars_sexpr, const Tree_alignment_database* align_db = 0, double tres = DEFAULT_TIMEPOINT_RES);
   static void load_xgram_alphabet_and_grammars (const sstring& filename, Alphabet& alph, vector<ECFG_scores*>& ecfgs, const Tree_alignment_database* align_db = 0, int max_subseq_len = -1, double tres = DEFAULT_TIMEPOINT_RES);
+  static void load_xgram_alphabet_and_grammars (SExpr& ecfg_sexpr, Alphabet& alph, vector<ECFG_scores*>& ecfgs, const Tree_alignment_database* align_db = 0, int max_subseq_len = -1, double tres = DEFAULT_TIMEPOINT_RES);
   static void expand_macros (SExpr& grammars_sexpr, const Alphabet& alph, const Tree_alignment_database* align_db = 0);
 
   // initialise a single ECFG_scores from an EG_GRAMMAR expression

@@ -147,19 +147,22 @@ void ECFG_main::parse_opts()
     }
 }
 
-void ECFG_main::read_alignments()
+void ECFG_main::read_alignments (Stockholm* stock)
 {
   // set up the gap characters
   if (gap_chars.size())
     Alignment::set_gap_chars (gap_chars);
 
   // initialise Stockholm_database
-  if (!opts.args.size())
+  if (stock != 0) {
+    stock_db.add (*stock);
+    training_alignment_filename.push_back ("-");  // default "filename" for alignments supplied through the API
+  } else if (!opts.args.size())
     {
       // no alignment filenames specified; read from stdin
       CLOGERR << "[waiting for alignments on standard input]\n";
       stock_db.read (cin, seq_db, MAX_LINE_LEN);
-      training_alignment_filename.push_back (sstring (ALIGN_STDIN));
+      training_alignment_filename.push_back (sstring (ALIGN_STDIN));  // default "filename" for alignments read from stdin
     }
   else
     for_const_contents (vector<sstring>, opts.args, align_db_filename)
@@ -174,7 +177,7 @@ void ECFG_main::read_alignments()
   align_db.initialise_from_Stockholm_database (stock_db, false);
 }
 
-void ECFG_main::estimate_trees() {
+void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr) {
   // HACK REPORT
   // Score_profile's are needed by the Tree_alignment tree estimation routines
   // (neighbor joining & branch-length EM).
@@ -189,36 +192,41 @@ void ECFG_main::estimate_trees() {
   // That is, it'll be the right Alphabet for tree estimation,
   // but wrong for any later operations involving the main grammar.
   // Solution: call seq_db.clear_scores() after tree estimation.
-  if (tree_grammar_filename.size() == 0 && missing_trees())
+
+  Empty_alphabet tree_estimation_grammar_alphabet, tree_estimation_hidden_alphabet;
+  vector<ECFG_scores*> tree_estimation_grammars;
+  if (tree_estimation_chain == 0 && (tree_grammar_filename.size() > 0 || grammar_alphabet_sexpr != 0))
     {
-      THROWEXPR ("Every input alignment needs to be annotated with a phylogenetic tree.\n"
-		 << "Given that this isn't the case, I need a rate matrix in order to do some ad-hoc phylogeny\n"
-		 << " (neighbor-joining followed by EM on the branch lengths, if you must know.)\n"
-		 << "I want to get that rate matrix from the tree estimation grammar file.\n"
-		 << "However, I haven't been told about any such file, so I'm bailing.\n");
+      // read tree grammar & alphabet from file or SExpr
+      if (grammar_alphabet_sexpr)
+	ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, tree_estimation_grammar_alphabet, tree_estimation_grammars);
+      else
+	ECFG_builder::load_xgram_alphabet_and_grammars (tree_grammar_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars);
+
+      // set the matrix used for tree estimation to be the first single-character matrix in any grammar in the tree grammar file
+      for (int g = 0; tree_estimation_chain == 0 && g < (int) tree_estimation_grammars.size(); ++g)
+	tree_estimation_chain = tree_estimation_grammars[g]->first_single_pseudoterminal_chain();
     }
 
-  if (tree_estimation_chain != 0 || tree_grammar_filename.size() > 0)
+  if (missing_trees())
     {
-      // set the matrix used for tree estimation to be the first single-character matrix in any grammar in the tree grammar file
-      Empty_alphabet tree_estimation_grammar_alphabet;
-      vector<ECFG_scores*> tree_estimation_grammars;
-      if (tree_estimation_chain == 0 && tree_grammar_filename.size() > 0)
-	{
-	  ECFG_builder::load_xgram_alphabet_and_grammars (tree_grammar_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars);
-	  for (int g = 0; tree_estimation_chain == 0 && g < (int) tree_estimation_grammars.size(); ++g)
-	    tree_estimation_chain = tree_estimation_grammars[g]->first_single_pseudoterminal_chain();
-	}
-      if (tree_estimation_chain == 0 && missing_trees())
-	THROWEXPR ("Every input alignment needs to be annotated with a phylogenetic tree.\n"
-		   << "Given that this isn't the case, I need a rate matrix in order to do some ad-hoc phylogeny\n"
-		   << " (neighbor-joining followed by EM on the branch lengths, if you must know.)\n"
-		   << "I want to get that rate matrix from the tree estimation grammar file,\n"
-		   << " in the form of a single-terminal 'chain'.\n"
+      if (tree_estimation_chain == 0) {
+	sstring preamble;
+	preamble << "Every input alignment needs to be annotated with a phylogenetic tree.\n"
+		 << "Given that this isn't the case, I need a rate matrix in order to do some ad-hoc phylogeny\n"
+		 << " (neighbor-joining followed by EM on the branch lengths, if you must know.)\n"
+		 << "I want to get that rate matrix from the tree estimation grammar,\n"
+		 << " in the form of a single-terminal 'chain'.\n";
+
+	if (tree_grammar_filename.size() == 0 && grammar_alphabet_sexpr == 0)
+	  THROWEXPR (preamble
+		     << "However, I haven't been told where to find that grammar, so I'm bailing.\n");
+
+	THROWEXPR (preamble
 		   << "However, I wasn't able to find any such chain in that file, so I'm bailing.\n");
+      }
 
       // convert sequences to Score_profile's for tree estimation
-      Empty_alphabet tree_estimation_hidden_alphabet;
       tree_estimation_hidden_alphabet.init_hidden (tree_estimation_grammar_alphabet, tree_estimation_chain->class_labels);
       seq_db.seqs2scores (tree_estimation_hidden_alphabet);
 
@@ -259,10 +267,13 @@ void ECFG_main::estimate_trees() {
     }
 }
 
-void ECFG_main::read_grammars()
+void ECFG_main::read_grammars (SExpr* grammar_alphabet_sexpr)
 {
   // get list of grammars; either by loading from file, or by using a preset
-  if (grammars_filename.size())
+  if (grammar_alphabet_sexpr) {
+      ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, user_alphabet, grammar, &align_db, max_subseq_len, tres);
+      alph = &user_alphabet;
+  } else if (grammars_filename.size())
     {
       ECFG_builder::load_xgram_alphabet_and_grammars (grammars_filename, user_alphabet, grammar, &align_db, max_subseq_len, tres);
       alph = &user_alphabet;

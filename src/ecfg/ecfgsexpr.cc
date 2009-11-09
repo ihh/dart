@@ -975,6 +975,12 @@ void ECFG_builder::load_xgram_alphabet_and_grammars (const sstring& filename, Al
   // create SExpr
   SExpr ecfg_sexpr (ecfg_sexpr_string.begin(), ecfg_sexpr_string.end());
 
+  // delegate
+  load_xgram_alphabet_and_grammars (ecfg_sexpr, alph, ecfgs, align_db, max_subseq_len, tres);
+}
+
+void ECFG_builder::load_xgram_alphabet_and_grammars (SExpr& ecfg_sexpr, Alphabet& alph, vector<ECFG_scores*>& ecfgs, const Tree_alignment_database* align_db, int max_subseq_len, double tres)
+{
   // initialise ECFGs & alphabet
   init_grammars (alph, ecfgs, ecfg_sexpr, align_db, tres);
 

@@ -80,16 +80,16 @@ struct ECFG_main
   void run_xrate (ostream& alignment_output_stream);
 
   // alternate top-level run methods for embedded invocation (currently placeholders)
-  Stockholm run_tree_estimation (const ECFG_scores& ecfg, Stockholm& stock);
-  ECFG_scores run_grammar_training (const ECFG_scores& ecfg, Stockholm_database& stock);
-  Stockholm run_alignment_annotation (const ECFG_scores& ecfg, Stockholm& stock);
+  Stockholm run_tree_estimation (Stockholm& stock, SExpr& grammar_alphabet_sexpr);
+  Stockholm run_alignment_annotation (Stockholm& stock, SExpr& grammar_alphabet_sexpr);
+  ECFG_scores run_grammar_training (Stockholm_database& stock, SExpr& grammar_alphabet_sexpr);
 
   // lower-level methods called by run_*()
-  // comments indicate required modifications for embedded invocation
+  // comments indicate required usage for embedded invocation
   void parse_opts();  // can be skipped
-  void read_alignments();  // must be called; add optional argument to allow direct specification of an alignment?
-  void estimate_trees();  // can be skipped; add optional argument to allow direct specification of a tree-estimation grammar?
-  void read_grammars();  // must be called (but can use a default grammar); add optional argument to allow direct specification of a grammar?
+  void read_alignments (Stockholm* stock = 0);  // must be called; optional argument allows direct specification of an alignment
+  void estimate_trees (SExpr* grammar_alphabet_sexpr = 0);  // can be skipped; optional argument allows direct specification of a tree-estimation grammar
+  void read_grammars (SExpr* grammar_alphabet_sexpr = 0);  // must be called (but can use a default grammar); optional argument allows direct specification of an alphabet/grammar pair
   void convert_sequences();  // must be called if train_grammars() or annotate_alignments() is to be called
   void train_grammars();  // can be skipped
   void annotate_alignments (ostream* align_stream = 0);  // can be skipped
