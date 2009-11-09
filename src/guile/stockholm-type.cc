@@ -3,7 +3,7 @@
 
 #include "seq/stockholm.h"
 #include "tree/tree_alignment.h"
-
+#include "util/sexpr.h"
 #include "guile/stockholm-type.h"
 
 static scm_t_bits stockholm_tag;
@@ -121,6 +121,44 @@ print_stockholm (SCM stock_smob, SCM port, scm_print_state *pstate)
   return 1;
 }
 
+static SExpr*
+scm_to_sexpr (SCM scm)
+{
+  // four guile API calls to get an SCM as a char* string? feel like I'm doing something the hard way here
+  const char *s = scm_to_locale_string (scm_object_to_string (scm, scm_variable_ref (scm_c_lookup ("write"))));
+  sstring str (s);
+  SExpr* sexpr = new SExpr (str.begin(), str.end());
+  free((void*) s);
+  return sexpr;
+}
+
+static SCM
+string_to_scm (const char* s)
+{
+  sstring str;
+  str << "(quote " << s << ")";
+  SCM scm = scm_c_eval_string(str.c_str());
+  return scm;
+}
+
+static SCM
+sexpr_to_scm (SExpr* sexpr)
+{
+  sstring str;
+  str << *sexpr;
+  SCM scm = string_to_scm(str.c_str());
+  return scm;
+}
+
+// test function that converts an SCM to an SExpr, and back again
+static SCM
+test_convert_scm (SCM scm) {
+  SExpr* sexpr = scm_to_sexpr(scm);
+  SCM scm2 = sexpr_to_scm(sexpr);
+  delete sexpr;
+  return scm2;
+}
+
 void
 init_stockholm_type (void)
 {
@@ -132,4 +170,6 @@ init_stockholm_type (void)
   scm_c_define_gsubr ("write-stockholm", 2, 0, 0, (SCM (*)()) write_stockholm);
   scm_c_define_gsubr ("stockholm-leaf-list", 1, 0, 0, (SCM (*)()) stockholm_leaf_list);
   scm_c_define_gsubr ("stockholm-ancestor-list", 1, 0, 0, (SCM (*)()) stockholm_ancestor_list);
+
+  scm_c_define_gsubr ("test-convert-scm", 1, 0, 0, (SCM (*)()) test_convert_scm);
 }
