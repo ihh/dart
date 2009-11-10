@@ -2,7 +2,7 @@
 #include <libguile.h>
 
 #include "tree/tree_alignment.h"
-#include "guile/guile-inits.h"
+#include "guile/guile-defs.h"
 
 scm_t_bits stockholm_tag;
 

@@ -6,7 +6,7 @@
 #include "util/sexpr.h"
 #include "ecfg/ecfgmain.h"
 #include "ecfg/ecfgsexpr.h"
-#include "guile/guile-inits.h"
+#include "guile/guile-defs.h"
 
 static SCM xrate_estimate_tree (SCM stock_smob, SCM alphabet_and_grammar)
 {

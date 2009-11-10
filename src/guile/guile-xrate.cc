@@ -1,5 +1,5 @@
 #include <libguile.h>
-#include "guile/guile-inits.h"
+#include "guile/guile-defs.h"
 
 static void inner_main (void *closure, int argc, char **argv)
 {
