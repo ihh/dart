@@ -863,8 +863,15 @@ void Stockholm_database::propagate_consensus_folds (bool override_row_folds)
     stock->propagate_consensus_fold (override_row_folds);
 }
 
-void Stockholm_database::add (Stockholm& stock)
+void Stockholm_database::add (const Stockholm& stock)
 {
   align.push_back (stock);
+  update_index();
+}
+
+void Stockholm_database::add (const Stockholm_database& stock_db)
+{
+  for_const_contents (list<Stockholm>, stock_db.align, stock)
+    align.push_back (*stock);
   update_index();
 }

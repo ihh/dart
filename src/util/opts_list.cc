@@ -90,7 +90,8 @@ Opts_list::Opts_list (int argc, char** argv)
     init_argv(argv),
     expect_args(-1)
 {
-  program_name = next_string();
+  if (argc > 0)
+    program_name = next_string();
   add ("h help -help", &display_help, "\tdisplay this message");
   add ("v -version", &display_version, "\tdisplay version");
   short_help_text.clear();
@@ -135,7 +136,7 @@ char* Opts_list::next_string()
       const sstring& next_arg = *--next_alias_arg;
       return (char*) next_arg.c_str();  // cast away const... hacky
     }
-  if (--argc < 0) THROW Syntax_exception (*this, "missing sstring argument");
+  if (--argc < 0) THROW Syntax_exception (*this, "missing string argument");
   return *argv++;
 }
 

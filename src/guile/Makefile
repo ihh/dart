@@ -1,11 +1,8 @@
 
-all: myguile
-
-gclean:
-	-rm -rf myguile $(O_FILES)
+all: guile-xrate
 
 TESTS      = 
-TARGETS    = $(TESTS) myguile
+TARGETS    = $(TESTS) guile-xrate
 DIRNAME    = guile
 
 DEPS       = ecfg scfg hmm hsm irrev tree seq util newmat randlib

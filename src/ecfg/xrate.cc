@@ -8,7 +8,8 @@ typedef ECFG_main::ECFG_map ECFG_map;
 int main (int argc, char* argv[])
 {
   // create ECFG_main
-  ECFG_main ecfg_main (argc, argv);
+  Sequence_database seq_db;
+  ECFG_main ecfg_main (argc, argv, seq_db);
 
   // initialise grammars
   ecfg_main.add_grammar ("rev", new Null_ECFG (DNA_alphabet, true));
@@ -27,7 +28,13 @@ int main (int argc, char* argv[])
   ecfg_main.init_opts ("annotate alignments and estimate evolutionary rates\n");
 
   // run
-  ecfg_main.run_xrate (cout);
+  try {
+    ecfg_main.run_xrate (cout);
+  } catch (const Dart_exception& e)
+    {
+      CLOGERR << "ERROR: " << e.what();
+      exit(1);
+    }
 
   // delete grammars
   for_contents (ECFG_map, ecfg_main.ecfg_map, sg)

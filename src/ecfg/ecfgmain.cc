@@ -33,6 +33,16 @@ ECFG_main::ECFG_main (int argc, char** argv)
     align_db (seq_db)
 { }
 
+ECFG_main::ECFG_main()
+  : opts (0, (char**) 0),
+    max_subseq_len (0),
+    alph (0),
+    tree_estimation_chain (0),
+    align_db (seq_db)
+{
+  init_opts("");
+}
+
 void ECFG_main::add_grammar (const char* name, ECFG_scores* ecfg)
 {
   ecfg_map[sstring (name)] = ecfg;
@@ -48,12 +58,15 @@ void ECFG_main::init_opts (const char* desc)
 
   opts.add ("g -grammar", grammars_filename, "load grammar from file", false);
 
-  if (!(preset = default_grammars).size())
+  if (!(preset = default_grammars).size() && grammar_list.size() > 0)
     preset = grammar_list.front();
-  sstring preset_help;
-  preset_help << "use one of the presets: " << sstring::join (grammar_list, ",");
-  if (grammar_list.size() > 1)
-    opts.add ("p -preset", preset, preset_help.c_str());
+  if (preset.size())
+    {
+      sstring preset_help;
+      preset_help << "use one of the presets: " << sstring::join (grammar_list, ",");
+      if (grammar_list.size() > 1)
+	opts.add ("p -preset", preset, preset_help.c_str());
+    }
 
   opts.add ("x -expand", dump_expanded = "", "dump macro-expanded grammar to file (prior to any training)", false);
 
@@ -106,32 +119,6 @@ void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstri
   stock.add_gf_annot (score_tag, score_string);
 }
 
-void ECFG_main::run_xrate (ostream& alignment_output_stream)
-{
-  try
-    {
-      parse_opts();
-      read_alignments();
-
-      if (tree_estimation_chain != 0 || tree_grammar_filename.size() > 0 || missing_trees())
-	estimate_trees();
-
-      read_grammars();
-      convert_sequences();
-
-      if (train.size() > 0)
-	train_grammars();
-
-      if (annotate || report_sumscore)
-	annotate_alignments (&alignment_output_stream);
-    }
-  catch (const Dart_exception& e)
-    {
-      CLOGERR << "ERROR: " << e.what();
-      exit(1);
-    }
-}
-
 void ECFG_main::parse_opts()
 {
   // parse the command line
@@ -147,7 +134,14 @@ void ECFG_main::parse_opts()
     }
 }
 
-void ECFG_main::read_alignments (Stockholm* stock)
+void ECFG_main::read_alignments (const Stockholm& stock)
+{
+  Stockholm_database dummy_stock_db;
+  dummy_stock_db.add (stock);
+  read_alignments (&dummy_stock_db);
+}
+
+void ECFG_main::read_alignments (const Stockholm_database* stock)
 {
   // set up the gap characters
   if (gap_chars.size())
@@ -177,7 +171,7 @@ void ECFG_main::read_alignments (Stockholm* stock)
   align_db.initialise_from_Stockholm_database (stock_db, false);
 }
 
-void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr) {
+void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database* seq_db_ptr) {
   // HACK REPORT
   // Score_profile's are needed by the Tree_alignment tree estimation routines
   // (neighbor joining & branch-length EM).
@@ -191,7 +185,11 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr) {
   // it's conceivable that the Score_profile's could end up getting converted to the "wrong" alphabet here.
   // That is, it'll be the right Alphabet for tree estimation,
   // but wrong for any later operations involving the main grammar.
-  // Solution: call seq_db.clear_scores() after tree estimation.
+  // Solution: call seq_db_ptr->clear_scores() after tree estimation.
+
+  // use our Sequence_database unless caller overrides this
+  if (seq_db_ptr == 0)
+    seq_db_ptr = &seq_db;
 
   Empty_alphabet tree_estimation_grammar_alphabet, tree_estimation_hidden_alphabet;
   vector<ECFG_scores*> tree_estimation_grammars;
@@ -228,7 +226,7 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr) {
 
       // convert sequences to Score_profile's for tree estimation
       tree_estimation_hidden_alphabet.init_hidden (tree_estimation_grammar_alphabet, tree_estimation_chain->class_labels);
-      seq_db.seqs2scores (tree_estimation_hidden_alphabet);
+      seq_db_ptr->seqs2scores (tree_estimation_hidden_alphabet);
 
       // if any trees are missing, estimate them by neighbor-joining
       if (missing_trees())
@@ -246,7 +244,7 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr) {
 	}
 
       // clear the (potentially inconsistent with other grammars) Score_profile's
-      seq_db.clear_scores();
+      seq_db_ptr->clear_scores();
     }
 
   // ensure all tree branches meet minimum length requirement
@@ -271,8 +269,8 @@ void ECFG_main::read_grammars (SExpr* grammar_alphabet_sexpr)
 {
   // get list of grammars; either by loading from file, or by using a preset
   if (grammar_alphabet_sexpr) {
-      ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, user_alphabet, grammar, &align_db, max_subseq_len, tres);
-      alph = &user_alphabet;
+    ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, user_alphabet, grammar, &align_db, max_subseq_len, tres);
+    alph = &user_alphabet;
   } else if (grammars_filename.size())
     {
       ECFG_builder::load_xgram_alphabet_and_grammars (grammars_filename, user_alphabet, grammar, &align_db, max_subseq_len, tres);
@@ -317,30 +315,30 @@ void ECFG_main::convert_sequences()
 void ECFG_main::train_grammars()
 {
   // do training
-      if (missing_trees())
-	THROWEXPR("All alignments must be annotated with trees before training can begin");
+  if (missing_trees())
+    THROWEXPR("All alignments must be annotated with trees before training can begin");
 
-      // train
-      vector<ECFG_trainer*> trainer (grammar.size(), (ECFG_trainer*) 0);
-      if (stock_db.size())
-	for (int n_grammar = 0; n_grammar < (int) grammar.size(); ++n_grammar)
-	  {
-	    ECFG_scores& ecfg = *grammar[n_grammar];
-	    ECFG_trainer*& tr (trainer[n_grammar]);
+  // train
+  trainer = vector<ECFG_trainer*> (grammar.size(), (ECFG_trainer*) 0);
+  if (stock_db.size())
+    for (int n_grammar = 0; n_grammar < (int) grammar.size(); ++n_grammar)
+      {
+	ECFG_scores& ecfg = *grammar[n_grammar];
+	ECFG_trainer*& tr (trainer[n_grammar]);
 
-	    tr = new ECFG_trainer (ecfg, stock_db.align_index, asp_vec, ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len);
+	tr = new ECFG_trainer (ecfg, stock_db.align_index, asp_vec, ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len);
 
-	    tr->pseud_init = pseud_init;
-	    tr->pseud_mutate = pseud_mutate;
-	    tr->pseud_wait = pseud_wait;
+	tr->pseud_init = pseud_init;
+	tr->pseud_mutate = pseud_mutate;
+	tr->pseud_wait = pseud_wait;
 
-	    tr->em_min_inc = em_min_inc;
-	    tr->em_max_iter = em_max_iter;
+	tr->em_min_inc = em_min_inc;
+	tr->em_max_iter = em_max_iter;
 
-	    tr->iterate_quick_EM (em_forgive);
-	  }
+	tr->iterate_quick_EM (em_forgive);
+      }
 
-      // save
+  // save
   if (train.size())
     {
       ofstream train_file (train.c_str());
@@ -360,11 +358,15 @@ void ECFG_main::train_grammars()
 	}
       ECFG_builder::alphabet2stream (train_file, *alph);
     }
+}
 
-      // delete
-      for_const_contents (vector<ECFG_trainer*>, trainer, t)
-	if (*t)
-	  delete *t;
+void ECFG_main::delete_trainers()
+{
+  for_const_contents (vector<ECFG_trainer*>, trainer, t)
+    if (*t)
+      delete *t;
+
+  trainer.clear();
 }
 
 void ECFG_main::annotate_alignments (ostream* align_stream)
@@ -589,4 +591,63 @@ bool ECFG_main::missing_trees() const
     if (ta->tree.nodes() == 0)
       return true;
   return false;
+}
+
+// run methods
+void ECFG_main::run_xrate (ostream& alignment_output_stream)
+{
+  parse_opts();
+  read_alignments();
+
+  if (tree_estimation_chain != 0 || tree_grammar_filename.size() > 0 || missing_trees())
+    estimate_trees();
+
+  read_grammars();
+  convert_sequences();
+
+  if (train.size() > 0)
+    {
+      train_grammars();
+      delete_trainers();
+    }
+
+  if (annotate || report_sumscore)
+    annotate_alignments (&alignment_output_stream);
+
+  // void return value
+  // annotated alignments written to alignment_output_stream
+  // trained grammars & GFF annotations written to files
+}
+
+Stockholm& ECFG_main::run_tree_estimation (Stockholm& stock, Sequence_database& stock_seq_db, SExpr& grammar_alphabet_sexpr)
+{
+  read_alignments (stock);
+  estimate_trees (&grammar_alphabet_sexpr, &stock_seq_db);
+
+  // return
+  return *stock_db.align.begin();
+}
+
+Stockholm& ECFG_main::run_alignment_annotation (Stockholm& stock, SExpr& grammar_alphabet_sexpr)
+{
+  read_alignments (stock);
+  read_grammars (&grammar_alphabet_sexpr);
+  convert_sequences();
+  annotate_alignments();
+
+  // return
+  return *stock_db.align.begin();
+}
+
+void ECFG_main::run_grammar_training (Stockholm_database& stock, SExpr& grammar_alphabet_sexpr, ECFG_scores** grammar_ret, ECFG_counts** counts_ret)
+{
+  read_alignments (&stock);
+  read_grammars (&grammar_alphabet_sexpr);
+  convert_sequences();
+  train_grammars();
+
+  // set return values
+  *grammar_ret = *grammar.begin();
+  if (*trainer.begin() != 0)
+    *counts_ret = &(*trainer.begin())->counts;
 }

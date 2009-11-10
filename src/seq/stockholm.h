@@ -176,7 +176,8 @@ public:
   void write (ostream& out) const;
 
   // builder method
-  void add (Stockholm& stock);
+  void add (const Stockholm& stock);
+  void add (const Stockholm_database& stock_db);
 
   // the following method autodetects FASTA/Stockholm (if FASTA, creates a separate alignment for each sequence)
   void read_Stockholm_or_FASTA (istream& in, Sequence_database& seq_db);

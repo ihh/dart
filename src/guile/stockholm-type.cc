@@ -1,32 +1,20 @@
 #include <stdlib.h>
 #include <libguile.h>
 
-#include "seq/stockholm.h"
 #include "tree/tree_alignment.h"
-#include "util/sexpr.h"
-#include "guile/stockholm-type.h"
+#include "guile/guile-inits.h"
 
-static scm_t_bits stockholm_tag;
+scm_t_bits stockholm_tag;
 
-struct Stockholm_smob {
-  // data
-  Stockholm stock;
-  Sequence_database seqdb;
+SCM make_stockholm_smob (const Stockholm& stock)
+{
+  SCM smob;
+  Stockholm_smob *stock_smob = new Stockholm_smob (stock);
+  SCM_NEWSMOB (smob, stockholm_tag, stock_smob);
+  return smob;
+}
 
-  // methods (just wrappers for Stockholm methods)
-  void read (const char* filename) {
-    ifstream infile(filename);
-    stock.read_Stockholm (infile, seqdb);
-  }
-
-  void write (const char* filename) {
-    ofstream outfile(filename);
-    stock.write_Stockholm (outfile);
-  }
-};
-
-static SCM
-read_stockholm (SCM s_filename)
+static SCM read_stockholm (SCM s_filename)
 {
   SCM smob;
 
@@ -43,11 +31,9 @@ read_stockholm (SCM s_filename)
   return smob;
 }
 
-static SCM
-write_stockholm (SCM stock_smob, SCM s_filename)
+static SCM write_stockholm (SCM stock_smob, SCM s_filename)
 {
-  scm_assert_smob_type (stockholm_tag, stock_smob);
-  Stockholm_smob *stock = (Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
+  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
 
   // write alignment to file
   char* filename = scm_to_locale_string (s_filename);
@@ -58,8 +44,7 @@ write_stockholm (SCM stock_smob, SCM s_filename)
   return SCM_UNSPECIFIED;
 }
 
-static SCM
-stockholm_node_list (PHYLIP_tree& tree, vector<Phylogeny::Node> (PHYLIP_tree::*getNodeMethod)())
+static SCM stockholm_node_list (PHYLIP_tree& tree, vector<Phylogeny::Node> (PHYLIP_tree::*getNodeMethod)())
 {
   SCM tree_node_list = SCM_BOOL_F;
   bool list_empty = true;
@@ -80,36 +65,34 @@ stockholm_node_list (PHYLIP_tree& tree, vector<Phylogeny::Node> (PHYLIP_tree::*g
   return tree_node_list;
 }
 
-static SCM
-stockholm_leaf_list (SCM stock_smob)
+static SCM stockholm_leaf_list (SCM stock_smob)
 {
-  scm_assert_smob_type (stockholm_tag, stock_smob);
-  Stockholm_smob *stock = (Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
-
+  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
   Stockholm_tree tree (stock->stock);
   return stockholm_node_list (tree, &PHYLIP_tree::leaf_vector);
 }
 
-static SCM
-stockholm_ancestor_list (SCM stock_smob)
+static SCM stockholm_ancestor_list (SCM stock_smob)
 {
-  scm_assert_smob_type (stockholm_tag, stock_smob);
-  Stockholm_smob *stock = (Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
-
+  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
   Stockholm_tree tree (stock->stock);
   return stockholm_node_list (tree, &PHYLIP_tree::ancestor_vector);
 }
 
-static size_t
-free_stockholm (SCM stock_smob)
+static SCM stockholm_count_columns (SCM stock_smob)
+{
+  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
+  return scm_from_int (stock->stock.columns());
+}
+
+static size_t free_stockholm (SCM stock_smob)
 {
   struct Stockholm_smob *stock = (struct Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
   delete stock;
   return 0;
 }
 
-static int
-print_stockholm (SCM stock_smob, SCM port, scm_print_state *pstate)
+static int print_stockholm (SCM stock_smob, SCM port, scm_print_state *pstate)
 {
   struct Stockholm_smob *stock = (struct Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
 
@@ -121,48 +104,14 @@ print_stockholm (SCM stock_smob, SCM port, scm_print_state *pstate)
   return 1;
 }
 
-static SExpr*
-scm_to_sexpr (SCM scm)
+Stockholm_smob* Stockholm_smob::cast_from_scm (SCM stock_smob)
 {
-  // four guile API calls to get an SCM as a char* string? feel like I'm doing something the hard way here
-  const char *s = scm_to_locale_string (scm_object_to_string (scm, scm_variable_ref (scm_c_lookup ("write"))));
-  sstring str (s);
-  SExpr* sexpr = new SExpr (str.begin(), str.end());
-  free((void*) s);
-  return sexpr;
+  scm_assert_smob_type (stockholm_tag, stock_smob);
+  return (Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
 }
-
-static SCM
-string_to_scm (const char* s)
-{
-  sstring str;
-  str << "(quote " << s << ")";
-  SCM scm = scm_c_eval_string(str.c_str());
-  return scm;
-}
-
-static SCM
-sexpr_to_scm (SExpr* sexpr)
-{
-  sstring str;
-  str << *sexpr;
-  SCM scm = string_to_scm(str.c_str());
-  return scm;
-}
-
-// test function that converts a Guile SCM to a Dart SExpr, and back again
-static SCM
-test_convert_scm (SCM scm) {
-  SExpr* sexpr = scm_to_sexpr(scm);
-  SCM scm2 = sexpr_to_scm(sexpr);
-  delete sexpr;
-  return scm2;
-}
-
 
 // main guile initialization routine
-void
-init_stockholm_type (void)
+void init_stockholm_type (void)
 {
   stockholm_tag = scm_make_smob_type ("stockholm", sizeof (struct Stockholm_smob));
   scm_set_smob_free (stockholm_tag, free_stockholm);
@@ -170,8 +119,7 @@ init_stockholm_type (void)
 
   scm_c_define_gsubr ("read-stockholm", 1, 0, 0, (SCM (*)()) read_stockholm);
   scm_c_define_gsubr ("write-stockholm", 2, 0, 0, (SCM (*)()) write_stockholm);
-  scm_c_define_gsubr ("stockholm-leaf-list", 1, 0, 0, (SCM (*)()) stockholm_leaf_list);
+  scm_c_define_gsubr ("stockholm-count-columns", 1, 0, 0, (SCM (*)()) stockholm_count_columns);
   scm_c_define_gsubr ("stockholm-ancestor-list", 1, 0, 0, (SCM (*)()) stockholm_ancestor_list);
-
-  scm_c_define_gsubr ("test-convert-scm", 1, 0, 0, (SCM (*)()) test_convert_scm);
+  scm_c_define_gsubr ("stockholm-leaf-list", 1, 0, 0, (SCM (*)()) stockholm_leaf_list);
 }
