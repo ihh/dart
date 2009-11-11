@@ -8,8 +8,7 @@ typedef ECFG_main::ECFG_map ECFG_map;
 int main (int argc, char* argv[])
 {
   // create ECFG_main
-  Sequence_database seq_db;
-  ECFG_main ecfg_main (argc, argv, seq_db);
+  ECFG_main ecfg_main (argc, argv);
 
   // initialise grammars
   ecfg_main.add_grammar ("rev", new Null_ECFG (DNA_alphabet, true));
