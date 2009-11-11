@@ -62,6 +62,10 @@
 
 #define EG_PARAMETRIC   "parametric"
 
+#define EG_EM_UPDATE    "em-update-iteration"
+#define EG_EM_BITS      "em-bits"
+#define EG_EM_BEST_BITS "em-lowest-bits"
+
 // EG_PARAMS and EG_CONST are obsolete, use PK_{PGROUP,RATE,CONST_PGROUP,CONST_RATE} in preference
 #define EG_PARAMS       "params"
 #define EG_CONST        "const"

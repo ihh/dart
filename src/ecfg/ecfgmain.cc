@@ -109,6 +109,7 @@ void ECFG_main::init_opts (const char* desc)
   opts.newline();
   opts.print_title ("Output");
   opts.add ("gff", gff_filename, "save GFF annotations to file, rather than interleaving into Stockholm output", false);
+  opts.add ("tlog -training-log", training_log_filename = "", "during EM, dump every intermediate grammar to this file", false);
 }
 
 void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
@@ -320,13 +321,22 @@ void ECFG_main::train_grammars()
 
   // train
   trainer = vector<ECFG_trainer*> (grammar.size(), (ECFG_trainer*) 0);
-  if (stock_db.size())
+  if (stock_db.size()) {
+
+    // init training log
+    ofstream* training_log = 0;
+    if (training_log_filename.size()) {
+      training_log = new ofstream(training_log_filename.c_str());
+      ECFG_builder::alphabet2stream (*training_log, *alph);
+    }
+
+    // loop over grammars
     for (int n_grammar = 0; n_grammar < (int) grammar.size(); ++n_grammar)
       {
 	ECFG_scores& ecfg = *grammar[n_grammar];
 	ECFG_trainer*& tr (trainer[n_grammar]);
 
-	tr = new ECFG_trainer (ecfg, stock_db.align_index, asp_vec, ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len);
+	tr = new ECFG_trainer (ecfg, stock_db.align_index, asp_vec, ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len, training_log);
 
 	tr->pseud_init = pseud_init;
 	tr->pseud_mutate = pseud_mutate;
@@ -337,6 +347,13 @@ void ECFG_main::train_grammars()
 
 	tr->iterate_quick_EM (em_forgive);
       }
+
+    if (training_log) {
+      training_log->close();
+      delete training_log;
+      training_log = 0;
+    }
+  }
 
   // save
   if (train.size())
@@ -471,6 +488,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	      cyk_emit_loglike_initialized = true;
 
 	      delete cyk_mx;
+	      cyk_mx = 0;
 
 	      // if posterior probabilities requested, or ECFG has hidden classes, do inside-outside
 	      if ((report_postprob || report_confidence || want_hidden_classes || ancrec_CYK_MAP) && !zero_likelihood)
@@ -566,10 +584,15 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	    }
 
 	  // delete matrices
-	  if (inout_mx)
+	  if (inout_mx) {
 	    delete inout_mx;
-	  if (delete_inside_mx)
+	    inout_mx = 0;
+	  }
+
+	  if (delete_inside_mx) {
 	    delete inside_mx;
+	    inside_mx = 0;
+	  }
 	}
 
       // print out the annotated Stockholm alignment

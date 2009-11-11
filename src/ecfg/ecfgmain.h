@@ -33,6 +33,7 @@ struct ECFG_main
   sstring dump_expanded;
   sstring preset;
   sstring train;
+  sstring training_log_filename;
   sstring gff_filename;
   sstring gap_chars;
 

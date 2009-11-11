@@ -120,6 +120,7 @@ struct ECFG_trainer
   Loge loglike;  // log-likelihood of last iteration
   Loge best_loglike;  // best log-likelihood during training
   int max_subseq_len;
+  ostream* training_log;
 
   // EM control
   double em_min_inc;
@@ -132,8 +133,8 @@ struct ECFG_trainer
 
   // constructor
   ECFG_trainer (ECFG_scores& ecfg, const vector<Stockholm*>& stock_db, const vector<Aligned_score_profile>& asp_vec,
-		int max_subseq_len)
-    : ecfg (ecfg), stock_db (stock_db), asp_vec (asp_vec), counts (ecfg), max_subseq_len (max_subseq_len),
+		int max_subseq_len, ostream* training_log = 0)
+    : ecfg (ecfg), stock_db (stock_db), asp_vec (asp_vec), counts (ecfg), max_subseq_len (max_subseq_len), training_log (training_log),
       em_min_inc (.001), em_max_iter (-1),
       pseud_init(0.), pseud_mutate(0.), pseud_wait(0.)
   { }
