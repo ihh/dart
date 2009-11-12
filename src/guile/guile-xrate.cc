@@ -1,5 +1,5 @@
 #include <libguile.h>
-#include "guile/guile-defs.h"
+#include "guile/stockholm-type.h"
 
 static void inner_main (void *closure, int argc, char **argv)
 {

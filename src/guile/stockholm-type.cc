@@ -2,7 +2,7 @@
 #include <libguile.h>
 
 #include "tree/tree_alignment.h"
-#include "guile/guile-defs.h"
+#include "guile/stockholm-type.h"
 
 scm_t_bits stockholm_tag;
 
@@ -21,8 +21,24 @@ static SCM stockholm_from_file (SCM s_filename)
   // read alignment from file
   Stockholm_smob *stock = new Stockholm_smob();
   char* filename = scm_to_locale_string (s_filename);
-  stock->read(filename);
+  stock->read_from_file(filename);
   free(filename);
+
+  // Create the smob.
+  SCM_NEWSMOB (smob, stockholm_tag, stock);
+
+  // Return
+  return smob;
+}
+
+static SCM stockholm_from_string (SCM s_string)
+{
+  SCM smob;
+
+  // read alignment from file
+  Stockholm_smob *stock = new Stockholm_smob();
+  char* s = scm_to_locale_string (s_string);
+  stock->read_from_string(s);
 
   // Create the smob.
   SCM_NEWSMOB (smob, stockholm_tag, stock);
@@ -37,7 +53,7 @@ static SCM stockholm_to_file (SCM stock_smob, SCM s_filename)
 
   // write alignment to file
   char* filename = scm_to_locale_string (s_filename);
-  stock->write(filename);
+  stock->write_to_file(filename);
   free(filename);
 
   // Return
@@ -97,7 +113,7 @@ static int print_stockholm (SCM stock_smob, SCM port, scm_print_state *pstate)
   struct Stockholm_smob *stock = (struct Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
 
   sstring stock_string;
-  stock->stock.write_Stockholm(stock_string);
+  stock->write_to_string(stock_string);
   scm_puts (stock_string.c_str(), port);
 
   /* non-zero means success */
@@ -119,6 +135,7 @@ void init_stockholm_type (void)
 
   scm_c_define_gsubr ("stockholm-from-file", 1, 0, 0, (SCM (*)()) stockholm_from_file);
   scm_c_define_gsubr ("stockholm-to-file", 2, 0, 0, (SCM (*)()) stockholm_to_file);
+  scm_c_define_gsubr ("stockholm-from-string", 1, 0, 0, (SCM (*)()) stockholm_from_string);
   scm_c_define_gsubr ("stockholm-column-count", 1, 0, 0, (SCM (*)()) stockholm_column_count);
   scm_c_define_gsubr ("stockholm-ancestor-list", 1, 0, 0, (SCM (*)()) stockholm_ancestor_list);
   scm_c_define_gsubr ("stockholm-leaf-list", 1, 0, 0, (SCM (*)()) stockholm_leaf_list);
