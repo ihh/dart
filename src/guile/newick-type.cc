@@ -95,6 +95,31 @@ static SCM newick_ancestor_list (SCM tree_smob)
   return newick_node_list (tree_smob, &PHYLIP_tree::ancestor_vector);
 }
 
+static SCM newick_branch_list (SCM tree_smob)
+{
+  PHYLIP_tree& tree = *newick_cast_from_scm (tree_smob);
+  SCM tree_branch_list = SCM_BOOL_F;
+
+  bool list_empty = true;
+  for_rooted_branches_pre (tree, b) {
+    Phylogeny::Node parent = (*b).first, child = (*b).second;
+    double length = (*b).length;
+    const char* p_name = tree.node_specifier(parent).c_str();
+    const char* c_name = tree.node_specifier(child).c_str();
+
+    SCM branch_tuple = scm_list_3 (scm_from_locale_string(p_name), scm_from_locale_string(c_name), scm_from_double(length));
+    SCM single_element_list = scm_list_1(branch_tuple);
+      if (list_empty) {
+	tree_branch_list = single_element_list;
+	list_empty = false;
+      } else
+	scm_append_x(scm_list_2(tree_branch_list,single_element_list));
+  }
+
+  // Return
+  return tree_branch_list;
+}
+
 static size_t free_newick (SCM tree_smob)
 {
   struct PHYLIP_tree *tree = (struct PHYLIP_tree *) SCM_SMOB_DATA (tree_smob);
@@ -130,6 +155,7 @@ void init_newick_type (void)
   scm_c_define_gsubr ("newick-from-string", 1, 0, 0, (SCM (*)()) newick_from_string);
   scm_c_define_gsubr ("newick-from-file", 1, 0, 0, (SCM (*)()) newick_from_file);
   scm_c_define_gsubr ("newick-to-file", 2, 0, 0, (SCM (*)()) newick_to_file);
-  scm_c_define_gsubr ("newick-ancestor-list", 1, 0, 0, (SCM (*)()) newick_ancestor_list);
-  scm_c_define_gsubr ("newick-leaf-list", 1, 0, 0, (SCM (*)()) newick_leaf_list);
+  scm_c_define_gsubr ("newick-ancestor-list", 1, 0, 0, (SCM (*)()) newick_ancestor_list);  // returns list of internal node names (including the root, even if it is a tip node)
+  scm_c_define_gsubr ("newick-leaf-list", 1, 0, 0, (SCM (*)()) newick_leaf_list);  // returns list of leaf node names (excluding the root)
+  scm_c_define_gsubr ("newick-branch-list", 1, 0, 0, (SCM (*)()) newick_branch_list);  // returns list of branches, sorted in preorder
 }

@@ -69,4 +69,5 @@
 (define tt (stockholm-tree t))
 (define ta (newick-ancestor-list tt))
 (define tl (newick-leaf-list tt))
+(define tb (newick-branch-list tt))
 
