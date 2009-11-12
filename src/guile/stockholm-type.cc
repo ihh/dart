@@ -113,9 +113,23 @@ void init_stockholm_type (void)
   scm_set_smob_free (stockholm_tag, free_stockholm);
   scm_set_smob_print (stockholm_tag, print_stockholm);
 
+  // read/write primitives
   scm_c_define_gsubr ("stockholm-from-string", 1, 0, 0, (SCM (*)()) stockholm_from_string);
   scm_c_define_gsubr ("stockholm-from-file", 1, 0, 0, (SCM (*)()) stockholm_from_file);
   scm_c_define_gsubr ("stockholm-to-file", 2, 0, 0, (SCM (*)()) stockholm_to_file);
+  // primitives to ease migration from xrate macro format
   scm_c_define_gsubr ("stockholm-column-count", 1, 0, 0, (SCM (*)()) stockholm_column_count);  // returns the number of columns as an integer
-  scm_c_define_gsubr ("stockholm-tree", 1, 0, 0, (SCM (*)()) stockholm_tree);  // returns a newick-type smob
+  scm_c_define_gsubr ("stockholm-tree", 1, 0, 0, (SCM (*)()) stockholm_tree);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
+  // currently there is no method to convert a Stockholm smob into a Scheme data structure, and the set of accessors is incomplete.
+  // for example, you cannot currently read the "#=GC SS_cons" line.
+  // if you want anything else you are going to have to either (a) parse the string form or (b) code up a new subroutine here.
+  // the recommended subroutine is an analog of newick_branch_list (in newick-type.cc) that returns a Stockholm smob as a flattish Scheme data structure,
+  // e.g.
+  //    TOP => (GF GC BODY)
+  // TAGVAL => (tag value) | TAGVAL TAGVAL | end
+  //   BODY => (seqname rowdata GS GR) | BODY BODY | end
+  //     GF => (TAGVAL)
+  //     GC => (TAGVAL)
+  //     GS => (TAGVAL)
+  //     GR => (TAGVAL)
 }
