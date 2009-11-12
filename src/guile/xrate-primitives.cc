@@ -147,21 +147,10 @@ SCM ecfg_to_scm (const ECFG_scores& ecfg, const ECFG_counts* counts)
   return unparenthesized_string_to_scm (grammar_alphabet_string.c_str());
 }
 
-// test function that converts a Guile SCM to a Dart SExpr, and back again
-static SCM
-test_convert_scm (SCM scm)
-{
-  SExpr* sexpr = scm_to_new_sexpr(scm);
-  SCM scm2 = sexpr_to_scm(sexpr);
-  delete sexpr;
-  return scm2;
-}
-
+// main guile initialization routine
 void init_xrate_primitives (void)
 {
   scm_c_define_gsubr ("xrate-estimate-tree", 2, 0, 0, (SCM (*)()) xrate_estimate_tree);
   scm_c_define_gsubr ("xrate-annotate-alignment", 2, 0, 0, (SCM (*)()) xrate_annotate_alignment);
   scm_c_define_gsubr ("xrate-train-grammar", 2, 0, 0, (SCM (*)()) xrate_train_grammar);
-
-  scm_c_define_gsubr ("test-convert-scm", 1, 0, 0, (SCM (*)()) test_convert_scm);
 }
