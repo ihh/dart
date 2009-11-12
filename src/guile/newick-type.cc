@@ -157,5 +157,5 @@ void init_newick_type (void)
   scm_c_define_gsubr ("newick-to-file", 2, 0, 0, (SCM (*)()) newick_to_file);
   scm_c_define_gsubr ("newick-ancestor-list", 1, 0, 0, (SCM (*)()) newick_ancestor_list);  // returns list of internal node names (including the root, even if it is a tip node)
   scm_c_define_gsubr ("newick-leaf-list", 1, 0, 0, (SCM (*)()) newick_leaf_list);  // returns list of leaf node names (excluding the root)
-  scm_c_define_gsubr ("newick-branch-list", 1, 0, 0, (SCM (*)()) newick_branch_list);  // returns list of branches, sorted in preorder
+  scm_c_define_gsubr ("newick-branch-list", 1, 0, 0, (SCM (*)()) newick_branch_list);  // returns list of (parent,child,length) tuples representing branches, sorted in preorder
 }
