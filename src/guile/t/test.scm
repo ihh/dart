@@ -1,4 +1,3 @@
-(define s (read-stockholm "t/tiny.stk"))
 (define g (quote
 	   ((grammar
 	     (name JukesCantor)
@@ -57,6 +56,7 @@
 	     (wildcard *)))))
 
 
+(define s (stockholm-from-file "t/tiny.stk"))
 (define t (xrate-estimate-tree s g))
 (define u (xrate-train-grammar t g))
 (define v (xrate-annotate-alignment t g))

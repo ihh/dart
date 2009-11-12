@@ -14,7 +14,7 @@ SCM make_stockholm_smob (const Stockholm& stock)
   return smob;
 }
 
-static SCM read_stockholm (SCM s_filename)
+static SCM stockholm_from_file (SCM s_filename)
 {
   SCM smob;
 
@@ -31,7 +31,7 @@ static SCM read_stockholm (SCM s_filename)
   return smob;
 }
 
-static SCM write_stockholm (SCM stock_smob, SCM s_filename)
+static SCM stockholm_to_file (SCM stock_smob, SCM s_filename)
 {
   Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
 
@@ -79,7 +79,7 @@ static SCM stockholm_ancestor_list (SCM stock_smob)
   return stockholm_node_list (tree, &PHYLIP_tree::ancestor_vector);
 }
 
-static SCM stockholm_count_columns (SCM stock_smob)
+static SCM stockholm_column_count (SCM stock_smob)
 {
   Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
   return scm_from_int (stock->stock.columns());
@@ -117,9 +117,9 @@ void init_stockholm_type (void)
   scm_set_smob_free (stockholm_tag, free_stockholm);
   scm_set_smob_print (stockholm_tag, print_stockholm);
 
-  scm_c_define_gsubr ("read-stockholm", 1, 0, 0, (SCM (*)()) read_stockholm);
-  scm_c_define_gsubr ("write-stockholm", 2, 0, 0, (SCM (*)()) write_stockholm);
-  scm_c_define_gsubr ("stockholm-count-columns", 1, 0, 0, (SCM (*)()) stockholm_count_columns);
+  scm_c_define_gsubr ("stockholm-from-file", 1, 0, 0, (SCM (*)()) stockholm_from_file);
+  scm_c_define_gsubr ("stockholm-to-file", 2, 0, 0, (SCM (*)()) stockholm_to_file);
+  scm_c_define_gsubr ("stockholm-column-count", 1, 0, 0, (SCM (*)()) stockholm_column_count);
   scm_c_define_gsubr ("stockholm-ancestor-list", 1, 0, 0, (SCM (*)()) stockholm_ancestor_list);
   scm_c_define_gsubr ("stockholm-leaf-list", 1, 0, 0, (SCM (*)()) stockholm_leaf_list);
 }
