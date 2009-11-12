@@ -3,6 +3,7 @@
 
 #include "tree/tree_alignment.h"
 #include "guile/stockholm-type.h"
+#include "guile/newick-type.h"
 
 scm_t_bits stockholm_tag;
 
@@ -39,6 +40,7 @@ static SCM stockholm_from_string (SCM s_string)
   Stockholm_smob *stock = new Stockholm_smob();
   char* s = scm_to_locale_string (s_string);
   stock->read_from_string(s);
+  free(s);
 
   // Create the smob.
   SCM_NEWSMOB (smob, stockholm_tag, stock);
@@ -60,39 +62,17 @@ static SCM stockholm_to_file (SCM stock_smob, SCM s_filename)
   return SCM_UNSPECIFIED;
 }
 
-static SCM stockholm_node_list (PHYLIP_tree& tree, vector<Phylogeny::Node> (PHYLIP_tree::*getNodeMethod)())
+static SCM stockholm_tree (SCM stock_smob)
 {
-  SCM tree_node_list = SCM_BOOL_F;
-  bool list_empty = true;
-
-  vector<Phylogeny::Node> nodes = (tree.*getNodeMethod)();
-  for_const_contents (vector<Phylogeny::Node>, nodes, iter) {
-      Phylogeny::Node n = *iter;
-      const char* n_name = tree.node_specifier(n).c_str();
-      SCM single_element_list = scm_list_1(scm_from_locale_string(n_name));
-      if (list_empty) {
-	tree_node_list = single_element_list;
-	list_empty = false;
-      } else
-	scm_append_x(scm_list_2(tree_node_list,single_element_list));
+  SCM scm = SCM_BOOL_F;
+  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
+  try {
+    Stockholm_tree tree (stock->stock);
+    scm = make_newick_smob (tree);
+  } catch (Dart_exception& e) {
+    CLOGERR << e.what();
   }
-
-  // Return
-  return tree_node_list;
-}
-
-static SCM stockholm_leaf_list (SCM stock_smob)
-{
-  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
-  Stockholm_tree tree (stock->stock);
-  return stockholm_node_list (tree, &PHYLIP_tree::leaf_vector);
-}
-
-static SCM stockholm_ancestor_list (SCM stock_smob)
-{
-  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
-  Stockholm_tree tree (stock->stock);
-  return stockholm_node_list (tree, &PHYLIP_tree::ancestor_vector);
+  return scm;
 }
 
 static SCM stockholm_column_count (SCM stock_smob)
@@ -133,10 +113,9 @@ void init_stockholm_type (void)
   scm_set_smob_free (stockholm_tag, free_stockholm);
   scm_set_smob_print (stockholm_tag, print_stockholm);
 
+  scm_c_define_gsubr ("stockholm-from-string", 1, 0, 0, (SCM (*)()) stockholm_from_string);
   scm_c_define_gsubr ("stockholm-from-file", 1, 0, 0, (SCM (*)()) stockholm_from_file);
   scm_c_define_gsubr ("stockholm-to-file", 2, 0, 0, (SCM (*)()) stockholm_to_file);
-  scm_c_define_gsubr ("stockholm-from-string", 1, 0, 0, (SCM (*)()) stockholm_from_string);
   scm_c_define_gsubr ("stockholm-column-count", 1, 0, 0, (SCM (*)()) stockholm_column_count);
-  scm_c_define_gsubr ("stockholm-ancestor-list", 1, 0, 0, (SCM (*)()) stockholm_ancestor_list);
-  scm_c_define_gsubr ("stockholm-leaf-list", 1, 0, 0, (SCM (*)()) stockholm_leaf_list);
+  scm_c_define_gsubr ("stockholm-tree", 1, 0, 0, (SCM (*)()) stockholm_tree);
 }

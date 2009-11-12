@@ -2,6 +2,7 @@
 #define STOCKHOLM_TYPE_INCLUDED
 
 #include "guile/guile-defs.h"
+#include "seq/stockholm.h"
 
 // guile functions
 extern scm_t_bits stockholm_tag;

@@ -1,9 +1,11 @@
 #include <libguile.h>
 #include "guile/stockholm-type.h"
+#include "guile/newick-type.h"
 
 static void inner_main (void *closure, int argc, char **argv)
 {
   init_stockholm_type();
+  init_newick_type();
   init_xrate_primitives();
   scm_shell (argc, argv);
 }

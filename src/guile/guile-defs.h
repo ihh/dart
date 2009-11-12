@@ -2,7 +2,6 @@
 #define GUILE_DEFS_INCLUDED
 
 #include <libguile.h>
-#include "seq/stockholm.h"
 #include "util/sexpr.h"
 #include "ecfg/ecfg.h"
 
