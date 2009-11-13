@@ -183,5 +183,5 @@ void init_newick_type (void)
   scm_c_define_gsubr ("newick-leaf-list", 1, 0, 0, (SCM (*)()) newick_leaf_list);  // returns list of leaf node names (excluding the root)
   scm_c_define_gsubr ("newick-branch-list", 1, 0, 0, (SCM (*)()) newick_branch_list);  // returns list of (parent,child,length) tuples representing branches, sorted in preorder
   // convert a Newick tree into various Scheme data structures
-  scm_c_define_gsubr ("newick-tree", 1, 0, 0, (SCM (*)()) newick_tree);  // returns tree structure (#f grandparent (len parent1 (len child1) (len child2)) ...)
+  scm_c_define_gsubr ("newick-tree", 1, 0, 0, (SCM (*)()) newick_tree);  // returns a tree structure very similar to the Newick file format: ((A:1,B:2)C:3,D:4)E;  --> ((("A" 1.0) ("B" 2.0) "C" 3.0) ("D" 4.0) "E" #f)
 }

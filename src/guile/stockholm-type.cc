@@ -176,6 +176,6 @@ void init_stockholm_type (void)
   //     GC => (TAGVAL)
   //     GS => (TAGVAL)
   //     GR => (TAGVAL)
-  scm_c_define_gsubr ("stockholm-alignment", 1, 0, 0, (SCM (*)()) stockholm_alignment);  // returns a Stockholm alignment as a flat(-ish) Scheme data structure (GF GC (seq GS row GR) (seq GS row GR) ...)
+  scm_c_define_gsubr ("stockholm-alignment", 1, 0, 0, (SCM (*)()) stockholm_alignment);  // returns a Scheme data structure very similar to the Stockholm file format: (GF GC (seq GS row GR) (seq GS row GR) ...)
 
 }
