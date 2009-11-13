@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 	  sorted_tree.add_node (tree2etree[dad], t);
 	  sorted_tree.node_name.push_back (tree.node_specifier (kid));
 	}
-      sorted_tree.setup_parents_vector();
+      sorted_tree.rebuild_parents();
 
       if (CTAGGING(0,TRANSDUCER TRANSDUCER_ETREE))
 	{

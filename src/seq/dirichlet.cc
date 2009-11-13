@@ -273,7 +273,7 @@ Sjolander_prior::Sjolander_prior (const Alphabet& alphabet) : Alphabet_prior(alp
       0.003172, 0.003690, 0.002967, 0.002772, 0.002686 },
   };
 
-  static char* eddy_alphabet = "acdefghiklmnpqrstvwy";
+  sstring eddy_alphabet ("acdefghiklmnpqrstvwy");
   
   if (alphabet.size() != vars(0)) THROWEXPR ("Sjolander prior expects a 20-residue alphabet");
   for (int cpt = 0; cpt < components(); ++cpt)

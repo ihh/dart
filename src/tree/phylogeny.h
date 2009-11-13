@@ -367,16 +367,22 @@ class Phylogeny
   Node_vector node_path (Node n1, Node n2, const Node_vector& parent) const;
 };
 
-// PHYLIP_tree: a rooted tree with named leaf nodes
-//
+// PHYLIP_tree: a rooted tree with named leaf nodes.
+// Intended to be compatible with the PHYLIP format.
+// Horrible hack: if a branch length is missing from the PHYLIP file, this is represented as a branch length of -1.
 class PHYLIP_tree : public Phylogeny
 {
+  // private methods, don't look too closely
  private:
+  // for some reason we compile a whole bunch of regular expressions with each instance. this seems pretty inefficient; these should probably be static.
+  // (although this would create its own potential issues since there's no clean Regexp/Matcher separation, but as long as we never have concurrent reads of PHYLIP format...)
   Regexp name_regexp;
   Regexp length_regexp;
   Regexp common_regexp;
   Regexp parent_regexp;
 
+  // internal parser methods
+  // these are pretty ugly inside
   Node read_node (istream& in, Node parent_node);       // returns index of created node; creates parents vector on the fly
   void write_node(ostream& out,                         // NB doesn't need a valid parents vector
 		  Node node,
@@ -384,26 +390,25 @@ class PHYLIP_tree : public Phylogeny
 		  int max_columns,
 		  int& columns) const;
 
+  // private method to rearrange the node indices
   void remap_nodes (const Node_vector& old_to_new_map);
 
+
+  // public methods
  public:
   Node_name_vec node_name;  // name of each node
   Node_vector   parent;     // parent of each node
   Node          root;       // root node
 
   // constructor
-  //
   PHYLIP_tree();
 
   // methods to verify or maintain integrity of tree
-  //
-  void assert_tree_is_binary() const;                           // throws an exception if tree isn't binary
-  bool force_binary();                                          // returns TRUE if tree was changed
-  void setup_parents_vector() { parent = find_parents(root); }  // sets up parents vector
-  void rebuild_parents() { setup_parents_vector(); }
+  void assert_tree_is_binary() const;                      // throws an exception if tree isn't binary
+  bool force_binary();                                     // returns TRUE if tree was changed
+  void rebuild_parents() { parent = find_parents(root); }  // sets up parents vector
 
   // given a Node_pair, flip it into parent-child order
-  //
   Node_pair parent_child_pair (const Node_pair& np) const
     {
       if (np.first == -1) return Node_pair (np.first, np.second);
@@ -412,7 +417,7 @@ class PHYLIP_tree : public Phylogeny
       return Node_pair (np.second, np.first);
     }
 
-  // find depth of a node
+  // find depth of a node, i.e. distance to root
   int depth (Node n) const { int d = 0; while (n != root) { n = parent[n]; ++d; } return d; }
 
   // find sum of branch lengths from root to a node
@@ -425,7 +430,9 @@ class PHYLIP_tree : public Phylogeny
   vector<Node> ancestor_vector();
   
   // I/O
-  // read() method: reads a New Hampshire format tree (probably not a strict parser).
+  // read() method: reads a New Hampshire format tree.
+  // Parser is a bit antiquated and clunky, may not comply strictly with the NH grammar.
+  // Missing branch lengths are represented as -1 (I know).
   void read (istream& in) { clear(); node_name.clear(); parent.clear(); root = read_node (in, -1); }
 
   // write() method: writes the tree in New Hampshire format, followed by a newline.

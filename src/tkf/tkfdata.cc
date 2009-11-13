@@ -452,7 +452,7 @@ bool TKF_align::propose_sample_branch_swap (Node aunt, Node nephew, Node grumpa,
   tree.remove_branch (dad, nephew);
   tree.add_branch (aunt, dad, aunt_grumpa_len);
   tree.add_branch (nephew, grumpa, dad_nephew_len);
-  tree.setup_parents_vector();
+  tree.rebuild_parents();
   tree_changed();
 
   const Score new_score = alignment_score();

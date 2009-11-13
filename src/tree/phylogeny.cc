@@ -314,7 +314,7 @@ Phylogeny::Node PHYLIP_tree::read_node (istream& in,
   else
     {
       sstring len;
-      double l = -1;
+      double l = -1;  // missing branch lengths are represented as -1.... ugh
       while (true)
 	{
 	  if (in.eof()) THROW Format_exception(in,"Unexpected end of file, while trying to parse branch length");
@@ -552,7 +552,7 @@ bool PHYLIP_tree::force_binary()
     }
 
   // update tree vars
-  setup_parents_vector();
+  rebuild_parents();
   assert_tree_is_binary();
 
   // log if changes

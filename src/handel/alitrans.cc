@@ -72,7 +72,7 @@ void Transducer_alignment::sample_subtree (const vector<int>& nodes_to_sample,
 	}
       new_tree.node_name = tree.node_name;
       new_tree.root = tree.root;
-      new_tree.setup_parents_vector();
+      new_tree.rebuild_parents();
 
       // print a wee log message
       if (CTAGGING(6,HANDEL))
@@ -601,7 +601,7 @@ bool Transducer_alignment::propose_sample_or_optimise_node (Node node, double kT
     }
 
   subtree.root = 0;
-  subtree.setup_parents_vector();
+  subtree.rebuild_parents();
   const vector<PHYLIP_tree> available_subtrees (1, subtree);
 
   sample_subtree (nodes_to_sample, available_subtrees, kT, optimise);
@@ -643,7 +643,7 @@ bool Transducer_alignment::propose_sample_or_optimise_branch (const Undirected_p
   subtree.node_name.push_back (tree.node_name[branch.second]);
 
   subtree.root = 0;
-  subtree.setup_parents_vector();
+  subtree.rebuild_parents();
   const vector<PHYLIP_tree> available_subtrees (1, subtree);
 
   sample_subtree (nodes_to_sample, available_subtrees, kT, optimise);
@@ -711,8 +711,8 @@ bool Transducer_alignment::propose_sample_branch_swap (Node aunt, Node nephew, N
   new_tree.node_name.push_back (tree.node_name[nephew]);
 
   old_tree.root = new_tree.root = 0;
-  old_tree.setup_parents_vector();
-  new_tree.setup_parents_vector();
+  old_tree.rebuild_parents();
+  new_tree.rebuild_parents();
 
   vector<PHYLIP_tree> available_subtrees;
   available_subtrees.push_back (old_tree);  // old tree is tree#0
