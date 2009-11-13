@@ -129,10 +129,13 @@ static SCM newick_tree (SCM tree_smob)
     Phylogeny::Node parent = (*b).first, node = (*b).second;
     double length = (*b).length;
     const char* n_name = tree.node_specifier(node).c_str();
-    node_scm[node] = scm_list_2 (length < 0 || parent < 0 ? SCM_BOOL_F : scm_from_double(length), scm_from_locale_string(n_name));
     for_children (tree, node, parent, c) {
-      node_scm[node] = scm_append(scm_list_2(node_scm[node],scm_list_1(node_scm[*c])));
+      node_scm[node] = scm_append (scm_list_2 (node_scm[node],
+					       scm_list_1(node_scm[*c])));
     }
+    node_scm[node] = scm_append (scm_list_2 (node_scm[node],
+					     scm_list_2 (scm_from_locale_string(n_name),
+							 parent < 0 || length < 0 ? SCM_BOOL_F : scm_from_double(length))));
   }
 
   // Return
