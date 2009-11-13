@@ -8,17 +8,27 @@
 #include "ecfg/ecfgsexpr.h"
 
 #include "guile/stockholm-type.h"
+#include "guile/xrate-primitives.h"
+
+static void get_alphgram_sexpr (SCM alphabet_and_grammar_scm,
+			       SExpr*& top_level_sexpr,
+			       SExpr*& alphabet_and_grammar_sxpr)
+{
+  top_level_sexpr = scm_to_new_sexpr (alphabet_and_grammar_scm);
+  alphabet_and_grammar_sxpr = &(*top_level_sexpr)[0];
+}
+
 
 static SCM xrate_estimate_tree (SCM stock_smob, SCM alphabet_and_grammar)
 {
   SCM scm = SCM_BOOL_F;
-  SExpr* sexpr = 0;
+  SExpr *sexpr = 0, *alphgram = 0;
   try {
     Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
-    sexpr = scm_to_new_sexpr (alphabet_and_grammar);
+    get_alphgram_sexpr (alphabet_and_grammar, sexpr, alphgram);
 
     ECFG_main xrate;
-    Stockholm stock_with_tree = xrate.run_tree_estimation (stock->stock, stock->seqdb, (*sexpr)[0]);
+    Stockholm stock_with_tree = xrate.run_tree_estimation (stock->stock, stock->seqdb, *alphgram);
 
     // make return expression
     scm = make_stockholm_smob (stock_with_tree);
@@ -37,13 +47,13 @@ static SCM xrate_estimate_tree (SCM stock_smob, SCM alphabet_and_grammar)
 static SCM xrate_annotate_alignment (SCM stock_smob, SCM alphabet_and_grammar)
 {
   SCM scm = SCM_BOOL_F;
-  SExpr* sexpr = 0;
+  SExpr *sexpr = 0, *alphgram = 0;
   try {
     Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
-    sexpr = scm_to_new_sexpr (alphabet_and_grammar);
+    get_alphgram_sexpr (alphabet_and_grammar, sexpr, alphgram);
 
     ECFG_main xrate;
-    Stockholm stock_with_annotation = xrate.run_alignment_annotation (stock->stock, (*sexpr)[0]);
+    Stockholm stock_with_annotation = xrate.run_alignment_annotation (stock->stock, *alphgram);
 
     // make return expression
     scm = make_stockholm_smob (stock_with_annotation);
@@ -62,10 +72,10 @@ static SCM xrate_annotate_alignment (SCM stock_smob, SCM alphabet_and_grammar)
 static SCM xrate_train_grammar (SCM list_of_stock_smobs, SCM alphabet_and_grammar)
 {
   SCM scm = SCM_BOOL_F;
-  SExpr* sexpr = 0;
+  SExpr *sexpr = 0, *alphgram = 0;
   try {
     Stockholm_database stock_db;
-    sexpr = scm_to_new_sexpr (alphabet_and_grammar);
+    get_alphgram_sexpr (alphabet_and_grammar, sexpr, alphgram);
 
     /* Check that first argument is a list */ 
     if (SCM_NFALSEP(scm_list_p(list_of_stock_smobs)))
@@ -90,7 +100,7 @@ static SCM xrate_train_grammar (SCM list_of_stock_smobs, SCM alphabet_and_gramma
     ECFG_main xrate;
     ECFG_scores* trained_grammar = 0;
     ECFG_counts* trained_counts = 0;
-    xrate.run_grammar_training (stock_db, (*sexpr)[0], &trained_grammar, &trained_counts);
+    xrate.run_grammar_training (stock_db, *alphgram, &trained_grammar, &trained_counts);
 
     // make return expression
     scm = ecfg_to_scm (*trained_grammar, trained_counts);
@@ -106,50 +116,70 @@ static SCM xrate_train_grammar (SCM list_of_stock_smobs, SCM alphabet_and_gramma
   return scm;
 }
 
-SExpr* scm_to_new_sexpr (SCM scm)
+static SCM xrate_validate_stockholm_grammar (SCM stock_smob, SCM alphabet_and_grammar)
 {
-  // four guile API calls to get an SCM as a char* string? feel like I'm doing something the hard way here
-  const char *s = scm_to_locale_string (scm_object_to_string (scm, scm_variable_ref (scm_c_lookup ("write"))));
-  sstring str (s);
-  SExpr* sexpr = new SExpr (str.begin(), str.end());
-  free((void*) s);
-  return sexpr;
-}
+  SCM scm = SCM_BOOL_F;
+  SExpr *sexpr = 0, *alphgram = 0;
+  try {
+    Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
+    get_alphgram_sexpr (alphabet_and_grammar, sexpr, alphgram);
 
-SCM string_to_scm (const char* s)
-{
-  sstring str;
-  str << "(quote " << s << ")";
-  SCM scm = scm_c_eval_string(str.c_str());
+    ECFG_main xrate;
+    ECFG_scores* ecfg = xrate.run_macro_expansion (stock->stock, *alphgram);
+
+    // make return expression
+    scm = ecfg_to_scm (*ecfg, 0);
+
+  } catch (Dart_exception& e) {
+    CLOGERR << e.what();
+  }
+
+  // cleanup and return
+  if (sexpr)
+    delete sexpr;
+
   return scm;
 }
 
-SCM unparenthesized_string_to_scm (const char* s)
+static SCM xrate_validate_grammar (SCM alphabet_and_grammar)
 {
-  sstring str;
-  str << '(' << s << ')';
-  return string_to_scm (str.c_str());
-}
+  SCM scm = SCM_BOOL_F;
+  SExpr *sexpr = 0, *alphgram = 0;
+  try {
+    get_alphgram_sexpr (alphabet_and_grammar, sexpr, alphgram);
 
-SCM sexpr_to_scm (SExpr* sexpr)
-{
-  sstring str;
-  str << *sexpr;
-  SCM scm = string_to_scm(str.c_str());
+    ECFG_main xrate;
+    ECFG_scores* ecfg = xrate.run_macro_expansion (*alphgram);
+
+    // make return expression
+    scm = ecfg_to_scm (*ecfg, 0);
+
+  } catch (Dart_exception& e) {
+    CLOGERR << e.what();
+  }
+
+  // cleanup and return
+  if (sexpr)
+    delete sexpr;
+
   return scm;
 }
 
 SCM ecfg_to_scm (const ECFG_scores& ecfg, const ECFG_counts* counts)
 {
   sstring grammar_alphabet_string;
+  grammar_alphabet_string << '(';
   ECFG_builder::ecfg2stream (grammar_alphabet_string, ecfg.alphabet, ecfg, counts);
   ECFG_builder::alphabet2stream (grammar_alphabet_string, ecfg.alphabet);
-  return unparenthesized_string_to_scm (grammar_alphabet_string.c_str());
+  grammar_alphabet_string << ')';
+  return string_to_scm (grammar_alphabet_string.c_str());
 }
 
 // main guile initialization routine
 void init_xrate_primitives (void)
 {
+  scm_c_define_gsubr ("xrate-validate-grammar", 1, 0, 0, (SCM (*)()) xrate_validate_grammar);
+  scm_c_define_gsubr ("xrate-validate-stockholm-grammar", 2, 0, 0, (SCM (*)()) xrate_validate_stockholm_grammar);
   scm_c_define_gsubr ("xrate-estimate-tree", 2, 0, 0, (SCM (*)()) xrate_estimate_tree);
   scm_c_define_gsubr ("xrate-annotate-alignment", 2, 0, 0, (SCM (*)()) xrate_annotate_alignment);
   scm_c_define_gsubr ("xrate-train-grammar", 2, 0, 0, (SCM (*)()) xrate_train_grammar);

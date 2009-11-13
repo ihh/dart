@@ -1,6 +1,7 @@
 #include <libguile.h>
 #include "guile/stockholm-type.h"
 #include "guile/newick-type.h"
+#include "guile/xrate-primitives.h"
 
 static void inner_main (void *closure, int argc, char **argv)
 {

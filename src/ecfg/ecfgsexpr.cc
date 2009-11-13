@@ -1052,7 +1052,7 @@ void ECFG_builder::expand_macros (SExpr& grammars_sexpr, const Alphabet& alph, c
 	  macros.foreach[sstring (EG_FOREACH_ANCESTOR)] = ancestors;
 	}
       else
-	CTAG(5,ECFG) << "Warning: since I have no alignments from which to extract trees, tree-related macros will be ignored.\n";
+	CTAG(5,ECFG) << "Warning: since I have no alignments from which to extract trees or other data, tree- and alignment-related macros will be ignored.\n";
     }
 
   macros.preorder_visit (grammars_sexpr);

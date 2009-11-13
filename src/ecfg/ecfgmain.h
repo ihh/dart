@@ -88,8 +88,10 @@ struct ECFG_main
   // note that none of the run methods catch exceptions...
   void run_xrate (ostream& alignment_output_stream);
 
-  // alternate top-level run methods for embedded invocation (currently placeholders)
-  // note that none of the run methods catch exceptions...
+  // alternate top-level run methods for embedded invocation
+  // note that none of these run methods catch exceptions.
+  ECFG_scores* run_macro_expansion (SExpr& grammar_alphabet_sexpr);
+  ECFG_scores* run_macro_expansion (Stockholm& stock, SExpr& grammar_alphabet_sexpr);
   Stockholm& run_tree_estimation (Stockholm& stock, Sequence_database& seq_db, SExpr& grammar_alphabet_sexpr);
   Stockholm& run_alignment_annotation (Stockholm& stock, SExpr& grammar_alphabet_sexpr);
   void run_grammar_training (Stockholm_database& stock, SExpr& grammar_alphabet_sexpr, ECFG_scores** grammar_ret, ECFG_counts** counts_ret);

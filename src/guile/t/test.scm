@@ -1,3 +1,12 @@
+; (use-modules (ice-9 readline))
+;     (activate-readline)
+
+; (use-modules (ice-9 history))
+
+; (use-modules (ice-9 pretty-print))
+
+
+
 (define g (quote
 	   ((grammar
 	     (name JukesCantor)

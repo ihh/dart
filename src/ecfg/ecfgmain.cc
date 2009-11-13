@@ -670,7 +670,24 @@ void ECFG_main::run_grammar_training (Stockholm_database& stock, SExpr& grammar_
   train_grammars();
 
   // set return values
-  *grammar_ret = *grammar.begin();
-  if (*trainer.begin() != 0)
+  if (grammar.size() > 0)
+    *grammar_ret = *grammar.begin();
+  else
+    *grammar_ret = 0;
+
+  if (trainer.size() > 0 && *trainer.begin() != 0)
     *counts_ret = &(*trainer.begin())->counts;
+  else
+    *counts_ret = 0;
+}
+
+ECFG_scores* ECFG_main::run_macro_expansion (SExpr& grammar_alphabet_sexpr) {
+  read_grammars (&grammar_alphabet_sexpr);
+  return grammar.size() > 0 ? grammar[0] : (ECFG_scores*) 0;
+}
+
+ECFG_scores* ECFG_main::run_macro_expansion (Stockholm& stock, SExpr& grammar_alphabet_sexpr) {
+  read_alignments (stock);
+  read_grammars (&grammar_alphabet_sexpr);
+  return grammar.size() > 0 ? grammar[0] : (ECFG_scores*) 0;
 }
