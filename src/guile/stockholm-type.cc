@@ -127,7 +127,7 @@ void init_stockholm_type (void)
   // e.g.
   //    TOP => (GF GC BODY)
   // TAGVAL => (tag value) | TAGVAL TAGVAL | end
-  //   BODY => (seqname rowdata GS GR) | BODY BODY | end
+  //   BODY => (seqname GS rowdata GR) | BODY BODY | end
   //     GF => (TAGVAL)
   //     GC => (TAGVAL)
   //     GS => (TAGVAL)
