@@ -168,7 +168,7 @@ void init_stockholm_type (void)
   scm_c_define_gsubr ("stockholm-column-count", 1, 0, 0, (SCM (*)()) stockholm_column_count);  // returns the number of columns as an integer
   scm_c_define_gsubr ("stockholm-tree", 1, 0, 0, (SCM (*)()) stockholm_tree);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
 
-  // stockholm-row-list returns a Stockholm alignment as a flattish Scheme data structure
+  // convert a Stockholm alignment into a Scheme data structure with the following grammar
   //    TOP => (GF GC BODY)
   // TAGVAL => (tag value) | TAGVAL TAGVAL | end
   //   BODY => (seqname GS rowdata GR) | BODY BODY | end
