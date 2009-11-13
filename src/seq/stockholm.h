@@ -78,6 +78,9 @@ struct Stockholm : Alignment, Fold_char_enum
   // constructor
   Stockholm (int rows = 0, int cols = 0);
 
+  // row accessor
+  sstring get_row_as_string (int row);
+
   // reset method
   void reset (int rows = 0, int cols = 0);
   void clear() { reset(0); }

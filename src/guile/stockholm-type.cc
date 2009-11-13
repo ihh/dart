@@ -81,6 +81,53 @@ static SCM stockholm_column_count (SCM stock_smob)
   return scm_from_int (stock->stock.columns());
 }
 
+// General function for creating (TAGVAL) SCM from vector<Stockholm::Tag_value> (for #=GF) or Stockholm::Annotation (other #=G's),
+// where
+// TAGVAL => (tag value) | TAGVAL TAGVAL | end
+template<class C>
+SCM tagval_list (C& container) {
+  SCM tagval_list_scm = SCM_EOL;
+  typedef typename C::const_iterator C_iter;
+  for (C_iter iter = container.begin(); iter != container.end(); ++iter) {
+    SCM tagval_item = scm_list_1 (scm_list_2 (scm_from_locale_string(iter->first.c_str()), scm_from_locale_string(iter->second.c_str())));
+    tagval_list_scm = scm_append(scm_list_2(tagval_list_scm,tagval_item));
+  }
+  // Return
+  return tagval_list_scm;
+}
+
+// stockholm-row-list creates the following structure
+//    TOP => (GF GC BODY)
+// TAGVAL => (tag value) | TAGVAL TAGVAL | end
+//   BODY => (seqname GS rowdata GR) | BODY BODY | end
+//     GF => (TAGVAL)
+//     GC => (TAGVAL)
+//     GS => (TAGVAL)
+//     GR => (TAGVAL)
+static SCM stockholm_row_list (SCM stock_smob)
+{
+  SCM row_list = SCM_EOL;
+  Stockholm& stock = Stockholm_smob::cast_from_scm (stock_smob)->stock;
+  try {
+    row_list = scm_list_2 (tagval_list(stock.gf_annot), tagval_list(stock.gc_annot));
+    for (int r = 0; r < stock.rows(); ++r) {
+      const sstring& row_name = stock.row_name[r];
+      Stockholm::Row_annotation::const_iterator gs_iter = stock.gs_annot.find(row_name);
+      Stockholm::Row_annotation::const_iterator gr_iter = stock.gr_annot.find(row_name);
+      SCM row_scm = scm_list_1 (scm_list_4 (scm_from_locale_string(row_name.c_str()),
+					    gs_iter == stock.gs_annot.end() ? SCM_EOL : tagval_list(gs_iter->second),
+					    scm_from_locale_string(stock.get_row_as_string(r).c_str()),
+					    gr_iter == stock.gr_annot.end() ? SCM_EOL : tagval_list(gs_iter->second)));
+      row_list = scm_append(scm_list_2(row_list,row_scm));
+    }
+
+  } catch (Dart_exception& e) {
+    CLOGERR << e.what();
+  }
+
+  return row_list;
+}
+
 static size_t free_stockholm (SCM stock_smob)
 {
   struct Stockholm_smob *stock = (struct Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
@@ -120,11 +167,8 @@ void init_stockholm_type (void)
   // primitives to ease migration from xrate macro format
   scm_c_define_gsubr ("stockholm-column-count", 1, 0, 0, (SCM (*)()) stockholm_column_count);  // returns the number of columns as an integer
   scm_c_define_gsubr ("stockholm-tree", 1, 0, 0, (SCM (*)()) stockholm_tree);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
-  // currently there is no method to convert a Stockholm smob into a Scheme data structure, and the set of accessors is incomplete.
-  // for example, you cannot currently read the "#=GC SS_cons" line.
-  // if you want anything else you are going to have to either (a) parse the string form or (b) code up a new subroutine here.
-  // the recommended subroutine is an analog of newick_branch_list (in newick-type.cc) that returns a Stockholm smob as a flattish Scheme data structure,
-  // e.g.
+
+  // stockholm-row-list returns a Stockholm alignment as a flattish Scheme data structure
   //    TOP => (GF GC BODY)
   // TAGVAL => (tag value) | TAGVAL TAGVAL | end
   //   BODY => (seqname GS rowdata GR) | BODY BODY | end
@@ -132,6 +176,6 @@ void init_stockholm_type (void)
   //     GC => (TAGVAL)
   //     GS => (TAGVAL)
   //     GR => (TAGVAL)
-  // Is easy if write general functions for creating (TAGVAL) SCM from vector<Stockholm::Tag_value> (for #=GF) or Stockholm::Annotation (other #=G's).
-  // Call this function stockholm-row-list
+  scm_c_define_gsubr ("stockholm-row-list", 1, 0, 0, (SCM (*)()) stockholm_row_list);  // returns a Stockholm alignment as a flat(-ish) Scheme data structure (GF GC (seq GS row GR) (seq GS row GR) ...)
+
 }

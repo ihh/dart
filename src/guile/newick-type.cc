@@ -66,19 +66,13 @@ static SCM newick_to_file (SCM tree_smob, SCM s_filename)
 static SCM newick_node_list (SCM tree_smob, vector<Phylogeny::Node> (PHYLIP_tree::*getNodeMethod)())
 {
   PHYLIP_tree& tree = *newick_cast_from_scm (tree_smob);
-  SCM tree_node_list = SCM_BOOL_F;
-
-  bool list_empty = true;
+  SCM tree_node_list = SCM_EOL;
   vector<Phylogeny::Node> nodes = (tree.*getNodeMethod)();
   for_const_contents (vector<Phylogeny::Node>, nodes, iter) {
       Phylogeny::Node n = *iter;
       const char* n_name = tree.node_specifier(n).c_str();
       SCM single_element_list = scm_list_1(scm_from_locale_string(n_name));
-      if (list_empty) {
-	tree_node_list = single_element_list;
-	list_empty = false;
-      } else
-	scm_append_x(scm_list_2(tree_node_list,single_element_list));
+      tree_node_list = scm_append(scm_list_2(tree_node_list,single_element_list));
   }
 
   // Return
@@ -98,9 +92,7 @@ static SCM newick_ancestor_list (SCM tree_smob)
 static SCM newick_branch_list (SCM tree_smob)
 {
   PHYLIP_tree& tree = *newick_cast_from_scm (tree_smob);
-  SCM tree_branch_list = SCM_BOOL_F;
-
-  bool list_empty = true;
+  SCM tree_branch_list = SCM_EOL;
   for_rooted_branches_pre (tree, b) {
     Phylogeny::Node parent = (*b).first, child = (*b).second;
     double length = (*b).length;
@@ -109,11 +101,7 @@ static SCM newick_branch_list (SCM tree_smob)
 
     SCM branch_tuple = scm_list_3 (scm_from_locale_string(p_name), scm_from_locale_string(c_name), scm_from_double(length));
     SCM single_element_list = scm_list_1(branch_tuple);
-      if (list_empty) {
-	tree_branch_list = single_element_list;
-	list_empty = false;
-      } else
-	scm_append_x(scm_list_2(tree_branch_list,single_element_list));
+    tree_branch_list = scm_append(scm_list_2(tree_branch_list,single_element_list));
   }
 
   // Return

@@ -320,6 +320,29 @@ void Stockholm::write_Stockholm_body (ostream& out, const Output_mask& out_mask,
   restore_flags (out);
 }
 
+sstring Stockholm::get_row_as_string (int row)
+{
+  sstring s;
+  if (path.count_steps_in_row (row))
+    {
+      int pos = 0;
+      for (int col = 0; col < columns(); ++col)
+	{
+	  const char c =
+	    path (row, col)
+	    ? (np[row]
+	       ? np[row]->seq[pos++]  // pos gets incremented here
+	       : Default_alignment_wildcard_char)
+	    : gap_char();
+	  s << c;
+	}
+    }
+  else
+    for (int col = 0; col < columns(); ++col)
+      s << gap_char();
+  return s;
+}
+
 void Stockholm::write_Stockholm_header (ostream& out)
 {
     out << Stockholm_header;
