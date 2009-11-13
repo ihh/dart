@@ -15,17 +15,22 @@ SCM make_newick_smob (const PHYLIP_tree& tree)
 
 static SCM newick_from_file (SCM s_filename)
 {
-  SCM smob;
+  SCM smob = SCM_BOOL_F;
 
-  // read alignment from file
-  PHYLIP_tree *tree = new PHYLIP_tree();
-  char* filename = scm_to_locale_string (s_filename);
-  ifstream in(filename);
-  tree->read(in);
-  free(filename);
+  try {
+    // read tree from file
+    PHYLIP_tree *tree = new PHYLIP_tree();
+    char* filename = scm_to_locale_string (s_filename);
+    ifstream in(filename);
+    tree->read(in);
+    free(filename);
 
-  // Create the smob.
-  SCM_NEWSMOB (smob, newick_tag, tree);
+    // Create the smob.
+    SCM_NEWSMOB (smob, newick_tag, tree);
+
+  } catch (Dart_exception& e) {
+    CLOGERR << e.what();
+  }
 
   // Return
   return smob;
@@ -33,17 +38,22 @@ static SCM newick_from_file (SCM s_filename)
 
 static SCM newick_from_string (SCM s_string)
 {
-  SCM smob;
+  SCM smob = SCM_BOOL_F;
 
-  // read alignment from file
-  PHYLIP_tree *tree = new PHYLIP_tree();
-  char* s = scm_to_locale_string (s_string);
-  stringstream ss (s, stringstream::in);
-  tree->read(ss);
-  free(s);
+  try {
+    // read tree from string
+    PHYLIP_tree *tree = new PHYLIP_tree();
+    char* s = scm_to_locale_string (s_string);
+    stringstream ss (s, stringstream::in);
+    tree->read(ss);
+    free(s);
 
-  // Create the smob.
-  SCM_NEWSMOB (smob, newick_tag, tree);
+    // Create the smob.
+    SCM_NEWSMOB (smob, newick_tag, tree);
+
+  } catch (Dart_exception& e) {
+    CLOGERR << e.what();
+  }
 
   // Return
   return smob;
@@ -99,13 +109,34 @@ static SCM newick_branch_list (SCM tree_smob)
     const char* p_name = tree.node_specifier(parent).c_str();
     const char* c_name = tree.node_specifier(child).c_str();
 
-    SCM branch_tuple = scm_list_3 (scm_from_locale_string(p_name), scm_from_locale_string(c_name), scm_from_double(length));
+    SCM branch_tuple = scm_list_3 (scm_from_locale_string(p_name),
+				   scm_from_locale_string(c_name),
+				   length < 0 || parent == tree.root ? SCM_BOOL_F : scm_from_double(length));
     SCM single_element_list = scm_list_1(branch_tuple);
     tree_branch_list = scm_append(scm_list_2(tree_branch_list,single_element_list));
   }
 
   // Return
   return tree_branch_list;
+}
+
+
+static SCM newick_tree (SCM tree_smob)
+{
+  PHYLIP_tree& tree = *newick_cast_from_scm (tree_smob);
+  vector<SCM> node_scm (tree.nodes(), SCM_EOL);
+  for_rooted_nodes_post (tree, b) {
+    Phylogeny::Node parent = (*b).first, node = (*b).second;
+    double length = (*b).length;
+    const char* n_name = tree.node_specifier(node).c_str();
+    node_scm[node] = scm_list_2 (length < 0 || parent < 0 ? SCM_BOOL_F : scm_from_double(length), scm_from_locale_string(n_name));
+    for_children (tree, node, parent, c) {
+      node_scm[node] = scm_append(scm_list_2(node_scm[node],scm_list_1(node_scm[*c])));
+    }
+  }
+
+  // Return
+  return node_scm[tree.root];
 }
 
 static size_t free_newick (SCM tree_smob)
@@ -147,6 +178,7 @@ void init_newick_type (void)
   // primitives to ease migration from xrate macro format
   scm_c_define_gsubr ("newick-ancestor-list", 1, 0, 0, (SCM (*)()) newick_ancestor_list);  // returns list of internal node names (including the root, even if it is a tip node)
   scm_c_define_gsubr ("newick-leaf-list", 1, 0, 0, (SCM (*)()) newick_leaf_list);  // returns list of leaf node names (excluding the root)
-  // convert a Newick tree into a flat Scheme data structure (in this case a list of branches sorted in preorder)
   scm_c_define_gsubr ("newick-branch-list", 1, 0, 0, (SCM (*)()) newick_branch_list);  // returns list of (parent,child,length) tuples representing branches, sorted in preorder
+  // convert a Newick tree into various Scheme data structures
+  scm_c_define_gsubr ("newick-tree", 1, 0, 0, (SCM (*)()) newick_tree);  // returns tree structure (#f grandparent (len parent1 (len child1) (len child2)) ...)
 }

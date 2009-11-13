@@ -314,19 +314,25 @@ Phylogeny::Node PHYLIP_tree::read_node (istream& in,
   else
     {
       sstring len;
-      do
+      double l = -1;
+      while (true)
 	{
 	  if (in.eof()) THROW Format_exception(in,"Unexpected end of file, while trying to parse branch length");
 	  in >> c;
+	  if (c == ',' || c == ')') {
+	    in.putback(c);
+	    break;
+	  }
 	  len.push_back(c);
 	}
-      while (c != ',' && c != ')');
-      in.putback(c);
       
-      if (!(length_regexp.Match(len.c_str()) && length_regexp.SubStrings() == 1))
-	THROW Format_exception(in,"Encountered something that does not look like a branch length");
-      
-      add_branch (node, parent_node, atof(length_regexp[1].c_str()));
+      if (len.size()) {
+	if (!(length_regexp.Match(len.c_str()) && length_regexp.SubStrings() == 1))
+	  THROW Format_exception(in,"Encountered something that does not look like a branch length");
+	l = atof(length_regexp[1].c_str());
+      }
+
+      add_branch (node, parent_node, l);
     }
   
   return node;
@@ -366,10 +372,13 @@ void PHYLIP_tree::write_node(ostream& out,
 
   if (from_node != -1)
     {
-      char tmp_buf[128];
-      sprintf (tmp_buf, ":%-.10f", ((Phylogeny*) this) -> branch_length (from_node, node));
-      out << tmp_buf;
-      columns += strlen(tmp_buf) + 1;
+      double l = ((Phylogeny*) this) -> branch_length (from_node, node);
+      if (l >= 0) {
+	char tmp_buf[128];
+	sprintf (tmp_buf, ":%-.10f", l);
+	out << tmp_buf;
+	columns += strlen(tmp_buf) + 1;
+      }
     }
   else
     {

@@ -96,7 +96,7 @@ SCM tagval_list (C& container) {
   return tagval_list_scm;
 }
 
-// stockholm-row-list creates the following structure
+// stockholm-alignment creates the following structure
 //    TOP => (GF GC BODY)
 // TAGVAL => (tag value) | TAGVAL TAGVAL | end
 //   BODY => (seqname GS rowdata GR) | BODY BODY | end
@@ -104,7 +104,7 @@ SCM tagval_list (C& container) {
 //     GC => (TAGVAL)
 //     GS => (TAGVAL)
 //     GR => (TAGVAL)
-static SCM stockholm_row_list (SCM stock_smob)
+static SCM stockholm_alignment (SCM stock_smob)
 {
   SCM row_list = SCM_EOL;
   Stockholm& stock = Stockholm_smob::cast_from_scm (stock_smob)->stock;
@@ -176,6 +176,6 @@ void init_stockholm_type (void)
   //     GC => (TAGVAL)
   //     GS => (TAGVAL)
   //     GR => (TAGVAL)
-  scm_c_define_gsubr ("stockholm-row-list", 1, 0, 0, (SCM (*)()) stockholm_row_list);  // returns a Stockholm alignment as a flat(-ish) Scheme data structure (GF GC (seq GS row GR) (seq GS row GR) ...)
+  scm_c_define_gsubr ("stockholm-alignment", 1, 0, 0, (SCM (*)()) stockholm_alignment);  // returns a Stockholm alignment as a flat(-ish) Scheme data structure (GF GC (seq GS row GR) (seq GS row GR) ...)
 
 }
