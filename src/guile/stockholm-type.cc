@@ -133,4 +133,5 @@ void init_stockholm_type (void)
   //     GS => (TAGVAL)
   //     GR => (TAGVAL)
   // Is easy if write general functions for creating (TAGVAL) SCM from vector<Stockholm::Tag_value> (for #=GF) or Stockholm::Annotation (other #=G's).
+  // Call this function stockholm-row-list
 }
