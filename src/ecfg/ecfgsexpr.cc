@@ -544,41 +544,64 @@ void ECFG_builder::ECFG_rule_block::parse (ECFG_scores& ecfg)
       init_gaps (info, sym2pvar, sexpr);
 
       // initialise the annotation
+      typedef map<sstring,sstring> String_string_map;
+      String_string_map deterministic_annot;
       const vector<SExpr*> all_annot_sexpr = sexpr->find_all (EG_TRANSFORM_ANNOTATE, 1);
       for_const_contents (vector<SExpr*>, all_annot_sexpr, annot_sexpr)
 	{
 	  const sstring& row = (**annot_sexpr) (EG_TRANSFORM_ROW).get_atom();
-	  const sstring& col = (**annot_sexpr) (EG_TRANSFORM_COLUMN).get_atom();
-	  const sstring& label = (**annot_sexpr) (EG_TRANSFORM_LABEL).get_atom();
+	  if ((*annot_sexpr)->find (EG_ANNOTATE_EMIT) != 0) {
+	    // handle probabilistic annotations
+	    const vector<SExpr*> all_emit_sexpr = (*annot_sexpr)->find_all (EG_ANNOTATE_EMIT, 1);
+	    for_const_contents (vector<SExpr*>, all_emit_sexpr, emit_sexpr) {
+	      const sstring multi_label = sstring::join ((**emit_sexpr) (EG_TRANSFORM_LABEL).atoms_to_strings(), "");
+	      PFunc pfunc = init_pfunc (sym2pvar, (**emit_sexpr) (EG_PROB), 1);
+	      info.annot[row][multi_label] = pfunc;
+	    }
 
-	  // check chain terminal
-	  if (term2chain.find (col) == term2chain.end())
-	    THROWEXPR ("In (" << **annot_sexpr << "):\nChain terminal (" << col << ") unknown");
+	  } else {
+	    // handle old-format deterministic annotations
+	    const sstring& col = (**annot_sexpr) (EG_TRANSFORM_COLUMN).get_atom();
+	    const sstring& label = (**annot_sexpr) (EG_TRANSFORM_LABEL).get_atom();
 
-	  const int chain_idx = term2chain.find(col)->second;
-	  if (chain_idx != rhs.chain_index)
-	    THROWEXPR ("In (" << **annot_sexpr << "):\nChain terminal (" << col << ") is not on the same chain as the terminals in this rule");
+	    // check chain terminal
+	    if (term2chain.find (col) == term2chain.end())
+	      THROWEXPR ("In (" << **annot_sexpr << "):\nChain terminal (" << col << ") unknown");
 
-	  // get column corresponding to named chain terminal
-	  const vector<sstring>& state = ecfg.matrix_set.chain[rhs.chain_index].state;
-	  const int term_idx = find (state.begin(), state.end(), col) - state.begin();
-	  int col_idx = rhs.term_pos[term_idx];
-	  if (col_idx > rhs_nonterm_pos)
-	    --col_idx;
+	    const int chain_idx = term2chain.find(col)->second;
+	    if (chain_idx != rhs.chain_index)
+	      THROWEXPR ("In (" << **annot_sexpr << "):\nChain terminal (" << col << ") is not on the same chain as the terminals in this rule");
 
-	  // check column is emitted rather than context
-	  if (col_idx < info.l_context || col_idx >= rhs.chain->word_len - info.r_context)
-	    THROWEXPR ("In (" << **annot_sexpr << "):\nCannot annotate chain terminal (" << col << ") as it is contextual, rather than emitted, in this rule");
+	    // get column corresponding to named chain terminal
+	    const vector<sstring>& state = ecfg.matrix_set.chain[rhs.chain_index].state;
+	    const int term_idx = find (state.begin(), state.end(), col) - state.begin();
+	    int col_idx = rhs.term_pos[term_idx];
+	    if (col_idx > rhs_nonterm_pos)
+	      --col_idx;
 
-	  // check label is a single char
-	  if (label.size() != 1)
-	    THROWEXPR ("In (" << **annot_sexpr << "):\nLabel (" << label << ") must be a single character");
+	    // check column is emitted rather than context
+	    if (col_idx < info.l_context || col_idx >= rhs.chain->word_len - info.r_context)
+	      THROWEXPR ("In (" << **annot_sexpr << "):\nCannot annotate chain terminal (" << col << ") as it is contextual, rather than emitted, in this rule");
 
-	  // annotate
-	  if (info.annot.find (row) == info.annot.end())
-	    info.annot[row] = sstring (info.emit_size(), ECFG_annotation_wildcard);
-	  info.annot[row][col_idx - info.l_context] = label[0];
+	    // check label is a single char
+	    if (label.size() != 1)
+	      THROWEXPR ("In (" << **annot_sexpr << "):\nLabel (" << label << ") must be a single character");
+
+	    // annotate
+	    if (deterministic_annot.find (row) == deterministic_annot.end())
+	      deterministic_annot[row] = sstring (info.emit_size(), ECFG_annotation_wildcard);
+	    deterministic_annot[row][col_idx - info.l_context] = label[0];
+	  }
 	}
+
+      // convert old-format deterministic annotations into new probabilistic-annotation data structure
+      if (deterministic_annot.size()) {
+	for_const_contents (String_string_map, deterministic_annot, ss) {
+	  if (info.annot.find (ss->first) != info.annot.end())
+	    THROWEXPR ("Cannot mix deterministic and probabilistic annotations (tag: " << ss->first << ")");
+	  info.annot[ss->first][ss->second] = PFunc(1.);
+	}
+      }
 
       // min_len, max_len, infix, prefix, suffix
       if (SExpr* minlen_sexpr = sexpr->find (EG_TRANSFORM_MINLEN, 1))
@@ -1308,14 +1331,36 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	      for_const_contents (ECFG_state_info::ECFG_state_annotation, info.annot, row_annot)
 		{
 		  const sstring& row = row_annot->first;
-		  const sstring& annot = row_annot->second;
-		  for (int i = 0; i < (int) annot.size(); ++i)
-		    if (annot[i] != ECFG_annotation_wildcard)
-		      trans_block << "\n  ("
-				  << EG_TRANSFORM_ANNOTATE << " ("
-				  << EG_TRANSFORM_ROW << ' ' << row << ") ("
-				  << EG_TRANSFORM_COLUMN << ' ' << chain.state[pos2term[info.l_context + i]] << ") ("
-				  << EG_TRANSFORM_LABEL << ' ' << annot[i] << "))";
+		  if (row_annot->second.size() == 1 && row_annot->second.begin()->second.is_one()) {
+		    // deterministic
+		    const sstring& label = row_annot->second.begin()->first;
+		    for (int i = 0; i < (int) label.size(); ++i)
+		      if (label[i] != ECFG_annotation_wildcard)
+			trans_block << "\n  ("
+				    << EG_TRANSFORM_ANNOTATE << " ("
+				    << EG_TRANSFORM_ROW << ' ' << row << ") ("
+				    << EG_TRANSFORM_COLUMN << ' ' << chain.state[pos2term[info.l_context + i]] << ") ("
+				    << EG_TRANSFORM_LABEL << ' ' << label[i] << "))";
+		  } else {
+		    // probabilistic
+		    trans_block << "\n  ("
+				<< EG_TRANSFORM_ANNOTATE << " ("
+				<< EG_TRANSFORM_ROW << ' ' << row << ")";
+		    for_const_contents (ECFG_state_info::String_prob_dist, row_annot->second, label_prob) {
+		      const sstring& label = label_prob->first;
+		      const PFunc& prob = label_prob->second;
+		      trans_block << "\n   (" << EG_ANNOTATE_EMIT << " (" << EG_TRANSFORM_LABEL << " (";
+		      for (int i = 0; i < (int) label.size(); ++i) {
+			if (i > 0)
+			  trans_block << ' ';
+			trans_block << label[i];
+		      }
+		      trans_block << ")) (" << EG_PROB << ' ';
+		      pfunc2stream (trans_block, ecfg.pscores, prob);
+		      trans_block << "))";
+		    }
+		    trans_block << ")";
+		  }
 		}
 
 	      // end of emit rule
@@ -1369,10 +1414,10 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
     }
   if (counts && ecfg.update_rates)
     {
-      out << "\n ;; Observed counts and wait times for probability and rate parameters\n\n";
-      pcounts2stream (out, counts->var_counts, EG_OBSERVED_COUNTS, ecfg.pcounts.groups() ? &ecfg.pcounts : (const PCounts*) 0, true, true);
+      out << "\n ;; Expected counts and wait times for probability and rate parameters\n\n";
+      pcounts2stream (out, counts->var_counts, EG_EXPECTED_COUNTS, ecfg.pcounts.groups() ? &ecfg.pcounts : (const PCounts*) 0, true, true);
 
-      out << "\n ;; Observed counts and wait time for Markov chain substitution models\n\n";
+      out << "\n ;; Expected counts and wait time for Markov chain substitution models\n\n";
       out << " (" << EG_CHAIN_COUNTS << '\n';
       chain_counts2stream (out, alph, ecfg, *counts);
       out << " )  ;; end " << EG_CHAIN_COUNTS << '\n';

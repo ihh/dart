@@ -261,7 +261,8 @@ void Stockholm::write_Stockholm_body (ostream& out, const Output_mask& out_mask,
       const sstring& nse_name = nse_row_name[row];
       // row data
       if ((int) path[row].size() != columns())
-	CLOGERR << "Warning: skipping row '" << nse_name << "' as it has the wrong number of columns\n";
+	CLOGERR << "Warning: skipping row '" << nse_name << "' as it has the wrong number of columns ("
+		<< path[row].size() << " instead of " << columns() << ")\n";
       else
 	{
 	  out.width (max_name_width + 1);
@@ -289,7 +290,8 @@ void Stockholm::write_Stockholm_body (ostream& out, const Output_mask& out_mask,
       // #=GR lines
       for_const_contents (Annotation, stock.gr_annot[name], na)
 	if ((int) na->second.size() != columns())
-	  CLOGERR << "Warning: skipping '" << Stockholm_sequence_column_annotation << ' ' << name << ' ' << na->first << "' as it has the wrong number of columns\n";
+	  CLOGERR << "Warning: skipping '" << Stockholm_sequence_column_annotation << ' ' << name << ' ' << na->first << "' as it has the wrong number of columns ("
+		  << na->second.size() << " instead of " << columns() << ")\n";
 	else
 	  {
 	    sstring gr;
@@ -305,7 +307,8 @@ void Stockholm::write_Stockholm_body (ostream& out, const Output_mask& out_mask,
   // #=GC lines
   for_const_contents (Annotation, stock.gc_annot, na)
     if ((int) na->second.size() != columns())
-      CLOGERR << "Warning: skipping '" << Stockholm_column_annotation << ' ' << na->first << "' as it has the wrong number of columns\n";
+      CLOGERR << "Warning: skipping '" << Stockholm_sequence_column_annotation << ' ' << na->first << "' as it has the wrong number of columns ("
+	      << na->second.size() << " instead of " << columns() << ")\n";
     else
       {
 	sstring gc;

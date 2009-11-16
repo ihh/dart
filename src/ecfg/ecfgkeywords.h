@@ -31,6 +31,7 @@
 #define EG_TRANSFORM_ROW       "row"
 #define EG_TRANSFORM_COLUMN    "column"
 #define EG_TRANSFORM_LABEL     "label"
+#define EG_ANNOTATE_EMIT       "emit"
 
 #define EG_TRANSFORM_MINLEN    "minlen"
 #define EG_TRANSFORM_MAXLEN    "maxlen"
@@ -75,8 +76,8 @@
 #define EG_TIME         "time"
 
 #define EG_PSEUDOCOUNTS    "pseudocounts"
-#define EG_OBSERVED_COUNTS "observed-counts"
-#define EG_CHAIN_COUNTS    "observed-chain-counts"
+#define EG_EXPECTED_COUNTS "expected-counts"
+#define EG_CHAIN_COUNTS    "expected-chain-counts"
 
 #define EG_HYBRID_CHAIN      "hybrid-chain"
 #define EG_HYBRID_COMPONENTS "components"

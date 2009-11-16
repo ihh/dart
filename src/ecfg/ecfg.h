@@ -104,7 +104,8 @@ struct ECFG_state_info : ECFG_enum
   PFunc link_extend_func, link_end_func, ins_rate_func, del_rate_func;
 
   // By-column annotation; e.g. "<>" for an emitlr state, "012" for a codon state
-  typedef map<sstring,sstring> ECFG_state_annotation;
+  typedef map<sstring,PFunc> String_prob_dist;
+  typedef map<sstring,String_prob_dist> ECFG_state_annotation;
   ECFG_state_annotation annot;  // indexed by Stockholm "#=GC" tag.
   bool sum_state;  // true if this is scored as a sum state by CYK
 
@@ -317,6 +318,7 @@ struct ECFG_scores : ECFG<Score>
   const ECFG_chain* first_single_pseudoterminal_chain() const;
 
   // helpers
+  set<sstring> gc_feature_set() const;
   vector<int> nonemit_states_unsorted() const;
   vector<int> nonemit_states() const;  // sorted topologically; throws exception if null cycle detected
   vector<int> emit_states() const;
@@ -362,6 +364,10 @@ struct ECFG_counts : ECFG<Prob>
   // indel update statistics (pseudo-indel states only)
   vector<double> ins_count, del_count, ins_wait, del_wait;
   vector<double> link_extend_count, link_end_count;
+
+  // annotation counts
+  typedef map<sstring,Prob> String_counts;
+  vector<vector<String_counts> > state_annot_count;  // indexed as state_annot_count[stateIndex][gcFeatureTag][columnAnnotationString]
 
   // parameter counts
   PCounts var_counts;

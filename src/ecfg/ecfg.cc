@@ -221,7 +221,7 @@ ECFG_emitlr_state_info::ECFG_emitlr_state_info (int matrix_idx, int alphabet_siz
   mul[0] = 1;
   mul[1] = alphabet_size;
   if (tag)
-    annot [sstring (tag)] = sstring ("<>");
+    annot [sstring (tag)] [sstring ("<>")] = PFunc(1.);
 }
 
 ECFG_bifurc_state_info::ECFG_bifurc_state_info (int l, int r)
@@ -322,6 +322,13 @@ const ECFG_chain* ECFG_scores::first_single_pseudoterminal_chain() const
   return (ECFG_chain*) 0;
 }
 
+set<sstring> ECFG_scores::gc_feature_set() const {
+  set<sstring> feature;
+  for_const_contents (vector<ECFG_state_info>, state_info, info)
+    for_const_contents (ECFG_state_info::ECFG_state_annotation, info->annot, a)
+    feature.insert (a->first);
+  return feature;
+}
 
 vector<int> ECFG_scores::nonemit_states_unsorted() const
 {
@@ -427,15 +434,34 @@ void ECFG_scores::read (istream& in)
     }
 }
 
+// helper functions for annotate
+void annotate_if_wild (sstring& s, int pos, char c) {
+  if (s[pos] == ECFG_annotation_wildcard)
+    s[pos] = c;
+}
+
+sstring sample_string (const ECFG_state_info::String_prob_dist& pdist, const PScores& pscores, bool want_max) {
+  vector<double> p;
+  vector<sstring> s;
+  for_const_contents (ECFG_state_info::String_prob_dist, pdist, sp) {
+    s.push_back (sp->first);
+    p.push_back (Score2Prob (sp->second.eval_sc (pscores)));
+  }
+  return s[want_max
+	   ? (max_element (p.begin(), p.end()) - p.begin())
+	   : Rnd::choose(p)];
+}
+
+// annotate
 void ECFG_scores::annotate (Stockholm& stock, const ECFG_cell_score_map& annot) const
 {
-  // initialise all annotations
+  // initialise all annotations, unless already present
   for_const_contents (vector<ECFG_state_info>, state_info, info)
     for_const_contents (ECFG_state_info::ECFG_state_annotation, info->annot, a)
     {
       const sstring& tag = a->first;
-      sstring& row_annot = stock.gc_annot[tag];
-      row_annot = sstring (stock.columns(), ECFG_annotation_wildcard);
+      if (stock.gc_annot.find(tag) == stock.gc_annot.end())
+	stock.gc_annot[tag] = sstring (stock.columns(), ECFG_annotation_wildcard);
     }
 
   // loop over subseq->state mappings
@@ -447,19 +473,24 @@ void ECFG_scores::annotate (Stockholm& stock, const ECFG_cell_score_map& annot) 
       for_const_contents (ECFG_state_info::ECFG_state_annotation, info.annot, a)
 	{
 	  const sstring& tag = a->first;
-	  const sstring& val = a->second;
-	  sstring& row_annot = stock.gc_annot[tag];
+	  const ECFG_state_info::String_prob_dist& pdist = a->second;
 
+	  sstring& row_annot = stock.gc_annot[tag];
+	  sstring val = sample_string (pdist, pscores, true);
+
+	  // do the annotation
 	  if (info.emit_size())  // emit state: mark up emitted columns with annotation string
 	    {
+	      if ((int) val.size() != info.emit_size())
+		THROWEXPR ("Annotation label '" << val << "' for state " << info.name << " (row " << tag << ") has " << val.size() << " characters; expected " << info.emit_size());
 	      for (int pos = 0; pos < info.l_emit; ++pos)
-		row_annot[subseq.start + pos] = val[pos];
+		annotate_if_wild (row_annot, subseq.start + pos, val[pos]);
 	      for (int pos = 0; pos < info.r_emit; ++pos)
-		row_annot[subseq.end() - info.r_emit + pos] = val[info.l_emit + pos];
+		annotate_if_wild (row_annot, subseq.end() - info.r_emit + pos, val[info.l_emit + pos]);
 	    }
-	  else if (info.sum_state)  // non-emit sum state: mark up entire subsequence with annotation char
+	  else if (info.sum_state && val.size() > 0)  // non-emit sum state: mark up entire subsequence with annotation char
 	    for (int pos = 0; pos < subseq.len; ++pos)
-	      row_annot[subseq.start + pos] = val[0];
+	      annotate_if_wild (row_annot, subseq.start + pos, val[0]);
 	}
     }
 }
@@ -1002,7 +1033,8 @@ ECFG_simulation::ECFG_simulation (const ECFG_scores& ecfg, const PHYLIP_tree& tr
       for_const_contents (ECFG_state_info::ECFG_state_annotation, info.annot, tag_val)
 	{
 	  const sstring& tag = tag_val->first;
-	  const sstring& val = tag_val->second;
+	  const ECFG_state_info::String_prob_dist& pdist = tag_val->second;
+	  const sstring val = sample_string (pdist, ecfg.pscores, false);
 	  if (stockade.align.gc_annot.find (tag) == stockade.align.gc_annot.end())
 	    stockade.align.set_gc_annot (tag, sstring (stockade.align.columns(), ECFG_annotation_wildcard));
 	  if (val.size() != emission_col[e].size())
@@ -1126,6 +1158,8 @@ ECFG_counts::ECFG_counts (const ECFG_scores& ecfg) :
   link_extend_count (ecfg.states(), 0.),
   link_end_count (ecfg.states(), 0.),
 
+  state_annot_count (ecfg.states(), vector<String_counts> (ecfg.gc_feature_set().size())),
+
   var_counts (ecfg.pscores)
 {
   for (int i = 0; i < (int) stats.size(); ++i)
@@ -1152,6 +1186,8 @@ void ECFG_counts::clear (double pseud_init, double pseud_mutate, double pseud_wa
     {
       ins_count[s] = del_count[s] = ins_wait[s] = del_wait[s] = 0.;
       link_extend_count[s] = link_end_count[s] = 0.;
+      for_contents (vector<String_counts>, state_annot_count[s], sc)
+	sc->clear();
     }
 }
 
@@ -1357,6 +1393,20 @@ void ECFG_counts::inc_var_counts (PCounts&           var_counts,
 	  info.link_end_func.inc_var_counts (var_counts, ecfg.pscores, weight * link_end_count[s]);
 	  info.ins_rate_func.inc_var_counts (var_counts, ecfg.pscores, weight * ins_count[s], weight * ins_wait[s]);
 	  info.del_rate_func.inc_var_counts (var_counts, ecfg.pscores, weight * del_count[s], weight * del_wait[s]);
+	}
+
+      const set<sstring> gc_feat_set = ecfg.gc_feature_set();
+      int n_feat = 0;
+      for_const_contents (set<sstring>, gc_feat_set, f)
+	{
+	  const ECFG_state_info::String_prob_dist& sprob = info.annot[*f];  // cast away const
+	  const String_counts& scount = state_annot_count[s][n_feat];
+	  for_const_contents (String_counts, scount, sc) {
+	    ECFG_state_info::String_prob_dist::const_iterator sprob_iter = sprob.find (sc->first);
+	    if (sprob_iter != sprob.end())
+	      sprob_iter->second.inc_var_counts (var_counts, ecfg.pscores, weight * sc->second);
+	  }
+	  ++n_feat;
 	}
     }
 }

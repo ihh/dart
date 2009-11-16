@@ -47,7 +47,7 @@ Protein_grammar::Protein_grammar (int zones, int hidden)
       const sstring state_char (1, (char) (s < 10 ? '0' + s : 'a' + s - 10));
       state_info[s].name << "S" << state_char;
       if (zones > 1)
-	state_info[s].annot[sstring("State")] = state_char;
+	state_info[s].annot[sstring("State")][state_char] = PFunc(1.);
       matrix_set.chain[m].state[0].clear();
       matrix_set.chain[m].state[0] << "A" << state_char;
 

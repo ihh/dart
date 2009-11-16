@@ -74,8 +74,8 @@ PFOLD_ECFG::PFOLD_ECFG (const char* tag)
   state_info[pfoldB] = ECFG_bifurc_state_info (pfoldL, pfoldS);
   state_info[pfoldU] = ECFG_emitl_state_info (matrix_set.add_matrix (1));
 
-  state_info[pfoldF].annot[sstring(tag)] = sstring ("<>");
-  state_info[pfoldU].annot[sstring(tag)] = sstring (".");
+  state_info[pfoldF].annot[sstring(tag)][sstring ("<>")] = PFunc(1.);
+  state_info[pfoldU].annot[sstring(tag)][sstring (".")] = PFunc(1.);
 
   matrix_set.chain[0].state[0] = "LNUC";
   matrix_set.chain[0].state[1] = "RNUC";
@@ -218,7 +218,7 @@ Codon_ECFG::Codon_ECFG (bool both_strands)
   state_info[1].mul[0] = 1;
   state_info[1].mul[1] = alphabet.size();
   state_info[1].mul[2] = alphabet.size() * alphabet.size();
-  state_info[1].annot[sstring("Codon")] = sstring ("012");
+  state_info[1].annot[sstring("Codon")][sstring ("012")] = PFunc(1.);
   state_info[1].name = "Fwd";
 
   if (both_strands)
@@ -231,7 +231,7 @@ Codon_ECFG::Codon_ECFG (bool both_strands)
       state_info[2].comp[0] = true;
       state_info[2].comp[1] = true;
       state_info[2].comp[2] = true;
-      state_info[2].annot[sstring("Codon")] = sstring ("210");
+      state_info[2].annot[sstring("Codon")][sstring ("210")] = PFunc(1.);
       state_info[2].name = "Rev";
     }
 

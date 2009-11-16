@@ -265,12 +265,9 @@ ECFG_EM_matrix::ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock,
       }
 
   // initialise feature lookup
-  set<sstring> feature;
-  for_const_contents (vector<ECFG_state_info>, ecfg.state_info, info)
-    for_const_contents (ECFG_state_info::ECFG_state_annotation, info->annot, a)
-    feature.insert (a->first);
+  set<sstring> feature = ecfg.gc_feature_set();
   align_annot = vector<const char*> ((int) feature.size(), (const char*) 0);
-  state_annot = array2d<const char*> (ecfg.states(), (int) feature.size(), (const char*) 0);
+  state_annot = vector<vector<map<sstring,Loge> > > (ecfg.states(), vector<map<sstring,Loge> > ((int) feature.size()));
   int n_feature = 0;
   for_const_contents (set<sstring>, feature, f)  
     {
@@ -281,8 +278,11 @@ ECFG_EM_matrix::ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock,
 	  const ECFG_state_info::ECFG_state_annotation::const_iterator a = info.annot.find (*f);
 	  if (a != info.annot.end())
 	    {
-	      state_annot (s, n_feature) = a->second.c_str();
-	      CL << " '" << state_annot (s, n_feature) << "' (" << ecfg.state_info[s].name << ")   ";
+	      for_const_contents (ECFG_state_info::String_prob_dist, a->second, sp) {
+		const Score sc = sp->second.eval_sc (ecfg.pscores);
+		state_annot[s][n_feature][sp->first] = Score2Nats (sc);
+		CL << " '" << sp->first << "' : " << Score2Prob(sc) << " (" << ecfg.state_info[s].name << ")   ";
+	      }
 	    }
 	}
       CL << '\n';
@@ -335,6 +335,36 @@ void ECFG_EM_matrix::show_coords (ostream& out, int subseq_idx, int state_idx) c
   ecfg.state_info[state_idx].show (out);
 }
 
+// helpers for fill_up
+// tests if a==b, allowing both a & b to contain wildcards
+bool wildcard_match (const sstring& a, const sstring& b) {
+  for (int pos = 0; pos < (int) a.size(); ++pos)
+    if (a[pos] != b[pos] && a[pos] != ECFG_annotation_wildcard && b[pos] != ECFG_annotation_wildcard)
+      return false;
+  return true;
+}
+
+// get annotation string
+void get_annot_string (const ECFG_state_info& info, const char* aa, const Subseq_coords& subseq, sstring& aa_str, bool& has_wildcards) {
+  aa_str.clear();
+  has_wildcards = false;
+
+  for (int pos = 0; pos < info.l_emit; ++pos) {
+    const char aa_char = aa[pos + subseq.start];
+    aa_str << aa_char;
+    if (aa_char == ECFG_annotation_wildcard)
+      has_wildcards = true;
+  }
+
+  for (int pos = 0; pos < info.r_emit; ++pos) {
+    const char aa_char = aa[subseq.end() - info.r_emit + pos];
+    aa_str << aa_char;
+    if (aa_char == ECFG_annotation_wildcard)
+      has_wildcards = true;
+  }
+}
+
+// fill_up
 bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_context)
 {
   // make refs to key variables
@@ -343,7 +373,6 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
   const Subseq_coords& subseq = env.subseq[subseq_idx];
 
   // if this is a bifurc or null state, assign probability one and bail
-  const char *aa, *sa;
   if (info.bifurc || info.emit_size() == 0)  // bifurc or null?
     {
       emit_ll = 0.;  // assign probability one, so DP doesn't incur a penalty
@@ -351,29 +380,34 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
     }
 
   // if the alignment annotation is incompatible with this emit state, assign probability zero and bail
+  const char *aa;
+  sstring aa_str;
+  bool aa_has_wildcards;
   for (int a = 0; a < (int) align_annot.size(); ++a)
-    if ((aa = align_annot[a]) && (sa = state_annot (state_idx, a)))
+    if ((aa = align_annot[a]) != 0)
       {
-	for (int pos = 0; pos < info.l_emit; ++pos)
-	  {
-	    const char aa_char = aa[pos + subseq.start];
-	    const char sa_char = sa[pos];
-	    if (aa_char != ECFG_annotation_wildcard && aa_char != sa_char)
+	const String_loglike_dist& sa = state_annot[state_idx][a];
+	if (sa.size() > 0) {
+	  get_annot_string (info, aa, subseq, aa_str, aa_has_wildcards);
+
+	  if (aa_has_wildcards) {
+	    Loge sa_ll = -InfinityLoge;
+	    for_const_contents (String_loglike_dist, sa, sl) {
+	      if (wildcard_match (aa_str, sl->first))
+		NatsPSumAcc (sa_ll, sl->second);
+	    }
+	    NatsPMulAcc (emit_ll, sa_ll);
+
+	  } else {
+	    String_loglike_dist::const_iterator sa_iter = sa.find (aa_str);
+	    if (sa_iter == sa.end())
 	      {
 		emit_ll = -InfinityLoge;
 		return false;
 	      }
+	    NatsPMulAcc (emit_ll, sa_iter->second);
 	  }
-	for (int pos = 0; pos < info.r_emit; ++pos)
-	  {
-	    const char aa_char = aa[subseq.end() - info.r_emit + pos];
-	    const char sa_char = sa[info.l_emit + pos];
-	    if (aa_char != ECFG_annotation_wildcard && aa_char != sa_char)
-	      {
-		emit_ll = -InfinityLoge;
-		return false;
-	      }
-	  }
+	}
       }
 
   // print log message describing the subsequence co-ords & the state info
@@ -761,6 +795,9 @@ void ECFG_outside_matrix::fill()
   const Loge inside_final_ll = inside.final_loglike;
   vector<Subseq::Bifurc_out_l> bif_outl;
   vector<Subseq::Bifurc_out_r> bif_outr;
+  const char* aa;
+  sstring aa_str;
+  bool aa_has_wildcards;
   for (int dest_subseq_idx = env.subseqs() - 1; dest_subseq_idx >= 0; --dest_subseq_idx)
     {
       const Subseq_coords& subseq = env.subseq[dest_subseq_idx];
@@ -842,6 +879,29 @@ void ECFG_outside_matrix::fill()
 	      // call fill_down to accumulate EM_matrix counts
 	      if (counts && want_substitution_counts)
 		inside.fill_down (*counts, source_subseq_idx, *d, post_prob);
+
+	      // accumulate annotation counts
+	      if (counts)
+		for (int a = 0; a < (int) inside.align_annot.size(); ++a)
+		  if ((aa = inside.align_annot[a]) != 0)
+		    {
+		      const ECFG_EM_matrix::String_loglike_dist& sa = inside.state_annot[*d][a];
+		      if (sa.size() > 0) {
+			get_annot_string (info, aa, src_subseq, aa_str, aa_has_wildcards);
+			if (aa_has_wildcards) {
+			  Loge sa_ll = -InfinityLoge;
+			  for_const_contents (ECFG_EM_matrix::String_loglike_dist, sa, sl) {
+			    if (wildcard_match (aa_str, sl->first))
+			      NatsPSumAcc (sa_ll, sl->second);
+			  }
+			  for_const_contents (ECFG_EM_matrix::String_loglike_dist, sa, sl) {
+			    if (wildcard_match (aa_str, sl->first))
+			      counts->state_annot_count[*d][a][sl->first] += post_prob * Nats2Prob (NatsPMul (sl->second, -sa_ll));
+			  }
+			} else
+			  counts->state_annot_count[*d][a][aa_str] += post_prob;
+		      }
+		    }
 
 	      // count end transitions
 	      if (counts && subseq.len == 0)

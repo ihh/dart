@@ -49,8 +49,9 @@ struct ECFG_EM_matrix : ECFG_matrix
 {
   // alignment info
   const Aligned_score_profile& asp;
-  vector<const char*> align_annot;   // accessed as align_annot[feature]
-  array2d<const char*> state_annot;  // accessed as state_annot(state,feature)
+  vector<const char*> align_annot;   // accessed as align_annot[featureIndex]
+  typedef map<sstring,Loge> String_loglike_dist;
+  vector<vector<String_loglike_dist> > state_annot;  // accessed as state_annot[stateIndex][featureIndex][columnAnnotationString]
 
   // emit log-likelihoods for each (subseq,state) pair.
   // filling this data structure is expensive, but the structure can be re-used between CYK, Inside & Outside algorithms.
