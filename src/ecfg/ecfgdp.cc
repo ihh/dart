@@ -383,6 +383,7 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
   const char *aa;
   sstring aa_str;
   bool aa_has_wildcards;
+  Loge annot_emit_ll = 0;
   for (int a = 0; a < (int) align_annot.size(); ++a)
     if ((aa = align_annot[a]) != 0)
       {
@@ -396,7 +397,7 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
 	      if (wildcard_match (aa_str, sl->first))
 		NatsPSumAcc (sa_ll, sl->second);
 	    }
-	    NatsPMulAcc (emit_ll, sa_ll);
+	    NatsPMulAcc (annot_emit_ll, sa_ll);
 
 	  } else {
 	    String_loglike_dist::const_iterator sa_iter = sa.find (aa_str);
@@ -405,7 +406,7 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
 		emit_ll = -InfinityLoge;
 		return false;
 	      }
-	    NatsPMulAcc (emit_ll, sa_iter->second);
+	    NatsPMulAcc (annot_emit_ll, sa_iter->second);
 	  }
 	}
       }
@@ -454,7 +455,7 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
 	  cm.fill_up (lineage_matrix[info.matrix], tree, subseq_idx);
 	  joint_ll = cm.total_log_likelihood();
 	}
-      emit_ll = NatsPMul (joint_ll, -marginal_ll);
+      emit_ll = NatsPMul3 (annot_emit_ll, joint_ll, -marginal_ll);
       if (CTAGGING(3,FILL_UP))
 	{
 	  CL << "(Subseq " << subseq.start << "+" << subseq.len << ", state " << state_idx << ") ";
