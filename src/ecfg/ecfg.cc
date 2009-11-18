@@ -1399,7 +1399,7 @@ void ECFG_counts::inc_var_counts (PCounts&           var_counts,
       int n_feat = 0;
       for_const_contents (set<sstring>, gc_feat_set, f)
 	{
-	  const ECFG_state_info::String_prob_dist& sprob = info.annot[*f];  // cast away const
+	  const ECFG_state_info::String_prob_dist& sprob = ((ECFG_state_info&)info).annot[*f];  // cast away const
 	  const String_counts& scount = state_annot_count[s][n_feat];
 	  for_const_contents (String_counts, scount, sc) {
 	    ECFG_state_info::String_prob_dist::const_iterator sprob_iter = sprob.find (sc->first);
