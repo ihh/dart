@@ -476,21 +476,23 @@ void ECFG_scores::annotate (Stockholm& stock, const ECFG_cell_score_map& annot) 
 	  const ECFG_state_info::String_prob_dist& pdist = a->second;
 
 	  sstring& row_annot = stock.gc_annot[tag];
-	  sstring val = sample_string (pdist, pscores, true);
-
 	  // do the annotation
-	  if (info.emit_size())  // emit state: mark up emitted columns with annotation string
+	  if (pdist.size())
 	    {
-	      if ((int) val.size() != info.emit_size())
-		THROWEXPR ("Annotation label '" << val << "' for state " << info.name << " (row " << tag << ") has " << val.size() << " characters; expected " << info.emit_size());
-	      for (int pos = 0; pos < info.l_emit; ++pos)
-		annotate_if_wild (row_annot, subseq.start + pos, val[pos]);
-	      for (int pos = 0; pos < info.r_emit; ++pos)
-		annotate_if_wild (row_annot, subseq.end() - info.r_emit + pos, val[info.l_emit + pos]);
+	      sstring val = sample_string (pdist, pscores, true);
+	      if (info.emit_size())  // emit state: mark up emitted columns with annotation string
+		{
+		  if ((int) val.size() != info.emit_size())
+		    THROWEXPR ("Annotation label '" << val << "' for state " << info.name << " (row " << tag << ") has " << val.size() << " characters; expected " << info.emit_size());
+		  for (int pos = 0; pos < info.l_emit; ++pos)
+		    annotate_if_wild (row_annot, subseq.start + pos, val[pos]);
+		  for (int pos = 0; pos < info.r_emit; ++pos)
+		    annotate_if_wild (row_annot, subseq.end() - info.r_emit + pos, val[info.l_emit + pos]);
+		}
+	      else if (info.sum_state && val.size() > 0)  // non-emit sum state: mark up entire subsequence with annotation char
+		for (int pos = 0; pos < subseq.len; ++pos)
+		  annotate_if_wild (row_annot, subseq.start + pos, val[0]);
 	    }
-	  else if (info.sum_state && val.size() > 0)  // non-emit sum state: mark up entire subsequence with annotation char
-	    for (int pos = 0; pos < subseq.len; ++pos)
-	      annotate_if_wild (row_annot, subseq.start + pos, val[0]);
 	}
     }
 }
