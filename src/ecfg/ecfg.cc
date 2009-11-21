@@ -15,6 +15,9 @@ ECFG_matrix_set::ECFG_matrix_set (const ECFG_matrix_set& ems)
       new_chain.state = ec->state;
       new_chain.class_labels = ec->class_labels;
       new_chain.classes = ec->classes;
+      new_chain.gs_tag = ec->gs_tag;
+      new_chain.gs_values = ec->gs_values;
+      new_chain.gs_tag_value_chain_index = ec->gs_tag_value_chain_index;
       if (ec->matrix)  // avoid null pointer errors for lineage-dependent models
 	{
 	  (EM_matrix_params&) *new_chain.matrix = *ec->matrix;
