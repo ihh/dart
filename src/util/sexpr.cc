@@ -358,22 +358,74 @@ void SExpr_file::parse_text()
   sexpr.init (text.begin(), text.end());
 }
 
-Regexp SExpr_validator::brackets_regexp ("\\([ \t]*([^ \t\\(\\)]+)[ \t]*\\)");
-Regexp SExpr_validator::list_regexp ("([^ \t\\(\\)]+)\\*");
-Regexp SExpr_validator::tagval_regexp ("\\([ \t]*([^ \t\\(\\)]+)[ \t]+([^ \t\\(\\)]+)[ \t]*\\)");
-Regexp SExpr_validator::nonwhite_regexp ("[ \t]*([^ \t]+)[ \t]*");
-Regexp SExpr_validator::first_nonterm_regexp ("([^ \t\\-]+)");
+Regexp SExpr_validator::brackets_regexp ("^[ \t]*\\([ \t]*([^ \t\\(\\)]+)[ \t]*\\)[ \t]*$");
+Regexp SExpr_validator::quote_regexp ("^[ \t]*'([^ \t\\(\\)]+)[ \t]*$");
+Regexp SExpr_validator::list_regexp ("^[ \t]*([^ \t\\(\\)]+)\\*[ \t]*$");
+Regexp SExpr_validator::tagval_regexp ("^[ \t]*\\([ \t]*'([^ \t\\(\\)]+)[ \t]+([^ \t\\(\\)]+)[ \t]*\\)[ \t]*$");
+Regexp SExpr_validator::leftemit_regexp ("^[ \t]*'([^ \t\\(\\)]+)[ \t]+([^ \t\\(\\)]+)[ \t]*$");
+Regexp SExpr_validator::nonwhite_regexp ("^[ \t]*([^ \t]+)[ \t]*$");
+Regexp SExpr_validator::first_nonterm_regexp ("^[ \t]*([^ \t\\-]+).*$");
 
-bool SExpr_validator::parse (SExpr_iterator begin, SExpr_iterator end, bool issue_warnings)
+bool SExpr_validator::parse (SExpr& sexpr, bool issue_warnings)
 {
-  if (first_nonterm_regexp.Match (grammar.c_str()))
-    return parse (first_nonterm_regexp[1], begin, end, issue_warnings);
-  CLOGERR << "Warning: couldn't find top-level nonterminal in grammar:\n" << grammar << "\n";
+  warnings = 0;
+  if (first_nonterm_regexp.Match (grammar.c_str())) {
+    bool ok = parse (first_nonterm_regexp[1], sexpr, issue_warnings);
+    if (warnings > 1)
+      CLOGERR << (warnings-1) << " more syntax warning" << (warnings > 2 ? "s" : "") << "\n";
+    return ok;
+  }
+  CLOGERR << "Warning: couldn't find top-level nonterminal in syntax validation grammar:\n" << grammar << "\n";
   return false;
 }
 
 bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings)
 {
+  if (CTAGGING(-1,SEXPR_VALIDATOR))
+    {
+      sstring dump;
+      for (SExpr_iterator iter = begin; iter != end; ++iter)
+	dump << (iter == begin ? "" : " ") << *iter;
+      CL << "Attempting to match " << nonterm << " to (" << dump << ")\n";
+    }
+
+  SExpr_iterator begin_plus_one = begin;
+  ++begin_plus_one;
+
+  // implicitly recognized: Atom, Wild, End
+  if (nonterm == "Atom") {
+    return end == begin_plus_one && begin->is_atom();
+  } else if (nonterm == "Wild") {
+    return true;
+  } else if (nonterm == "End") {
+    return begin == end;
+  }
+
+  // implicitly recognized: lists
+  const char* s = nonterm.c_str();
+  if (list_regexp.Match(s)) {  // X*
+    sstring list_nonterm = list_regexp[1];
+    for (SExpr_iterator iter = begin; iter != end; ++iter)
+      if (!parse (list_nonterm, *iter, issue_warnings))
+	return false;
+    return true;
+  }
+
+  // implicitly recognized: brackets
+  if (brackets_regexp.Match(s)) {  // (X)
+    if (end == begin_plus_one && begin->is_list())
+      return parse (brackets_regexp[1], begin->child.begin(), begin->child.end(), issue_warnings);
+    warn (nonterm, begin, end);
+    return false;
+  }
+
+  // implicitly recognized: quoted atoms
+  if (quote_regexp.Match(s)) {  // 'atom
+    sstring atom = quote_regexp[1];
+    return end == begin_plus_one && begin->is_atom() && begin->atom == atom;
+  }
+
+  // try to match the nonterminal using the grammar
   sstring rule;
   rule << nonterm << "[ \t]*->([^;]+);";
   Regexp rule_regexp (rule.c_str());
@@ -411,57 +463,46 @@ bool SExpr_validator::match_rhs (sstring rhs, SExpr_iterator begin, SExpr_iterat
   ++begin_plus_one;
   const char* s = rhs.c_str();
 
-  if (brackets_regexp.Match(s)) {  // (X)
-    if (end == begin_plus_one && begin->is_list())
-      return shallow ? true : parse (brackets_regexp[1], *begin, issue_warnings);
-    return false;
-
-  } else if (list_regexp.Match(s)) {  // X*
-    sstring list_nonterm = list_regexp[1];
-    if (!shallow)
-      for (SExpr_iterator iter = begin; iter != end; ++iter)
-	if (!parse (list_nonterm, *iter, issue_warnings))
-	  return false;
-    return true;
-
-  } else if (tagval_regexp.Match(s)) {  // (tag X)
+  if (tagval_regexp.Match(s)) {  // (tag X)
     sstring keyword = tagval_regexp[1];
     sstring tagval_nonterm = tagval_regexp[2];
     if (end != begin_plus_one || !begin->is_list())
       return false;
     if (begin->child.size() == 0 || !begin->child.front().is_atom() || begin->child.front().atom != keyword)
       return false;
-    return shallow ? true : parse (tagval_nonterm, begin->child.back(), issue_warnings);
+
+    SExpr_iterator child_begin_plus_one = begin->child.begin();
+    ++child_begin_plus_one;
+    
+    return shallow ? true : parse (tagval_nonterm, child_begin_plus_one, begin->child.end(), issue_warnings);
+
+  } else if (leftemit_regexp.Match(s)) {  // tag X
+    sstring keyword = leftemit_regexp[1];
+    sstring leftemit_nonterm = leftemit_regexp[2];
+    if (end == begin || !begin->is_atom())
+      return false;
+    if (begin->atom != keyword)
+      return false;
+    return shallow ? true : parse (leftemit_nonterm, begin_plus_one, end, issue_warnings);
 
   } else if (nonwhite_regexp.Match(s)) {  // X
     sstring nonterm = nonwhite_regexp[1];
-
-    // implicitly recognized: Atom, Wild, End
-    if (nonterm == "Atom") {
-      return end == begin_plus_one && begin->is_atom();
-    } else if (nonterm == "Wild") {
-      return true;
-    } else if (nonterm == "End") {
-      return begin == end;
-    }
-
-    // try to match the nonterminal using the grammar
     return shallow ? true : parse (nonterm, begin, end, issue_warnings);
   }
 
   // RHS unrecognizable
-  CLOGERR << "Warning: can't understand RHS option in grammar rule: " << rhs << "\n";
+  CLOGERR << "Warning: can't understand RHS option in syntax validation grammar rule: " << rhs << "\n";
   return false;
 }
 
 void SExpr_validator::warn (sstring nonterm, SExpr_iterator begin, SExpr_iterator end)
 {
-  if (!warned)
+  if (warnings == 0)
     {
-      CLOGERR << "Warning: could not match the following S-expression to nonterminal " << nonterm << "\n";
+      sstring dump;
       for (SExpr_iterator iter = begin; iter != end; ++iter)
-	CLOGERR << " " << *iter;
-      CLOGERR << "\n";
-      warned = true;
+	dump << (iter == begin ? "" : " ") << *iter;
+      CLOGERR << "Syntax warning: the following does not look like a " << nonterm << ": (" << dump << ")\n";
     }
+  ++warnings;
 }

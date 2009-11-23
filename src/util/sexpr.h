@@ -105,16 +105,16 @@ struct SExpr_validator
   // typedefs
   typedef list<SExpr>::iterator SExpr_iterator;
   // statics
-  static Regexp brackets_regexp, list_regexp, tagval_regexp, nonwhite_regexp, first_nonterm_regexp;
+  static Regexp brackets_regexp, list_regexp, quote_regexp, tagval_regexp, leftemit_regexp, nonwhite_regexp, first_nonterm_regexp;
   // members
   sstring grammar;
-  bool warned;  // set to true after the first parse warning is issued
+  int warnings;
   // constructor
-  SExpr_validator (sstring grammar) : grammar (grammar) { }
+  SExpr_validator (const char* grammar_str) : grammar(grammar_str), warnings(0) { }
   // methods
-  bool parse (SExpr_iterator begin, SExpr_iterator end, bool issue_warnings = true);  // top-level parse method
+  bool parse (SExpr& sexpr, bool issue_warnings = true);  // top-level parse method
   bool parse (sstring nonterm, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings);
-  bool parse (sstring nonterm, SExpr& sexpr, bool issue_warnings) { list<SExpr> sl (1, sexpr); return parse (sl.begin(), sl.end(), issue_warnings); }
+  bool parse (sstring nonterm, SExpr& sexpr, bool issue_warnings) { list<SExpr> sl (1, sexpr); return parse (nonterm, sl.begin(), sl.end(), issue_warnings); }
   bool match_rhs (sstring rhs, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings, bool shallow);  // does recursive descent if shallow==false
   void warn (sstring nonterm, SExpr_iterator begin, SExpr_iterator end);
 };
