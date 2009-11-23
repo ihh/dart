@@ -374,69 +374,81 @@ bool SExpr_validator::parse (SExpr_iterator begin, SExpr_iterator end, bool issu
 
 bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings)
 {
-  SExpr_iterator begin_plus_one = begin;
-  ++begin_plus_one;
-  if (nonterm == "atom") {
-    const bool is_atom = end == begin_plus_one && begin->is_atom();
-    if (!is_atom && issue_warnings)
-      warn (nonterm, begin, end);
-    return is_atom;
-  } else if (nonterm == "wild") {
-    return true;
-  } else if (nonterm == "end") {
-    const bool is_empty = begin == end;
-    if (!is_empty && issue_warnings)
-      warn (nonterm, begin, end);
-    return is_empty;
-  } else {
-    sstring rule;
-    rule << nonterm << "[ \t]*->([^;]+);";
-    Regexp rule_regexp (rule.c_str());
-    if (rule_regexp.Match(grammar.c_str())) {
-      sstring rhs_string = rule_regexp[1];
-      vector<sstring> rhs_options = rhs_string.split("|");
+  sstring rule;
+  rule << nonterm << "[ \t]*->([^;]+);";
+  Regexp rule_regexp (rule.c_str());
+  if (rule_regexp.Match(grammar.c_str())) {
+    sstring rhs_string = rule_regexp[1];
+    vector<sstring> rhs_options = rhs_string.split("|");
+
+    // first pass: shallow, without warnings (this pass only performed if issue_warnings==true)
+    int shallow_matches = 0;
+    if (issue_warnings)
       for_const_contents (vector<sstring>, rhs_options, rhs_opt) {
-	if (match_rhs (*rhs_opt, begin, end))
-	  return true;
+	if (match_rhs (*rhs_opt, begin, end, issue_warnings, true))
+	  ++shallow_matches;
       }
-      if (issue_warnings)
-	warn (nonterm, begin, end);
-      return false;
-    } else {  // no grammar rule matched
-      CLOGERR << "Nonterminal " << nonterm << " not found in grammar\n";
-      return false;
+
+    // second pass: deep, with warnings
+    for_const_contents (vector<sstring>, rhs_options, rhs_opt) {
+      if (match_rhs (*rhs_opt, begin, end, issue_warnings && shallow_matches == 1, false))
+	return true;
     }
+
+    // fail
+    warn (nonterm, begin, end);
+    return false;
   }
+
+  // no grammar rule matched
+  CLOGERR << "Nonterminal " << nonterm << " not found in grammar\n";
   return false;
 }
 
-bool SExpr_validator::match_rhs (sstring rhs, SExpr_iterator begin, SExpr_iterator end)
+bool SExpr_validator::match_rhs (sstring rhs, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings, bool shallow)
 {
   SExpr_iterator begin_plus_one = begin;
   ++begin_plus_one;
   const char* s = rhs.c_str();
-  if (brackets_regexp.Match(s)) {
+
+  if (brackets_regexp.Match(s)) {  // (X)
     if (end == begin_plus_one && begin->is_list())
-      return parse (brackets_regexp[1], *begin, false);
+      return shallow ? true : parse (brackets_regexp[1], *begin, issue_warnings);
     return false;
-  } else if (list_regexp.Match(s)) {
+
+  } else if (list_regexp.Match(s)) {  // X*
     sstring list_nonterm = list_regexp[1];
-    for (SExpr_iterator iter = begin; iter != end; ++iter)
-      if (!parse (list_nonterm, *iter, false))
-	return false;
+    if (!shallow)
+      for (SExpr_iterator iter = begin; iter != end; ++iter)
+	if (!parse (list_nonterm, *iter, issue_warnings))
+	  return false;
     return true;
-  } else if (tagval_regexp.Match(s)) {
+
+  } else if (tagval_regexp.Match(s)) {  // (tag X)
     sstring keyword = tagval_regexp[1];
     sstring tagval_nonterm = tagval_regexp[2];
     if (end != begin_plus_one || !begin->is_list())
       return false;
-    if (begin->child.size() != 2 || !begin->child.front().is_atom() || begin->child.front().atom != keyword)
+    if (begin->child.size() == 0 || !begin->child.front().is_atom() || begin->child.front().atom != keyword)
       return false;
-    return parse (tagval_nonterm, begin->child.back(), false);
-  } else if (nonwhite_regexp.Match(s)) {
-    // assume RHS represents a nonterminal
-    return parse (nonwhite_regexp[1], begin, end, false);
+    return shallow ? true : parse (tagval_nonterm, begin->child.back(), issue_warnings);
+
+  } else if (nonwhite_regexp.Match(s)) {  // X
+    sstring nonterm = nonwhite_regexp[1];
+
+    // implicitly recognized: Atom, Wild, End
+    if (nonterm == "Atom") {
+      return end == begin_plus_one && begin->is_atom();
+    } else if (nonterm == "Wild") {
+      return true;
+    } else if (nonterm == "End") {
+      return begin == end;
+    }
+
+    // try to match the nonterminal using the grammar
+    return shallow ? true : parse (nonterm, begin, end, issue_warnings);
   }
+
   // RHS unrecognizable
   CLOGERR << "Warning: can't understand RHS option in grammar rule: " << rhs << "\n";
   return false;
@@ -453,4 +465,3 @@ void SExpr_validator::warn (sstring nonterm, SExpr_iterator begin, SExpr_iterato
       warned = true;
     }
 }
-
