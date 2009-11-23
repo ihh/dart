@@ -4,6 +4,7 @@
 #include <list>
 #include <stack>
 #include "util/sstring.h"
+#include "util/Regexp.h"
 
 struct SExpr
 {
@@ -97,6 +98,27 @@ struct SExpr_file
   void read_text_from_stdin();
   void parse_text();
 };
+
+// SExpr syntax validation grammar
+struct SExpr_validator
+{
+  // typedefs
+  typedef list<SExpr>::iterator SExpr_iterator;
+  // statics
+  static Regexp brackets_regexp, list_regexp, tagval_regexp, nonwhite_regexp, first_nonterm_regexp;
+  // members
+  sstring grammar;
+  bool warned;  // set to true after the first parse warning is issued
+  // constructor
+  SExpr_validator (sstring grammar) : grammar (grammar) { }
+  // methods
+  bool parse (SExpr_iterator begin, SExpr_iterator end, bool issue_warnings = true);  // top-level parse method
+  bool parse (sstring nonterm, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings);
+  bool parse (sstring nonterm, SExpr& sexpr, bool issue_warnings) { list<SExpr> sl (1, sexpr); return parse (sl.begin(), sl.end(), issue_warnings); }
+  bool match_rhs (sstring rhs, SExpr_iterator begin, SExpr_iterator end);
+  void warn (sstring nonterm, SExpr_iterator begin, SExpr_iterator end);
+};
+
 
 // Inline method defs
 
