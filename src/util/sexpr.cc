@@ -387,8 +387,6 @@ bool SExpr_validator::parse (const SExpr& sexpr, bool issue_warnings)
 {
   warnings = 0;
   bool ok = parse (start_nonterm, sexpr, issue_warnings);
-  if (warnings > 1)
-    CLOGERR << (warnings-1) << " more syntax warning" << (warnings > 2 ? "s" : "") << "\n";
   return ok;
 }
 
@@ -422,13 +420,17 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
   if (list_regexp.Match(s)) {  // X*
     sstring list_nonterm = list_regexp[1];
     bool ok = true;
+    int old_warnings = warnings, new_warnings = 0;
     for (SExpr_iterator iter = begin; iter != end; ++iter) {
+      warnings = old_warnings;
       if (!parse (list_nonterm, *iter, issue_warnings)) {
 	ok = false;
 	if (!issue_warnings)  // if not giving warnings, don't bother trying to process the other list items: we have a fail, so bail
 	  break;
+	new_warnings += warnings - old_warnings;
       }
     }
+    warnings = old_warnings + new_warnings;
     return ok;
   }
 

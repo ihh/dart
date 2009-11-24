@@ -766,7 +766,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // create & run the validator
   SExpr_validator ecfg_validator
     ("Grammar->('"EG_GRAMMAR" GrammarProperty*);"
-     "GrammarProperty->('"EG_NAME" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|('"EG_PARAMETRIC")|('"EG_PSEUDOCOUNTS" Wild)|('"PK_RATE" Wild)|('"PK_PGROUP" Wild)|('"PK_CONST_RATE" Wild)|('"PK_CONST_PGROUP" Wild)|('"EG_PARAMS" Wild)|('"EG_CONST" Wild)|('"EG_NONTERMINAL" Wild)|('"EG_TRANSFORM_SUM_FROM" Atom)|('"EG_HYBRID_CHAIN" Wild*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
+     "GrammarProperty->('"EG_NAME" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|('"EG_PARAMETRIC" End)|('"EG_PSEUDOCOUNTS" Wild)|('"PK_RATE" Wild)|('"PK_PGROUP" Wild)|('"PK_CONST_RATE" Wild)|('"PK_CONST_PGROUP" Wild)|('"EG_PARAMS" Wild)|('"EG_CONST" Wild)|('"EG_NONTERMINAL" Wild)|('"EG_TRANSFORM_SUM_FROM" Atom)|('"EG_HYBRID_CHAIN" Wild*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
      "RuleProperty->('"EG_FROM" Wild)|('"EG_TO" Wild)|('"EG_PROB" Wild)|('"EG_TRANSFORM_ANNOTATE" Wild)|('"EG_TRANSFORM_MINLEN" Wild)|('"EG_TRANSFORM_MAXLEN" Wild)|('"EG_TRANSFORM_INFIX" Wild)|('"EG_TRANSFORM_PREFIX" Wild)|('"EG_TRANSFORM_SUFFIX" Wild)|('"EG_TRANSFORM_SUM_FROM" Wild)|('"EG_TRANSFORM_NO_GAPS" Wild)|('"EG_TRANSFORM_STRICT_GAPS" Wild)|('"EG_TRANSFORM_IGNORE_GAPS" Wild)|('"EG_TRANSFORM_GAP_MODEL" Wild);"
      "ChainProperty->Wild;");
   ecfg_validator.parse(grammar_sexpr);
