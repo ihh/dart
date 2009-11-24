@@ -383,7 +383,7 @@ SExpr_validator::SExpr_validator (const char* grammar_str)
   }
 }
 
-bool SExpr_validator::parse (SExpr& sexpr, bool issue_warnings)
+bool SExpr_validator::parse (const SExpr& sexpr, bool issue_warnings)
 {
   warnings = 0;
   bool ok = parse (start_nonterm, sexpr, issue_warnings);
@@ -402,12 +402,16 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
       CL << "Attempting to match " << nonterm << " to (" << dump << ")\n";
     }
 
-  SExpr_iterator begin_plus_one = begin;
-  ++begin_plus_one;
+  bool list_length_equals_one = false;
+  if (begin != end) {
+    SExpr_iterator begin_plus_one = begin;
+    ++begin_plus_one;
+    list_length_equals_one = end == begin_plus_one;
+  }
 
   // implicitly recognized: Atom, Wild, End
   if (nonterm == "Atom") {
-    return end == begin_plus_one && begin->is_atom();
+    return list_length_equals_one && begin->is_atom();
   } else if (nonterm == "Wild") {
     return true;
   } else if (nonterm == "End") {
@@ -431,7 +435,7 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
 
   // implicitly recognized: brackets
   if (brackets_regexp.Match(s)) {  // (X)
-    if (end == begin_plus_one && begin->is_list())
+    if (list_length_equals_one && begin->is_list())
       return parse (brackets_regexp[1], begin->child.begin(), begin->child.end(), issue_warnings);
     warn (nonterm, begin, end);
     return false;
@@ -440,7 +444,7 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
   // implicitly recognized: quoted atoms
   if (quote_regexp.Match(s)) {  // 'atom
     sstring atom = quote_regexp[1];
-    return end == begin_plus_one && begin->is_atom() && begin->atom == atom;
+    return list_length_equals_one && begin->is_atom() && begin->atom == atom;
   }
 
   // try to match the nonterminal using the grammar
@@ -474,21 +478,25 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
 
 bool SExpr_validator::match_rhs (sstring rhs, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings, bool shallow)
 {
+  bool list_length_equals_one = false;
   SExpr_iterator begin_plus_one = begin;
-  ++begin_plus_one;
-  const char* s = rhs.c_str();
+  if (begin != end) {
+    ++begin_plus_one;
+    list_length_equals_one = end == begin_plus_one;
+  }
 
+  const char* s = rhs.c_str();
   if (tagval_regexp.Match(s)) {  // (tag X)
     sstring keyword = tagval_regexp[1];
     sstring tagval_nonterm = tagval_regexp[2];
-    if (end != begin_plus_one || !begin->is_list())
+    if (!list_length_equals_one || !begin->is_list())
       return false;
     if (begin->child.size() == 0 || !begin->child.front().is_atom() || begin->child.front().atom != keyword)
       return false;
 
     SExpr_iterator child_begin_plus_one = begin->child.begin();
     ++child_begin_plus_one;
-    
+
     return shallow ? true : parse (tagval_nonterm, child_begin_plus_one, begin->child.end(), issue_warnings);
 
   } else if (leftemit_regexp.Match(s)) {  // tag X

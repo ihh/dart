@@ -105,7 +105,7 @@ struct SExpr_file
 struct SExpr_validator
 {
   // typedefs
-  typedef list<SExpr>::iterator SExpr_iterator;
+  typedef list<SExpr>::const_iterator SExpr_iterator;
   typedef map<sstring,vector<sstring> > Grammar;
   // statics
   static Regexp rule_regexp, brackets_regexp, list_regexp, quote_regexp, tagval_regexp, leftemit_regexp, nonwhite_regexp;
@@ -116,9 +116,13 @@ struct SExpr_validator
   // constructor
   SExpr_validator (const char* grammar_str);
   // methods
-  bool parse (SExpr& sexpr, bool issue_warnings = true);  // top-level parse method
+  bool parse (const SExpr& sexpr, bool issue_warnings = true);  // top-level parse method
   bool parse (sstring nonterm, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings);
-  bool parse (sstring nonterm, SExpr& sexpr, bool issue_warnings) { list<SExpr> sl (1, sexpr); return parse (nonterm, sl.begin(), sl.end(), issue_warnings); }
+  bool parse (sstring nonterm, const SExpr& sexpr, bool issue_warnings)
+  {
+    const list<SExpr> sl (1, sexpr);
+    return parse (nonterm, sl.begin(), sl.end(), issue_warnings);
+  }
   bool match_rhs (sstring rhs, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings, bool shallow);  // does recursive descent if shallow==false
   void warn (sstring nonterm, SExpr_iterator begin, SExpr_iterator end);
 };
