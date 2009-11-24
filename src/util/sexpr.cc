@@ -436,7 +436,8 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
   if (brackets_regexp.Match(s)) {  // (X)
     if (list_length_equals_one && begin->is_list())
       return parse (brackets_regexp[1], begin->child.begin(), begin->child.end(), issue_warnings);
-    warn (nonterm, begin, end);
+    if (issue_warnings)
+      warn (nonterm, begin, end);
     return false;
   }
 
@@ -460,13 +461,15 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
       }
 
     // second pass: deep, with warnings
+    // if shallow_matches==1, then there is a unique shallow match, and so we can peg the warning lower down the tree
     for_const_contents (vector<sstring>, rhs_options, rhs_opt) {
       if (match_rhs (*rhs_opt, begin, end, issue_warnings && shallow_matches == 1, false))
 	return true;
     }
 
     // fail
-    warn (nonterm, begin, end);
+    if (issue_warnings)
+      warn (nonterm, begin, end);
     return false;
   }
 
