@@ -361,8 +361,8 @@ void SExpr_file::parse_text()
 Regexp SExpr_validator::brackets_regexp ("^[ \t]*\\([ \t]*([^ \t\\(\\)]+)[ \t]*\\)[ \t]*$");
 Regexp SExpr_validator::quote_regexp ("^[ \t]*'([^ \t\\(\\)]+)[ \t]*$");
 Regexp SExpr_validator::list_regexp ("^[ \t]*([^ \t\\(\\)]+)\\*[ \t]*$");
-Regexp SExpr_validator::tagval_regexp ("^[ \t]*\\([ \t]*'([^ \t\\(\\)]+)[ \t]+([^ \t\\(\\)]+)[ \t]*\\)[ \t]*$");
-Regexp SExpr_validator::leftemit_regexp ("^[ \t]*'([^ \t\\(\\)]+)[ \t]+([^ \t\\(\\)]+)[ \t]*$");
+Regexp SExpr_validator::tagval_regexp ("^[ \t]*\\([ \t]*([^ \t]+)[ \t]+([^ \t]+)[ \t]*\\)[ \t]*$");
+Regexp SExpr_validator::leftemit_regexp ("^[ \t]*([^ \t]+)[ \t]+([^ \t]+)[ \t]*$");
 Regexp SExpr_validator::nonwhite_regexp ("^[ \t]*([^ \t]+)[ \t]*$");
 Regexp SExpr_validator::rule_regexp ("^[ \t]*([^ \t]+)[ \t]*->[ \t]*(.*)$");
 
@@ -379,6 +379,8 @@ SExpr_validator::SExpr_validator (const char* grammar_str)
       grammar[lhs] = rhs_opts;
       if (start_nonterm.size() == 0)
 	start_nonterm = lhs;
+      if (CTAGGING(2,SEXPR_SYNTAX))
+	CL << "Rule #" << grammar.size() << ": " << lhs << " -> " << sstring::join(rhs_opts," | ") << ";\n";
     }
   }
 }
@@ -489,28 +491,46 @@ bool SExpr_validator::match_rhs (sstring rhs, SExpr_iterator begin, SExpr_iterat
     list_length_equals_one = end == begin_plus_one;
   }
 
+  // resolve deterministic transition paths X -> ... -> Y
+  Grammar::const_iterator gram_iter;
+  while ((gram_iter = grammar.find(rhs)) != grammar.end() && gram_iter->second.size() == 1)
+    rhs = gram_iter->second.front();
+
   const char* s = rhs.c_str();
   if (tagval_regexp.Match(s)) {  // (tag X)
-    sstring keyword = tagval_regexp[1];
-    sstring tagval_nonterm = tagval_regexp[2];
+    sstring tag = tagval_regexp[1];
+    sstring val = tagval_regexp[2];
     if (!list_length_equals_one || !begin->is_list())
       return false;
-    if (begin->child.size() == 0 || !begin->child.front().is_atom() || begin->child.front().atom != keyword)
+    if (begin->child.size() == 0)
+      return false;
+
+    // shallow-match quoted tags if we can
+    if (quote_regexp.Match(tag.c_str()) && (!begin->child.front().is_atom() || begin->child.front().atom != quote_regexp[1]))
       return false;
 
     SExpr_iterator child_begin_plus_one = begin->child.begin();
     ++child_begin_plus_one;
 
-    return shallow ? true : parse (tagval_nonterm, child_begin_plus_one, begin->child.end(), issue_warnings);
+    return shallow
+      ? true
+      : (parse (tag, begin->child.front(), issue_warnings)
+	 && parse (val, child_begin_plus_one, begin->child.end(), issue_warnings));
 
   } else if (leftemit_regexp.Match(s)) {  // tag X
-    sstring keyword = leftemit_regexp[1];
-    sstring leftemit_nonterm = leftemit_regexp[2];
-    if (end == begin || !begin->is_atom())
+    sstring tag = leftemit_regexp[1];
+    sstring val = leftemit_regexp[2];
+    if (end == begin)
       return false;
-    if (begin->atom != keyword)
+
+    // shallow-match quoted tags if we can
+    if (quote_regexp.Match(tag.c_str()) && (!begin->is_atom() || begin->atom != quote_regexp[1]))
       return false;
-    return shallow ? true : parse (leftemit_nonterm, begin_plus_one, end, issue_warnings);
+
+    return shallow
+      ? true
+      : (parse (tag, *begin, issue_warnings)
+	 && parse (val, begin_plus_one, end, issue_warnings));
 
   } else if (nonwhite_regexp.Match(s)) {  // X
     sstring nonterm = nonwhite_regexp[1];

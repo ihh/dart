@@ -766,8 +766,27 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // create & run the validator
   SExpr_validator ecfg_validator
     ("Grammar->('"EG_GRAMMAR" GrammarProperty*);"
-     "GrammarProperty->('"EG_NAME" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|('"EG_PARAMETRIC" End)|('"EG_PSEUDOCOUNTS" Wild)|('"PK_RATE" Wild)|('"PK_PGROUP" Wild)|('"PK_CONST_RATE" Wild)|('"PK_CONST_PGROUP" Wild)|('"EG_PARAMS" Wild)|('"EG_CONST" Wild)|('"EG_NONTERMINAL" Wild)|('"EG_TRANSFORM_SUM_FROM" Atom)|('"EG_HYBRID_CHAIN" Wild*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
-     "RuleProperty->('"EG_FROM" Wild)|('"EG_TO" Wild)|('"EG_PROB" Wild)|('"EG_TRANSFORM_ANNOTATE" Wild)|('"EG_TRANSFORM_MINLEN" Wild)|('"EG_TRANSFORM_MAXLEN" Wild)|('"EG_TRANSFORM_INFIX" Wild)|('"EG_TRANSFORM_PREFIX" Wild)|('"EG_TRANSFORM_SUFFIX" Wild)|('"EG_TRANSFORM_SUM_FROM" Wild)|('"EG_TRANSFORM_NO_GAPS" Wild)|('"EG_TRANSFORM_STRICT_GAPS" Wild)|('"EG_TRANSFORM_IGNORE_GAPS" Wild)|('"EG_TRANSFORM_GAP_MODEL" Wild);"
+     "GrammarProperty->Name|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|('"EG_PARAMETRIC" End)|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterAssignment*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterAssignment*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
+     "Name->('"EG_NAME" Atom);"
+     "MinimumLength->('"EG_TRANSFORM_MINLEN" Atom);"
+     "MaximumLength->('"EG_TRANSFORM_MAXLEN" Atom);"
+     "SummationDirective->('"EG_TRANSFORM_SUM_FROM" End);"
+     "QualifiedSummationDirective->('"EG_TRANSFORM_SUM_FROM" Atom);"
+     "PrefixConstraint->('"EG_TRANSFORM_PREFIX" End);"
+     "SuffixConstraint->('"EG_TRANSFORM_SUFFIX" End);"
+     "InfixConstraint->('"EG_TRANSFORM_INFIX" End);"
+     "SourceStateList->('"EG_FROM" (Atom*));"
+     "DestinationStateList->('"EG_TO" (Atom*));"
+     "ProbabilityExpression->('"EG_PROB" Wild);"
+     "ParameterAssignment->(Atom Atom);"
+     "RateCount->(Atom Atom Atom);"
+     "ParameterGroup->(ParameterAssignment*);"
+     "Count->ParameterAssignment|RateCount;"
+     "NontermProperty->Name|MinimumLength|MaximumLength|SummationDirective|PrefixConstraint|SuffixConstraint|InfixConstraint;"
+     "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End)|('"EG_TRANSFORM_GAP_MODEL" GapModelProperty*);"
+     "AnnotationProperty->Wild;"
+     "GapModelProperty->Wild;"
+     "HybridChainProperty->Wild;"
      "ChainProperty->Wild;");
   ecfg_validator.parse(grammar_sexpr);
 
