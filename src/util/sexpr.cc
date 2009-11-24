@@ -405,10 +405,15 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
   const char* s = nonterm.c_str();
   if (list_regexp.Match(s)) {  // X*
     sstring list_nonterm = list_regexp[1];
-    for (SExpr_iterator iter = begin; iter != end; ++iter)
-      if (!parse (list_nonterm, *iter, issue_warnings))
-	return false;
-    return true;
+    bool ok = true;
+    for (SExpr_iterator iter = begin; iter != end; ++iter) {
+      if (!parse (list_nonterm, *iter, issue_warnings)) {
+	ok = false;
+	if (!issue_warnings)  // if not giving warnings, don't bother trying to process the other list items: we have a fail, so bail
+	  break;
+      }
+    }
+    return ok;
   }
 
   // implicitly recognized: brackets
