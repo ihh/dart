@@ -396,10 +396,9 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
 {
   if (CTAGGING(-1,SEXPR_VALIDATOR))
     {
-      sstring dump;
-      for (SExpr_iterator iter = begin; iter != end; ++iter)
-	dump << (iter == begin ? "" : " ") << *iter;
-      CL << "Attempting to match " << nonterm << " to (" << dump << ")\n";
+      SExpr dump_sexpr;
+      dump_sexpr.child.insert (dump_sexpr.child.begin(), begin, end);
+      CL << "Attempting to match " << nonterm << " to " << dump_sexpr << "\n";
     }
 
   bool list_length_equals_one = false;
@@ -522,10 +521,9 @@ void SExpr_validator::warn (sstring nonterm, SExpr_iterator begin, SExpr_iterato
 {
   if (warnings == 0)
     {
-      sstring dump;
-      for (SExpr_iterator iter = begin; iter != end; ++iter)
-	dump << (iter == begin ? "" : " ") << *iter;
-      CLOGERR << "Syntax warning: the following does not look like a " << nonterm << ": (" << dump << ")\n";
+      SExpr dump_sexpr;
+      dump_sexpr.child.insert (dump_sexpr.child.begin(), begin, end);
+      CLOGERR << "Syntax warning: the following does not look like a " << nonterm << ": " << dump_sexpr << "\n";
     }
   ++warnings;
 }
