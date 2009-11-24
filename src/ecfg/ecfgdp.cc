@@ -1256,6 +1256,10 @@ ECFG_cell_score_map ECFG_CYK_matrix::traceback()
     const Subseq_coords& subseq = env.subseq[subseq_idx];
     const ECFG_state_info& info = ecfg.state_info[traceback_state];
 
+    // print log message
+    if (CTAGGING(3,CYK_TRACEBACK))
+      CL << "CYK traceback: at subsequence (" << subseq.start << ',' << subseq.end() << ") state " << info.name << '\n';
+
     // set up traceback score vars
     const Loge traceback_ll = cell (subseq_idx, traceback_state);
     Loge test_ll, best_ll = -InfinityLoge;
