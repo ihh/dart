@@ -5,6 +5,7 @@
 #include <stack>
 #include <map>
 #include <vector>
+#include <set>
 #include "util/sstring.h"
 #include "util/Regexp.h"
 
@@ -112,7 +113,8 @@ struct SExpr_validator
   // members
   Grammar grammar;  // maps lhs to rhs
   sstring start_nonterm;
-  int warnings;
+  int warnings, duplicate_warnings;
+  set<sstring> printed_warnings;
   // constructor
   SExpr_validator (const char* grammar_str);
   // methods

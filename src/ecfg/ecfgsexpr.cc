@@ -766,8 +766,9 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // create & run the validator
   SExpr_validator ecfg_validator
     ("Grammar->('"EG_GRAMMAR" GrammarProperty*);"
-     "GrammarProperty->Name|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|('"EG_PARAMETRIC" End)|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
+     "GrammarProperty->Name|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
      "Name->('"EG_NAME" Atom);"
+     "ParametricFlag->('"EG_PARAMETRIC" End);"
      "MinimumLength->('"EG_TRANSFORM_MINLEN" Atom);"
      "MaximumLength->('"EG_TRANSFORM_MAXLEN" Atom);"
      "SummationDirective->('"EG_TRANSFORM_SUM_FROM" End);"
@@ -777,7 +778,8 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "InfixConstraint->('"EG_TRANSFORM_INFIX" End);"
      "SourceStateList->('"EG_FROM" (Atom*));"
      "DestinationStateList->('"EG_TO" (Atom*));"
-     "ProbabilityExpression->('"EG_PROB" Wild);"
+     "ProbabilityExpression->('"EG_PROB" Function);"
+     "Function->Wild;"
      "ParameterValue->(Atom Atom);"
      "ParameterValuePair->(Atom ValuePair);"
      "ValuePair->Atom Atom;"
@@ -785,10 +787,28 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "Count->ParameterValue|ParameterValuePair;"
      "NontermProperty->Name|MinimumLength|MaximumLength|SummationDirective|PrefixConstraint|SuffixConstraint|InfixConstraint;"
      "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End)|('"EG_TRANSFORM_GAP_MODEL" GapModelProperty*);"
-     "AnnotationProperty->Wild;"
-     "GapModelProperty->Wild;"
-     "HybridChainProperty->Wild;"
-     "ChainProperty->Wild;");
+     "AnnotationProperty->AnnotationRow|AnnotationColumn|AnnotationLabel|ProbabilisticAnnotation;"
+     "AnnotationRow->('"EG_TRANSFORM_ROW" Atom);"
+     "AnnotationColumn->('"EG_TRANSFORM_COLUMN" Atom);"
+     "AnnotationLabel->('"EG_TRANSFORM_LABEL" Atom);"
+     "AnnotationLabelList->('"EG_TRANSFORM_LABEL" (Atom*));"
+     "ProbabilisticAnnotation->('"EG_ANNOTATE_EMIT" ProbabilisticAnnotationProperty*);"
+     "ProbabilisticAnnotationProperty->AnnotationLabelList|ProbabilityExpression;"
+     "GapModelProperty->ParametricFlag|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_EXTEND_PROB" Function)|('"EG_TRANSFORM_END_PROB" Function)|('"EG_TRANSFORM_INS_RATE" Function)|('"EG_TRANSFORM_DEL_RATE" Function);"
+     "HybridChainProperty->TerminalList|AnnotationRow|('"EG_HYBRID_COMPONENTS" HybridChainComponent*);"
+     "TerminalList->('"EG_TERMINAL" (Atom*));"
+     "HybridChainComponent->(HybridChainComponentProperty HybridChainComponentProperty);"
+     "HybridChainComponentProperty->AnnotationLabel|TerminalList;"
+     "ChainProperty->TerminalList|('"EG_CHAIN_CLASS" HiddenClassDescription)|InitialStateProbability|MutationRate|('"EG_CHAIN_POLICY" UpdatePolicy);"
+     "HiddenClassDescription->AnnotationRow|AnnotationLabelList;"
+     "UpdatePolicy->'"EG_POLICY_REV"|'"EG_POLICY_IRREV"|'"EG_POLICY_RIND"|'"EG_PARAMETRIC";"
+     "InitialStateProbability->('"EG_CHAIN_INITIAL" InitialStateProbabilityProperty*);"
+     "InitialStateProbabilityProperty->StateList|ProbabilityExpression;"
+     "StateList->('"EG_CHAIN_STATE" (Atom*));"
+     "MutationRate->('"EG_CHAIN_MUTATE" MutationRateProperty*);"
+     "MutationRateProperty->SourceStateList|DestinationStateList|RateExpression;"
+     "RateExpression->('"EG_RATE" Function);"
+);
   ecfg_validator.parse(grammar_sexpr);
 
   // pointer to ECFG_scores

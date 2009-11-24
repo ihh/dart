@@ -360,7 +360,7 @@ void SExpr_file::parse_text()
 
 Regexp SExpr_validator::brackets_regexp ("^[ \t]*\\([ \t]*([^ \t\\(\\)]+)[ \t]*\\)[ \t]*$");
 Regexp SExpr_validator::quote_regexp ("^[ \t]*'([^ \t\\(\\)]+)[ \t]*$");
-Regexp SExpr_validator::list_regexp ("^[ \t]*([^ \t\\(\\)]+)\\*[ \t]*$");
+Regexp SExpr_validator::list_regexp ("^[ \t]*([^ \t]+)(\\*|\\+)[ \t]*$");
 Regexp SExpr_validator::tagval_regexp ("^[ \t]*\\([ \t]*([^ \t]+)[ \t]+([^ \t]+)[ \t]*\\)[ \t]*$");
 Regexp SExpr_validator::leftemit_regexp ("^[ \t]*([^ \t]+)[ \t]+([^ \t]+)[ \t]*$");
 Regexp SExpr_validator::nonwhite_regexp ("^[ \t]*([^ \t]+)[ \t]*$");
@@ -387,8 +387,11 @@ SExpr_validator::SExpr_validator (const char* grammar_str)
 
 bool SExpr_validator::parse (const SExpr& sexpr, bool issue_warnings)
 {
-  warnings = 0;
+  warnings = duplicate_warnings = 0;
+  printed_warnings.clear();
   bool ok = parse (start_nonterm, sexpr, issue_warnings);
+  if (duplicate_warnings > 0)
+    CLOGERR << duplicate_warnings << " duplicate syntax warning" << (duplicate_warnings > 1 ? "s" : "") << '\n';
   return ok;
 }
 
@@ -419,9 +422,12 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
 
   // implicitly recognized: lists
   const char* s = nonterm.c_str();
-  if (list_regexp.Match(s)) {  // X*
+  if (list_regexp.Match(s)) {  // X*, X+
     sstring list_nonterm = list_regexp[1];
+    sstring list_star_or_plus = list_regexp[2];
     bool ok = true;
+    if (begin == end && list_star_or_plus == "+")
+      ok = false;
     int old_warnings = warnings, new_warnings = 0;
     for (SExpr_iterator iter = begin; iter != end; ++iter) {
       warnings = old_warnings;
@@ -548,7 +554,13 @@ void SExpr_validator::warn (sstring nonterm, SExpr_iterator begin, SExpr_iterato
     {
       SExpr dump_sexpr;
       dump_sexpr.child.insert (dump_sexpr.child.begin(), begin, end);
-      CLOGERR << "Syntax warning: the following does not look like a " << nonterm << ": " << dump_sexpr << "\n";
+      sstring warning;
+      warning << "Syntax warning: the following does not look like a " << nonterm << ": " << dump_sexpr;
+      if (printed_warnings.find (warning) == printed_warnings.end()) {
+	CLOGERR << warning << "\n";
+	printed_warnings.insert(warning);
+      } else
+	++duplicate_warnings;
     }
   ++warnings;
 }
