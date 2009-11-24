@@ -766,7 +766,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // create & run the validator
   SExpr_validator ecfg_validator
     ("Grammar->('"EG_GRAMMAR" GrammarProperty*);"
-     "GrammarProperty->Name|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|('"EG_PARAMETRIC" End)|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterAssignment*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterAssignment*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
+     "GrammarProperty->Name|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|('"EG_PARAMETRIC" End)|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
      "Name->('"EG_NAME" Atom);"
      "MinimumLength->('"EG_TRANSFORM_MINLEN" Atom);"
      "MaximumLength->('"EG_TRANSFORM_MAXLEN" Atom);"
@@ -778,10 +778,11 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "SourceStateList->('"EG_FROM" (Atom*));"
      "DestinationStateList->('"EG_TO" (Atom*));"
      "ProbabilityExpression->('"EG_PROB" Wild);"
-     "ParameterAssignment->(Atom Atom);"
-     "RateCount->(Atom Atom Atom);"
-     "ParameterGroup->(ParameterAssignment*);"
-     "Count->ParameterAssignment|RateCount;"
+     "ParameterValue->(Atom Atom);"
+     "ParameterValuePair->(Atom ValuePair);"
+     "ValuePair->Atom Atom;"
+     "ParameterGroup->(ParameterValue*);"
+     "Count->ParameterValue|ParameterValuePair;"
      "NontermProperty->Name|MinimumLength|MaximumLength|SummationDirective|PrefixConstraint|SuffixConstraint|InfixConstraint;"
      "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End)|('"EG_TRANSFORM_GAP_MODEL" GapModelProperty*);"
      "AnnotationProperty->Wild;"
@@ -843,9 +844,14 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
 	      if (sym2pvar.find (pvar_name) != sym2pvar.end())
 		{
 		  const PVar& pv = sym2pvar[pvar_name];
+		  if ((**pcount_sexpr).child.size() < 2)
+		    THROWEXPR("In (" << **pcount_sexpr << "):\nPseudocounts for rate and probability parameters need an event count");
 		  ecfg->pcounts[pv] = (**pcount_sexpr)[1].get_atom().to_nonneg_double_strict();
-		  if (ecfg->pscores.group_size (pv.group_idx) == 1)  // rate parameter?
+		  if (ecfg->pscores.group_size (pv.group_idx) == 1) {  // rate parameter?
+		    if ((**pcount_sexpr).child.size() < 3)
+		      THROWEXPR("In (" << **pcount_sexpr << "):\nPseudocounts for rate parameters comprise both an event count and a time period");
 		    ecfg->pcounts.wait[pv.group_idx] = (**pcount_sexpr)[2].get_atom().to_nonneg_double_strict();
+		  }
 		}
 	      else
 		CLOGERR << "Warning: a pseudocount is specified for parameter " << pvar_name << " but there is no corresponding parameter definition\n";
