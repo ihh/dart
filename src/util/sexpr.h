@@ -3,6 +3,8 @@
 
 #include <list>
 #include <stack>
+#include <map>
+#include <vector>
 #include "util/sstring.h"
 #include "util/Regexp.h"
 
@@ -104,13 +106,15 @@ struct SExpr_validator
 {
   // typedefs
   typedef list<SExpr>::iterator SExpr_iterator;
+  typedef map<sstring,vector<sstring> > Grammar;
   // statics
-  static Regexp brackets_regexp, list_regexp, quote_regexp, tagval_regexp, leftemit_regexp, nonwhite_regexp, first_nonterm_regexp;
+  static Regexp rule_regexp, brackets_regexp, list_regexp, quote_regexp, tagval_regexp, leftemit_regexp, nonwhite_regexp;
   // members
-  sstring grammar;
+  Grammar grammar;  // maps lhs to rhs
+  sstring start_nonterm;
   int warnings;
   // constructor
-  SExpr_validator (const char* grammar_str) : grammar(grammar_str), warnings(0) { }
+  SExpr_validator (const char* grammar_str);
   // methods
   bool parse (SExpr& sexpr, bool issue_warnings = true);  // top-level parse method
   bool parse (sstring nonterm, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings);

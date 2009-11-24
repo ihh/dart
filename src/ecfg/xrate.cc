@@ -19,6 +19,7 @@ int main (int argc, char* argv[])
   ecfg_main.add_grammar ("aa2", new Protein_grammar(1,2));
   ecfg_main.add_grammar ("aa3", new Protein_grammar(1,3));
   ecfg_main.add_grammar ("aa4", new Protein_grammar(1,4));
+  ecfg_main.add_grammar ("pfold", new PFOLD_ECFG());
 
   // set default grammars
   ecfg_main.default_grammars = "rev";

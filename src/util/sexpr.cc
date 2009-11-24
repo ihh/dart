@@ -364,19 +364,32 @@ Regexp SExpr_validator::list_regexp ("^[ \t]*([^ \t\\(\\)]+)\\*[ \t]*$");
 Regexp SExpr_validator::tagval_regexp ("^[ \t]*\\([ \t]*'([^ \t\\(\\)]+)[ \t]+([^ \t\\(\\)]+)[ \t]*\\)[ \t]*$");
 Regexp SExpr_validator::leftemit_regexp ("^[ \t]*'([^ \t\\(\\)]+)[ \t]+([^ \t\\(\\)]+)[ \t]*$");
 Regexp SExpr_validator::nonwhite_regexp ("^[ \t]*([^ \t]+)[ \t]*$");
-Regexp SExpr_validator::first_nonterm_regexp ("^[ \t]*([^ \t\\-]+).*$");
+Regexp SExpr_validator::rule_regexp ("^[ \t]*([^ \t]+)[ \t]*->[ \t]*(.*)$");
+
+SExpr_validator::SExpr_validator (const char* grammar_str)
+  : warnings(0)
+{
+  const sstring gram (grammar_str);
+  const vector<sstring> rule = gram.split(";");
+  for_const_contents (vector<sstring>, rule, r) {
+    if (rule_regexp.Match(r->c_str())) {
+      const sstring lhs = rule_regexp[1];
+      const sstring rhs = rule_regexp[2];
+      const vector<sstring> rhs_opts = rhs.split("|");
+      grammar[lhs] = rhs_opts;
+      if (start_nonterm.size() == 0)
+	start_nonterm = lhs;
+    }
+  }
+}
 
 bool SExpr_validator::parse (SExpr& sexpr, bool issue_warnings)
 {
   warnings = 0;
-  if (first_nonterm_regexp.Match (grammar.c_str())) {
-    bool ok = parse (first_nonterm_regexp[1], sexpr, issue_warnings);
-    if (warnings > 1)
-      CLOGERR << (warnings-1) << " more syntax warning" << (warnings > 2 ? "s" : "") << "\n";
-    return ok;
-  }
-  CLOGERR << "Warning: couldn't find top-level nonterminal in syntax validation grammar:\n" << grammar << "\n";
-  return false;
+  bool ok = parse (start_nonterm, sexpr, issue_warnings);
+  if (warnings > 1)
+    CLOGERR << (warnings-1) << " more syntax warning" << (warnings > 2 ? "s" : "") << "\n";
+  return ok;
 }
 
 bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterator end, bool issue_warnings)
@@ -431,12 +444,9 @@ bool SExpr_validator::parse (sstring nonterm, SExpr_iterator begin, SExpr_iterat
   }
 
   // try to match the nonterminal using the grammar
-  sstring rule;
-  rule << nonterm << "[ \t]*->([^;]+);";
-  Regexp rule_regexp (rule.c_str());
-  if (rule_regexp.Match(grammar.c_str())) {
-    sstring rhs_string = rule_regexp[1];
-    vector<sstring> rhs_options = rhs_string.split("|");
+  Grammar::const_iterator grammar_iter = grammar.find(nonterm);
+  if (grammar_iter != grammar.end()) {
+    const vector<sstring>& rhs_options = grammar_iter->second;
 
     // first pass: shallow, without warnings (this pass only performed if issue_warnings==true)
     int shallow_matches = 0;
