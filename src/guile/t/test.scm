@@ -86,9 +86,9 @@
 (display v)
 
 (display "Expecting one more warning now:\n")
-(define ts (stockholm-tree s))  ;; should cause a warning
+(define ts (newick-from-stockholm s))  ;; should cause a warning
 
-(define tt (stockholm-tree t))
+(define tt (newick-from-stockholm t))
 (display "Estimated tree:\n")
 (display tt)
 

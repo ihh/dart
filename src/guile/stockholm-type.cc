@@ -62,7 +62,7 @@ static SCM stockholm_to_file (SCM stock_smob, SCM s_filename)
   return SCM_UNSPECIFIED;
 }
 
-static SCM stockholm_tree (SCM stock_smob)
+static SCM newick_from_stockholm (SCM stock_smob)
 {
   SCM scm = SCM_BOOL_F;
   Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
@@ -166,7 +166,7 @@ void init_stockholm_type (void)
   scm_c_define_gsubr ("stockholm-to-file", 2, 0, 0, (SCM (*)()) stockholm_to_file);
   // primitives to ease migration from xrate macro format
   scm_c_define_gsubr ("stockholm-column-count", 1, 0, 0, (SCM (*)()) stockholm_column_count);  // returns the number of columns as an integer
-  scm_c_define_gsubr ("stockholm-tree", 1, 0, 0, (SCM (*)()) stockholm_tree);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
+  scm_c_define_gsubr ("newick-from-stockholm", 1, 0, 0, (SCM (*)()) newick_from_stockholm);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
 
   // convert a Stockholm alignment into a Scheme data structure with the following grammar
   //    TOP => (GF GC BODY)
