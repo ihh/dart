@@ -73,11 +73,13 @@ struct Stockholm : Alignment, Fold_char_enum
   Annotation gc_annot;  // column annotation for whole alignment
   Row_annotation gs_annot;  // free-form annotation for each sequence
   Row_annotation gr_annot;  // column annotation for each sequence
-  vector<Named_profile*> np;   // this is messy, as we have already have pointers to constituent Score_profile's and names, but certain objects need the sequences as Named_profile's
+
+  // deep-linking alert!
+  vector<Named_profile*> np;   // this is messy, as we have already have pointers to constituent Score_profile's, as well as names; but certain objects need the sequences as Named_profile's
 
   // constructors
   Stockholm (int rows = 0, int cols = 0);
-  static Stockholm* deep_copy (const Stockholm& stock, Sequence_database& seqdb);
+  static Stockholm* deep_copy (const Stockholm& stock, Sequence_database& seqdb);  // adds new Named_profiles to the Sequence_database, and updates the deep-links in np[] and prof_sc[]
 
   // row accessor
   sstring get_row_as_string (int row);

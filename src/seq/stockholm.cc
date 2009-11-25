@@ -15,6 +15,8 @@ Stockholm* Stockholm::deep_copy (const Stockholm& stock, Sequence_database& seqd
       Named_profile np (*stock.np[r]);
       seqdb.push_back (np);
       new_stock->np[r] = &seqdb.back();
+      if (new_stock->prof.size() >= r)
+	new_stock->prof[r] = &seqdb.back().prof_sc;
     }
   return new_stock;
 }

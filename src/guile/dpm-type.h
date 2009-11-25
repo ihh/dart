@@ -14,6 +14,7 @@ struct XRATE_DPM_smob {
   // Scheme objects
   SCM stock_smob_scm;
   // internal data
+  // these should be pointers to avoid potential deep-copy bugs (although there shouldn't be any deep links here anyway)
   ECFG_scores* ecfg;
   ECFG_envelope* env;
   PCounts* pcounts;

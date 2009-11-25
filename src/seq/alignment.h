@@ -306,6 +306,8 @@ struct Alignment : Named_rows, Stream_saver
 
   // data
   Alignment_path path;
+
+  // deep-linking alert!
   vector<const Score_profile*> prof;  // if prof[R] = 0, then row R has no associated sequence data
 
   // constructors

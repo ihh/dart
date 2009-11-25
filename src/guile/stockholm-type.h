@@ -12,6 +12,7 @@ SCM make_stockholm_smob (const Stockholm& stock);
 // guile smobs
 struct Stockholm_smob {
   // data
+  // these must be pointers because of abominable deep-linking from stock to seqdb
   Sequence_database* seqdb;
   Stockholm* stock;
 
@@ -23,7 +24,7 @@ struct Stockholm_smob {
 
   Stockholm_smob (const Stockholm& s)
     : seqdb (new Sequence_database()),
-      stock (Stockholm::deep_copy (s, *seqdb))
+      stock (Stockholm::deep_copy (s, *seqdb))  // this is where we copy across the deep links
   { }
 
   // destructor
