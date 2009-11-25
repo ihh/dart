@@ -14,14 +14,17 @@ struct XRATE_DPM_smob {
   // Scheme objects
   SCM stock_smob_scm;
   // internal data
-  ECFG_scores ecfg;
-  ECFG_envelope env;
-  PCounts pcounts;
+  ECFG_scores* ecfg;
+  ECFG_envelope* env;
+  PCounts* pcounts;
   ECFG_inside_outside_matrix* inout;
   ECFG_CYK_matrix* cyk;
 
   // constructors
   XRATE_DPM_smob (SCM alphabet_and_grammar_scm, SCM stock_smob_scm);
+
+  // destructor
+  ~XRATE_DPM_smob();
 
   // cast method
   static XRATE_DPM_smob* cast_from_scm (SCM xrate_dpm_smob);
