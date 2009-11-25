@@ -3,7 +3,6 @@
 
 #include "tree/tree_alignment.h"
 #include "guile/stockholm-type.h"
-#include "guile/newick-type.h"
 
 scm_t_bits stockholm_tag;
 
@@ -62,19 +61,6 @@ static SCM stockholm_to_file (SCM stock_smob, SCM s_filename)
   return SCM_UNSPECIFIED;
 }
 
-static SCM newick_from_stockholm (SCM stock_smob)
-{
-  SCM scm = SCM_BOOL_F;
-  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
-  try {
-    Stockholm_tree tree (*stock->stock);
-    scm = make_newick_smob (tree);
-  } catch (Dart_exception& e) {
-    CLOGERR << e.what();
-  }
-  return scm;
-}
-
 static SCM stockholm_column_count (SCM stock_smob)
 {
   Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
@@ -96,7 +82,7 @@ SCM tagval_list (C& container) {
   return tagval_list_scm;
 }
 
-// stockholm-alignment creates the following structure
+// stockholm-unpack creates the following structure
 //    TOP => (GF GC BODY)
 // TAGVAL => (tag value) | TAGVAL TAGVAL | end
 //   BODY => (seqname GS rowdata GR) | BODY BODY | end
@@ -104,7 +90,7 @@ SCM tagval_list (C& container) {
 //     GC => (TAGVAL)
 //     GS => (TAGVAL)
 //     GR => (TAGVAL)
-static SCM stockholm_alignment (SCM stock_smob)
+static SCM stockholm_unpack (SCM stock_smob)
 {
   SCM row_list = SCM_EOL;
   Stockholm& stock (*Stockholm_smob::cast_from_scm (stock_smob)->stock);
@@ -166,7 +152,6 @@ void init_stockholm_type (void)
   scm_c_define_gsubr ("stockholm-to-file", 2, 0, 0, (SCM (*)()) stockholm_to_file);
   // primitives to ease migration from xrate macro format
   scm_c_define_gsubr ("stockholm-column-count", 1, 0, 0, (SCM (*)()) stockholm_column_count);  // returns the number of columns as an integer
-  scm_c_define_gsubr ("newick-from-stockholm", 1, 0, 0, (SCM (*)()) newick_from_stockholm);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
 
   // convert a Stockholm alignment into a Scheme data structure with the following grammar
   //    TOP => (GF GC BODY)
@@ -176,6 +161,6 @@ void init_stockholm_type (void)
   //     GC => (TAGVAL)
   //     GS => (TAGVAL)
   //     GR => (TAGVAL)
-  scm_c_define_gsubr ("stockholm-alignment", 1, 0, 0, (SCM (*)()) stockholm_alignment);  // returns a Scheme data structure very similar to the Stockholm file format: (GF GC (seq GS row GR) (seq GS row GR) ...)
+  scm_c_define_gsubr ("stockholm-unpack", 1, 0, 0, (SCM (*)()) stockholm_unpack);  // returns a Scheme data structure very similar to the Stockholm file format: (GF GC (seq GS row GR) (seq GS row GR) ...)
 
 }

@@ -116,7 +116,7 @@ static SCM xrate_train_grammar (SCM list_of_stock_smobs, SCM alphabet_and_gramma
   return scm;
 }
 
-static SCM xrate_validate_stockholm_grammar (SCM stock_smob, SCM alphabet_and_grammar)
+static SCM xrate_validate_grammar_with_alignment (SCM stock_smob, SCM alphabet_and_grammar)
 {
   SCM scm = SCM_BOOL_F;
   SExpr *sexpr = 0, *alphgram = 0;
@@ -179,7 +179,7 @@ SCM ecfg_to_scm (const ECFG_scores& ecfg, const ECFG_counts* counts)
 void init_xrate_primitives (void)
 {
   scm_c_define_gsubr ("xrate-validate-grammar", 1, 0, 0, (SCM (*)()) xrate_validate_grammar);
-  scm_c_define_gsubr ("xrate-validate-stockholm-grammar", 2, 0, 0, (SCM (*)()) xrate_validate_stockholm_grammar);
+  scm_c_define_gsubr ("xrate-validate-grammar-with-alignment", 2, 0, 0, (SCM (*)()) xrate_validate_grammar_with_alignment);
   scm_c_define_gsubr ("xrate-estimate-tree", 2, 0, 0, (SCM (*)()) xrate_estimate_tree);
   scm_c_define_gsubr ("xrate-annotate-alignment", 2, 0, 0, (SCM (*)()) xrate_annotate_alignment);
   scm_c_define_gsubr ("xrate-train-grammar", 2, 0, 0, (SCM (*)()) xrate_train_grammar);

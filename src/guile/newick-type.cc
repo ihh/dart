@@ -2,6 +2,8 @@
 #include <libguile.h>
 
 #include "guile/newick-type.h"
+#include "guile/stockholm-type.h"
+#include "tree/tree_alignment.h"
 
 scm_t_bits newick_tag;
 
@@ -57,6 +59,19 @@ static SCM newick_from_string (SCM s_string)
 
   // Return
   return smob;
+}
+
+static SCM newick_from_stockholm (SCM stock_smob)
+{
+  SCM scm = SCM_BOOL_F;
+  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
+  try {
+    Stockholm_tree tree (*stock->stock);
+    scm = make_newick_smob (tree);
+  } catch (Dart_exception& e) {
+    CLOGERR << e.what();
+  }
+  return scm;
 }
 
 static SCM newick_to_file (SCM tree_smob, SCM s_filename)
@@ -121,7 +136,7 @@ static SCM newick_branch_list (SCM tree_smob)
 }
 
 
-static SCM newick_tree (SCM tree_smob)
+static SCM newick_unpack (SCM tree_smob)
 {
   PHYLIP_tree& tree = *newick_cast_from_scm (tree_smob);
   vector<SCM> node_scm (tree.nodes(), SCM_EOL);
@@ -177,11 +192,12 @@ void init_newick_type (void)
   // read/write primitives
   scm_c_define_gsubr ("newick-from-string", 1, 0, 0, (SCM (*)()) newick_from_string);
   scm_c_define_gsubr ("newick-from-file", 1, 0, 0, (SCM (*)()) newick_from_file);
+  scm_c_define_gsubr ("newick-from-stockholm", 1, 0, 0, (SCM (*)()) newick_from_stockholm);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
   scm_c_define_gsubr ("newick-to-file", 2, 0, 0, (SCM (*)()) newick_to_file);
   // primitives to ease migration from xrate macro format
   scm_c_define_gsubr ("newick-ancestor-list", 1, 0, 0, (SCM (*)()) newick_ancestor_list);  // returns list of internal node names (including the root, even if it is a tip node)
   scm_c_define_gsubr ("newick-leaf-list", 1, 0, 0, (SCM (*)()) newick_leaf_list);  // returns list of leaf node names (excluding the root)
   scm_c_define_gsubr ("newick-branch-list", 1, 0, 0, (SCM (*)()) newick_branch_list);  // returns list of (parent,child,length) tuples representing branches, sorted in preorder
   // convert a Newick tree into a Scheme data structure
-  scm_c_define_gsubr ("newick-tree", 1, 0, 0, (SCM (*)()) newick_tree);  // returns a tree structure very similar to the Newick file format: ((A:1,B:2)C:3,D:4)E;  --> ((("A" 1.0) ("B" 2.0) "C" 3.0) ("D" 4.0) "E" #f)
+  scm_c_define_gsubr ("newick-unpack", 1, 0, 0, (SCM (*)()) newick_unpack);  // returns a tree structure very similar to the Newick file format: ((A:1,B:2)C:3,D:4)E;  --> ((("A" 1.0) ("B" 2.0) "C" 3.0) ("D" 4.0) "E" #f)
 }

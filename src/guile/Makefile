@@ -19,8 +19,13 @@ override PPFLAGS += $(shell guile-config compile)
 override CCFLAGS += $(shell guile-config compile)
 override LDFLAGS += $(shell guile-config link)
 
-testguile: $(INTERPRETER)
+# Load the test script and drop into a read-evaluate-print loop
+testdarts: $(INTERPRETER)
 	$(BINDIR)/$(INTERPRETER) -l $(TESTSCRIPT)
 
+# Targets to print the set of extended Scheme primitives and types
+primitives:
+	grep scm_c_define_gsubr *.cc
 
-
+types:
+	grep scm_make_smob_type *.cc
