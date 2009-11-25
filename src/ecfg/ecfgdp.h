@@ -11,6 +11,7 @@
 #define CYK_MAP_reconstruction_tag "ancrec_CYK_MAP"
 
 // DP matrix base class
+// Cell scores are stored in this class, but intermediate emission log-likelihoods (as e.g. computed by libHMSBeagle) are stored in a subclass
 struct ECFG_matrix : ECFG_enum, Stream_saver
 {
   // data
@@ -45,6 +46,7 @@ struct ECFG_matrix : ECFG_enum, Stream_saver
 };
 
 // DP matrix with EM-related data
+// This class contains the emit log-likelihood table that could be optimized using libHMSBeagle
 struct ECFG_EM_matrix : ECFG_matrix
 {
   // alignment info
@@ -56,6 +58,7 @@ struct ECFG_EM_matrix : ECFG_matrix
   // emit log-likelihoods for each (subseq,state) pair.
   // filling this data structure is expensive, but the structure can be re-used between CYK, Inside & Outside algorithms.
   // in theory the algorithm to fill the structure can be parallelized....
+  // Filling this array2d could be optimized using libHMSBeagle (NB there is additional code involved too, due to probabilistic annotation tracks, crappy gap model, etc.)
   array2d<Loge> emit_loglike;  // accessed as emit_loglike(subseq_idx,state)
 
   // workspace

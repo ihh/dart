@@ -67,7 +67,7 @@ static SCM stockholm_tree (SCM stock_smob)
   SCM scm = SCM_BOOL_F;
   Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
   try {
-    Stockholm_tree tree (stock->stock);
+    Stockholm_tree tree (*stock->stock);
     scm = make_newick_smob (tree);
   } catch (Dart_exception& e) {
     CLOGERR << e.what();
@@ -78,7 +78,7 @@ static SCM stockholm_tree (SCM stock_smob)
 static SCM stockholm_column_count (SCM stock_smob)
 {
   Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
-  return scm_from_int (stock->stock.columns());
+  return scm_from_int (stock->stock->columns());
 }
 
 // General function for creating (TAGVAL) SCM from vector<Stockholm::Tag_value> (for #=GF) or Stockholm::Annotation (other #=G's),
@@ -107,7 +107,7 @@ SCM tagval_list (C& container) {
 static SCM stockholm_alignment (SCM stock_smob)
 {
   SCM row_list = SCM_EOL;
-  Stockholm& stock = Stockholm_smob::cast_from_scm (stock_smob)->stock;
+  Stockholm& stock (*Stockholm_smob::cast_from_scm (stock_smob)->stock);
   try {
     row_list = scm_list_2 (tagval_list(stock.gf_annot), tagval_list(stock.gc_annot));
     for (int r = 0; r < stock.rows(); ++r) {

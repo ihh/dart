@@ -66,17 +66,29 @@
 
 
 (define s (stockholm-from-file "t/tiny.stk"))
+(write s)
 
 (define w (xrate-train-grammar s g))  ;; should cause a warning
 (define x (xrate-annotate-alignment s g))  ;; should cause a warning
 
 (define t (xrate-estimate-tree s g))
+(write t)
+
 (define u (xrate-train-grammar t g))
+(write u)
+
 (define v (xrate-annotate-alignment t g))
+(write v)
 
 (define ts (stockholm-tree s))  ;; should cause a warning
 (define tt (stockholm-tree t))
+(write tt)
+
 (define ta (newick-ancestor-list tt))
 (define tl (newick-leaf-list tt))
 (define tb (newick-branch-list tt))
+
+(write ta)
+(write tl)
+(write tb)
 

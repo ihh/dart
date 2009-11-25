@@ -446,8 +446,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	  const sstring& ecfg_name = ecfg.name;
 
 	  // create fold envelope
-	  ECFG_envelope env;
-	  env.init (seqlen, ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len);
+	  ECFG_auto_envelope env (seqlen, ecfg, max_subseq_len);
 
 	  // create GFF container
 	  GFF_list gff_list;

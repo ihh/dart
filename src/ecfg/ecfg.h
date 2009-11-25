@@ -398,6 +398,13 @@ struct ECFG_counts : ECFG<Prob>
   void        show_element (const Prob& element, ostream& o) const { o << element; }
 };
 
+// automatically initialized ECFG_envelope
+struct ECFG_auto_envelope : ECFG_envelope {
+  ECFG_auto_envelope (int seqlen, const ECFG_scores& ecfg, int max_subseq_len = -1) {
+    init (seqlen, ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len);
+  }
+};
+
 // class to sample a multiple alignment, given a tree
 struct ECFG_simulation : Stockade, Grammar_state_enum
 {

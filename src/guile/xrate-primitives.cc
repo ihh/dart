@@ -28,7 +28,7 @@ static SCM xrate_estimate_tree (SCM stock_smob, SCM alphabet_and_grammar)
     get_alphgram_sexpr (alphabet_and_grammar, sexpr, alphgram);
 
     ECFG_main xrate;
-    Stockholm stock_with_tree = xrate.run_tree_estimation (stock->stock, stock->seqdb, *alphgram);
+    Stockholm stock_with_tree = xrate.run_tree_estimation (*stock->stock, *stock->seqdb, *alphgram);
 
     // make return expression
     scm = make_stockholm_smob (stock_with_tree);
@@ -53,7 +53,7 @@ static SCM xrate_annotate_alignment (SCM stock_smob, SCM alphabet_and_grammar)
     get_alphgram_sexpr (alphabet_and_grammar, sexpr, alphgram);
 
     ECFG_main xrate;
-    Stockholm stock_with_annotation = xrate.run_alignment_annotation (stock->stock, *alphgram);
+    Stockholm stock_with_annotation = xrate.run_alignment_annotation (*stock->stock, *alphgram);
 
     // make return expression
     scm = make_stockholm_smob (stock_with_annotation);
@@ -87,14 +87,14 @@ static SCM xrate_train_grammar (SCM list_of_stock_smobs, SCM alphabet_and_gramma
 	    SCM stock_smob = SCM_CAR(list_of_stock_smobs);
 
 	    /* Add it to the Stockholm_database */
-	    stock_db.add (Stockholm_smob::cast_from_scm(stock_smob)->stock);
+	    stock_db.add (*Stockholm_smob::cast_from_scm(stock_smob)->stock);
 
 	    /* Discard the head of the list */
 	    list_of_stock_smobs = SCM_CDR(list_of_stock_smobs);
 	  }
       }
     else   // first arg is not a list, so attempt to treat it as a single alignment
-      stock_db.add (Stockholm_smob::cast_from_scm(list_of_stock_smobs)->stock);
+      stock_db.add (*Stockholm_smob::cast_from_scm(list_of_stock_smobs)->stock);
 
     // do the training
     ECFG_main xrate;
@@ -125,7 +125,7 @@ static SCM xrate_validate_stockholm_grammar (SCM stock_smob, SCM alphabet_and_gr
     get_alphgram_sexpr (alphabet_and_grammar, sexpr, alphgram);
 
     ECFG_main xrate;
-    ECFG_scores* ecfg = xrate.run_macro_expansion (stock->stock, *alphgram);
+    ECFG_scores* ecfg = xrate.run_macro_expansion (*stock->stock, *alphgram);
 
     // make return expression
     scm = ecfg_to_scm (*ecfg, 0);

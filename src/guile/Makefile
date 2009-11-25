@@ -1,5 +1,5 @@
 
-INTERPRETER = guile-xrate
+INTERPRETER = darts
 TESTSCRIPT  = t/test.scm
 
 all: $(INTERPRETER)

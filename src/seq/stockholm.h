@@ -75,8 +75,9 @@ struct Stockholm : Alignment, Fold_char_enum
   Row_annotation gr_annot;  // column annotation for each sequence
   vector<Named_profile*> np;   // this is messy, as we have already have pointers to constituent Score_profile's and names, but certain objects need the sequences as Named_profile's
 
-  // constructor
+  // constructors
   Stockholm (int rows = 0, int cols = 0);
+  static Stockholm* deep_copy (const Stockholm& stock, Sequence_database& seqdb);
 
   // row accessor
   sstring get_row_as_string (int row);

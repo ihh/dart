@@ -12,35 +12,49 @@ SCM make_stockholm_smob (const Stockholm& stock);
 // guile smobs
 struct Stockholm_smob {
   // data
-  Stockholm stock;
-  Sequence_database seqdb;
+  Sequence_database* seqdb;
+  Stockholm* stock;
 
   // constructors
-  Stockholm_smob() { }
-  Stockholm_smob (Stockholm s) : stock(s) { }
+  Stockholm_smob()
+    : seqdb (new Sequence_database()),
+      stock (new Stockholm())
+  { }
+
+  Stockholm_smob (const Stockholm& s)
+    : seqdb (new Sequence_database()),
+      stock (Stockholm::deep_copy (s, *seqdb))
+  { }
+
+  // destructor
+  ~Stockholm_smob()
+  {
+    delete stock;
+    delete seqdb;
+  }
 
   // methods (just wrappers for Stockholm methods)
   void read_from_file (const char* filename)
   {
     ifstream infile(filename);
-    stock.read_Stockholm (infile, seqdb);
+    stock->read_Stockholm (infile, *seqdb);
   }
 
   void write_to_file (const char* filename)
   {
     ofstream outfile(filename);
-    stock.write_Stockholm (outfile);
+    stock->write_Stockholm (outfile);
   }
 
   void read_from_string (const char* s)
   {
     stringstream ss (s, stringstream::in);
-    stock.read_Stockholm (ss, seqdb);
+    stock->read_Stockholm (ss, *seqdb);
   }
 
   void write_to_string (sstring& s)
   {
-    stock.write_Stockholm(s);
+    stock->write_Stockholm(s);
   }
 
   // cast method

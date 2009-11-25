@@ -7,6 +7,18 @@ Stockholm::Stockholm (int rows, int cols) : Alignment()
   reset (rows, cols);
 }
 
+Stockholm* Stockholm::deep_copy (const Stockholm& stock, Sequence_database& seqdb)
+{
+  Stockholm* new_stock = new Stockholm (stock);
+  for (unsigned int r = 0; r < stock.np.size(); ++r)
+    if (stock.np[r]) {
+      Named_profile np (*stock.np[r]);
+      seqdb.push_back (np);
+      new_stock->np[r] = &seqdb.back();
+    }
+  return new_stock;
+}
+
 void Stockholm::reset (int rows, int cols)
 {
   Alignment::reset (rows, cols);
