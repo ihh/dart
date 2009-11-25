@@ -66,29 +66,40 @@
 
 
 (define s (stockholm-from-file "t/tiny.stk"))
-(write s)
+(display "Loaded Stockholm alignment from file:\n")
+(display s)
 
+(display "Expecting a couple of warnings now:\n")
 (define w (xrate-train-grammar s g))  ;; should cause a warning
 (define x (xrate-annotate-alignment s g))  ;; should cause a warning
 
 (define t (xrate-estimate-tree s g))
-(write t)
+(display "Stockholm alignment with estimated tree:\n")
+(display t)
 
 (define u (xrate-train-grammar t g))
-(write u)
+(display "Trained grammar:\n")
+(display u)
 
 (define v (xrate-annotate-alignment t g))
-(write v)
+(display "\nAnnotated alignment:\n")
+(display v)
 
+(display "Expecting one more warning now:\n")
 (define ts (stockholm-tree s))  ;; should cause a warning
+
 (define tt (stockholm-tree t))
-(write tt)
+(display "Estimated tree:\n")
+(display tt)
 
 (define ta (newick-ancestor-list tt))
 (define tl (newick-leaf-list tt))
 (define tb (newick-branch-list tt))
 
-(write ta)
-(write tl)
-(write tb)
+(display "Ancestor, leaf and branch lists:\n")
+(display ta)
+(display tl)
+(display tb)
+
+(display "\nAll good!\n")
 
