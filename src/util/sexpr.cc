@@ -225,10 +225,36 @@ SExpr& SExpr::find_or_die (const sstring& child_tag, int offset)
 
 SExpr& SExpr::find_or_die (const char* child_tag, int offset)
 {
-  SExpr* sexpr = find (child_tag, offset);
-  if (!sexpr)
-    THROWEXPR ("In (" << *this << "):\nCouldn't find tag (" << child_tag << ")");
-  return *sexpr;
+  sstring child_tag_str (child_tag);
+  return find_or_die (child_tag_str, offset);
+}
+
+SExpr* SExpr::find_recursive (const sstring& tag, int max_depth)
+{
+  set<SExpr*> current, next;
+  next.insert (this);
+  while (next.size() && max_depth-- != 0)
+    {
+      current.swap(next);
+      next.clear();
+      for_const_contents (set<SExpr*>, current, sxpr)
+	{
+	  for_contents (list<SExpr>, (**sxpr).child, c)
+	    {
+	      if (c->has_tag())
+		if (c->tag() == tag)
+		  return &*c;
+	      next.insert (&*c);
+	    }
+	}
+    }
+  return (SExpr*) 0;
+}
+
+SExpr* SExpr::find_recursive (const char* tag, int max_depth)
+{
+  sstring tag_str (tag);
+  return find_recursive (tag_str, max_depth);
 }
 
 vector<SExpr*> SExpr::find_all (const sstring& child_tag, int offset)
@@ -288,7 +314,7 @@ SExpr& SExpr::operator() (const sstring& child_tag, int offset)
   if (c->child.size() < 2)
     THROWEXPR ("In SExpr (" << *this << "):\nChild with tag (" << child_tag << ") has no value");
   if (c->child.size() > 2)
-    CLOGERR << "WARNING -- in SExpr (" << *this << "):\nWARNING -- child with tag (" << child_tag << ") has multiple values; I'm just looking at the first value";
+    CLOGERR << "WARNING -- in SExpr (" << *this << "):\nWARNING -- child with tag (" << child_tag << ") has multiple values; I'm just looking at the first value\n";
   return c->value();
 }
 

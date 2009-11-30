@@ -364,26 +364,17 @@ void get_annot_string (const ECFG_state_info& info, const char* aa, const Subseq
   }
 }
 
-// fill_up
-bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_context)
+bool ECFG_EM_matrix::calc_annot_emit_ll (int subseq_idx, int state_idx, Loge& annot_emit_ll)
 {
-  // make refs to key variables
-  Loge& emit_ll = emit_loglike (subseq_idx, state_idx);
+  annot_emit_ll = 0;
+
   const ECFG_state_info& info = ecfg.state_info[state_idx];
   const Subseq_coords& subseq = env.subseq[subseq_idx];
-
-  // if this is a bifurc or null state, assign probability one and bail
-  if (info.bifurc || info.emit_size() == 0)  // bifurc or null?
-    {
-      emit_ll = 0.;  // assign probability one, so DP doesn't incur a penalty
-      return false;  // return false, because this is not an emit state
-    }
 
   // if the alignment annotation is incompatible with this emit state, assign probability zero and bail
   const char *aa;
   sstring aa_str;
   bool aa_has_wildcards;
-  Loge annot_emit_ll = 0;
   for (int a = 0; a < (int) align_annot.size(); ++a)
     if ((aa = align_annot[a]) != 0)
       {
@@ -403,13 +394,39 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
 	    String_loglike_dist::const_iterator sa_iter = sa.find (aa_str);
 	    if (sa_iter == sa.end())
 	      {
-		emit_ll = -InfinityLoge;
+		annot_emit_ll = -InfinityLoge;
 		return false;
 	      }
 	    NatsPMulAcc (annot_emit_ll, sa_iter->second);
 	  }
 	}
       }
+
+  return annot_emit_ll > -InfinityLoge;
+}
+
+// fill_up
+bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_context)
+{
+  // make refs to key variables
+  Loge& emit_ll = emit_loglike (subseq_idx, state_idx);
+  const ECFG_state_info& info = ecfg.state_info[state_idx];
+  const Subseq_coords& subseq = env.subseq[subseq_idx];
+
+  // if this is a bifurc or null state, assign probability one and bail
+  if (info.bifurc || info.emit_size() == 0)  // bifurc or null?
+    {
+      emit_ll = 0.;  // assign probability one, so DP doesn't incur a penalty
+      return false;  // return false, because this is not an emit state
+    }
+
+  // if the alignment annotation is incompatible with this emit state, assign probability zero and bail
+  Loge annot_emit_ll;
+  if (!calc_annot_emit_ll (subseq_idx, state_idx, annot_emit_ll))
+    {
+      emit_ll = -InfinityLoge;
+      return false;
+    }
 
   // print log message describing the subsequence co-ords & the state info
   if (CTAGGING(0,FILL_UP))
@@ -455,7 +472,7 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
 	  cm.fill_up (lineage_matrix[info.matrix], tree, subseq_idx);
 	  joint_ll = cm.total_log_likelihood();
 	}
-      emit_ll = NatsPMul3 (annot_emit_ll, joint_ll, -marginal_ll);
+      emit_ll = NatsPMul3 (annot_emit_ll, joint_ll, -marginal_ll);  // add in annot_emit_ll
       if (CTAGGING(3,FILL_UP))
 	{
 	  CL << "(Subseq " << subseq.start << "+" << subseq.len << ", state " << state_idx << ") ";

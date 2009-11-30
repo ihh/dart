@@ -60,6 +60,11 @@ struct SExpr
   SExpr& find_or_die (const sstring& child_tag, int offset = 0);
   SExpr& find_or_die (const char* child_tag, int offset = 0);
 
+  // find_recursive() does a breadth-first search looking for child_tag
+  // with max_depth==1, it is equivalent to find()
+  SExpr* find_recursive (const sstring& tag, int max_depth = -1);
+  SExpr* find_recursive (const char* tag, int max_depth = -1);
+
   // get_atom() throws an error if this is not an atom
   const sstring& get_atom() const;
 

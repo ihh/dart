@@ -58,7 +58,7 @@ struct ECFG_EM_matrix : ECFG_matrix
   // emit log-likelihoods for each (subseq,state) pair.
   // filling this data structure is expensive, but the structure can be re-used between CYK, Inside & Outside algorithms.
   // in theory the algorithm to fill the structure can be parallelized....
-  // Filling this array2d could be optimized using libHMSBeagle (NB there is additional code involved too, due to probabilistic annotation tracks, crappy gap model, etc.)
+  // Filling this array2d could be optimized using libHMSBeagle (NB there is additional code involved too, due to probabilistic annotation tracks and context-dependent emissions)
   array2d<Loge> emit_loglike;  // accessed as emit_loglike(subseq_idx,state)
 
   // workspace
@@ -78,6 +78,7 @@ struct ECFG_EM_matrix : ECFG_matrix
   ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock, const Aligned_score_profile& asp, const ECFG_envelope& env, bool use_fast_prune = false);
 
   // EM methods
+  bool calc_annot_emit_ll (int subseq_idx, int state_idx, Loge& annot_emit_ll);  // calculates likelihood due to probabilistic/deterministic annotation tracks, places in annot_emit_ll, returns true if annot_emit_ll > -InfinityLoge
   bool fill_up (int subseq_idx, int state_idx, bool condition_on_context = true);  // returns TRUE if fill_up was called on Column_matrix (i.e. kosher emit state)
   void fill_down (ECFG_counts& counts, int subseq_idx, int state_idx, double weight);  // updates stats, returns log-likelihood
 
