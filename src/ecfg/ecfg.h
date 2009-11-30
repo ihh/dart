@@ -120,6 +120,7 @@ struct ECFG_state_info : ECFG_enum
   // accessors
   inline int total_size() const { return l_context + l_emit + r_emit + r_context; }
   inline int emit_size() const { return l_emit + r_emit; }
+  inline bool has_context() const { return l_context > 0 || r_context > 0; }
 
   // method to check if subseq is out of range
   inline bool out_of_range (const Subseq_coords& subseq) const

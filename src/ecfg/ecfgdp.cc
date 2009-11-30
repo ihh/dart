@@ -442,7 +442,7 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
   // first, compute Felsenstein likelihood with emitted columns replaced with wildcards, in order to condition on the context
   Loge marginal_ll = 0.;
   const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
-  const bool use_context = condition_on_context && (info.l_context > 0 || info.r_context > 0);
+  const bool use_context = condition_on_context && info.has_context();
   if (use_context)
     {
       if (info.initialise (ecfg.alphabet, chain.classes, asp, subseq, stock, tree, cm, use_fast_prune ? &fp : (Fast_prune*) 0, true))
