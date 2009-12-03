@@ -77,8 +77,13 @@ struct ECFG_main
   ~ECFG_main() { delete_trainers(); }
 
   // add a preset grammar
-  // call this as many times as you like after constructing the object
+  // call this as many times as you like after constructing the ECFG_main object
   void add_grammar (const char* name, ECFG_scores* ecfg);
+  void add_standard_grammars(const char* default_grammar_string = "rev");  // adds a few standard "preset" grammars
+
+  // call delete_grammars to delete all the grammars added via add_standard_grammars() and/or add_grammar()
+  // (or delete these grammar objects yourself, independently; obviously, DO NOT do both)
+  void delete_grammars();
 
   // initialise opts-list
   // call this after constructing & adding preset grammars

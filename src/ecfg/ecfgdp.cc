@@ -195,6 +195,12 @@ void ECFG_matrix::show_progress (const char* algorithm_name, int subseq_idx, boo
     }
 }
 
+void ECFG_EM_matrix::use_precomputed (Emit_loglike_matrix& el)
+{
+  swap (emit_loglike, el);
+  fill_up_flag = false;
+}
+
 void ECFG_EM_matrix::show_emit (int subseq, ostream& out) const
 {
   out.width(19);

@@ -1,5 +1,7 @@
 #include "ecfg/ecfgmain.h"
 #include "ecfg/ecfgsexpr.h"
+#include "ecfg/pfold.h"
+#include "ecfg/protgrammar.h"
 #include "util/vector_output.h"
 #include "irrev/irrev_em_matrix.h"
 
@@ -48,6 +50,27 @@ void ECFG_main::add_grammar (const char* name, ECFG_scores* ecfg)
   ecfg_map[sstring (name)] = ecfg;
   ecfg->name = name;
   grammar_list.push_back (name);
+}
+
+void ECFG_main::add_standard_grammars (const char* default_grammar)
+{
+  add_grammar ("rev", new Null_ECFG (DNA_alphabet, true));
+  add_grammar ("irrev", new Null_ECFG (DNA_alphabet, false));
+  add_grammar ("dinuc", new Nearest_neighbor_ECFG());
+  add_grammar ("codon", new Codon_ECFG (true));
+  add_grammar ("aa", new Protein_grammar(1,1));
+  add_grammar ("aa2", new Protein_grammar(1,2));
+  add_grammar ("aa3", new Protein_grammar(1,3));
+  add_grammar ("aa4", new Protein_grammar(1,4));
+  add_grammar ("pfold", new PFOLD_ECFG());
+
+  default_grammars = default_grammar;
+}
+
+void ECFG_main::delete_grammars()
+{
+  for_contents (ECFG_map, ecfg_map, sg)
+    delete (*sg).second;
 }
 
 void ECFG_main::init_opts (const char* desc)
@@ -460,7 +483,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 
 	  // create empty CYK traceback & emit_loglike array
 	  ECFG_cell_score_map cyk_trace;
-	  array2d<Loge> cyk_emit_loglike;
+	  ECFG_EM_matrix::Emit_loglike_matrix cyk_emit_loglike;
 	  bool cyk_emit_loglike_initialized = false;
 
 	  // decide whether we need to do peeling as well as pruning
@@ -493,8 +516,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	      if ((report_postprob || report_confidence || want_hidden_classes || ancrec_CYK_MAP) && !zero_likelihood)
 		{
 		  inout_mx = new ECFG_inside_outside_matrix (ecfg, *stock, asp, env, (ECFG_counts*) 0);
-		  inout_mx->inside.emit_loglike.swap (cyk_emit_loglike);  // re-use emit log-likelihoods calculated by CYK
-		  inout_mx->inside.fill_up_flag = false;
+		  inout_mx->inside.use_precomputed (cyk_emit_loglike);  // re-use emit log-likelihoods calculated by CYK
+		  cyk_emit_loglike_initialized = false;  // safeguard against trying to use_precomputed twice
 		  inout_mx->outside.want_substitution_counts = want_fill_down;  // only call fill_down if necessary
 		  inout_mx->fill();
 
@@ -548,8 +571,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 
 		  if (cyk_emit_loglike_initialized)  // can we re-use emit log-likelihoods calculated by CYK?
 		    {
-		      inside_mx->emit_loglike.swap (cyk_emit_loglike);
-		      inside_mx->fill_up_flag = false;  // clearing this flag tells inside_mx->fill() that inside_mx->emit_loglike is pre-initialized
+		      inside_mx->use_precomputed (cyk_emit_loglike);
+		      cyk_emit_loglike_initialized = false;
 		    }
 
 		  inside_mx->fill();

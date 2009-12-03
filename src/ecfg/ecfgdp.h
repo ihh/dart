@@ -59,7 +59,9 @@ struct ECFG_EM_matrix : ECFG_matrix
   // filling this data structure is expensive, but the structure can be re-used between CYK, Inside & Outside algorithms.
   // in theory the algorithm to fill the structure can be parallelized....
   // Filling this array2d could be optimized using libHMSBeagle (NB there is additional code involved too, due to probabilistic annotation tracks and context-dependent emissions)
-  array2d<Loge> emit_loglike;  // accessed as emit_loglike(subseq_idx,state)
+  typedef array2d<Loge> Emit_loglike_matrix;
+  Emit_loglike_matrix emit_loglike;  // accessed as emit_loglike(subseq_idx,state)
+  void use_precomputed (Emit_loglike_matrix& emit_loglike);  // swaps in emit_loglike, clears fill_up_flag
 
   // workspace
   vector<Column_matrix> colmat;   // "scratch" Column_matrix's, indexed by state
