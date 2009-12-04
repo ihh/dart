@@ -84,7 +84,7 @@ struct ECFG_EM_matrix : ECFG_matrix
   bool fill_up (int subseq_idx, int state_idx, bool condition_on_context = true);  // returns TRUE if fill_up was called on Column_matrix (i.e. kosher emit state)
   void fill_down (ECFG_counts& counts, int subseq_idx, int state_idx, double weight);  // updates stats, returns log-likelihood
 
-  // Beagle helper methods
+  // stubs for Beagle helper methods
   // TODO: implement these!
   typedef map<Phylogeny::Node,Score_profile> Partial_map;
   typedef map<Phylogeny::Node,array2d<Prob> > Transition_matrix_map;  // indexed by child node
