@@ -526,6 +526,80 @@ void ECFG_EM_matrix::fill_down (ECFG_counts& counts, int subseq_idx, int state_i
     }
 }
 
+void ECFG_EM_matrix::get_partials (int state, Partial_map& with_context, Partial_map& with_wildcards)
+{
+  const ECFG_state_info& info = ecfg.state_info[state];
+  const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
+  const int chain_states = ecfg.matrix_set.total_states (info.matrix);
+
+  // get the Column_matrix, and create a dummy Fast_prune object
+  Column_matrix& cm = colmat[state];
+
+  Fast_prune fp;
+  fp.prepare (tree, lineage_matrix[info.matrix], cm);
+
+  // init the Partial_map's
+  with_context.clear();
+  with_wildcards.clear();
+
+  const Vector_weight_profile empty_partial_vec (env.subseqs(), vector<Prob> (chain_states, (double) 0.));
+  vector<Phylogeny::Node> nodes_with_sequence;
+  for_rooted_nodes_pre (tree, b)
+    {
+      const Phylogeny::Node n = (*b).second;
+      if (tree.node2row[n] >= 0)
+	{
+	  nodes_with_sequence.push_back(n);
+	  with_context[n] = empty_partial_vec;
+	  if (info.has_context())
+	    with_wildcards[n] = empty_partial_vec;
+	}
+    }
+
+  // make a vector of pointers for quick reference
+  vector<Vector_weight_profile*>
+    with_context_vec (tree.nodes(), (Vector_weight_profile*) 0),
+    with_wildcards_vec (tree.nodes(), (Vector_weight_profile*) 0);
+  for_const_contents (vector<Phylogeny::Node>, nodes_with_sequence, n)
+    {
+      with_context_vec[*n] = &with_context[*n];
+      if (info.has_context())
+	with_wildcards_vec[*n] = &with_wildcards[*n];
+    }
+
+  // loop over subseqs
+  for (int subseq_idx = 0; subseq_idx < env.subseqs(); ++subseq_idx)
+    {
+      const Subseq_coords& subseq = env.subseq[subseq_idx];
+      // call initialise and swap the results into the partials
+      // wildcards
+      if (info.has_context())
+	{
+	  info.initialise (ecfg.alphabet, chain.classes, asp, subseq, stock, tree, cm, &fp, true);  // context columns replaced by wildcard symbols
+
+	  for_const_contents (vector<Phylogeny::Node>, nodes_with_sequence, n)
+	    fp.F[*n].swap ((*with_wildcards_vec[*n])[subseq_idx]);
+	}
+
+      // context
+      info.initialise (ecfg.alphabet, chain.classes, asp, subseq, stock, tree, cm, &fp, false);  // actual context columns used
+
+      for_const_contents (vector<Phylogeny::Node>, nodes_with_sequence, n)
+	fp.F[*n].swap ((*with_context_vec[*n])[subseq_idx]);
+    }
+}
+
+void ECFG_EM_matrix::get_branch_transition_matrices_and_root_prior (int state, Transition_matrix_map& branch_transmat, vector<double>& root_prior)
+{
+  // TODO: write me!
+}
+
+void ECFG_EM_matrix::use_precomputed_phyloemit (Emit_loglike_matrix& phyloemit)
+{
+  // calls use_precomputed() then iterates over all cells calling calc_annot_emit_ll() & adding to emit_loglike
+  // TODO: write me!
+}
+
 void ECFG_EM_matrix::fill_sum_state (int source_subseq_idx, int source_state_idx)
 {
   const Subseq_coords& subseq = env.subseq[source_subseq_idx];
