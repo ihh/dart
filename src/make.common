@@ -41,7 +41,7 @@ DEBUGFLAGS = -O0 -DNDEBUG
 else
 # default is 'release':
 DEBUGDIR   = release
-DEBUGFLAGS = -O3
+DEBUGFLAGS = -O3 -ffast-math
 endif
 endif
 endif
