@@ -59,7 +59,9 @@ struct ECFG_EM_matrix : ECFG_matrix
   // filling this data structure is expensive, but the structure can be re-used between CYK, Inside & Outside algorithms.
   // in theory the algorithm to fill the structure can be parallelized....
   // Filling this array2d could be optimized using libHMSBeagle (NB there is additional code involved too, due to probabilistic annotation tracks and context-dependent emissions)
-  array2d<Loge> emit_loglike;  // accessed as emit_loglike(subseq_idx,state)
+  typedef array2d<Loge> Emit_loglike_matrix;
+  Emit_loglike_matrix emit_loglike;  // accessed as emit_loglike(subseq_idx,state)
+  void use_precomputed (Emit_loglike_matrix& emit_loglike);  // swaps in emit_loglike, clears fill_up_flag
 
   // workspace
   vector<Column_matrix> colmat;   // "scratch" Column_matrix's, indexed by state
@@ -81,6 +83,14 @@ struct ECFG_EM_matrix : ECFG_matrix
   bool calc_annot_emit_ll (int subseq_idx, int state_idx, Loge& annot_emit_ll);  // calculates likelihood due to probabilistic/deterministic annotation tracks, places in annot_emit_ll, returns true if annot_emit_ll > -InfinityLoge
   bool fill_up (int subseq_idx, int state_idx, bool condition_on_context = true);  // returns TRUE if fill_up was called on Column_matrix (i.e. kosher emit state)
   void fill_down (ECFG_counts& counts, int subseq_idx, int state_idx, double weight);  // updates stats, returns log-likelihood
+
+  // stubs for Beagle helper methods
+  // TODO: implement these!
+  typedef map<Phylogeny::Node,Vector_weight_profile> Partial_map;
+  typedef map<Phylogeny::Node,array2d<Prob> > Transition_matrix_map;  // indexed by child node
+  void get_partials (int state, Partial_map& with_context, Partial_map& with_wildcards);  // both Partial_map's are cleared; with_wildcards is only filled if state has emit context
+  void get_branch_transition_matrices_and_root_prior (int state, Transition_matrix_map& branch_transmat, vector<double>& root_prior);
+  void use_precomputed_phyloemit (Emit_loglike_matrix& phyloemit);  // calls use_precomputed() then iterates over all cells calling calc_annot_emit_ll() & adding to emit_loglike
 
   // methods to fill cells
   // These methods assume that env.get_bif_in() has already been called by the fill routine.

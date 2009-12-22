@@ -2,12 +2,16 @@
 #include "ecfg/pfold.h"
 #include "ecfg/protgrammar.h"
 
+// TODO: uncomment the following line, and #define BEAGLE_INCLUDE_PATH somewhere
+// #include BEAGLE_INCLUDE_PATH "/beagle.h"
+
 typedef ECFG_main::ECFG_map ECFG_map;
 
 // main program
 int main (int argc, char* argv[])
 {
-  // create ECFG_main
+  // create main xrate program object
+  // TODO: define ECFG_main-derived class that uses Beagle, and use that class here instead of ECFG_main
   ECFG_main ecfg_main (argc, argv);
 
   // initialise grammars
