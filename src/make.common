@@ -23,6 +23,9 @@ OBJDIR     = $(OBJOSDIR)/$(DEBUGDIR)
 TESTDIR    = $(CCDIR)/t
 TMPMAKE    = Makefile.temp
 
+# gcc optimization flags
+OPTFLAGS   = -O3 -ffast-math
+
 # The following conditional syntax allows constructs like 'make release all', 'make profile all' or 'make debug all' with GNU make.
 ifneq (,$(findstring debug,$(MAKECMDGOALS)))
 # 'debug' was specified:
@@ -32,7 +35,7 @@ else
 ifneq (,$(findstring profile,$(MAKECMDGOALS)))
 # 'profile' was specified:
 DEBUGDIR   = profile
-DEBUGFLAGS = -O3 -pg
+DEBUGFLAGS = $(OPTFLAGS) -pg
 else
 ifneq (,$(findstring noopt,$(MAKECMDGOALS)))
 # 'noopt' was specified:
@@ -41,7 +44,7 @@ DEBUGFLAGS = -O0 -DNDEBUG
 else
 # default is 'release':
 DEBUGDIR   = release
-DEBUGFLAGS = -O3 -ffast-math
+DEBUGFLAGS = $(OPTFLAGS)
 endif
 endif
 endif
