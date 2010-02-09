@@ -1287,29 +1287,30 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 		  if (info.mul[k] == mul)
 		    pos2term[k] = i;
 	      // print LHS of emit rule
-	      sstring sep;
+	      sstring sep, complement_chr;
+	      complement_chr << ECFG_complement_character;
 	      for (int i = 0; i < info.l_context; ++i)
 		{
-		  trans_block << sep << (info.comp[i] ? ECFG_complement_character : ' ') << chain.state[pos2term[i]];
+		  trans_block << sep << (info.comp[i] ? complement_chr : "") << chain.state[pos2term[i]];
 		  sep = " ";
 		}
 	      trans_block << sep << info.name;
 	      for (int i = info.r_context - 1; i >= 0; --i) {
 		const int j = chain.word_len - 1 - i;
-		trans_block << ' ' << (info.comp[j] ? ECFG_complement_character : ' ') << chain.state[pos2term[j]];
+		trans_block << ' ' << (info.comp[j] ? complement_chr : "") << chain.state[pos2term[j]];
 	      }
 	      trans_block << ")) (" << EG_TO << " (";
 	      // print RHS of emit rule
 	      sep = "";
 	      for (int i = 0; i < info.l_context + info.l_emit; ++i)
 		{
-		  trans_block << sep << (info.comp[i] ? ECFG_complement_character : ' ') << chain.state[pos2term[i]];
+		  trans_block << sep << (info.comp[i] ? complement_chr : "") << chain.state[pos2term[i]];
 		  sep = " ";
 		}
 	      trans_block << sep << info.name << ECFG_post_emit_character;
 	      for (int i = info.r_emit + info.r_context - 1; i >= 0; --i) {
 		const int j = chain.word_len - 1 - i;
-		trans_block << ' ' << (info.comp[j] ? ECFG_complement_character : ' ') << chain.state[pos2term[j]];
+		trans_block << ' ' << (info.comp[j] ? complement_chr : "") << chain.state[pos2term[j]];
 	      }
 	      trans_block << "))";
 
