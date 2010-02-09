@@ -1290,23 +1290,27 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	      sstring sep;
 	      for (int i = 0; i < info.l_context; ++i)
 		{
-		  trans_block << sep << chain.state[pos2term[i]];
+		  trans_block << sep << (info.comp[i] ? ECFG_complement_character : ' ') << chain.state[pos2term[i]];
 		  sep = " ";
 		}
 	      trans_block << sep << info.name;
-	      for (int i = info.r_context - 1; i >= 0; --i)
-		trans_block << ' ' << chain.state[pos2term[chain.word_len - 1 - i]];
+	      for (int i = info.r_context - 1; i >= 0; --i) {
+		const int j = chain.word_len - 1 - i;
+		trans_block << ' ' << (info.comp[j] ? ECFG_complement_character : ' ') << chain.state[pos2term[j]];
+	      }
 	      trans_block << ")) (" << EG_TO << " (";
 	      // print RHS of emit rule
 	      sep = "";
 	      for (int i = 0; i < info.l_context + info.l_emit; ++i)
 		{
-		  trans_block << sep << chain.state[pos2term[i]];
+		  trans_block << sep << (info.comp[i] ? ECFG_complement_character : ' ') << chain.state[pos2term[i]];
 		  sep = " ";
 		}
 	      trans_block << sep << info.name << ECFG_post_emit_character;
-	      for (int i = info.r_emit + info.r_context - 1; i >= 0; --i)
-		trans_block << ' ' << chain.state[pos2term[chain.word_len - 1 - i]];
+	      for (int i = info.r_emit + info.r_context - 1; i >= 0; --i) {
+		const int j = chain.word_len - 1 - i;
+		trans_block << ' ' << (info.comp[j] ? ECFG_complement_character : ' ') << chain.state[pos2term[j]];
+	      }
 	      trans_block << "))";
 
 	      // gap model
