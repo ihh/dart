@@ -160,8 +160,9 @@ void SExpr_macros::visit_child (SExpr& parent_sexpr, SExprIter& child_iter, list
       for_contents (list<SExpr>, sexpr.child, grandchild)
 	handle_replace (*grandchild);
       // parse the operation
-      const sstring op (sexpr[0].atom);  // make a copy, not a reference, since we will be tampering with the expression
+      sstring op (sexpr[0].atom);  // make a copy, not a reference, since we will be tampering with the expression
       CTAG(2,SEXPR_MACROS) << "Considering " << op << '\n';
+      op = sexpr_macro_aliases.expand(op);
       if (op == SEXPR_WARN)       // warn
 	{
 	  // expand any macros in the warning text (disgusting hack)
@@ -278,8 +279,9 @@ void SExpr_list_operations::visit (SExpr& parent_sexpr)
       SExpr& sexpr = *child_iter;
       if (sexpr.is_list() && !sexpr.child.empty() && sexpr[0].is_atom())
 	{
-	  const sstring op (sexpr[0].atom);  // make a copy, not a reference, since we will be tampering with the expression
+	  sstring op (sexpr[0].atom);  // make a copy, not a reference, since we will be tampering with the expression
 	  CTAG(2,SEXPR_MACROS) << "Considering " << op << '\n';
+	  op = sexpr_macro_aliases.expand(op);
 	  // list operations
 	  if (op == SEXPR_CONCATENATE || op == SEXPR_SUM || op == SEXPR_MULTIPLY || op == SEXPR_MODULUS
 	      || op == SEXPR_AND || op == SEXPR_OR)
