@@ -4,6 +4,47 @@
 #include "util/logfile.h"
 #include "util/vector_output.h"
 
+SExpr_macro_aliases::SExpr_macro_aliases()
+{
+
+#define SHORT(X) short2long[SEXPR_SHORTHAND_ ## X] = SEXPR_ ## X ;
+
+  SHORT(CONCATENATE);
+  SHORT(SUM);
+  SHORT(MULTIPLY);
+  SHORT(DIVIDE);
+  SHORT(SUBTRACT);
+  SHORT(MODULUS);
+  SHORT(CONDITIONAL);
+  SHORT(EQUALS);
+  SHORT(NOT_EQUALS);
+  SHORT(GREATER);
+  SHORT(LESS);
+  SHORT(GEQ);
+  SHORT(LEQ);
+
+}
+
+sstring SExpr_macro_aliases::expand (const sstring& op)
+{
+  sstring expanded;
+  const map<sstring,sstring>::const_iterator alias = short2long.find(op);
+  if (alias == short2long.end())
+    expanded = op;
+  else
+    {
+      expanded = alias->second;
+      if (warned.find(op) == warned.end())
+	{
+	  CLOGERR << "Preprocessor warning: Macro shorthand (" << op << " ARGS) can be confusing; consider (" << expanded << " ARGS) instead\n";
+	  warned[op] = 1;
+	}
+    }
+  return expanded;
+}
+
+SExpr_macro_aliases sexpr_macro_aliases;
+
 void SExpr_visitor::preorder_visit (SExpr& sexpr)
 {
   log_visit (sexpr);
@@ -43,8 +84,9 @@ void SExpr_file_operations::visit (SExpr& parent_sexpr)
       SExpr& sexpr = *child_iter;
       if (sexpr.is_list() && !sexpr.child.empty() && sexpr[0].is_atom())
 	{
-	  const sstring op (sexpr[0].atom);  // make a copy, not a reference, since we will be tampering with the expression
+	  sstring op (sexpr[0].atom);  // make a copy, not a reference, since we will be tampering with the expression
 	  CTAG(2,SEXPR_MACROS) << "Considering " << op << '\n';
+	  op = sexpr_macro_aliases.expand(op);
 	  // functions with one atomic argument
 	  if (op == SEXPR_INCLUDE)
 	    {
@@ -239,8 +281,8 @@ void SExpr_list_operations::visit (SExpr& parent_sexpr)
 	  const sstring op (sexpr[0].atom);  // make a copy, not a reference, since we will be tampering with the expression
 	  CTAG(2,SEXPR_MACROS) << "Considering " << op << '\n';
 	  // list operations
-	  if (op == SEXPR_CONCATENATE || op == SEXPR_SUM || op == SEXPR_MULTIPLY
-	      || op == SEXPR_AND || op == SEXPR_OR || op == SEXPR_MODULUS)
+	  if (op == SEXPR_CONCATENATE || op == SEXPR_SUM || op == SEXPR_MULTIPLY || op == SEXPR_MODULUS
+	      || op == SEXPR_AND || op == SEXPR_OR)
 	    {
 	      CTAG(1,SEXPR_MACROS) << "Processing list operation\n";
 	      vector<sstring> atoms = sexpr.atoms_to_strings (1);
