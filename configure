@@ -5836,7 +5836,9 @@ fi
 
   if test "$GUILE" = "" ; then
     echo guile not found
-#      AC_MSG_ERROR([guile required but not found])
+# change AC_WARN to AC_MSG_ERROR to prevent compilation without guile
+      { echo "$as_me:$LINENO: WARNING: guile not found" >&5
+echo "$as_me: WARNING: guile not found" >&2;}
   else
 
     # Extract the first word of "guile-config", so it can be a program name with args.
@@ -5881,7 +5883,9 @@ fi
 
     if test "$GUILE_CONFIG" = "" ; then
       echo guile-config not found
-#      AC_MSG_ERROR([guile-config required but not found])
+# change AC_WARN to AC_MSG_ERROR to prevent compilation without guile
+      { echo "$as_me:$LINENO: WARNING: guile-config not found" >&5
+echo "$as_me: WARNING: guile-config not found" >&2;}
     else
 
       # Extract the first word of "guile-tools", so it can be a program name with args.

@@ -53,13 +53,15 @@ AC_DEFUN([GUILE_PROGS],
  [AC_PATH_PROG(GUILE,guile)
   if test "$GUILE" = "" ; then
     echo guile not found
-#      AC_MSG_ERROR([guile required but not found])
+# change AC_WARN to AC_MSG_ERROR to prevent compilation without guile
+      AC_WARN([guile not found])
   else
     AC_SUBST(GUILE)
     AC_PATH_PROG(GUILE_CONFIG,guile-config)
     if test "$GUILE_CONFIG" = "" ; then
       echo guile-config not found
-#      AC_MSG_ERROR([guile-config required but not found])
+# change AC_WARN to AC_MSG_ERROR to prevent compilation without guile
+      AC_WARN([guile-config not found])
     else
       AC_SUBST(GUILE_CONFIG)
       AC_PATH_PROG(GUILE_TOOLS,guile-tools)
