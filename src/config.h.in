@@ -1,4 +1,4 @@
-/* config.h.in.  Generated from configure.in by autoheader.  */
+/* src/config.h.in.  Generated from configure.in by autoheader.  */
 
 /* Define to 1 if you have the `dup2' function. */
 #undef HAVE_DUP2

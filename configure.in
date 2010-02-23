@@ -40,6 +40,9 @@ AC_FUNC_MALLOC
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([dup2 floor memmove pow regcomp sqrt strchr strcspn strrchr strspn strstr])
 
+# guile
+GUILE_FLAGS
+
 AC_CONFIG_FILES([Makefile
                  src/Weighbor/Makefile
                  src/amap/Makefile
