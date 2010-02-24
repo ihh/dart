@@ -40,9 +40,12 @@ AC_FUNC_MALLOC
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([dup2 floor memmove pow regcomp sqrt strchr strcspn strrchr strspn strstr])
 
-# guile
+# check for guile
+# if found, defines shell variable $(GUILE_INCLUDED) to 1, and expands @GUILE_CFLAGS@, @GUILE_CDEFS@, @GUILE_LDFLAGS@ to appropriate values in Makefiles
+# if not found, defines shell variable $(GUILE_INCLUDED) to 0, and expands @GUILE_CFLAGS@, @GUILE_CDEFS@, @GUILE_LDFLAGS@ to empty strings
 GUILE_FLAGS
 
+# create the makefiles
 AC_CONFIG_FILES([Makefile
                  src/make.defs
                  src/make.common
