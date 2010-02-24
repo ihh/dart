@@ -52,20 +52,24 @@
 AC_DEFUN([GUILE_PROGS],
  [AC_PATH_PROG(GUILE,guile)
   if test "$GUILE" = "" ; then
-    echo guile not found
-# change AC_WARN to AC_MSG_ERROR to prevent compilation without guile
-      AC_WARN([guile not found])
+# changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
+      AC_WARN([guile not found - Scheme support will not be enabled])
+      AC_SUBST(GUILE_INCLUDED,[0])
+      AC_SUBST(GUILE_CDEFS)
   else
     AC_SUBST(GUILE)
     AC_PATH_PROG(GUILE_CONFIG,guile-config)
     if test "$GUILE_CONFIG" = "" ; then
-      echo guile-config not found
-# change AC_WARN to AC_MSG_ERROR to prevent compilation without guile
-      AC_WARN([guile-config not found])
+# changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
+      AC_WARN([guile-config not found - Scheme support will not be enabled])
+      AC_SUBST(GUILE_INCLUDED,[0])
+      AC_SUBST(GUILE_CDEFS)
     else
       AC_SUBST(GUILE_CONFIG)
       AC_PATH_PROG(GUILE_TOOLS,guile-tools)
       AC_SUBST(GUILE_TOOLS)
+      AC_SUBST(GUILE_INCLUDED,[1])
+      AC_SUBST(GUILE_CDEFS,[-DGUILE_INCLUDED])
     fi
   fi
  ])

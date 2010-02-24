@@ -44,6 +44,8 @@ AC_CHECK_FUNCS([dup2 floor memmove pow regcomp sqrt strchr strcspn strrchr strsp
 GUILE_FLAGS
 
 AC_CONFIG_FILES([Makefile
+                 src/make.defs
+                 src/make.common
                  src/Weighbor/Makefile
                  src/amap/Makefile
                  src/ecfg/Makefile

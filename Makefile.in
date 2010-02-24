@@ -11,6 +11,9 @@ DEPS       =
 CCDIR      = $(shell pwd)
 SRCDIR     = $(CCDIR)/src
 
+# autoconf expansions for guile
+GUILE_INCLUDED = @GUILE_INCLUDED@
+
 # Makefile magic: get a list of subdirectories of the src directory
 # NB the following pattern also picks up files in the src directory,
 # so we later need to test for directories using 'test -d'

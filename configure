@@ -667,6 +667,8 @@ GREP
 EGREP
 LIBOBJS
 GUILE
+GUILE_INCLUDED
+GUILE_CDEFS
 GUILE_CONFIG
 GUILE_TOOLS
 GUILE_CFLAGS
@@ -5835,10 +5837,12 @@ fi
 
 
   if test "$GUILE" = "" ; then
-    echo guile not found
-# change AC_WARN to AC_MSG_ERROR to prevent compilation without guile
-      { echo "$as_me:$LINENO: WARNING: guile not found" >&5
-echo "$as_me: WARNING: guile not found" >&2;}
+# changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
+      { echo "$as_me:$LINENO: WARNING: guile not found - Scheme support will not be enabled" >&5
+echo "$as_me: WARNING: guile not found - Scheme support will not be enabled" >&2;}
+      GUILE_INCLUDED=0
+
+
   else
 
     # Extract the first word of "guile-config", so it can be a program name with args.
@@ -5882,10 +5886,12 @@ fi
 
 
     if test "$GUILE_CONFIG" = "" ; then
-      echo guile-config not found
-# change AC_WARN to AC_MSG_ERROR to prevent compilation without guile
-      { echo "$as_me:$LINENO: WARNING: guile-config not found" >&5
-echo "$as_me: WARNING: guile-config not found" >&2;}
+# changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
+      { echo "$as_me:$LINENO: WARNING: guile-config not found - Scheme support will not be enabled" >&5
+echo "$as_me: WARNING: guile-config not found - Scheme support will not be enabled" >&2;}
+      GUILE_INCLUDED=0
+
+
     else
 
       # Extract the first word of "guile-tools", so it can be a program name with args.
@@ -5929,6 +5935,10 @@ fi
 
 
 
+      GUILE_INCLUDED=1
+
+      GUILE_CDEFS=-DGUILE_INCLUDED
+
     fi
   fi
 
@@ -5946,7 +5956,7 @@ echo "${ECHO_T}$GUILE_LDFLAGS" >&6; }
 
 
 
-ac_config_files="$ac_config_files Makefile src/Weighbor/Makefile src/amap/Makefile src/ecfg/Makefile src/evoldoer/Makefile src/handel/Makefile src/hmm/Makefile src/hsm/Makefile src/indiegram/Makefile src/irrev/Makefile src/newmat/Makefile src/psw/Makefile src/randlib/Makefile src/scfg/Makefile src/seq/Makefile src/stemloc/Makefile src/telegraph/Makefile src/tkf/Makefile src/tree/Makefile src/util/Makefile"
+ac_config_files="$ac_config_files Makefile src/make.defs src/make.common src/Weighbor/Makefile src/amap/Makefile src/ecfg/Makefile src/evoldoer/Makefile src/handel/Makefile src/hmm/Makefile src/hsm/Makefile src/indiegram/Makefile src/irrev/Makefile src/newmat/Makefile src/psw/Makefile src/randlib/Makefile src/scfg/Makefile src/seq/Makefile src/stemloc/Makefile src/telegraph/Makefile src/tkf/Makefile src/tree/Makefile src/util/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6502,6 +6512,8 @@ do
   case $ac_config_target in
     "src/config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "src/make.defs") CONFIG_FILES="$CONFIG_FILES src/make.defs" ;;
+    "src/make.common") CONFIG_FILES="$CONFIG_FILES src/make.common" ;;
     "src/Weighbor/Makefile") CONFIG_FILES="$CONFIG_FILES src/Weighbor/Makefile" ;;
     "src/amap/Makefile") CONFIG_FILES="$CONFIG_FILES src/amap/Makefile" ;;
     "src/ecfg/Makefile") CONFIG_FILES="$CONFIG_FILES src/ecfg/Makefile" ;;
@@ -6635,6 +6647,8 @@ GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 GUILE!$GUILE$ac_delim
+GUILE_INCLUDED!$GUILE_INCLUDED$ac_delim
+GUILE_CDEFS!$GUILE_CDEFS$ac_delim
 GUILE_CONFIG!$GUILE_CONFIG$ac_delim
 GUILE_TOOLS!$GUILE_TOOLS$ac_delim
 GUILE_CFLAGS!$GUILE_CFLAGS$ac_delim
@@ -6642,7 +6656,7 @@ GUILE_LDFLAGS!$GUILE_LDFLAGS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 58; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 60; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
