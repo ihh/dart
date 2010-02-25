@@ -55,6 +55,17 @@
 #define SEXPR_ORD         "&ord"
 
 // singleton shorthand map
+// TODO: instead of expanding this on-the-fly, do a single preorder pass over the entire SExpr tree,
+// expanding shorthand forms *only* when they are not inside an &eval block.
+// Shorthand forms inside an &eval block should cause an error, as they may conflict with Scheme primitives.
+// Then, write code that iterates over the SExpr tree, passing &eval blocks to guile (suitably wrapped with #ifdef GUILE_INCLUDED).
+// NB we first need to initialize guile with scm_with_guile.
+// Ideally, we would also make the alphabet, alignment & tree available to the Scheme code in the &eval block
+// (though most of the required ensuing functionality could be hackily achieved using &foreach-token, etc.)
+// To do this, we'd need to first call the following smob initializers, as per inner_main() in dart/src/guile/darts.cc:
+//   init_stockholm_type();
+//   init_newick_type();
+// We'd then need to bind the alignment and tree to appropriate smobs.
 struct SExpr_macro_aliases
 {
   map<sstring,sstring> short2long;
