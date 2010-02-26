@@ -662,10 +662,6 @@ CC
 CFLAGS
 ac_ct_CC
 LN_S
-CPP
-GREP
-EGREP
-LIBOBJS
 GUILE
 GUILE_INCLUDED
 GUILE_CDEFS
@@ -673,6 +669,15 @@ GUILE_CONFIG
 GUILE_TOOLS
 GUILE_CFLAGS
 GUILE_LDFLAGS
+PKG_CONFIG
+BEAGLE_CFLAGS
+BEAGLE_LIBS
+BEAGLE_INCLUDED
+BEAGLE_CDEFS
+CPP
+GREP
+EGREP
+LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
       ac_precious_vars='build_alias
@@ -686,6 +691,9 @@ CPPFLAGS
 CCC
 CC
 CFLAGS
+PKG_CONFIG
+BEAGLE_CFLAGS
+BEAGLE_LIBS
 CPP'
 
 
@@ -1264,6 +1272,10 @@ Some influential environment variables:
               you have headers in a nonstandard directory <include dir>
   CC          C compiler command
   CFLAGS      C compiler flags
+  PKG_CONFIG  path to pkg-config utility
+  BEAGLE_CFLAGS
+              C compiler flags for BEAGLE, overriding pkg-config
+  BEAGLE_LIBS linker flags for BEAGLE, overriding pkg-config
   CPP         C preprocessor
 
 Use these variables to override the choices made by `configure' or to help
@@ -1697,7 +1709,6 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-#AC_CONFIG_SRCDIR([misc/stl_vector.h])
 ac_config_headers="$ac_config_headers src/config.h"
 
 
@@ -2999,9 +3010,375 @@ fi
 
 # Checks for libraries.
 
-# Commented out because it doesn't get expanded.
-# Look for autoconf macros in guile distribution?
+# Check for the guile Scheme interpreter/extension language library.
+# If guile found, define shell variable $(GUILE_INCLUDED) to 1, and expand @GUILE_CFLAGS@, @GUILE_CDEFS@, @GUILE_LDFLAGS@ to appropriate values in Makefiles.
+# If guile not found, define shell variable $(GUILE_INCLUDED) to 0, and expand @GUILE_CFLAGS@, @GUILE_CDEFS@, @GUILE_LDFLAGS@ to empty strings.
+# Extract the first word of "guile", so it can be a program name with args.
+set dummy guile; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_GUILE+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $GUILE in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_GUILE="$GUILE" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_GUILE="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+GUILE=$ac_cv_path_GUILE
+if test -n "$GUILE"; then
+  { echo "$as_me:$LINENO: result: $GUILE" >&5
+echo "${ECHO_T}$GUILE" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  if test "$GUILE" = "" ; then
+# changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
+      { echo "$as_me:$LINENO: WARNING: guile not found - Scheme support will not be enabled" >&5
+echo "$as_me: WARNING: guile not found - Scheme support will not be enabled" >&2;}
+      GUILE_INCLUDED=0
+
+
+  else
+
+    # Extract the first word of "guile-config", so it can be a program name with args.
+set dummy guile-config; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_GUILE_CONFIG+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $GUILE_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_GUILE_CONFIG="$GUILE_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_GUILE_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+GUILE_CONFIG=$ac_cv_path_GUILE_CONFIG
+if test -n "$GUILE_CONFIG"; then
+  { echo "$as_me:$LINENO: result: $GUILE_CONFIG" >&5
+echo "${ECHO_T}$GUILE_CONFIG" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+    if test "$GUILE_CONFIG" = "" ; then
+# changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
+      { echo "$as_me:$LINENO: WARNING: guile-config not found - Scheme support will not be enabled" >&5
+echo "$as_me: WARNING: guile-config not found - Scheme support will not be enabled" >&2;}
+      GUILE_INCLUDED=0
+
+
+    else
+
+      # Extract the first word of "guile-tools", so it can be a program name with args.
+set dummy guile-tools; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_GUILE_TOOLS+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $GUILE_TOOLS in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_GUILE_TOOLS="$GUILE_TOOLS" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_GUILE_TOOLS="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+GUILE_TOOLS=$ac_cv_path_GUILE_TOOLS
+if test -n "$GUILE_TOOLS"; then
+  { echo "$as_me:$LINENO: result: $GUILE_TOOLS" >&5
+echo "${ECHO_T}$GUILE_TOOLS" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+
+      GUILE_INCLUDED=1
+
+      GUILE_CDEFS=-DGUILE_INCLUDED
+
+    fi
+  fi
+
+  { echo "$as_me:$LINENO: checking libguile compile flags" >&5
+echo $ECHO_N "checking libguile compile flags... $ECHO_C" >&6; }
+  GUILE_CFLAGS="`$GUILE_CONFIG compile`"
+  { echo "$as_me:$LINENO: result: $GUILE_CFLAGS" >&5
+echo "${ECHO_T}$GUILE_CFLAGS" >&6; }
+  { echo "$as_me:$LINENO: checking libguile link flags" >&5
+echo $ECHO_N "checking libguile link flags... $ECHO_C" >&6; }
+  GUILE_LDFLAGS="`$GUILE_CONFIG link`"
+  { echo "$as_me:$LINENO: result: $GUILE_LDFLAGS" >&5
+echo "${ECHO_T}$GUILE_LDFLAGS" >&6; }
+
+
+
+# Used to check for guile using the following, macro but commented it out because guile-1.8 wasn't building or installing .pc files
+# (perhaps because $PKG_CONFIG_PATH was not set?)
+# Instead we now use guile-config.
 # PKG_CHECK_MODULES([GUILE], [guile-1.8])
+
+# Check for the Beagle phylogenetic likelihood library.
+
+
+
+
+
+
+
+if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
+	if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
+set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_PKG_CONFIG+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+PKG_CONFIG=$ac_cv_path_PKG_CONFIG
+if test -n "$PKG_CONFIG"; then
+  { echo "$as_me:$LINENO: result: $PKG_CONFIG" >&5
+echo "${ECHO_T}$PKG_CONFIG" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_PKG_CONFIG"; then
+  ac_pt_PKG_CONFIG=$PKG_CONFIG
+  # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_ac_pt_PKG_CONFIG+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $ac_pt_PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_PKG_CONFIG="$ac_pt_PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_ac_pt_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_PKG_CONFIG=$ac_cv_path_ac_pt_PKG_CONFIG
+if test -n "$ac_pt_PKG_CONFIG"; then
+  { echo "$as_me:$LINENO: result: $ac_pt_PKG_CONFIG" >&5
+echo "${ECHO_T}$ac_pt_PKG_CONFIG" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+  if test "x$ac_pt_PKG_CONFIG" = x; then
+    PKG_CONFIG=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ echo "$as_me:$LINENO: WARNING: In the future, Autoconf will not detect cross-tools
+whose name does not start with the host triplet.  If you think this
+configuration is useful to you, please write to autoconf@gnu.org." >&5
+echo "$as_me: WARNING: In the future, Autoconf will not detect cross-tools
+whose name does not start with the host triplet.  If you think this
+configuration is useful to you, please write to autoconf@gnu.org." >&2;}
+ac_tool_warned=yes ;;
+esac
+    PKG_CONFIG=$ac_pt_PKG_CONFIG
+  fi
+else
+  PKG_CONFIG="$ac_cv_path_PKG_CONFIG"
+fi
+
+fi
+if test -n "$PKG_CONFIG"; then
+	_pkg_min_version=0.9.0
+	{ echo "$as_me:$LINENO: checking pkg-config is at least version $_pkg_min_version" >&5
+echo $ECHO_N "checking pkg-config is at least version $_pkg_min_version... $ECHO_C" >&6; }
+	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
+		{ echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+	else
+		{ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+		PKG_CONFIG=""
+	fi
+
+fi
+
+pkg_failed=no
+{ echo "$as_me:$LINENO: checking for BEAGLE" >&5
+echo $ECHO_N "checking for BEAGLE... $ECHO_C" >&6; }
+
+if test -n "$BEAGLE_CFLAGS"; then
+    pkg_cv_BEAGLE_CFLAGS="$BEAGLE_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"hmsbeagle-1.0\"") >&5
+  ($PKG_CONFIG --exists --print-errors "hmsbeagle-1.0") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; then
+  pkg_cv_BEAGLE_CFLAGS=`$PKG_CONFIG --cflags "hmsbeagle-1.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$BEAGLE_LIBS"; then
+    pkg_cv_BEAGLE_LIBS="$BEAGLE_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"hmsbeagle-1.0\"") >&5
+  ($PKG_CONFIG --exists --print-errors "hmsbeagle-1.0") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; then
+  pkg_cv_BEAGLE_LIBS=`$PKG_CONFIG --libs "hmsbeagle-1.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        BEAGLE_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "hmsbeagle-1.0" 2>&1`
+        else
+	        BEAGLE_PKG_ERRORS=`$PKG_CONFIG --print-errors "hmsbeagle-1.0" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$BEAGLE_PKG_ERRORS" >&5
+
+	{ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+                    BEAGLE_INCLUDED=0
+
+
+elif test $pkg_failed = untried; then
+	    BEAGLE_INCLUDED=0
+
+
+else
+	BEAGLE_CFLAGS=$pkg_cv_BEAGLE_CFLAGS
+	BEAGLE_LIBS=$pkg_cv_BEAGLE_LIBS
+        { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+	    BEAGLE_INCLUDED=1
+
+      BEAGLE_CDEFS=-DBEAGLE_INCLUDED
+
+fi
+
+
 
 # Checks for header files.
 
@@ -5795,167 +6172,7 @@ fi
 done
 
 
-# guile
-# Extract the first word of "guile", so it can be a program name with args.
-set dummy guile; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_GUILE+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $GUILE in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_GUILE="$GUILE" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_GUILE="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-GUILE=$ac_cv_path_GUILE
-if test -n "$GUILE"; then
-  { echo "$as_me:$LINENO: result: $GUILE" >&5
-echo "${ECHO_T}$GUILE" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-  if test "$GUILE" = "" ; then
-# changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
-      { echo "$as_me:$LINENO: WARNING: guile not found - Scheme support will not be enabled" >&5
-echo "$as_me: WARNING: guile not found - Scheme support will not be enabled" >&2;}
-      GUILE_INCLUDED=0
-
-
-  else
-
-    # Extract the first word of "guile-config", so it can be a program name with args.
-set dummy guile-config; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_GUILE_CONFIG+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $GUILE_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_GUILE_CONFIG="$GUILE_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_GUILE_CONFIG="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-GUILE_CONFIG=$ac_cv_path_GUILE_CONFIG
-if test -n "$GUILE_CONFIG"; then
-  { echo "$as_me:$LINENO: result: $GUILE_CONFIG" >&5
-echo "${ECHO_T}$GUILE_CONFIG" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-    if test "$GUILE_CONFIG" = "" ; then
-# changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
-      { echo "$as_me:$LINENO: WARNING: guile-config not found - Scheme support will not be enabled" >&5
-echo "$as_me: WARNING: guile-config not found - Scheme support will not be enabled" >&2;}
-      GUILE_INCLUDED=0
-
-
-    else
-
-      # Extract the first word of "guile-tools", so it can be a program name with args.
-set dummy guile-tools; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_GUILE_TOOLS+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $GUILE_TOOLS in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_GUILE_TOOLS="$GUILE_TOOLS" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_GUILE_TOOLS="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-GUILE_TOOLS=$ac_cv_path_GUILE_TOOLS
-if test -n "$GUILE_TOOLS"; then
-  { echo "$as_me:$LINENO: result: $GUILE_TOOLS" >&5
-echo "${ECHO_T}$GUILE_TOOLS" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-
-      GUILE_INCLUDED=1
-
-      GUILE_CDEFS=-DGUILE_INCLUDED
-
-    fi
-  fi
-
-  { echo "$as_me:$LINENO: checking libguile compile flags" >&5
-echo $ECHO_N "checking libguile compile flags... $ECHO_C" >&6; }
-  GUILE_CFLAGS="`$GUILE_CONFIG compile`"
-  { echo "$as_me:$LINENO: result: $GUILE_CFLAGS" >&5
-echo "${ECHO_T}$GUILE_CFLAGS" >&6; }
-  { echo "$as_me:$LINENO: checking libguile link flags" >&5
-echo $ECHO_N "checking libguile link flags... $ECHO_C" >&6; }
-  GUILE_LDFLAGS="`$GUILE_CONFIG link`"
-  { echo "$as_me:$LINENO: result: $GUILE_LDFLAGS" >&5
-echo "${ECHO_T}$GUILE_LDFLAGS" >&6; }
-
-
-
-
+# create the makefiles
 ac_config_files="$ac_config_files Makefile src/make.defs src/make.common src/Weighbor/Makefile src/amap/Makefile src/ecfg/Makefile src/evoldoer/Makefile src/handel/Makefile src/hmm/Makefile src/hsm/Makefile src/indiegram/Makefile src/irrev/Makefile src/newmat/Makefile src/psw/Makefile src/randlib/Makefile src/scfg/Makefile src/seq/Makefile src/stemloc/Makefile src/telegraph/Makefile src/tkf/Makefile src/tree/Makefile src/util/Makefile"
 
 cat >confcache <<\_ACEOF
@@ -6642,10 +6859,6 @@ CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 ac_ct_CC!$ac_ct_CC$ac_delim
 LN_S!$LN_S$ac_delim
-CPP!$CPP$ac_delim
-GREP!$GREP$ac_delim
-EGREP!$EGREP$ac_delim
-LIBOBJS!$LIBOBJS$ac_delim
 GUILE!$GUILE$ac_delim
 GUILE_INCLUDED!$GUILE_INCLUDED$ac_delim
 GUILE_CDEFS!$GUILE_CDEFS$ac_delim
@@ -6653,10 +6866,19 @@ GUILE_CONFIG!$GUILE_CONFIG$ac_delim
 GUILE_TOOLS!$GUILE_TOOLS$ac_delim
 GUILE_CFLAGS!$GUILE_CFLAGS$ac_delim
 GUILE_LDFLAGS!$GUILE_LDFLAGS$ac_delim
+PKG_CONFIG!$PKG_CONFIG$ac_delim
+BEAGLE_CFLAGS!$BEAGLE_CFLAGS$ac_delim
+BEAGLE_LIBS!$BEAGLE_LIBS$ac_delim
+BEAGLE_INCLUDED!$BEAGLE_INCLUDED$ac_delim
+BEAGLE_CDEFS!$BEAGLE_CDEFS$ac_delim
+CPP!$CPP$ac_delim
+GREP!$GREP$ac_delim
+EGREP!$EGREP$ac_delim
+LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 60; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 65; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

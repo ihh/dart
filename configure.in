@@ -3,7 +3,6 @@
 
 AC_PREREQ(2.61)
 AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
-#AC_CONFIG_SRCDIR([misc/stl_vector.h])
 AC_CONFIG_HEADER([src/config.h])
 
 # Checks for programs.
@@ -13,9 +12,28 @@ AC_PROG_LN_S
 
 # Checks for libraries.
 
-# Commented out because it doesn't get expanded.
-# Look for autoconf macros in guile distribution?
+# Check for the guile Scheme interpreter/extension language library.
+# If guile found, define shell variable $(GUILE_INCLUDED) to 1, and expand @GUILE_CFLAGS@, @GUILE_CDEFS@, @GUILE_LDFLAGS@ to appropriate values in Makefiles.
+# If guile not found, define shell variable $(GUILE_INCLUDED) to 0, and expand @GUILE_CFLAGS@, @GUILE_CDEFS@, @GUILE_LDFLAGS@ to empty strings.
+GUILE_FLAGS
+# Used to check for guile using the following, macro but commented it out because guile-1.8 wasn't building or installing .pc files
+# (perhaps because $PKG_CONFIG_PATH was not set?)
+# Instead we now use guile-config.
 # PKG_CHECK_MODULES([GUILE], [guile-1.8])
+
+# Check for the Beagle phylogenetic likelihood library.
+
+AC_DEFUN([BEAGLE_NO],
+ [    AC_SUBST(BEAGLE_INCLUDED,[0])
+      AC_SUBST(BEAGLE_CDEFS)         ])
+
+AC_DEFUN([BEAGLE_YES],
+ [    AC_SUBST(BEAGLE_INCLUDED,[1])
+      AC_SUBST(BEAGLE_CDEFS,[-DBEAGLE_INCLUDED])  ])
+
+PKG_CHECK_MODULES([BEAGLE], [hmsbeagle-1.0], [BEAGLE_YES], [BEAGLE_NO])
+
+
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -39,11 +57,6 @@ AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([dup2 floor memmove pow regcomp sqrt strchr strcspn strrchr strspn strstr])
-
-# check for guile
-# if found, defines shell variable $(GUILE_INCLUDED) to 1, and expands @GUILE_CFLAGS@, @GUILE_CDEFS@, @GUILE_LDFLAGS@ to appropriate values in Makefiles
-# if not found, defines shell variable $(GUILE_INCLUDED) to 0, and expands @GUILE_CFLAGS@, @GUILE_CDEFS@, @GUILE_LDFLAGS@ to empty strings
-GUILE_FLAGS
 
 # create the makefiles
 AC_CONFIG_FILES([Makefile
