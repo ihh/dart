@@ -781,11 +781,51 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
       for (int n = 0; n < subseqs; ++n)
 	emit_loglike_matrix (n, state) = subseqLogLike[n];
 
-      // TODO: repeat for with_wildcards, subtract
+      // repeat for with_wildcards; subtract
+      if (with_wildcards.size())
+	{
+	  // set the sequences for each tip using partial likelihood arrays
+	  vector<double> partial (subseqs * ctmc_states);
+	  for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
+	    {
+	      const Vector_weight_profile& vwp = with_wildcards[*n];
+	      int pos = 0;
+	      for_const_contents (Vector_weight_profile, vwp, vw)
+		for_const_contents (vector<Prob>, *vw, w)
+		partial[pos++] = *w;
+	      beagleSetTipPartials(instance, tree.leaf_index(*n), &partial[0]);
+	    }
+
+	  // update the partials
+	  beagleUpdatePartials(&instance,        // instance
+			       1,                // instanceCount
+			       &ops[0],          // operations
+			       2,                // operationCount
+			       BEAGLE_OP_NONE);  // cumulative scaling index
+
+	  // calculate the site likelihoods at the root node
+	  vector<double> subseqLogLike (subseqs);
+	  beagleCalculateRootLogLikelihoods(instance,                // instance
+					    &rootIndex,              // bufferIndices
+					    &dummy_weight[0],        // weights
+					    &root_prior[0],          // stateFrequencies
+					    &cumulativeScalingIndex, // cumulative scaling index
+					    1,                       // count
+					    &subseqLogLike[0]);      // outLogLikelihoods
+
+	  // subtract subseq log-likelihoods from emit_loglike_matrix
+	  for (int n = 0; n < subseqs; ++n)
+	    {
+	      Loge& ell = emit_loglike_matrix (n, state);
+	      NatsPMulAcc (ell, -subseqLogLike[n]);
+	    }
+	}
 
       // let Beagle clean up
       beagleFinalizeInstance(instance);
     }
+
+  use_precomputed_phyloemit (emit_loglike_matrix);
 
 #else /* BEAGLE_INCLUDED */
   THROWEXPR ("This program was not compiled with Beagle support. Try re-running 'configure' ensuring that Beagle is detected.");
