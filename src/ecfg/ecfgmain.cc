@@ -133,6 +133,11 @@ void ECFG_main::init_opts (const char* desc)
   opts.print_title ("Output");
   opts.add ("gff", gff_filename, "save GFF annotations to file, rather than interleaving into Stockholm output", false);
   opts.add ("tlog -training-log", training_log_filename = "", "during EM, dump every intermediate grammar to this file", false);
+
+  opts.newline();
+  opts.print_title ("Miscellaneous");
+
+  opts.add ("bl -beagle", use_beagle = false, "use Beagle GPU library to compute likelihoods, if available");
 }
 
 void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
@@ -498,6 +503,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 
 	      // create CYK matrix; get score & traceback; save emit_loglike; & delete matrix
 	      ECFG_CYK_matrix* cyk_mx = new ECFG_CYK_matrix (ecfg, *stock, asp, env, !want_fill_down);
+	      if (use_beagle)
+		cyk_mx->compute_phylo_likelihoods_with_beagle();
 	      cyk_mx->fill();
 	      const Loge cyk_loglike = cyk_mx->final_loglike;
 	      zero_likelihood = (cyk_loglike <= -InfinityLoge);
@@ -574,6 +581,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 		      inside_mx->use_precomputed (cyk_emit_loglike);
 		      cyk_emit_loglike_initialized = false;
 		    }
+		  else if (use_beagle)
+		    inside_mx->compute_phylo_likelihoods_with_beagle();
 
 		  inside_mx->fill();
 		}

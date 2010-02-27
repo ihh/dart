@@ -48,6 +48,8 @@ struct ECFG_main
 
   double min_branch_len;
 
+  bool use_beagle;
+
   // alphabet & grammar data
   const Alphabet* alph;
   Empty_alphabet user_alphabet;

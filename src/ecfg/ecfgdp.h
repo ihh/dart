@@ -84,13 +84,15 @@ struct ECFG_EM_matrix : ECFG_matrix
   bool fill_up (int subseq_idx, int state_idx, bool condition_on_context = true);  // returns TRUE if fill_up was called on Column_matrix (i.e. kosher emit state)
   void fill_down (ECFG_counts& counts, int subseq_idx, int state_idx, double weight);  // updates stats, returns log-likelihood
 
-  // stubs for Beagle helper methods
-  // TODO: implement these!
+  // Beagle helper methods
   typedef map<Phylogeny::Node,Vector_weight_profile> Partial_map;
   typedef map<Phylogeny::Node,array2d<Prob> > Transition_matrix_map;  // indexed by child node
   void get_partials (int state, Partial_map& with_context, Partial_map& with_wildcards);  // both Partial_map's are cleared; with_wildcards is only filled if state has emit context
-  void get_branch_transition_matrices_and_root_prior (int state, Transition_matrix_map& branch_transmat, vector<double>& root_prior);
+  void get_branch_transition_matrices_and_root_prior (int state, Transition_matrix_map& branch_transmat, vector<Prob>& root_prior);
   void use_precomputed_phyloemit (Emit_loglike_matrix& phyloemit);  // calls use_precomputed() then iterates over all cells calling calc_annot_emit_ll() & adding to emit_loglike
+
+  // main Beagle method called by users of this class
+  void compute_phylo_likelihoods_with_beagle();  // call before fill()
 
   // methods to fill cells
   // These methods assume that env.get_bif_in() has already been called by the fill routine.
