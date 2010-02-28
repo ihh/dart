@@ -654,12 +654,12 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 
       // create Beagle instance
       BeagleInstanceDetails instDetails;
-      int instance = beagleCreateInstance(tree.leaves(),	   /**< Number of tip data elements (input) */
+      int instance = beagleCreateInstance(0,	                   /**< Number of tip data elements (input) -- set this to zero because we are assigning these partials directly */
 					  tree.nodes(),	           /**< Number of partials buffers to create (input) */
 					  0,		           /**< Number of compact state representation buffers to create (input) */
 					  ctmc_states,             /**< Number of states in the continuous-time Markov chain (input) */
 					  subseqs,                 /**< Number of site patterns to be handled by the instance (input) */
-					  0,		           /**< Number of rate matrix eigen-decomposition buffers to allocate (input) */
+					  1,		           /**< Number of rate matrix eigen-decomposition buffers to allocate (input) -- this must be at least 1, even though we don't use eigen-decompositions */
 					  tree.nodes(),	           /**< Number of rate matrix buffers (input) */
 					  1,                       /**< Number of rate categories (input) */
 					  0,                       /**< Number of scaling buffers */
@@ -710,6 +710,7 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
       dummy_rate[0] = dummy_weight[0] = 1.;
 
       beagleSetCategoryRates(instance, &dummy_rate[0]);
+      beagleSetCategoryWeights(instance, 0, &dummy_weight[0]);
 
       // allocate space for transitionMatrices
       double* transitionMatrix = (double*) malloc (ctmc_states * ctmc_states * sizeof(double));
@@ -737,31 +738,6 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
       // set prior at root
       beagleSetStateFrequencies(instance, 0, &root_prior[0]);
 
-      // create a list of partial likelihood update operations
-      // the order is [dest, destScaling, source1, matrix1, source2, matrix2]
-      vector<int> ops (BEAGLE_OP_COUNT * tree.internals());
-      int k = 0;
-      for (Phylogeny::Node_const_iter n = tree.internals_begin(); n != tree.internals_end(); ++n)
-	{
-	  Phylogeny::Node_vector kids = tree.children (*n, tree.parent[*n]);
-	  if (kids.size() != 2)
-	    THROWEXPR ("Beagle can only handle binary trees");
-	  ops[k] = *n;  // dest
-	  ops[k+1] = BEAGLE_OP_NONE;  // destScaling
-	  ops[k+2] = BEAGLE_OP_NONE;  // destScaling(?)
-	  ops[k+3] = kids[0];  // source1
-	  ops[k+4] = kids[0];  // matrix1
-	  ops[k+5] = kids[1];  // source2
-	  ops[k+6] = kids[1];  // matrix2
-	  k += BEAGLE_OP_COUNT;
-	}
-
-      // update the partials
-      beagleUpdatePartials(instance,          // instance
-			   &ops[0],           // operations
-			   tree.internals(),  // operationCount
-			   BEAGLE_OP_NONE);   // cumulative scaling index
-
       // set the sequences for each tip using partial likelihood arrays
       vector<double> partial (subseqs * ctmc_states);
       for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
@@ -771,8 +747,37 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	  for_const_contents (Vector_weight_profile, vwp, vw)
 	    for_const_contents (vector<Prob>, *vw, w)
 	    partial[pos++] = *w;
-	  beagleSetTipPartials(instance, tree.leaf_index(*n), &partial[0]);
+	  beagleSetTipPartials(instance, *n, &partial[0]);
 	}
+
+      // create a list of partial likelihood update operations
+      // the order is [dest, destScaling, source1, matrix1, source2, matrix2]
+      vector<int> ops (BEAGLE_OP_COUNT * tree.internals());
+      int k = 0;
+      for_rooted_nodes_post (tree, b)
+	{
+	  Phylogeny::Node n = (*b).second;
+	  if (tree.is_internal(n))
+	    {
+	      Phylogeny::Node_vector kids = tree.children (n, tree.parent[n]);
+	      if (kids.size() != 2)
+		THROWEXPR ("Beagle can only handle binary trees");
+	      ops[k] = n;  // dest
+	      ops[k+1] = BEAGLE_OP_NONE;  // destinationScaleWrite
+	      ops[k+2] = BEAGLE_OP_NONE;  // destinationScaleRead
+	      ops[k+3] = kids[0];  // source1
+	      ops[k+4] = kids[0];  // matrix1
+	      ops[k+5] = kids[1];  // source2
+	      ops[k+6] = kids[1];  // matrix2
+	      k += BEAGLE_OP_COUNT;
+	    }
+	}
+
+      // update the partials
+      beagleUpdatePartials(instance,          // instance
+			   &ops[0],           // operations
+			   tree.internals(),  // operationCount
+			   BEAGLE_OP_NONE);   // cumulative scaling index
 
       // calculate the site likelihoods at the root node
       const int categoryWeightsIndex = 0;
@@ -802,7 +807,7 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	      for_const_contents (Vector_weight_profile, vwp, vw)
 		for_const_contents (vector<Prob>, *vw, w)
 		partial[pos++] = *w;
-	      beagleSetTipPartials(instance, tree.leaf_index(*n), &partial[0]);
+	      beagleSetTipPartials(instance, *n, &partial[0]);
 	    }
 
 	  // update the partials
