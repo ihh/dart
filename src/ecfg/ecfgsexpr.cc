@@ -910,7 +910,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // check for any uninitialized emit states
   for_const_contents (vector<ECFG_state_info>, ecfg->state_info, info)
     if (info->name.size() && info->name[0] == ' ')
-      THROWEXPR("State" << info->name << " appears to be an emit state (its name appears with '" << ECFG_post_emit_character << "' or '" << ECFG_deprecated_post_emit_character << "' as a suffix), but it is uninitialized");
+      THROWEXPR("State" << info->name << " appears to be an emit state (its name appears with \"" << ECFG_post_emit_character << "\" or \"" << ECFG_deprecated_post_emit_character << "\" as a suffix), but it is uninitialized");
 
   // look for isolated "sum-from" modifiers; flag any sum states as such
   const vector<SExpr*> all_sum_state_sexpr = grammar_sexpr.find_all (EG_TRANSFORM_SUM_FROM, 1);
