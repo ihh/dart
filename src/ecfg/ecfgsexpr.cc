@@ -438,7 +438,7 @@ ECFG_builder::SymIndex ECFG_builder::init_nonterm2state (const SymIndex& term2ch
 	  if (lsym[0] == ECFG_complement_character)
 	    lsym.erase (lsym.begin());
 	  else if (lsym.back() == ECFG_post_emit_character || lsym.back() == ECFG_deprecated_post_emit_character)
-	    lsym.erase (--lsym.end());
+	    lsym.chop();
 	  if (term2chain.find (lsym) != term2chain.end())
 	    continue;
 	  if (nonterm2state.find (lsym) == nonterm2state.end())
@@ -469,8 +469,9 @@ void ECFG_builder::ECFG_rule_block::parse (ECFG_scores& ecfg)
   const bool from_postemit = lhs.pos_postemit[lhs_nonterm_pos];
   if (from_postemit)
     {
-      const sstring post_emit_name (ECFG_post_emit_character);
-      if (info.name.size() && info.name != post_emit_name)
+      sstring emit_state_placeholder_name;
+      emit_state_placeholder_name << ' ' << lhs_name;
+      if (info.name.size() && info.name != emit_state_placeholder_name)
 	{
 	  if (info.total_size() == 0)
 	    THROWEXPR ("In (" << *sexpr << ")\nBad '" << EG_TRANSFORM << "' rule: LHS nonterminal ends in \""
@@ -479,7 +480,7 @@ void ECFG_builder::ECFG_rule_block::parse (ECFG_scores& ecfg)
 	}
       else
 	{
-	  info.name = post_emit_name;   // flag as an uninitialized emit state
+	  info.name = emit_state_placeholder_name;   // flag as an uninitialized emit state, by setting the name of the state to " X"  (i.e. prefixed with a space) --- HACK!
 	  CTAG(1,ECFG_PARSE_RULE) << "Flagging " << lhs_name << " as an emit state\n";
 	}
     }
@@ -515,10 +516,6 @@ void ECFG_builder::ECFG_rule_block::parse (ECFG_scores& ecfg)
       // Check state not already initialised
       if (info.name.size() && info.name != sstring (ECFG_post_emit_character))
 	THROWEXPR ("In (" << *sexpr << ")\nBad '" << EG_TRANSFORM << "' rule: describes emit state, but state already initialised");
-
-      // log
-      if (CTAGGING(-1,ECFG_PARSE_RULE))
-	CL << "Initializing " << lhs_name << " as an emit state\n";
 
       // Initialise the emit state
       const int r_context = lhs.sym.size() - lhs_nonterm_pos - 1;
@@ -841,7 +838,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
       // initialise PScores
       sym2pvar.clear();
 
-      // first old-style (params, const) ... should probably issue a warning here
+      // first old-style (params, const) ... should probably issue a deprecation warning here
       init_pgroups (ecfg->pscores, sym2pvar, grammar_sexpr, EG_PARAMS, &ecfg->mutable_pgroups, false, false);
       init_pgroups (ecfg->pscores, sym2pvar, grammar_sexpr, EG_CONST, (set<int>*) 0, false, false);
 
@@ -909,6 +906,11 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
 				  ecfg->has_parametric_transitions, sym2pvar, **transform_sexpr);
       rule_block.parse (*ecfg);
     }
+
+  // check for any uninitialized emit states
+  for_const_contents (vector<ECFG_state_info>, ecfg->state_info, info)
+    if (info->name.size() && info->name[0] == ' ')
+      THROWEXPR("State" << info->name << " appears to be an emit state (its name appears with '" << ECFG_post_emit_character << "' or '" << ECFG_deprecated_post_emit_character << "' as a suffix), but it is uninitialized");
 
   // look for isolated "sum-from" modifiers; flag any sum states as such
   const vector<SExpr*> all_sum_state_sexpr = grammar_sexpr.find_all (EG_TRANSFORM_SUM_FROM, 1);
