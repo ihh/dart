@@ -144,7 +144,7 @@ void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstri
 {
   sstring score_tag, score_string;
   score_tag << tag << "_" << ecfg_name;
-  score_string << Nats2Bits (loglike);
+  score_string << Nats2Bits (loglike) << " bits";
   stock.add_gf_annot (score_tag, score_string);
 }
 
