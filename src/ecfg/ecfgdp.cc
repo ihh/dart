@@ -664,206 +664,207 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 
   // loop over states
   for (int state = 0; state < ecfg.states(); ++state)
-    {
-      // get partials (i.e. sequences), transition matrices & prior
-      get_partials (state, with_context, with_wildcards);
-      get_branch_transition_matrices_and_root_prior (state, branch_transmat, root_prior);
+    if (ecfg.state_info[state].total_size() > 0)
+      {
+	// get partials (i.e. sequences), transition matrices & prior
+	get_partials (state, with_context, with_wildcards);
+	get_branch_transition_matrices_and_root_prior (state, branch_transmat, root_prior);
 
-      const int ctmc_states = (int) root_prior.size();
+	const int ctmc_states = (int) root_prior.size();
 
-      // create Beagle instance
-      BeagleInstanceDetails instDetails;
-      int instance = beagleCreateInstance(tree.leaves(),           /**< Number of tip data elements (input) */
-					  tree.nodes(),	           /**< Number of partials buffers to create (input) */
-					  0,		           /**< Number of compact state representation buffers to create (input) */
-					  ctmc_states,             /**< Number of states in the continuous-time Markov chain (input) */
-					  subseqs,                 /**< Number of site patterns to be handled by the instance (input) */
-					  1,		           /**< Number of rate matrix eigen-decomposition buffers to allocate (input) -- this must be at least 1, even though we don't use eigen-decompositions */
-					  tree.nodes(),	           /**< Number of rate matrix buffers (input) */
-					  1,                       /**< Number of rate categories (input) */
-					  0,                       /**< Number of scaling buffers */
-					  NULL,			   /**< List of potential resource on which this instance is allowed (input, NULL implies no restriction */
-					  0,			   /**< Length of resourceList list (input) */
-					  0,             	   /**< Bit-flags indicating preferred implementation charactertistics, see BeagleFlags (input) */
-					  0,                       /**< Bit-flags indicating required implementation characteristics, see BeagleFlags (input) */
-					  &instDetails);
-      if (instance < 0)
-	THROWEXPR ("Failed to obtain BEAGLE instance");
+	// create Beagle instance
+	BeagleInstanceDetails instDetails;
+	int instance = beagleCreateInstance(tree.leaves(),           /**< Number of tip data elements (input) */
+					    tree.nodes(),	           /**< Number of partials buffers to create (input) */
+					    0,		           /**< Number of compact state representation buffers to create (input) */
+					    ctmc_states,             /**< Number of states in the continuous-time Markov chain (input) */
+					    subseqs,                 /**< Number of site patterns to be handled by the instance (input) */
+					    1,		           /**< Number of rate matrix eigen-decomposition buffers to allocate (input) -- this must be at least 1, even though we don't use eigen-decompositions */
+					    tree.nodes(),	           /**< Number of rate matrix buffers (input) */
+					    1,                       /**< Number of rate categories (input) */
+					    0,                       /**< Number of scaling buffers */
+					    NULL,			   /**< List of potential resource on which this instance is allowed (input, NULL implies no restriction */
+					    0,			   /**< Length of resourceList list (input) */
+					    0,             	   /**< Bit-flags indicating preferred implementation charactertistics, see BeagleFlags (input) */
+					    0,                       /**< Bit-flags indicating required implementation characteristics, see BeagleFlags (input) */
+					    &instDetails);
+	if (instance < 0)
+	  THROWEXPR ("Failed to obtain BEAGLE instance");
 
-      // describe the instance
-      int rNumber = instDetails.resourceNumber;
-      if (CTAGGING(5,BEAGLE))
-	{
-	  sstring beagle_log;
-	  beagle_log << "Using resource %i:\n" << rNumber;
-	  beagle_log << "\tName : %s\n" << rList->list[rNumber].name;
-	  beagle_log << "\tDesc : %s\n" << rList->list[rNumber].description;
-	  beagle_log << "\tImpl : %s\n" << "GET INFO";
-	  beagle_log << "\tFlags:";
+	// describe the instance
+	int rNumber = instDetails.resourceNumber;
+	if (CTAGGING(5,BEAGLE))
+	  {
+	    sstring beagle_log;
+	    beagle_log << "Using resource %i:\n" << rNumber;
+	    beagle_log << "\tName : %s\n" << rList->list[rNumber].name;
+	    beagle_log << "\tDesc : %s\n" << rList->list[rNumber].description;
+	    beagle_log << "\tImpl : %s\n" << "GET INFO";
+	    beagle_log << "\tFlags:";
 
-	  if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_CPU) beagle_log << " PROCESSOR_CPU";
-	  if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_GPU) beagle_log << " PROCESSOR_GPU";
-	  if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_FPGA) beagle_log << " PROCESSOR_FPGA";
-	  if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_CELL) beagle_log << " PROCESSOR_CELL";
-	  if (instDetails.flags & BEAGLE_FLAG_PRECISION_DOUBLE) beagle_log << " PRECISION_DOUBLE";
-	  if (instDetails.flags & BEAGLE_FLAG_PRECISION_SINGLE) beagle_log << " PRECISION_SINGLE";
-	  if (instDetails.flags & BEAGLE_FLAG_COMPUTATION_ASYNCH) beagle_log << " COMPUTATION_ASYNCH";
-	  if (instDetails.flags & BEAGLE_FLAG_COMPUTATION_SYNCH)  beagle_log << " COMPUTATION_SYNCH";
-	  if (instDetails.flags & BEAGLE_FLAG_EIGEN_REAL)beagle_log << " EIGEN_RAW";
-	  if (instDetails.flags & BEAGLE_FLAG_EIGEN_COMPLEX)beagle_log << " EIGEN_COMPLEX";
-	  if (instDetails.flags & BEAGLE_FLAG_SCALING_MANUAL)beagle_log << " SCALING_MANUAL";
-	  if (instDetails.flags & BEAGLE_FLAG_SCALING_AUTO)beagle_log << " SCALING_AUTO";
-	  if (instDetails.flags & BEAGLE_FLAG_SCALING_ALWAYS)beagle_log << " SCALING_ALWAYS";
-	  if (instDetails.flags & BEAGLE_FLAG_SCALERS_RAW)beagle_log << " SCALERS_RAW";
-	  if (instDetails.flags & BEAGLE_FLAG_SCALERS_LOG)beagle_log << " SCALERS_LOG";
-	  if (instDetails.flags & BEAGLE_FLAG_VECTOR_NONE)    beagle_log << " VECTOR_NONE";
-	  if (instDetails.flags & BEAGLE_FLAG_VECTOR_SSE)    beagle_log << " VECTOR_SSE";
-	  if (instDetails.flags & BEAGLE_FLAG_THREADING_NONE)    beagle_log << " THREADING_NONE";
-	  if (instDetails.flags & BEAGLE_FLAG_THREADING_OPENMP)    beagle_log << " THREADING_OPENMP";
+	    if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_CPU) beagle_log << " PROCESSOR_CPU";
+	    if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_GPU) beagle_log << " PROCESSOR_GPU";
+	    if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_FPGA) beagle_log << " PROCESSOR_FPGA";
+	    if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_CELL) beagle_log << " PROCESSOR_CELL";
+	    if (instDetails.flags & BEAGLE_FLAG_PRECISION_DOUBLE) beagle_log << " PRECISION_DOUBLE";
+	    if (instDetails.flags & BEAGLE_FLAG_PRECISION_SINGLE) beagle_log << " PRECISION_SINGLE";
+	    if (instDetails.flags & BEAGLE_FLAG_COMPUTATION_ASYNCH) beagle_log << " COMPUTATION_ASYNCH";
+	    if (instDetails.flags & BEAGLE_FLAG_COMPUTATION_SYNCH)  beagle_log << " COMPUTATION_SYNCH";
+	    if (instDetails.flags & BEAGLE_FLAG_EIGEN_REAL)beagle_log << " EIGEN_RAW";
+	    if (instDetails.flags & BEAGLE_FLAG_EIGEN_COMPLEX)beagle_log << " EIGEN_COMPLEX";
+	    if (instDetails.flags & BEAGLE_FLAG_SCALING_MANUAL)beagle_log << " SCALING_MANUAL";
+	    if (instDetails.flags & BEAGLE_FLAG_SCALING_AUTO)beagle_log << " SCALING_AUTO";
+	    if (instDetails.flags & BEAGLE_FLAG_SCALING_ALWAYS)beagle_log << " SCALING_ALWAYS";
+	    if (instDetails.flags & BEAGLE_FLAG_SCALERS_RAW)beagle_log << " SCALERS_RAW";
+	    if (instDetails.flags & BEAGLE_FLAG_SCALERS_LOG)beagle_log << " SCALERS_LOG";
+	    if (instDetails.flags & BEAGLE_FLAG_VECTOR_NONE)    beagle_log << " VECTOR_NONE";
+	    if (instDetails.flags & BEAGLE_FLAG_VECTOR_SSE)    beagle_log << " VECTOR_SSE";
+	    if (instDetails.flags & BEAGLE_FLAG_THREADING_NONE)    beagle_log << " THREADING_NONE";
+	    if (instDetails.flags & BEAGLE_FLAG_THREADING_OPENMP)    beagle_log << " THREADING_OPENMP";
 
-	  CL << beagle_log << "\n";
-	}
+	    CL << beagle_log << "\n";
+	  }
 
-      // set dummy rate categories
-      beagleSetCategoryRates(instance, &dummy_rate[0]);
-      beagleSetCategoryWeights(instance, 0, &dummy_weight[0]);
+	// set dummy rate categories
+	beagleSetCategoryRates(instance, &dummy_rate[0]);
+	beagleSetCategoryWeights(instance, 0, &dummy_weight[0]);
 
-      // set dummy pattern weights
-      beagleSetPatternWeights(instance, &patternWeights[0]);
+	// set dummy pattern weights
+	beagleSetPatternWeights(instance, &patternWeights[0]);
 
-      // allocate space for transitionMatrices
-      double* transitionMatrix = (double*) malloc (ctmc_states * ctmc_states * sizeof(double));
+	// allocate space for transitionMatrices
+	double* transitionMatrix = (double*) malloc (ctmc_states * ctmc_states * sizeof(double));
 
-      // set transitionMatrices one at a time
-      for_rooted_branches_pre (tree, b)
-	{
-	  const Phylogeny::Node child = (*b).second;
-	  const map<Phylogeny::Node,array2d<Prob> >::const_iterator tmx_iter = branch_transmat.find(child);
-	  if (tmx_iter == branch_transmat.end())
-	    THROWEXPR("Can't find node " << child);
-	  const array2d<Prob>& tmx = tmx_iter->second;
-	  for (int i = 0; i < ctmc_states; ++i)
-	    for (int j = 0; j < ctmc_states; ++j)
-	      transitionMatrix[i*ctmc_states + j] = tmx(i,j);
+	// set transitionMatrices one at a time
+	for_rooted_branches_pre (tree, b)
+	  {
+	    const Phylogeny::Node child = (*b).second;
+	    const map<Phylogeny::Node,array2d<Prob> >::const_iterator tmx_iter = branch_transmat.find(child);
+	    if (tmx_iter == branch_transmat.end())
+	      THROWEXPR("Can't find node " << child);
+	    const array2d<Prob>& tmx = tmx_iter->second;
+	    for (int i = 0; i < ctmc_states; ++i)
+	      for (int j = 0; j < ctmc_states; ++j)
+		transitionMatrix[i*ctmc_states + j] = tmx(i,j);
 
-	  beagleSetTransitionMatrix(instance,
-				    tree2beagle[child],
-				    transitionMatrix);
-	}
+	    beagleSetTransitionMatrix(instance,
+				      tree2beagle[child],
+				      transitionMatrix);
+	  }
 
-      // free space for transitionMatrices
-      free (transitionMatrix);
+	// free space for transitionMatrices
+	free (transitionMatrix);
 
-      // set prior for root
-      beagleSetStateFrequencies(instance, stateFrequencyIndex, &root_prior[0]);
+	// set prior for root
+	beagleSetStateFrequencies(instance, stateFrequencyIndex, &root_prior[0]);
 
-      // set the sequences for each tip using partial likelihood arrays
-      vector<double> partial (subseqs * ctmc_states);
-      for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
-	{
-	  const Vector_weight_profile& vwp = with_context[*n];
-	  int pos = 0;
-	  for_const_contents (Vector_weight_profile, vwp, vw)
-	    for_const_contents (vector<Prob>, *vw, w)
-	    partial[pos++] = *w;
-	  beagleSetTipPartials(instance, tree2beagle[*n], &partial[0]);
-	}
+	// set the sequences for each tip using partial likelihood arrays
+	vector<double> partial (subseqs * ctmc_states);
+	for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
+	  {
+	    const Vector_weight_profile& vwp = with_context[*n];
+	    int pos = 0;
+	    for_const_contents (Vector_weight_profile, vwp, vw)
+	      for_const_contents (vector<Prob>, *vw, w)
+	      partial[pos++] = *w;
+	    beagleSetTipPartials(instance, tree2beagle[*n], &partial[0]);
+	  }
 
-      // create a list of partial likelihood update operations
-      // the order is [dest, destScaling, source1, matrix1, source2, matrix2]
-      vector<int> ops (BEAGLE_OP_COUNT * tree.internals());
-      int k = 0;
-      for_rooted_nodes_post (tree, b)
-	{
-	  Phylogeny::Node n = (*b).second;
-	  if (tree.is_internal(n))
-	    {
-	      Phylogeny::Node_vector kids = tree.children (n, tree.parent[n]);
-	      if (kids.size() != 2)
-		THROWEXPR ("Beagle can only handle binary trees");
-	      ops[k] = tree2beagle[n];  // dest
-	      ops[k+1] = BEAGLE_OP_NONE;  // destinationScaleWrite
-	      ops[k+2] = BEAGLE_OP_NONE;  // destinationScaleRead
-	      ops[k+3] = tree2beagle[kids[0]];  // source1
-	      ops[k+4] = tree2beagle[kids[0]];  // matrix1
-	      ops[k+5] = tree2beagle[kids[1]];  // source2
-	      ops[k+6] = tree2beagle[kids[1]];  // matrix2
-	      k += BEAGLE_OP_COUNT;
-	    }
-	}
+	// create a list of partial likelihood update operations
+	// the order is [dest, destScaling, source1, matrix1, source2, matrix2]
+	vector<int> ops (BEAGLE_OP_COUNT * tree.internals());
+	int k = 0;
+	for_rooted_nodes_post (tree, b)
+	  {
+	    Phylogeny::Node n = (*b).second;
+	    if (tree.is_internal(n))
+	      {
+		Phylogeny::Node_vector kids = tree.children (n, tree.parent[n]);
+		if (kids.size() != 2)
+		  THROWEXPR ("Beagle can only handle binary trees");
+		ops[k] = tree2beagle[n];  // dest
+		ops[k+1] = BEAGLE_OP_NONE;  // destinationScaleWrite
+		ops[k+2] = BEAGLE_OP_NONE;  // destinationScaleRead
+		ops[k+3] = tree2beagle[kids[0]];  // source1
+		ops[k+4] = tree2beagle[kids[0]];  // matrix1
+		ops[k+5] = tree2beagle[kids[1]];  // source2
+		ops[k+6] = tree2beagle[kids[1]];  // matrix2
+		k += BEAGLE_OP_COUNT;
+	      }
+	  }
 
-      // update the partials
-      beagleUpdatePartials(instance,          // instance
-			   &ops[0],           // operations
-			   tree.internals(),  // operationCount
-			   BEAGLE_OP_NONE);   // cumulative scaling index
+	// update the partials
+	beagleUpdatePartials(instance,          // instance
+			     &ops[0],           // operations
+			     tree.internals(),  // operationCount
+			     BEAGLE_OP_NONE);   // cumulative scaling index
 
-      // calculate the site likelihoods at the root node
-      beagleCalculateRootLogLikelihoods(instance,                // instance
-					&rootIndex,              // bufferIndices
-					&categoryWeightsIndex,   // weights
-					&stateFrequencyIndex,    // stateFrequencies
-					&cumulativeScalingIndex, // cumulative scaling index
-					1,                       // count
-					&dummy_loglike_sum);     // sum over subseqs
+	// calculate the site likelihoods at the root node
+	beagleCalculateRootLogLikelihoods(instance,                // instance
+					  &rootIndex,              // bufferIndices
+					  &categoryWeightsIndex,   // weights
+					  &stateFrequencyIndex,    // stateFrequencies
+					  &cumulativeScalingIndex, // cumulative scaling index
+					  1,                       // count
+					  &dummy_loglike_sum);     // sum over subseqs
 
-      vector<double> subseqLogLike (subseqs);
-      beagleGetSiteLogLikelihoods(instance,
-				      &subseqLogLike[0]);
+	vector<double> subseqLogLike (subseqs);
+	beagleGetSiteLogLikelihoods(instance,
+				    &subseqLogLike[0]);
 
-      // copy subseq log-likelihoods into emit_loglike_matrix
-      for (int n = 0; n < subseqs; ++n)
-	emit_loglike_matrix (n, state) = subseqLogLike[n];
+	// copy subseq log-likelihoods into emit_loglike_matrix
+	for (int n = 0; n < subseqs; ++n)
+	  emit_loglike_matrix (n, state) = subseqLogLike[n];
 
-      // repeat for with_wildcards; subtract
-      if (with_wildcards.size())
-	{
-	  // set the sequences for each tip using partial likelihood arrays
-	  vector<double> partial (subseqs * ctmc_states);
-	  for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
-	    {
-	      const Vector_weight_profile& vwp = with_wildcards[*n];
-	      int pos = 0;
-	      for_const_contents (Vector_weight_profile, vwp, vw)
-		for_const_contents (vector<Prob>, *vw, w)
-		partial[pos++] = *w;
-	      beagleSetTipPartials(instance, tree2beagle[*n], &partial[0]);
-	    }
+	// repeat for with_wildcards; subtract
+	if (with_wildcards.size())
+	  {
+	    // set the sequences for each tip using partial likelihood arrays
+	    vector<double> partial (subseqs * ctmc_states);
+	    for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
+	      {
+		const Vector_weight_profile& vwp = with_wildcards[*n];
+		int pos = 0;
+		for_const_contents (Vector_weight_profile, vwp, vw)
+		  for_const_contents (vector<Prob>, *vw, w)
+		  partial[pos++] = *w;
+		beagleSetTipPartials(instance, tree2beagle[*n], &partial[0]);
+	      }
 
-	  // update the partials
-	  beagleUpdatePartials(instance,          // instance
-			       &ops[0],           // operations
-			       tree.internals(),  // operationCount
-			       BEAGLE_OP_NONE);   // cumulative scaling index
+	    // update the partials
+	    beagleUpdatePartials(instance,          // instance
+				 &ops[0],           // operations
+				 tree.internals(),  // operationCount
+				 BEAGLE_OP_NONE);   // cumulative scaling index
 
-	  // calculate the site likelihoods at the root node
-	  beagleCalculateRootLogLikelihoods(instance,                // instance
-					    &rootIndex,              // bufferIndices
-					    &categoryWeightsIndex,   // weights
-					    &stateFrequencyIndex,    // stateFrequencies
-					    &cumulativeScalingIndex, // cumulative scaling index
-					    1,                       // count
-					    &dummy_loglike_sum);     // sum over subseqs
+	    // calculate the site likelihoods at the root node
+	    beagleCalculateRootLogLikelihoods(instance,                // instance
+					      &rootIndex,              // bufferIndices
+					      &categoryWeightsIndex,   // weights
+					      &stateFrequencyIndex,    // stateFrequencies
+					      &cumulativeScalingIndex, // cumulative scaling index
+					      1,                       // count
+					      &dummy_loglike_sum);     // sum over subseqs
 
-	  beagleGetSiteLogLikelihoods(instance,
-				      &subseqLogLike[0]);
+	    beagleGetSiteLogLikelihoods(instance,
+					&subseqLogLike[0]);
 
-	  // subtract subseq log-likelihoods from emit_loglike_matrix
-	  for (int n = 0; n < subseqs; ++n)
-	    {
-	      Loge& ell = emit_loglike_matrix (n, state);
-	      NatsPMulAcc (ell, -subseqLogLike[n]);
-	    }
-	}
+	    // subtract subseq log-likelihoods from emit_loglike_matrix
+	    for (int n = 0; n < subseqs; ++n)
+	      {
+		Loge& ell = emit_loglike_matrix (n, state);
+		NatsPMulAcc (ell, -subseqLogLike[n]);
+	      }
+	  }
 
-      // let Beagle clean up
-      beagleFinalizeInstance(instance);
-    }
+	// let Beagle clean up
+	beagleFinalizeInstance(instance);
+      }
 
   use_precomputed_phyloemit (emit_loglike_matrix);
 
 #else /* BEAGLE_INCLUDED */
-  THROWEXPR ("This program was not compiled with Beagle support. Try re-running 'configure' ensuring that Beagle is detected.");
+  CLOGERR << "An attempt was made to use the Beagle library to compute phylogenetic likelihoods. This program was not compiled with Beagle support. Try re-running 'configure' and ensuring that the Beagle library is detected.";
 #endif /* BEAGLE_INCLUDED */
 }
 
