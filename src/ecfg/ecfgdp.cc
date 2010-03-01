@@ -636,7 +636,17 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
   Transition_matrix_map branch_transmat;
   vector<Prob> root_prior;
 
+  // dummy variables for the Beagle-esque aspects of the model & algorithm (pattern weights, categories, etc.)
   const int cumulativeScalingIndex = BEAGLE_OP_NONE;
+  const int categoryWeightsIndex = 0;
+  const int stateFrequencyIndex = 0;
+
+  const vector<double> patternWeights (subseqs, 1.);
+
+  double dummy_rate[1], dummy_weight[1];
+  dummy_rate[0] = dummy_weight[0] = 1.;
+
+  double dummy_loglike_sum;
 
   // Beagle likes the leaf node indices to be lower than the internal node indices, so reorder the tree...
   vector<int> tree2beagle (tree.nodes());
@@ -715,11 +725,11 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	}
 
       // set dummy rate categories
-      double dummy_rate[1], dummy_weight[1];
-      dummy_rate[0] = dummy_weight[0] = 1.;
-
       beagleSetCategoryRates(instance, &dummy_rate[0]);
       beagleSetCategoryWeights(instance, 0, &dummy_weight[0]);
+
+      // set dummy pattern weights
+      beagleSetPatternWeights(instance, &patternWeights[0]);
 
       // allocate space for transitionMatrices
       double* transitionMatrix = (double*) malloc (ctmc_states * ctmc_states * sizeof(double));
@@ -745,7 +755,6 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
       free (transitionMatrix);
 
       // set prior for root
-      const int stateFrequencyIndex = 0;
       beagleSetStateFrequencies(instance, stateFrequencyIndex, &root_prior[0]);
 
       // set the sequences for each tip using partial likelihood arrays
@@ -790,15 +799,17 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 			   BEAGLE_OP_NONE);   // cumulative scaling index
 
       // calculate the site likelihoods at the root node
-      const int categoryWeightsIndex = 0;
-      vector<double> subseqLogLike (subseqs);
       beagleCalculateRootLogLikelihoods(instance,                // instance
 					&rootIndex,              // bufferIndices
 					&categoryWeightsIndex,   // weights
 					&stateFrequencyIndex,    // stateFrequencies
 					&cumulativeScalingIndex, // cumulative scaling index
 					1,                       // count
-					&subseqLogLike[0]);      // outLogLikelihoods
+					&dummy_loglike_sum);     // sum over subseqs
+
+      vector<double> subseqLogLike (subseqs);
+      beagleGetSiteLogLikelihoods(instance,
+				      &subseqLogLike[0]);
 
       // copy subseq log-likelihoods into emit_loglike_matrix
       for (int n = 0; n < subseqs; ++n)
@@ -832,7 +843,10 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 					    &stateFrequencyIndex,    // stateFrequencies
 					    &cumulativeScalingIndex, // cumulative scaling index
 					    1,                       // count
-					    &subseqLogLike[0]);      // outLogLikelihoods
+					    &dummy_loglike_sum);     // sum over subseqs
+
+	  beagleGetSiteLogLikelihoods(instance,
+				      &subseqLogLike[0]);
 
 	  // subtract subseq log-likelihoods from emit_loglike_matrix
 	  for (int n = 0; n < subseqs; ++n)
