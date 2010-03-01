@@ -864,7 +864,7 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
   use_precomputed_phyloemit (emit_loglike_matrix);
 
 #else /* BEAGLE_INCLUDED */
-  CLOGERR << "An attempt was made to use the Beagle library to compute phylogenetic likelihoods. This program was not compiled with Beagle support. Try re-running 'configure' and ensuring that the Beagle library is detected.";
+  CLOGERR << "An attempt was made to use the Beagle library to compute phylogenetic likelihoods. This program was not compiled with Beagle support. Try re-running 'configure' and ensuring that the Beagle library is detected.\n";
 #endif /* BEAGLE_INCLUDED */
 }
 
