@@ -744,8 +744,9 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
       // free space for transitionMatrices
       free (transitionMatrix);
 
-      // set prior at root
-      beagleSetStateFrequencies(instance, 0, &root_prior[0]);
+      // set prior for root
+      const int stateFrequencyIndex = 0;
+      beagleSetStateFrequencies(instance, stateFrequencyIndex, &root_prior[0]);
 
       // set the sequences for each tip using partial likelihood arrays
       vector<double> partial (subseqs * ctmc_states);
@@ -790,7 +791,6 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 
       // calculate the site likelihoods at the root node
       const int categoryWeightsIndex = 0;
-      const int stateFrequencyIndex = 0;
       vector<double> subseqLogLike (subseqs);
       beagleCalculateRootLogLikelihoods(instance,                // instance
 					&rootIndex,              // bufferIndices
