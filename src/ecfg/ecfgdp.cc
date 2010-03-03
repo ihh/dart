@@ -679,13 +679,13 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 					    0,		           /**< Number of compact state representation buffers to create (input) */
 					    ctmc_states,             /**< Number of states in the continuous-time Markov chain (input) */
 					    subseqs,                 /**< Number of site patterns to be handled by the instance (input) */
-					    1,		           /**< Number of rate matrix eigen-decomposition buffers to allocate (input) -- this must be at least 1, even though we don't use eigen-decompositions */
+					    1,		           /**< Number of rate matrix eigen-decomposition buffers to allocate (input) -- this must be at least 1, even though we don't use eigen-decompositions, because Beagle needs somewhere to put the state frequencies */
 					    tree.nodes(),	           /**< Number of rate matrix buffers (input) */
 					    1,                       /**< Number of rate categories (input) */
 					    0,                       /**< Number of scaling buffers */
 					    NULL,			   /**< List of potential resource on which this instance is allowed (input, NULL implies no restriction */
 					    0,			   /**< Length of resourceList list (input) */
-					    0,             	   /**< Bit-flags indicating preferred implementation charactertistics, see BeagleFlags (input) */
+					    BEAGLE_FLAG_PROCESSOR_GPU,            	   /**< Bit-flags indicating preferred implementation charactertistics, see BeagleFlags (input) */
 					    0,                       /**< Bit-flags indicating required implementation characteristics, see BeagleFlags (input) */
 					    &instDetails);
 	if (instance < 0)
@@ -696,11 +696,11 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	if (CTAGGING(5,BEAGLE))
 	  {
 	    sstring beagle_log;
-	    beagle_log << "Using resource %i:\n" << rNumber;
-	    beagle_log << "\tName : %s\n" << rList->list[rNumber].name;
-	    beagle_log << "\tDesc : %s\n" << rList->list[rNumber].description;
-	    beagle_log << "\tImpl : %s\n" << "GET INFO";
-	    beagle_log << "\tFlags:";
+	    beagle_log << "Using resource " << rNumber;
+	    beagle_log << "\n\tName : " << rList->list[rNumber].name;
+	    beagle_log << "\n\tDesc : " << rList->list[rNumber].description;
+	    beagle_log << "\n\tImpl : " << "GET INFO";
+	    beagle_log << "\n\tFlags:";
 
 	    if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_CPU) beagle_log << " PROCESSOR_CPU";
 	    if (instDetails.flags & BEAGLE_FLAG_PROCESSOR_GPU) beagle_log << " PROCESSOR_GPU";

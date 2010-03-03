@@ -59,7 +59,6 @@ AC_DEFUN([GUILE_PROGS],
 # changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
       AC_WARN([guile not found - Scheme support will not be enabled])
       AC_SUBST(GUILE_INCLUDED,[0])
-      AC_SUBST(GUILE_CDEFS)
   else
     AC_SUBST(GUILE)
     AC_PATH_PROG(GUILE_CONFIG,guile-config)
@@ -67,13 +66,12 @@ AC_DEFUN([GUILE_PROGS],
 # changed AC_MSG_ERROR to AC_WARN to allow compilation without guile - IH, 2/24/2010
       AC_WARN([guile-config not found - Scheme support will not be enabled])
       AC_SUBST(GUILE_INCLUDED,[0])
-      AC_SUBST(GUILE_CDEFS)
     else
       AC_SUBST(GUILE_CONFIG)
       AC_PATH_PROG(GUILE_TOOLS,guile-tools)
       AC_SUBST(GUILE_TOOLS)
       AC_SUBST(GUILE_INCLUDED,[1])
-      AC_SUBST(GUILE_CDEFS,[-DGUILE_INCLUDED])
+      GUILE_CFLAGS+=-DGUILE_INCLUDED
     fi
   fi
  ])
