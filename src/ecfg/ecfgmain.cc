@@ -137,7 +137,7 @@ void ECFG_main::init_opts (const char* desc)
   opts.newline();
   opts.print_title ("Miscellaneous");
 
-  opts.add ("bl -beagle", use_beagle = false, "use Beagle GPU library to compute likelihoods, if available");
+  opts.add ("bgl -beagle", use_beagle = false, "use Beagle GPU library to compute likelihoods, if available");
 }
 
 void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
