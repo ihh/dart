@@ -33,6 +33,7 @@ AC_ARG_WITH([guile],
 GUILE_FLAGS
 if test "x$with_guile" == "xno"
 then
+	GUILE_CDEFS=""
 	GUILE_CFLAGS=""
 	GUILE_LDFLAGS=""
 	GUILE_INCLUDED=0
@@ -50,13 +51,13 @@ AC_DEFUN([BEAGLE_NO],
 
 AC_DEFUN([BEAGLE_YES],
  [    AC_SUBST(BEAGLE_INCLUDED,[1])
-      BEAGLE_CFLAGS+=-DBEAGLE_INCLUDED
+      AC_SUBST(BEAGLE_CDEFS,[-DBEAGLE_INCLUDED])
       # CUDA will only work with i386 on OS X
       case `uname -a` in
       *Darwin*)
-        BEAGLE_CFLAGS+=" -arch i386"
-        BEAGLE_LIBS+=" -arch i386"
+        BEAGLE_ARCH="-arch i386"
       esac
+      AC_SUBST(BEAGLE_ARCH)
   ])
 
 AC_ARG_WITH([beagle],
@@ -69,6 +70,8 @@ PKG_CHECK_MODULES([BEAGLE], [hmsbeagle-1.0], [BEAGLE_YES], [BEAGLE_NO])
 
 if test "x$with_beagle" == "xno"
 then
+	BEAGLE_ARCH=""
+	BEAGLE_CDEFS=""
 	BEAGLE_CFLAGS=""
 	BEAGLE_LIBS=""
 	BEAGLE_INCLUDED=0
