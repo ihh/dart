@@ -3227,11 +3227,6 @@ fi
 # Checks for libraries.
 
 # Check for the guile Scheme interpreter/extension language library.
-# If guile found, define shell variable $(GUILE_INCLUDED) to 1,
-#  and expand @GUILE_CFLAGS@, @GUILE_LDFLAGS@ to appropriate values in Makefiles.
-# If guile not found, define shell variable $(GUILE_INCLUDED) to 0,
-#  and expand @GUILE_CFLAGS@, @GUILE_LDFLAGS@ to empty strings.
-# The relevant macros are defined in acinclude.m4.
 
 # Note: I used to check for guile using the following macro:
 # PKG_CHECK_MODULES([GUILE], [guile-1.8])
@@ -3415,11 +3410,6 @@ then
 fi
 
 # Check for the Beagle phylogenetic likelihood library.
-# If guile found, define shell variable $(BEAGLE_INCLUDED) to 1,
-#  and expand @BEAGLE_CFLAGS@, @BEAGLE_LDFLAGS@ to appropriate values in Makefiles.
-# If guile not found, define shell variable $(BEAGLE_INCLUDED) to 0,
-#  and expand @BEAGLE_CFLAGS@, @BEAGLE_LDFLAGS@ to empty strings.
-# The relevant macros are defined in acinclude.m4.
 
 
 
