@@ -85,8 +85,8 @@ struct ECFG_EM_matrix : ECFG_matrix
   void fill_down (ECFG_counts& counts, int subseq_idx, int state_idx, double weight);  // updates stats, returns log-likelihood
 
   // Beagle helper methods
-  typedef map<Phylogeny::Node,Vector_weight_profile> Partial_map;
-  typedef map<Phylogeny::Node,array2d<Prob> > Transition_matrix_map;  // indexed by child node
+  typedef map<Phylogeny::Node,vector<double> > Partial_map;   // indexing: Partial_map[node][subseq*STATES + state]
+  typedef map<Phylogeny::Node,vector<double> > Transition_matrix_map;  // indexing: Transition_matrix_map[childNode][i*STATES + j]
   void get_partials (int state, Partial_map& with_context, Partial_map& with_wildcards);  // both Partial_map's are cleared; with_wildcards is only filled if state has emit context
   void get_branch_transition_matrices_and_root_prior (int state, Transition_matrix_map& branch_transmat, vector<Prob>& root_prior);
   void use_precomputed_phyloemit (Emit_loglike_matrix& phyloemit);  // calls use_precomputed() then iterates over all cells calling calc_annot_emit_ll() & adding to emit_loglike

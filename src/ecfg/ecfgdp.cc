@@ -536,6 +536,7 @@ void ECFG_EM_matrix::get_partials (int state, Partial_map& with_context, Partial
   const ECFG_state_info& info = ecfg.state_info[state];
   const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
   const int chain_states = ecfg.matrix_set.total_states (info.matrix);
+  const int env_subseqs = env.subseqs();
 
   // get the Column_matrix, and create a dummy Fast_prune object
   Column_matrix& cm = colmat[state];
@@ -547,7 +548,7 @@ void ECFG_EM_matrix::get_partials (int state, Partial_map& with_context, Partial
   with_context.clear();
   with_wildcards.clear();
 
-  const Vector_weight_profile empty_partial_vec (env.subseqs(), vector<Prob> (chain_states, (double) 0.));
+  const vector<double> empty_partial_vec (env_subseqs * chain_states, (double) 0.);
   vector<Phylogeny::Node> nodes_with_sequence;
   for_rooted_nodes_pre (tree, b)
     {
@@ -561,36 +562,47 @@ void ECFG_EM_matrix::get_partials (int state, Partial_map& with_context, Partial
 	}
     }
 
-  // make a vector of pointers for quick reference
-  vector<Vector_weight_profile*>
-    with_context_vec (tree.nodes(), (Vector_weight_profile*) 0),
-    with_wildcards_vec (tree.nodes(), (Vector_weight_profile*) 0);
+  // make a vector of iterators for quick access
+  typedef vector<double>::iterator vec_dbl_iter;
+  vector<vec_dbl_iter>
+    with_context_vec (tree.nodes()),
+    with_wildcards_vec (tree.nodes());
   for_const_contents (vector<Phylogeny::Node>, nodes_with_sequence, n)
     {
-      with_context_vec[*n] = &with_context[*n];
+      with_context_vec[*n] = with_context[*n].begin();
       if (info.has_context())
-	with_wildcards_vec[*n] = &with_wildcards[*n];
+	with_wildcards_vec[*n] = with_wildcards[*n].begin();
     }
 
   // loop over subseqs
   for (int subseq_idx = 0; subseq_idx < env.subseqs(); ++subseq_idx)
     {
       const Subseq_coords& subseq = env.subseq[subseq_idx];
-      // call initialise and swap the results into the partials
+      // call initialise() and copy the results into the partials
       // wildcards
       if (info.has_context())
 	{
 	  info.initialise (ecfg.alphabet, chain.classes, asp, subseq, stock, tree, cm, &fp, true);  // context columns replaced by wildcard symbols
 
 	  for_const_contents (vector<Phylogeny::Node>, nodes_with_sequence, n)
-	    fp.F[*n].swap ((*with_wildcards_vec[*n])[subseq_idx]);
+	    {
+	      vec_dbl_iter& n_iter = with_wildcards_vec[*n];
+	      vec_dbl_iter F_iter = fp.F[*n].begin();
+	      for (int s = 0; s < chain_states; ++s)
+		*(n_iter++) = *(F_iter++);
+	    }
 	}
 
       // context
       info.initialise (ecfg.alphabet, chain.classes, asp, subseq, stock, tree, cm, &fp, false);  // actual context columns used
 
       for_const_contents (vector<Phylogeny::Node>, nodes_with_sequence, n)
-	fp.F[*n].swap ((*with_context_vec[*n])[subseq_idx]);
+	{
+	  vec_dbl_iter& n_iter = with_context_vec[*n];
+	  vec_dbl_iter F_iter = fp.F[*n].begin();
+	  for (int s = 0; s < chain_states; ++s)
+	    *(n_iter++) = *(F_iter++);
+	}
     }
 }
 
@@ -598,10 +610,17 @@ void ECFG_EM_matrix::get_branch_transition_matrices_and_root_prior (int state, T
 {
   const ECFG_state_info& info = ecfg.state_info[state];
   const vector<const EM_matrix_base*>& lineage_mx = lineage_matrix[info.matrix];
+  const int chain_states = ecfg.matrix_set.total_states (info.matrix);
+
   branch_transmat.clear();
   for_rooted_branches_pre (tree, b)
     {
-      branch_transmat[(*b).second] = ((EM_matrix_base*) lineage_mx[(*b).second])->create_conditional_substitution_matrix ((*b).length);  // cast away const
+      const array2d<Prob> bt = ((EM_matrix_base*) lineage_mx[(*b).second])->create_conditional_substitution_matrix ((*b).length);  // cast away const
+      vector<double> bt_vec (chain_states * chain_states);
+      for (int i = 0; i < chain_states; ++i)
+	for (int j = 0; j < chain_states; ++j)
+	  bt_vec[i*chain_states + j] = bt(i,j);
+      branch_transmat[(*b).second].swap (bt_vec);
     }
   root_prior = ((EM_matrix_base*) lineage_mx[tree.root])->create_prior();  // cast away const
 }
@@ -739,17 +758,13 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	for_rooted_branches_pre (tree, b)
 	  {
 	    const Phylogeny::Node child = (*b).second;
-	    const map<Phylogeny::Node,array2d<Prob> >::const_iterator tmx_iter = branch_transmat.find(child);
+	    const Transition_matrix_map::const_iterator tmx_iter = branch_transmat.find(child);
 	    if (tmx_iter == branch_transmat.end())
 	      THROWEXPR("Can't find node " << child);
-	    const array2d<Prob>& tmx = tmx_iter->second;
-	    for (int i = 0; i < ctmc_states; ++i)
-	      for (int j = 0; j < ctmc_states; ++j)
-		transitionMatrix[i*ctmc_states + j] = tmx(i,j);
-
+	    const vector<double>& tmx = tmx_iter->second;
 	    beagleSetTransitionMatrix(instance,
 				      tree2beagle[child],
-				      transitionMatrix);
+				      &tmx[0]);
 	  }
 
 	// free space for transitionMatrices
@@ -758,17 +773,9 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	// set prior for root
 	beagleSetStateFrequencies(instance, stateFrequencyIndex, &root_prior[0]);
 
-	// set the sequences for each tip using partial likelihood arrays
-	vector<double> partial (subseqs * ctmc_states);
+	// set the sequences for each tip using the partial likelihood arrays with context
 	for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
-	  {
-	    const Vector_weight_profile& vwp = with_context[*n];
-	    int pos = 0;
-	    for_const_contents (Vector_weight_profile, vwp, vw)
-	      for_const_contents (vector<Prob>, *vw, w)
-	      partial[pos++] = *w;
-	    beagleSetTipPartials(instance, tree2beagle[*n], &partial[0]);
-	  }
+	  beagleSetTipPartials(instance, tree2beagle[*n], &with_context[*n][0]);
 
 	// create a list of partial likelihood update operations
 	// the order is [dest, destScaling, source1, matrix1, source2, matrix2]
@@ -819,17 +826,9 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	// repeat for with_wildcards; subtract
 	if (with_wildcards.size())
 	  {
-	    // set the sequences for each tip using partial likelihood arrays
-	    vector<double> partial (subseqs * ctmc_states);
+	    // set the sequences for each tip using the partial likelihood arrays with wildcards
 	    for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
-	      {
-		const Vector_weight_profile& vwp = with_wildcards[*n];
-		int pos = 0;
-		for_const_contents (Vector_weight_profile, vwp, vw)
-		  for_const_contents (vector<Prob>, *vw, w)
-		  partial[pos++] = *w;
-		beagleSetTipPartials(instance, tree2beagle[*n], &partial[0]);
-	      }
+	      beagleSetTipPartials(instance, tree2beagle[*n], &with_wildcards[*n][0]);
 
 	    // update the partials
 	    beagleUpdatePartials(instance,          // instance
