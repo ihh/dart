@@ -45,11 +45,6 @@
 #define EG_TRANSFORM_NO_GAPS     "no-gaps"
 #define EG_TRANSFORM_STRICT_GAPS "strict-gaps"
 #define EG_TRANSFORM_IGNORE_GAPS "gaps-ok"
-#define EG_TRANSFORM_GAP_MODEL   "gap-model"
-#define EG_TRANSFORM_EXTEND_PROB "extend-prob"
-#define EG_TRANSFORM_END_PROB    "end-prob"
-#define EG_TRANSFORM_INS_RATE    "insert-rate"
-#define EG_TRANSFORM_DEL_RATE    "delete-rate"
 
 #define EG_GFF         "gff"
 #define EG_GFF_NONTERM EG_NONTERMINAL

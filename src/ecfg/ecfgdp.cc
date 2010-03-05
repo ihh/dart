@@ -233,15 +233,7 @@ ECFG_EM_matrix::ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock,
 
     use_fast_prune (use_fast_prune),
     fast_prune (ecfg.states()),
-    fill_up_flag (true),
-
-    src_gap_profile (tree.nodes()),
-    dest_gap_profile (tree.nodes()),
-    link_extend_sc (ecfg.states()),
-    link_end_sc (ecfg.states()),
-    ins_event_sc (ecfg.states(), tree.nodes()),
-    del_event_sc (ecfg.states(), tree.nodes()),
-    match_event_sc (ecfg.states(), tree.nodes())
+    fill_up_flag (true)
 
 {
   // debug: switch off fast_prune via logging
@@ -304,36 +296,6 @@ ECFG_EM_matrix::ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock,
 	  CL << "Alignment annotation:\n" << align_annot[n_feature] << '\n';
 	}
       ++n_feature;
-    }
-
-  // initialise precomputed scores for indel events
-  total_branch_len = 0.;
-  for_rooted_branches_pre (tree, b)
-    total_branch_len += (*b).length;
-  for (int state = 0; state < ecfg.states(); ++state)
-    {
-      const ECFG_state_info& info = ecfg.state_info[state];
-
-      link_extend_sc[state] = Prob2Score (info.link_extend);
-      link_end_sc[state] = Prob2Score (info.link_end);
-
-      const Loge no_ins_ll = -total_branch_len * info.ins_rate;
-      const Score ins_sc = Prob2Score (1. - Nats2Prob (no_ins_ll));
-
-      ins_event_sc (state, tree.root) = Nats2Score (no_ins_ll);
-
-      for_rooted_branches_pre (tree, b)
-	{
-	  const int node = (*b).second;
-	  const double length = (*b).length;
-
-	  const Score node_sc = Prob2Score (length / total_branch_len);
-	  const Loge no_del_ll = -length * info.del_rate;
-
-	  ins_event_sc (state, node) = ScorePMul (ins_sc, node_sc);
-	  del_event_sc (state, node) = Prob2Score (1. - Nats2Prob (no_del_ll));
-	  match_event_sc (state, node) = Nats2Score (no_del_ll);
-	}
     }
 }
 
@@ -631,16 +593,14 @@ void ECFG_EM_matrix::use_precomputed_phyloemit (Emit_loglike_matrix& phyloemit)
   use_precomputed (phyloemit);
   Loge annot_emit_ll;
   for (int subseq_idx = 0; subseq_idx < env.subseqs(); ++subseq_idx)
-    {
-      for_const_contents (vector<int>, inside_fill_states, s)
-	{
-	  Loge& ell = emit_loglike (subseq_idx, *s);
-	  if (calc_annot_emit_ll (subseq_idx, *s, annot_emit_ll))
-	    NatsPMulAcc (ell, annot_emit_ll);
-	  else
-	    ell = -InfinityLoge;
-	}
-    }
+    for_const_contents (vector<int>, inside_fill_states, s)
+      {
+	Loge& ell = emit_loglike (subseq_idx, *s);
+	if (calc_annot_emit_ll (subseq_idx, *s, annot_emit_ll))
+	  NatsPMulAcc (ell, annot_emit_ll);
+	else
+	  ell = -InfinityLoge;
+      }
 }
 
 void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
@@ -1799,15 +1759,14 @@ void ECFG_trainer::iterate_quick_EM (int forgive)
   best_loglike = 0;
   int dec = 0;
 
-  // the parameters for an ECFG_scores are currently split between four places...
+  // the parameters for an ECFG_scores are currently split between several places...
   // ...this is clearly terrible design, and should be intelligently updated
   // (probably in a generic EM algorithm)
   Concrete_sparse_transition_scores
     best_transmat (ecfg.states(), -InfinityScore),
     old_transmat (ecfg.states(), -InfinityScore);  // the ECFG's transition matrix (null rule probabilities)
   vector <EM_matrix_params> best_params, old_params;  // the initial distributions & rate matrices for the Markov chains
-  vector <ECFG_state_info> best_info, old_info;  // the gap models of the ECFG's emit states
-  PScores best_pscores, old_pscores;  // the parameter values, for ECFGs in which the transitions/chains/indel models are parametric
+  PScores best_pscores, old_pscores;  // the parameter values, for ECFGs in which the transitions/chains are parametric
 
   bool reached_max_iter = false;
   for (int iter = 0; ; ++iter)
@@ -1826,7 +1785,6 @@ void ECFG_trainer::iterate_quick_EM (int forgive)
     for_contents (vector<ECFG_chain>, ecfg.matrix_set.chain, em_mat)
       if (em_mat->matrix)
 	old_params.push_back ((EM_matrix_params&) *em_mat->matrix);
-    old_info = ecfg.state_info;
     old_pscores = ecfg.pscores;
 
     // get new counts
@@ -1866,7 +1824,6 @@ void ECFG_trainer::iterate_quick_EM (int forgive)
       best_loglike = loglike;
       best_transmat = old_transmat;
       best_params = old_params;
-      best_info = old_info;
       best_pscores = old_pscores;
 
       save_grammar();
@@ -1917,7 +1874,6 @@ void ECFG_trainer::iterate_quick_EM (int forgive)
 		ecfg.matrix_set.chain[i].matrix->assign_matrix_params (best_params[j++]);
 		ecfg.matrix_set.chain[i].matrix->update();
 	      }
-	  ecfg.state_info = best_info;
 	  ecfg.pscores = best_pscores;
 
 	  save_grammar();  // hook to save intermediate grammar to file

@@ -117,20 +117,8 @@ const char* PFOLD_state_enum::PFOLD_state_string (PFOLD_state state)
 
 IFOLD_ECFG::IFOLD_ECFG() : PFOLD_ECFG ("IFOLD")
 {
-  // made-up numbers...
   state_info[pfoldU].wild_gaps = false;
-  state_info[pfoldU].indels = true;
-  state_info[pfoldU].link_extend = .5;
-  state_info[pfoldU].link_end = .5;
-  state_info[pfoldU].ins_rate = .01;
-  state_info[pfoldU].del_rate = .01;
-
   state_info[pfoldF].wild_gaps = false;
-  state_info[pfoldF].indels = true;
-  state_info[pfoldF].link_extend = .5;
-  state_info[pfoldF].link_end = .5;
-  state_info[pfoldF].ins_rate = .001;
-  state_info[pfoldF].del_rate = .001;
 }
 
 
@@ -159,13 +147,7 @@ Null_RNA_ECFG::Null_RNA_ECFG (bool rev)
 
 Null_indel_RNA_ECFG::Null_indel_RNA_ECFG() : Null_RNA_ECFG()
 {
-  // made-up numbers...
   state_info[0].wild_gaps = false;
-  state_info[0].indels = true;
-  state_info[0].link_extend = .5;
-  state_info[0].link_end = .5;
-  state_info[0].ins_rate = .01;
-  state_info[0].del_rate = .01;
 }
 
 Nearest_neighbor_ECFG::Nearest_neighbor_ECFG()

@@ -95,13 +95,6 @@ struct ECFG_state_info : ECFG_enum
   // gap parameters
   bool gaps_ok;  // if true, then gaps are allowed (contingent on wild_gaps); if false, no gaps are allowed at all
   bool wild_gaps;  // if true, then partial gaps are treated as wildcards; if false, then partial gaps aren't allowed
-  bool indels;  // if true, then state emits a link whose gap profile is determined by indel pseudo-events
-  Prob link_extend, link_end;  // probability of extending/ending an existing link
-  double ins_rate, del_rate;  // link insertion/deletion rate (NB not a "true" indel model like e.g. TKF91)
-
-  // PFunc's
-  bool has_parametric_indels;
-  PFunc link_extend_func, link_end_func, ins_rate_func, del_rate_func;
 
   // By-column annotation; e.g. "<>" for an emitlr state, "012" for a codon state
   typedef map<sstring,PFunc> String_prob_dist;

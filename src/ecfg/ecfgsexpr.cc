@@ -719,42 +719,17 @@ void ECFG_builder::ECFG_rule_block::parse (ECFG_scores& ecfg)
 
 void ECFG_builder::init_gaps (ECFG_state_info& info, const SymPVar& sym2pvar, SExpr* sexpr)
 {
-  SExpr* gap_sexpr;
   if (sexpr->find (EG_TRANSFORM_NO_GAPS, 1))
-    info.gaps_ok = info.wild_gaps = info.indels = false;
+    info.gaps_ok = info.wild_gaps = false;
   else if (sexpr->find (EG_TRANSFORM_STRICT_GAPS, 1))
     {
       info.gaps_ok = true;
       info.wild_gaps = false;
-      info.indels = false;
-    }
-  else if ((gap_sexpr = sexpr->find (EG_TRANSFORM_GAP_MODEL, 1)))
-    {
-      info.gaps_ok = true;
-      info.wild_gaps = sexpr->find (EG_TRANSFORM_STRICT_GAPS, 1) ? false : true;
-      info.indels = true;
-      info.has_parametric_indels = gap_sexpr->find (EG_PARAMETRIC) != 0;
-
-      if (info.has_parametric_indels)
-	{
-	  info.link_extend_func = init_pfunc (sym2pvar, gap_sexpr->find_or_die (EG_TRANSFORM_EXTEND_PROB), 1);
-	  info.link_end_func = init_pfunc (sym2pvar, gap_sexpr->find_or_die (EG_TRANSFORM_END_PROB), 1);
-	  info.ins_rate_func = init_pfunc (sym2pvar, gap_sexpr->find_or_die (EG_TRANSFORM_INS_RATE), 1);
-	  info.del_rate_func = init_pfunc (sym2pvar, gap_sexpr->find_or_die (EG_TRANSFORM_DEL_RATE), 1);
-	}
-      else
-	{
-	  info.link_extend = (*gap_sexpr) (EG_TRANSFORM_EXTEND_PROB).get_atom().to_nonneg_double_strict();
-	  info.link_end = 1. - info.link_extend;
-	  info.ins_rate = (*gap_sexpr) (EG_TRANSFORM_INS_RATE).get_atom().to_nonneg_double_strict();
-	  info.del_rate = (*gap_sexpr) (EG_TRANSFORM_DEL_RATE).get_atom().to_nonneg_double_strict();
-	}
     }
   else if (sexpr->find (EG_TRANSFORM_IGNORE_GAPS, 1))
     {
       info.gaps_ok = true;
       info.wild_gaps = true;
-      info.indels = false;
     }
 }
 
@@ -783,7 +758,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "ParameterGroup->(ParameterValue*);"
      "Count->ParameterValue|ParameterValuePair;"
      "NontermProperty->Name|MinimumLength|MaximumLength|SummationDirective|PrefixConstraint|SuffixConstraint|InfixConstraint;"
-     "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End)|('"EG_TRANSFORM_GAP_MODEL" GapModelProperty*);"
+     "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End);"
      "AnnotationProperty->AnnotationRow|AnnotationColumn|AnnotationLabel|ProbabilisticAnnotation;"
      "AnnotationRow->('"EG_TRANSFORM_ROW" Atom);"
      "AnnotationColumn->('"EG_TRANSFORM_COLUMN" Atom);"
@@ -791,7 +766,6 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "AnnotationLabelList->('"EG_TRANSFORM_LABEL" (Atom*));"
      "ProbabilisticAnnotation->('"EG_ANNOTATE_EMIT" ProbabilisticAnnotationProperty*);"
      "ProbabilisticAnnotationProperty->AnnotationLabelList|ProbabilityExpression;"
-     "GapModelProperty->ParametricFlag|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_EXTEND_PROB" Function)|('"EG_TRANSFORM_END_PROB" Function)|('"EG_TRANSFORM_INS_RATE" Function)|('"EG_TRANSFORM_DEL_RATE" Function);"
      "HybridChainProperty->TerminalList|AnnotationRow|('"EG_HYBRID_COMPONENTS" HybridChainComponent*);"
      "TerminalList->('"EG_TERMINAL" (Atom*));"
      "HybridChainComponent->(HybridChainComponentProperty HybridChainComponentProperty);"
@@ -1319,72 +1293,9 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	      // gap model
 	      if (!info.gaps_ok)
 		trans_block << " (" << EG_TRANSFORM_NO_GAPS << ")";
-	      else if (info.indels)
-		{
-		  if (!info.wild_gaps)
-		    trans_block << " (" << EG_TRANSFORM_STRICT_GAPS << ")";
-		  trans_block << "\n  ("
-		      << EG_TRANSFORM_GAP_MODEL << " (";
-		  if (info.has_parametric_indels)
-		    {
-		      trans_block << EG_PARAMETRIC << ") (" << EG_TRANSFORM_EXTEND_PROB << ' ';
-		      pfunc2stream (trans_block, ecfg.pscores, info.link_extend_func);
-		      if (counts)
-			print_count (trans_block, counts->link_extend_count[s]);
-
-		      trans_block << ") (" << EG_TRANSFORM_END_PROB << ' ';
-		      pfunc2stream (trans_block, ecfg.pscores, info.link_end_func);
-		      if (counts)
-			print_count (trans_block, counts->link_end_count[s]);
-
-		      trans_block << ") (" << EG_TRANSFORM_INS_RATE << ' ';
-		      pfunc2stream (trans_block, ecfg.pscores, info.ins_rate_func);
-		      if (counts)
-			{
-			  print_count (trans_block, counts->ins_count[s]);
-			  print_time (trans_block, counts->ins_wait[s]);
-			}
-
-		      trans_block << ") (" << EG_TRANSFORM_DEL_RATE << ' ';
-		      pfunc2stream (trans_block, ecfg.pscores, info.del_rate_func);
-		      if (counts)
-			{
-			  print_count (trans_block, counts->del_count[s]);
-			  print_time (trans_block, counts->del_wait[s]);
-			}
-
-		      trans_block << "))";
-		    }
-		  else
-		    {
-		      trans_block << EG_TRANSFORM_EXTEND_PROB << ' ' << info.link_extend;
-		      if (counts)
-			print_count (trans_block, counts->link_extend_count[s]);
-
-		      trans_block << ") (" << EG_TRANSFORM_END_PROB << ' ' << info.link_end;
-		      if (counts)
-			print_count (trans_block, counts->link_end_count[s]);
-
-		      trans_block << ") (" << EG_TRANSFORM_INS_RATE << ' ' << info.ins_rate;
-		      if (counts)
-			{
-			  print_count (trans_block, counts->ins_count[s]);
-			  print_time (trans_block, counts->ins_wait[s]);
-			}
-
-		      trans_block << ") (" << EG_TRANSFORM_DEL_RATE << ' ' << info.del_rate;
-		      if (counts)
-			{
-			  print_count (trans_block, counts->del_count[s]);
-			  print_time (trans_block, counts->del_wait[s]);
-			}
-
-		      trans_block << "))";
-		    }
-		}
 	      else if (info.wild_gaps)
 		trans_block << " (" << EG_TRANSFORM_IGNORE_GAPS << ")";
-	      else   // !info.wild_gaps && !info.indels
+	      else
 		trans_block << " (" << EG_TRANSFORM_STRICT_GAPS << ")";
 
 	      // annotation

@@ -70,12 +70,6 @@ struct ECFG_EM_matrix : ECFG_matrix
   bool fill_up_flag;  // clear this flag if emit_loglike() is precomputed
   vector<Subseq::Bifurc_in> bif_in;
 
-  // indel pseudo-events: precomputed scores & workspace variables
-  vector<int> src_gap_profile, dest_gap_profile;  // workspace for storing gap profiles while calculating effective transition scores
-  double total_branch_len;  // total branch length of tree
-  vector<Score> link_extend_sc, link_end_sc;  // indexed by [state]
-  array2d<Score> ins_event_sc, del_event_sc, match_event_sc;  // indexed by (state, node)
-
   // constructor
   ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock, const Aligned_score_profile& asp, const ECFG_envelope& env, bool use_fast_prune = false);
 
@@ -99,23 +93,12 @@ struct ECFG_EM_matrix : ECFG_matrix
   void fill_sum_state (int subseq_idx, int state_idx);
   void fill_max_state (int subseq_idx, int state_idx);
 
-  // methods for calculating rate-gap transitions
-  // method for testing if a gap profile is illegal (i.e. doesn't contain exactly one clique)
-  inline bool gap_profile_illegal (const vector<int>& gapped, int root) const;
-
   // effective transition log-likelihood
   inline Loge effective_trans (int src_state, int dest_state,
 			       const Subseq_coords& src_subseq, const Subseq_coords& dest_subseq) const;
 
-  // dest_gap_state event score
-  inline Score dest_event_sc (int dest_state, const vector<int>& dest_gap_profile, int dest_root) const;
-
   // method for accumulating transition counts
   inline void add_trans_counts (int src_state, int dest_state, const Subseq_coords& src_subseq, const Subseq_coords& dest_subseq,
-				double weight, ECFG_counts& counts) const;
-
-  // method for accumulating indel counts
-  inline void add_event_counts (int dest_state, const vector<int>& dest_gap_profile, int dest_root,
 				double weight, ECFG_counts& counts) const;
 
   // ancestral state reconstruction
@@ -250,202 +233,15 @@ struct ECFG_CYK_matrix : ECFG_EM_matrix
 Loge ECFG_EM_matrix::effective_trans (int src_state, int dest_state,
 				      const Subseq_coords& src_subseq, const Subseq_coords& dest_subseq) const
 {
-  // get state info
-  const ECFG_state_info* src_info = src_state >= 0 ? &ecfg.state_info[src_state] : (ECFG_state_info*) 0;
-  const ECFG_state_info* dest_info = dest_state >= 0 ? &ecfg.state_info[dest_state] : (ECFG_state_info*) 0;
-
-  // figure out if src & dest states use pseudo-indel modeling
-  const bool src_indels = src_info ? src_info->indels : false;
-  const bool dest_indels = dest_info ? dest_info->indels : false;
-
-  // get base transition score
-  const Score base_trans_sc = ecfg.transition (src_state, dest_state);
-
-  // dispose of quick & easy case: transitions between non-indel states
-  if (!src_indels && !dest_indels)  // src_indels == dest_indels == false
-    return Score2Nats (base_trans_sc);
-
-  // get src & dest gap profiles
-  int src_root, dest_root;
-  vector<int>& src_gap = ((ECFG_EM_matrix*)this)->src_gap_profile;  // cast away const
-  vector<int>& dest_gap = ((ECFG_EM_matrix*)this)->dest_gap_profile;  // cast away const
-
-  if (src_indels)
-    {
-      src_info->get_gap_profile (stock, tree, src_subseq, src_gap, src_root);
-      if (gap_profile_illegal (src_gap, src_root))
-	return -InfinityLoge;
-    }
-
-  if (dest_indels)
-    {
-      dest_info->get_gap_profile (stock, tree, dest_subseq, dest_gap, dest_root);
-      if (gap_profile_illegal (dest_gap, dest_root))
-	return -InfinityLoge;
-    }
-
-  // handle transitions involving pseudo-indel states
-  Score trans_sc = -InfinityScore;
-  if (src_indels)
-    {
-      if (dest_indels)  // src_indels == true, dest_indels == true
-	{
-	  const Score new_link_sc = ScorePMul (link_end_sc[src_state], base_trans_sc);
-	  const Score event_sc = dest_event_sc (dest_state, dest_gap_profile, dest_root);
-	  trans_sc = ScorePMul (new_link_sc, event_sc);
-	  if (src_state == dest_state && src_gap == dest_gap)
-	    {
-	      const Score same_link_sc = link_extend_sc[src_state];
-	      ScorePSumAcc (trans_sc, same_link_sc);
-	    }
-	}
-
-      else  // src_indels == true, dest_indels == false
-	trans_sc = ScorePMul (link_end_sc[src_state], base_trans_sc);
-    }
-
-  else  // src_indels == false, dest_indels == true
-    trans_sc = ScorePMul (base_trans_sc, dest_event_sc (dest_state, dest_gap, dest_root));
-
-  // return
-  return Score2Nats (trans_sc);
+  return Score2Nats (ecfg.transition (src_state, dest_state));
 }
 
 void ECFG_EM_matrix::add_trans_counts (int src_state, int dest_state,
 				       const Subseq_coords& src_subseq, const Subseq_coords& dest_subseq,
 				       double weight, ECFG_counts& counts) const
 {
-  // get state info
-  const ECFG_state_info* src_info = src_state >= 0 ? &ecfg.state_info[src_state] : (ECFG_state_info*) 0;
-  const ECFG_state_info* dest_info = dest_state >= 0 ? &ecfg.state_info[dest_state] : (ECFG_state_info*) 0;
-
-  // figure out if src & dest states use pseudo-indel modeling
-  const bool src_indels = src_info ? src_info->indels : false;
-  const bool dest_indels = dest_info ? dest_info->indels : false;
-
-  // get base transition score
-  const Score base_trans_sc = ecfg.transition (src_state, dest_state);
-
-  // dispose of quick & easy case: transitions between non-indel states
-  if (!src_indels && !dest_indels)  // src_indels == dest_indels == false
-    {
-      counts.transition (src_state, dest_state) += weight;
-      return;
-    }
-
-  // get src & dest gap profiles
-  int src_root, dest_root;
-  vector<int>& src_gap = ((ECFG_EM_matrix*)this)->src_gap_profile;  // cast away const
-  vector<int>& dest_gap = ((ECFG_EM_matrix*)this)->dest_gap_profile;  // cast away const
-
-  if (src_indels)
-    {
-      src_info->get_gap_profile (stock, tree, src_subseq, src_gap, src_root);
-      if (gap_profile_illegal (src_gap, src_root))
-	return;
-    }
-
-  if (dest_indels)
-    {
-      dest_info->get_gap_profile (stock, tree, dest_subseq, dest_gap, dest_root);
-      if (gap_profile_illegal (dest_gap, dest_root))
-	return;
-    }
-
-  // print log message showing gap profiles
-  if (CTAGGING(2,ECFG_TRANS_COUNTS))
-    {
-      CL << "Counting transitions from state " << src_state << ", subseq " << src_subseq.start << "+" << src_subseq.len;
-      if (src_indels)
-	{
-	  CL << " (";
-	  for (int n = 0; n < tree.nodes(); ++n)
-	    CL << (src_gap[n] ? '-' : '*');
-	  CL << ")";
-	}
-
-      CL << " to state " << dest_state << ", subseq " << dest_subseq.start << "+" << dest_subseq.len;
-      if (dest_indels)
-	{
-	  CL << " (";
-	  for (int n = 0; n < tree.nodes(); ++n)
-	    CL << (dest_gap[n] ? '-' : '*');
-	  CL << ")";
-	}
-      CL << ", weight " << weight << "\n";
-    }
-
-  // handle transitions involving pseudo-indel states
-  if (src_indels)
-    {
-      if (dest_indels)  // src_indels == true, dest_indels == true
-	{
-	  const Score trans_sc = Nats2Score (effective_trans (src_state, dest_state, src_subseq, dest_subseq));
-	  const Score new_link_sc = ScorePMul (link_end_sc[src_state], base_trans_sc);
-	  const Score event_sc = dest_event_sc (dest_state, dest_gap, dest_root);
-
-	  const double new_link_weight = weight * Score2Prob (ScorePMul3 (new_link_sc, event_sc, -trans_sc));
-	  counts.link_end_count[src_state] += new_link_weight;
-	  counts.transition (src_state, dest_state) += new_link_weight;
-	  add_event_counts (dest_state, dest_gap, dest_root, new_link_weight, counts);
-
-	  if (src_state == dest_state && src_gap == dest_gap)
-	    {
-	      const Score same_link_sc = link_extend_sc[src_state];
-	      const double same_link_weight = weight * Score2Prob (ScorePMul (same_link_sc, -trans_sc));
-	      counts.link_extend_count[src_state] += same_link_weight;
-	    }
-	}
-
-      else  // src_indels == true, dest_indels == false
-	{
-	  counts.link_end_count[src_state] += weight;
-	  counts.transition (src_state, dest_state) += weight;
-	}
-    }
-
-  else  // src_indels == false, dest_indels == true
-    {
-      counts.transition (src_state, dest_state) += weight;
-      add_event_counts (dest_state, dest_gap, dest_root, weight, counts);
-    }
-}
-
-Score ECFG_EM_matrix::dest_event_sc (int dest_state, const vector<int>& dest_gap, int dest_root) const
-{
-  Score sc = ins_event_sc (dest_state, dest_root);
-  for_branches_post (tree, dest_root, tree.parent[dest_root], b)
-    if (!dest_gap[(*b).first])
-      ScorePMulAcc (sc, (dest_gap[(*b).second] ? del_event_sc : match_event_sc) (dest_state, (*b).second));
-  return sc;
-}
-
-void ECFG_EM_matrix::add_event_counts (int dest_state, const vector<int>& dest_gap, int dest_root,
-				       double weight, ECFG_counts& counts) const
-{
-  counts.ins_wait[dest_state] += weight * total_branch_len;
-  if (dest_root != tree.root)
-    counts.ins_count[dest_state] += weight;
-
-  for_branches_post (tree, dest_root, tree.parent[dest_root], b)
-    if (!dest_gap[(*b).first])
-      {
-	counts.del_wait[dest_state] += weight * (*b).length;
-	if (dest_gap[(*b).second])
-	  counts.del_count[dest_state] += weight;
-      }
-}
-
-bool ECFG_EM_matrix::gap_profile_illegal (const vector<int>& gapped, int root) const
-{
-  if (root < 0)
-    return true;
-
-  for_branches_post (tree, root, tree.parent[root], b)
-    if (gapped[(*b).first] && !gapped[(*b).second])
-      return true;
-
-  return false;
+  counts.transition (src_state, dest_state) += weight;
+  return;
 }
 
 #endif /* ECFGDP_INCLUDED */

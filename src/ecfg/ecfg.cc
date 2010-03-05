@@ -136,12 +136,6 @@ ECFG_state_info::ECFG_state_info()
     suffix (false),
     gaps_ok (true),
     wild_gaps (true),
-    indels (false),
-    link_extend (0.),
-    link_end (1.),
-    ins_rate (0.),
-    del_rate (0.),
-    has_parametric_indels (false),
     sum_state (false)
 { }
 
@@ -163,12 +157,6 @@ ECFG_state_info::ECFG_state_info (int lsize, int rsize)
     suffix (false),
     gaps_ok (true),
     wild_gaps (true),
-    indels (false),
-    link_extend (0.),
-    link_end (1.),
-    ins_rate (0.),
-    del_rate (0.),
-    has_parametric_indels (false),
     sum_state (false)
 { }
 
@@ -190,12 +178,6 @@ ECFG_state_info::ECFG_state_info (int l_context, int l_emit, int r_emit, int r_c
     suffix (false),
     gaps_ok (true),
     wild_gaps (true),
-    indels (false),
-    link_extend (0.),
-    link_end (1.),
-    ins_rate (0.),
-    del_rate (0.),
-    has_parametric_indels (false),
     sum_state (false)
 { }
 
@@ -408,12 +390,6 @@ void ECFG_scores::write (ostream& out) const
 	out << transition (src, dest) << ' ';
       out << transition (src, End) << '\n';
     }
-  for (int s = 0; s < states(); ++s)
-    {
-      const ECFG_state_info& info = state_info[s];
-      if (info.indels)
-	out << info.link_extend << " " << info.ins_rate << " " << info.del_rate << "\n";
-    }
 }
 
 void ECFG_scores::read (istream& in)
@@ -425,15 +401,6 @@ void ECFG_scores::read (istream& in)
       for (int dest = 0; dest < states(); ++dest)
 	in >> transition (src, dest);
       in >> transition (src, End);
-    }
-  for (int s = 0; s < states(); ++s)
-    {
-      ECFG_state_info& info = state_info[s];
-      if (info.indels)
-	{
-	  in >> info.link_extend >> info.ins_rate >> info.del_rate;
-	  info.link_end = 1. - info.link_extend;
-	}
     }
 }
 
@@ -560,10 +527,6 @@ bool ECFG_scores::has_parametric_functions() const
     if (chain->is_parametric)
       return true;
 
-  for_const_contents (vector<ECFG_state_info>, state_info, info)
-    if (info->has_parametric_indels)
-      return true;
-
   return false;
 }
 
@@ -642,16 +605,6 @@ void ECFG_scores::eval_funcs()
 	chain->matrix->update();
       }
 
-  for_contents (vector<ECFG_state_info>, state_info, info)
-    if (info->has_parametric_indels)
-      {
-	info->link_extend = Score2Prob (info->link_extend_func.eval_sc (pscores));
-	info->link_end = Score2Prob (info->link_end_func.eval_sc (pscores));
-	info->ins_rate = Score2Prob (info->ins_rate_func.eval_sc (pscores));
-	info->del_rate = Score2Prob (info->del_rate_func.eval_sc (pscores));
-	// too lazy to add log messages for these PFunc's; see above examples for (mutate...) and (initial...) -- IH 6/2/2006
-      }
-
   if (CTAGGING(-3,ECFG_TRANS_SCORES))
     {
       CL << "ECFG_scores transition matrix:\n";
@@ -669,16 +622,6 @@ void ECFG_scores::eval_funcs()
 	  {
 	    CL << "Chain (terminal " << chain->state << "):\n";
 	    chain->matrix->write (CL);
-	  }
-      for_const_contents (vector<ECFG_state_info>, state_info, info)
-	if (info->has_parametric_indels)
-	  {
-	    CL << "Gap model for state " << info->name << ":\n";
-	    CL << '(' << EG_TRANSFORM_EXTEND_PROB << ' ' << info->link_extend
-	       << ") (" << EG_TRANSFORM_END_PROB << ' ' << info->link_end
-	       << ") (" << EG_TRANSFORM_INS_RATE << ' ' << info->ins_rate
-	       << ") (" << EG_TRANSFORM_DEL_RATE << ' ' << info->del_rate
-	       << ")\n";
 	  }
     }
 }
@@ -846,8 +789,6 @@ ECFG_simulation::ECFG_simulation (const ECFG_scores& ecfg, const PHYLIP_tree& tr
 	  const ECFG_state_info& info = ecfg.state_info[state];
 	  if (info.l_context || info.r_context)
 	    THROWEXPR ("Sorry, something you need is unimplemented: you can't sample from emit states with context");
-	  if (info.indels)
-	    THROWEXPR ("Sorry, something you need is unimplemented: you can't sample from states with indel models");
 
 	  // now we have to figure out positions from mul vector. ugh
 	  vector<int> sym_pos;
@@ -1238,27 +1179,6 @@ void ECFG_counts::update_ecfg_rates (ECFG_scores& ecfg)
       em_matrix.quick_M (stats[i], true, true);
     }
 
-  // update pseudo-indel rates
-  for (int src = Start; src < ecfg.states(); ++src)
-    {
-      ECFG_state_info* info = src >= 0 ? &ecfg.state_info[src] : 0;
-      if (info)
-	if (info->indels)
-	  {
-	    if (ins_wait[src] > 0.)
-	      info->ins_rate = ins_count[src] / ins_wait[src];
-
-	    if (del_wait[src] > 0.)
-	      info->del_rate = del_count[src] / del_wait[src];
-
-	    const double link_norm = link_extend_count[src] + link_end_count[src];
-	    if (link_norm)
-	      {
-		info->link_extend = link_extend_count[src] / link_norm;
-		info->link_end = link_end_count[src] / link_norm;
-	      }
-	  }
-    }
 }
 
 void ECFG_counts::update_ecfg_rules (ECFG_scores& ecfg)
@@ -1268,12 +1188,6 @@ void ECFG_counts::update_ecfg_rules (ECFG_scores& ecfg)
     {
       CL << "ECFG transition counts:\n";
       show_transitions (CL);
-      for (int s = 0; s < ecfg.states(); ++s)
-	if (ecfg.state_info[s].indels)
-	  CL << "State #" << s << " indel counts: #extend=" << link_extend_count[s] << ", #end=" << link_end_count[s]
-	     << ", #ins=" << ins_count[s] << ", inswait=" << ins_wait[s]
-	     << ", #del=" << del_count[s] << ", delwait=" << del_wait[s]
-	     << "\n";
     }
 
   // update rule probs
@@ -1324,17 +1238,6 @@ void ECFG_counts::show (const ECFG_scores& ecfg, ostream& out) const
       out << "Chain " << c << "\n";
       out << stats[c];
     }
-  for (int s = 0; s < ecfg.states(); ++s)
-    if (ecfg.state_info[s].has_parametric_indels)
-      {
-	out << "Gap model for state " << s << ":\n";
-	out << "ins_count = " << ins_count[s] << "\n";
-	out << "ins_wait = " << ins_wait[s] << "\n";
-	out << "del_count = " << del_count[s] << "\n";
-	out << "del_wait = " << del_wait[s] << "\n";
-	out << "link_extend_count = " << link_extend_count[s] << "\n";
-	out << "link_end_count = " << link_end_count[s] << "\n";
-      }
   if (ecfg.has_parametric_functions())
     {
       out << "Parameter counts:\n";
@@ -1392,14 +1295,6 @@ void ECFG_counts::inc_var_counts (PCounts&           var_counts,
   for (int s = 0; s < states(); ++s)
     {
       const ECFG_state_info& info = ecfg.state_info[s];
-      if (info.has_parametric_indels)
-	{
-	  info.link_extend_func.inc_var_counts (var_counts, ecfg.pscores, weight * link_extend_count[s]);
-	  info.link_end_func.inc_var_counts (var_counts, ecfg.pscores, weight * link_end_count[s]);
-	  info.ins_rate_func.inc_var_counts (var_counts, ecfg.pscores, weight * ins_count[s], weight * ins_wait[s]);
-	  info.del_rate_func.inc_var_counts (var_counts, ecfg.pscores, weight * del_count[s], weight * del_wait[s]);
-	}
-
       const set<sstring> gc_feat_set = ecfg.gc_feature_set();
       int n_feat = 0;
       for_const_contents (set<sstring>, gc_feat_set, f)
