@@ -686,7 +686,10 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
     if (ecfg.state_info[state].total_size() > 0)
       {
 	// get partials (i.e. sequences), transition matrices & prior
+	CTAG(5,BEAGLE) << "Preparing partials for Beagle\n";
 	get_partials (state, with_context, with_wildcards);
+
+	CTAG(5,BEAGLE) << "Preparing transition matrices for Beagle\n";
 	get_branch_transition_matrices_and_root_prior (state, branch_transmat, root_prior);
 
 	const int ctmc_states = (int) root_prior.size();
