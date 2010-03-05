@@ -49,7 +49,9 @@ struct ECFG_envelope
     bif_in.clear();
     const int start = out.start;
     const int end = out.end();
-    for (int mid = end; mid >= start; --mid)
+    const int min_r_start = end == seqlen ? start : (end - max_subseq_len);
+    const int max_l_end = start == 0 ? end : (start + max_subseq_len);
+    for (int mid = max_l_end; mid >= min_r_start; --mid)
       {
 	const int l = find_subseq_idx (start, mid - start);
 	if (l >= 0)
@@ -66,6 +68,7 @@ struct ECFG_envelope
     bif_outl.clear();
     const int mid = r.start;
     const int end = r.end();
+    // TODO: calculate min_out_start and min_l_start here
     for (int start = 0; start <= mid; ++start)
       {
 	const int out = find_subseq_idx (start, end - start);
@@ -83,6 +86,7 @@ struct ECFG_envelope
     bif_outr.clear();
     const int start = l.start;
     const int mid = l.end();
+    // TODO: calculate max_out_end and max_r_end here
     for (int end = seqlen; end >= mid; --end)
       {
 	const int out = find_subseq_idx (start, end - start);
