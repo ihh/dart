@@ -68,6 +68,20 @@ ECFG_matrix::ECFG_matrix (const ECFG_scores& ecfg, Stockholm& stock, const ECFG_
   // incoming & outgoing states
   incoming = Transition_methods::selected_incoming_states (ecfg, outside_fill_states);
   outgoing = Transition_methods::selected_outgoing_states (ecfg, inside_fill_states);
+  // incoming & outgoing transition log-likelihoods
+  incoming_ll = vector<vector<Loge> > (ecfg.states(), vector<Loge>());
+  outgoing_ll = vector<vector<Loge> > (ecfg.states(), vector<Loge>());
+  start_ll = vector<Loge> (ecfg.states());
+  end_ll = vector<Loge> (ecfg.states());
+  for (int s = 0; s < ecfg.states(); ++s)
+    {
+      for (int i = 0; i < (int) incoming[s].size(); ++i)
+	incoming_ll[s].push_back (trans_ll (incoming[s][i], s));
+      for (int i = 0; i < (int) outgoing[s].size(); ++i)
+	outgoing_ll[s].push_back (trans_ll (s, outgoing[s][i]));
+      start_ll[s] = trans_ll (Start, s);
+      end_ll[s] = trans_ll (s, End);
+    }
   // bifurcations
   left_bifurc = ecfg.left_bifurc();
   right_bifurc = ecfg.right_bifurc();
@@ -306,191 +320,6 @@ void ECFG_EM_matrix::show_coords (ostream& out, int subseq_idx, int state_idx) c
       << " (coords " << subseq.start << "+" << subseq.len
       << "), state #" << state_idx << " (" << ecfg.desc(state_idx) << ")\n";
   ecfg.state_info[state_idx].show (out);
-}
-
-// helpers for fill_up
-// tests if a==b, allowing both a & b to contain wildcards
-bool wildcard_match (const sstring& a, const sstring& b) {
-  for (int pos = 0; pos < (int) a.size(); ++pos)
-    if (a[pos] != b[pos] && a[pos] != ECFG_annotation_wildcard && b[pos] != ECFG_annotation_wildcard)
-      return false;
-  return true;
-}
-
-// get annotation string
-void get_annot_string (const ECFG_state_info& info, const char* aa, const Subseq_coords& subseq, sstring& aa_str, bool& has_wildcards) {
-  aa_str.clear();
-  has_wildcards = false;
-
-  for (int pos = 0; pos < info.l_emit; ++pos) {
-    const char aa_char = aa[pos + subseq.start];
-    aa_str << aa_char;
-    if (aa_char == ECFG_annotation_wildcard)
-      has_wildcards = true;
-  }
-
-  for (int pos = 0; pos < info.r_emit; ++pos) {
-    const char aa_char = aa[subseq.end() - info.r_emit + pos];
-    aa_str << aa_char;
-    if (aa_char == ECFG_annotation_wildcard)
-      has_wildcards = true;
-  }
-}
-
-bool ECFG_EM_matrix::calc_annot_emit_ll (int subseq_idx, int state_idx, Loge& annot_emit_ll)
-{
-  annot_emit_ll = 0;
-
-  const ECFG_state_info& info = ecfg.state_info[state_idx];
-  const Subseq_coords& subseq = env.subseq[subseq_idx];
-
-  // if the alignment annotation is incompatible with this emit state, assign probability zero and bail
-  const char *aa;
-  sstring aa_str;
-  bool aa_has_wildcards;
-  for (int a = 0; a < (int) align_annot.size(); ++a)
-    if ((aa = align_annot[a]) != 0)
-      {
-	const String_loglike_dist& sa = state_annot[state_idx][a];
-	if (sa.size() > 0) {
-	  get_annot_string (info, aa, subseq, aa_str, aa_has_wildcards);
-
-	  if (aa_has_wildcards) {
-	    Loge sa_ll = -InfinityLoge;
-	    for_const_contents (String_loglike_dist, sa, sl) {
-	      if (wildcard_match (aa_str, sl->first))
-		NatsPSumAcc (sa_ll, sl->second);
-	    }
-	    NatsPMulAcc (annot_emit_ll, sa_ll);
-
-	  } else {
-	    String_loglike_dist::const_iterator sa_iter = sa.find (aa_str);
-	    if (sa_iter == sa.end())
-	      {
-		annot_emit_ll = -InfinityLoge;
-		return false;
-	      }
-	    NatsPMulAcc (annot_emit_ll, sa_iter->second);
-	  }
-	}
-      }
-
-  return annot_emit_ll > -InfinityLoge;
-}
-
-// fill_up
-bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_context)
-{
-  // make refs to key variables
-  Loge& emit_ll = emit_loglike (subseq_idx, state_idx);
-  const ECFG_state_info& info = ecfg.state_info[state_idx];
-  const Subseq_coords& subseq = env.subseq[subseq_idx];
-
-  // if this is a bifurc or null state, assign probability one and bail
-  if (info.bifurc || info.emit_size() == 0)  // bifurc or null?
-    {
-      emit_ll = 0.;  // assign probability one, so DP doesn't incur a penalty
-      return false;  // return false, because this is not an emit state
-    }
-
-  // if the alignment annotation is incompatible with this emit state, assign probability zero and bail
-  Loge annot_emit_ll;
-  if (!calc_annot_emit_ll (subseq_idx, state_idx, annot_emit_ll))
-    {
-      emit_ll = -InfinityLoge;
-      return false;
-    }
-
-  // print log message describing the subsequence co-ords & the state info
-  if (CTAGGING(0,FILL_UP))
-  {
-    CL << "fill_up:\n";
-    show_coords (CL, subseq_idx, state_idx);
-  }
-
-  // initialise the Column_matrix and call fill_up to do Felsenstein pruning
-  Column_matrix& cm = colmat[state_idx];
-  Fast_prune& fp = fast_prune[state_idx];
-
-  // first, compute Felsenstein likelihood with emitted columns replaced with wildcards, in order to condition on the context
-  Loge marginal_ll = 0.;
-  const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
-  const bool use_context = condition_on_context && info.has_context();
-  if (use_context)
-    {
-      if (info.initialise (ecfg.alphabet, chain.classes, asp, subseq, stock, tree, cm, use_fast_prune ? &fp : (Fast_prune*) 0, true))
-	{
-	  if (use_fast_prune)
-	    marginal_ll = Prob2Nats (fp.prune());
-	  else
-	    {
-	      cm.fill_up (lineage_matrix[info.matrix], tree, subseq_idx);
-	      marginal_ll = cm.total_log_likelihood();
-	    }
-	  if (CTAGGING(3,FILL_UP))
-	    CL << "Marginal log likelihood (context): " << Nats2Bits(marginal_ll) << " bits\n";
-	}
-      else
-	CTAG(3,FILL_UP) << "[context: initialise returned false]\n";
-    }
-
-  // now use the actual emitted columns
-  if (info.initialise (ecfg.alphabet, chain.classes, asp, subseq, stock, tree, cm, use_fast_prune ? &fp : (Fast_prune*) 0, false))
-    {
-      Loge joint_ll = 0;
-      if (use_fast_prune)
-	joint_ll = Prob2Nats (fp.prune());
-      else
-	{
-	  cm.fill_up (lineage_matrix[info.matrix], tree, subseq_idx);
-	  joint_ll = cm.total_log_likelihood();
-	}
-      emit_ll = NatsPMul3 (annot_emit_ll, joint_ll, -marginal_ll);  // add in annot_emit_ll
-      if (CTAGGING(3,FILL_UP))
-	{
-	  CL << "(Subseq " << subseq.start << "+" << subseq.len << ", state " << state_idx << ") ";
-	  if (use_context)
-	    {
-	      CL << "Joint log likelihood (context,emit): " << Nats2Bits(joint_ll) << " bits\n";
-	      CL << "Conditional log likelihood (emit|context): " << Nats2Bits(emit_ll) << " bits\n";
-	    }
-	  else
-	    CL << "Emit log likelihood: " << Nats2Bits(emit_ll) << " bits\n";
-	}
-      return true;  // success
-    }
-  else
-    CTAG(3,FILL_UP) << "[initialise returned false]\n";
-
-  // initialise failed; assign probability zero
-  emit_ll = -InfinityLoge;
-  return false;
-}
-
-void ECFG_EM_matrix::fill_down (ECFG_counts& counts, int subseq_idx, int state_idx, double weight)
-{
-  // set up lineage_stats
-  vector<vector<Update_statistics*> > lineage_stats (ecfg.matrix_set.chain.size(), vector<Update_statistics*> (tree.nodes()));
-  for (int c = 0; c < (int) ecfg.matrix_set.chain.size(); ++c)
-    for (int n = 0; n < tree.nodes(); ++n)
-      lineage_stats[c][n] = &counts.stats[lineage_chain_index[c][n]];
-  // check state info
-  const ECFG_state_info& info = ecfg.state_info[state_idx];
-  if (info.bifurc || info.total_size() == 0)
-    return;
-  // call fill_up
-  if (fill_up (subseq_idx, state_idx))   // only proceed if fill_up succeeded
-    {
-      // print fill_down log message
-      if (CTAGGING(0,FILL_DOWN))
-	CL << "fill_down: weight=" << weight << "\n";
-      // do pruning
-      Column_matrix& cm = colmat[state_idx];
-      // NB lineage-dependent models: the following two lines need to set up vector<EM_matrix_base*> and vector<Update_statistics*> and set *all* relevant filled_down[] flags
-      cm.fill_down (lineage_matrix[info.matrix], tree, lineage_stats[info.matrix], subseq_idx, weight);
-      for (int n = 0; n < tree.nodes(); ++n)
-	counts.filled_down[lineage_chain_index[info.matrix][n]] = true;		// pk for EM - remember that this matrix has been filled down
-    }
 }
 
 void ECFG_EM_matrix::get_partials (int state, Partial_map& with_context, Partial_map& with_wildcards)
@@ -844,92 +673,6 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 #endif /* BEAGLE_INCLUDED */
 }
 
-void ECFG_EM_matrix::fill_sum_state (int source_subseq_idx, int source_state_idx)
-{
-  const Subseq_coords& subseq = env.subseq[source_subseq_idx];
-  const ECFG_state_info& info = ecfg.state_info[source_state_idx];
-  Loge ll = -InfinityLoge;
-
-  // if subseq is out of range for this state, probability stays at zero
-  if (!info.out_of_range (subseq))
-    {
-      // bifurcation or "regular" state?
-      if (info.bifurc)
-	{
-	  const int l = info.ldest;
-	  const int r = info.rdest;
-
-	  for_const_contents (vector<Subseq::Bifurc_in>, bif_in, b)
-	    NatsPSumAcc (ll, NatsPMul (cell (b->l, l), cell (b->r, r)));
-	}
-      else
-	{
-	  const int dest_subseq_idx = env.find_subseq_idx (subseq.start + info.l_emit, subseq.len - info.emit_size());
-	  if (dest_subseq_idx >= 0)
-	    {
-	      const Subseq_coords& dest = env.subseq[dest_subseq_idx];
-
-	      if (dest.len == 0)  // do end transitions
-		NatsPSumAcc (ll, effective_trans (source_state_idx, End, subseq, dest));
-	      // loop over outgoing transitions
-	      for_const_contents (vector<int>, outgoing[source_state_idx], d)
-		NatsPSumAcc (ll, NatsPMul (cell (dest_subseq_idx, *d), effective_trans (source_state_idx, *d, subseq, dest)));
-
-	      // add emit score (even if fill_up fails, in which case emit score might be -inf)
-	      if (fill_up_flag)
-		fill_up (source_subseq_idx, source_state_idx);
-	      NatsPMulAcc (ll, emit_loglike (source_subseq_idx, source_state_idx));
-	    }
-	}
-    }
-
-  // store
-  cell (source_subseq_idx, source_state_idx) = ll;
-}
-
-void ECFG_EM_matrix::fill_max_state (int source_subseq_idx, int source_state_idx)
-{
-  const Subseq_coords& subseq = env.subseq[source_subseq_idx];
-  const ECFG_state_info& info = ecfg.state_info[source_state_idx];
-  Loge ll = -InfinityLoge;
-
-  // if subseq is out of range for this state, probability stays at zero
-  if (!info.out_of_range (subseq))
-    {
-      // bifurcation or "regular" state?
-      if (info.bifurc)
-	{
-	  const int l = info.ldest;
-	  const int r = info.rdest;
-
-	  for_const_contents (vector<Subseq::Bifurc_in>, bif_in, b)
-	    ll = max (ll, NatsPMul (cell (b->l, l), cell (b->r, r)));
-	}
-      else
-	{
-	  const int dest_subseq_idx = env.find_subseq_idx (subseq.start + info.l_emit, subseq.len - info.emit_size());
-	  if (dest_subseq_idx >= 0)
-	    {
-	      const Subseq_coords& dest = env.subseq[dest_subseq_idx];
-
-	      if (dest.len == 0)  // do end transitions
-		ll = max (ll, effective_trans (source_state_idx, End, subseq, dest));
-	      // loop over outgoing transitions
-	      for_const_contents (vector<int>, outgoing[source_state_idx], d)
-		ll = max (ll, NatsPMul (cell (dest_subseq_idx, *d), effective_trans (source_state_idx, *d, subseq, dest)));
-
-	      // add emit score (even if fill_up fails, in which case emit score might be -inf)
-	      if (fill_up_flag)
-		fill_up (source_subseq_idx, source_state_idx);
-	      NatsPMulAcc (ll, emit_loglike (source_subseq_idx, source_state_idx));
-	    }
-	}
-    }
-
-  // store
-  cell (source_subseq_idx, source_state_idx) = ll;
-}
-
 void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_map& annot, const char* ancrec_tag_cstr, bool annotate_postprobs)
 {
   // create dummy counts
@@ -1101,9 +844,8 @@ void ECFG_inside_matrix::fill()
 
   // do start transitions
   const int final_subseq_idx = env.subseqs() - 1;
-  const Subseq_coords& final_subseq = env.subseq[final_subseq_idx];
   for_const_contents (vector<int>, inside_fill_states, d)
-    NatsPSumAcc (final_loglike, NatsPMul (effective_trans (Start, *d, final_subseq, final_subseq), cell (final_subseq_idx, *d)));
+    NatsPSumAcc (final_loglike, NatsPMul (start_ll[*d], cell (final_subseq_idx, *d)));
 
   // warn if score is negative & infinite
   if (final_loglike <= -InfinityLoge)
@@ -1172,30 +914,29 @@ void ECFG_outside_matrix::fill()
 	      // do start transitions
 	      if (source_subseq_idx == env.subseqs() - 1)
 		{
-		  ll = inside.effective_trans (Start, *d, dest_emit_coords, dest_emit_coords);
+		  ll = inside.start_ll[*d];
 		  if (counts)
-		    inside.add_trans_counts (Start, *d, dest_emit_coords, dest_emit_coords,
-					     Nats2Prob (NatsPMul (ll, inside_minus_final_ll)), *counts);
+		    inside.add_trans_counts (Start, *d, Nats2Prob (NatsPMul (ll, inside_minus_final_ll)), *counts);
 		}
 
 	      // loop over incoming transitions
-	      for_const_contents (vector<int>, incoming[*d], s)
+	      const vector<int>& incoming_d = incoming[*d];
+	      const vector<Loge>& incoming_ll_d = incoming_ll[*d];
+	      for (int incoming_idx = 0; incoming_idx < (int) incoming_d.size(); ++incoming_idx)
 		{
+		  const int s = incoming_d[incoming_idx];
 		  // get emit coords for source state, & check these are in envelope
 		  // (this is necessary because emission is outside subsequence for outside DP)
-		  const ECFG_state_info& src_info = ecfg.state_info[*s];
+		  const ECFG_state_info& src_info = ecfg.state_info[s];
 		  const int src_emit_coords_idx = env.find_subseq_idx (src_subseq.start - src_info.l_emit,
 								       src_subseq.len + src_info.emit_size());
 		  if (src_emit_coords_idx >= 0)
 		    {
 		      // calculate transition score; add counts
-		      const Subseq_coords& src_emit_coords = env.subseq[src_emit_coords_idx];
-		      const Loge incoming_ll = NatsPMul (cell (source_subseq_idx, *s),
-							 inside.effective_trans (*s, *d, src_emit_coords, dest_emit_coords));
+		      const Loge incoming_ll_s_d = NatsPMul (cell (source_subseq_idx, s), incoming_ll_d[s]);
 		      if (counts)
-			inside.add_trans_counts (*s, *d, src_emit_coords, dest_emit_coords,
-						 Nats2Prob (NatsPMul (incoming_ll, inside_minus_final_ll)), *counts);
-		      NatsPSumAcc (ll, incoming_ll);
+			inside.add_trans_counts (s, *d, Nats2Prob (NatsPMul (incoming_ll_s_d, inside_minus_final_ll)), *counts);
+		      NatsPSumAcc (ll, incoming_ll_s_d);
 		    }
 		}
 
@@ -1248,9 +989,8 @@ void ECFG_outside_matrix::fill()
 	      // count end transitions
 	      if (counts && subseq.len == 0)
 		{
-		  const Loge end_ll = inside.effective_trans (*d, End, dest_emit_coords, subseq);
-		  inside.add_trans_counts (*d, End, dest_emit_coords, subseq,
-					   Nats2Prob (NatsPMul3 (ll, end_ll, -inside_final_ll)), *counts);
+		  const Loge end_ll = inside.end_ll[*d];
+		  inside.add_trans_counts (*d, End, Nats2Prob (NatsPMul3 (ll, end_ll, -inside_final_ll)), *counts);
 		}
 	    }
 	  // store
@@ -1314,7 +1054,7 @@ Loge ECFG_inside_outside_matrix::post_transition_ll (int src_state, int dest_sta
 
   return coords_ok
     ? NatsPMul3 (inout_loglike,
-		 inside.effective_trans (src_state, dest_state, src_subseq, dest_subseq),
+		 inside.trans_ll (src_state, dest_state),
 		 -inside.final_loglike)
     : -InfinityLoge;
 }
@@ -1530,10 +1270,9 @@ void ECFG_CYK_matrix::fill()
 
   // do start transitions
   const int final_subseq_idx = env.subseqs() - 1;
-  const Subseq_coords& final_subseq = env.subseq[final_subseq_idx];
   for_const_contents (vector<int>, inside_fill_states, d)
   {
-    const Loge f_ll =  NatsPMul (effective_trans (Start, *d, final_subseq, final_subseq), cell (final_subseq_idx, *d));
+    const Loge f_ll =  NatsPMul (start_ll[*d], cell (final_subseq_idx, *d));
     if (f_ll > final_loglike)
       {
 	final_loglike = f_ll;
@@ -1647,7 +1386,7 @@ ECFG_cell_score_map ECFG_CYK_matrix::traceback()
 
 	    // do end transitions
 	    int next_state = UndefinedState;
-	    if (dest.len == 0 && (test_ll = NatsPMul (effective_trans (traceback_state, End, subseq, dest), emit_ll)) > best_ll)
+	    if (dest.len == 0 && (test_ll = NatsPMul (end_ll[traceback_state], emit_ll)) > best_ll)
 	      {
 		next_state = End;
 		best_ll = test_ll;
@@ -1656,7 +1395,7 @@ ECFG_cell_score_map ECFG_CYK_matrix::traceback()
 	    // loop over outgoing transitions
 	    for_const_contents (vector<int>, outgoing[traceback_state], d)
 	      if ((test_ll = NatsPMul3 (cell (dest_subseq_idx, *d),
-					 effective_trans (traceback_state, *d, subseq, dest),
+					 trans_ll (traceback_state, *d),
 					 emit_ll)) > best_ll)
 		  {
 		    next_state = *d;
