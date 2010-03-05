@@ -692,6 +692,7 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	const int ctmc_states = (int) root_prior.size();
 
 	// create Beagle instance
+	CTAG(5,BEAGLE) << "Requesting Beagle instance for nonterminal " << ecfg.state_info[state].name << " (" << ctmc_states << " states)\n";
 	BeagleInstanceDetails instDetails;
 	int instance = beagleCreateInstance(tree.leaves(),           /**< Number of tip data elements (input) */
 					    tree.nodes(),	           /**< Number of partials buffers to create (input) */
@@ -715,7 +716,7 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	if (CTAGGING(5,BEAGLE))
 	  {
 	    sstring beagle_log;
-	    beagle_log << "Using resource " << rNumber;
+	    beagle_log << "Obtained Beagle instance for resource #" << rNumber;
 	    beagle_log << "\n\tName : " << rList->list[rNumber].name;
 	    beagle_log << "\n\tDesc : " << rList->list[rNumber].description;
 	    beagle_log << "\n\tImpl : " << "GET INFO";
@@ -755,6 +756,7 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	double* transitionMatrix = (double*) malloc (ctmc_states * ctmc_states * sizeof(double));
 
 	// set transitionMatrices one at a time
+	CTAG(5,BEAGLE) << "Sending transition matrices to Beagle instance\n";
 	for_rooted_branches_pre (tree, b)
 	  {
 	    const Phylogeny::Node child = (*b).second;
@@ -771,9 +773,11 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	free (transitionMatrix);
 
 	// set prior for root
+	CTAG(5,BEAGLE) << "Sending state frequencies to Beagle instance\n";
 	beagleSetStateFrequencies(instance, stateFrequencyIndex, &root_prior[0]);
 
 	// set the sequences for each tip using the partial likelihood arrays with context
+	CTAG(5,BEAGLE) << "Sending partials to Beagle instance\n";
 	for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
 	  beagleSetTipPartials(instance, tree2beagle[*n], &with_context[*n][0]);
 
@@ -801,12 +805,14 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	  }
 
 	// update the partials
+	CTAG(5,BEAGLE) << "Scheduling pruning at Beagle instance\n";
 	beagleUpdatePartials(instance,          // instance
 			     &ops[0],           // operations
 			     tree.internals(),  // operationCount
 			     BEAGLE_OP_NONE);   // cumulative scaling index
 
 	// calculate the site likelihoods at the root node
+	CTAG(5,BEAGLE) << "Scheduling root node calculations at Beagle instance\n";
 	beagleCalculateRootLogLikelihoods(instance,                // instance
 					  &rootIndex,              // bufferIndices
 					  &categoryWeightsIndex,   // weights
@@ -815,6 +821,7 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 					  1,                       // count
 					  &dummy_loglike_sum);     // sum over subseqs
 
+	CTAG(5,BEAGLE) << "Requesting likelihoods from Beagle instance\n";
 	vector<double> subseqLogLike (subseqs);
 	beagleGetSiteLogLikelihoods(instance,
 				    &subseqLogLike[0]);
@@ -827,16 +834,19 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	if (with_wildcards.size())
 	  {
 	    // set the sequences for each tip using the partial likelihood arrays with wildcards
+	    CTAG(5,BEAGLE) << "Sending partials to Beagle instance (with wildcards)\n";
 	    for (Phylogeny::Node_const_iter n = tree.leaves_begin(); n != tree.leaves_end(); ++n)
 	      beagleSetTipPartials(instance, tree2beagle[*n], &with_wildcards[*n][0]);
 
 	    // update the partials
+	    CTAG(5,BEAGLE) << "Scheduling pruning at Beagle instance (with wildcards)\n";
 	    beagleUpdatePartials(instance,          // instance
 				 &ops[0],           // operations
 				 tree.internals(),  // operationCount
 				 BEAGLE_OP_NONE);   // cumulative scaling index
 
 	    // calculate the site likelihoods at the root node
+	    CTAG(5,BEAGLE) << "Scheduling root node calculations at Beagle instance (with wildcards)\n";
 	    beagleCalculateRootLogLikelihoods(instance,                // instance
 					      &rootIndex,              // bufferIndices
 					      &categoryWeightsIndex,   // weights
@@ -845,6 +855,7 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 					      1,                       // count
 					      &dummy_loglike_sum);     // sum over subseqs
 
+	    CTAG(5,BEAGLE) << "Requesting likelihoods from Beagle instance (with wildcards)\n";
 	    beagleGetSiteLogLikelihoods(instance,
 					&subseqLogLike[0]);
 
@@ -857,7 +868,10 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 	  }
 
 	// let Beagle clean up
+	CTAG(5,BEAGLE) << "Finalizing Beagle instance\n";
 	beagleFinalizeInstance(instance);
+
+	CTAG(5,BEAGLE) << "Finalized Beagle instance\n";
       }
 
   use_precomputed_phyloemit (emit_loglike_matrix);
