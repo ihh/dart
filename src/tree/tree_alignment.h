@@ -113,6 +113,7 @@ struct Tree_alignment_database
 {
   // data
   Sequence_database& seq_db;
+  Stockholm_database* stock_db;   // null unless initialise_from_Stockholm_database() was called
   list<Tree_alignment> tree_align_list;
   vector<Tree_alignment*> tree_align;
   vector<sstring> name;

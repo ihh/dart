@@ -214,7 +214,7 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
   // it's conceivable that the Score_profile's could end up getting converted to the "wrong" alphabet here.
   // That is, it'll be the right Alphabet for tree estimation,
   // but wrong for any later operations involving the main grammar.
-  // Solution: call seq_db_ptr->clear_scores() after tree estimation.
+  // Workaround: call seq_db_ptr->clear_scores() after tree estimation.
 
   // use our Sequence_database unless caller overrides this
   if (seq_db_ptr == 0)

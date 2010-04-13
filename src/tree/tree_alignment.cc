@@ -615,6 +615,7 @@ void Tree_alignment_database::clear()
 {
   tree_align.clear();
   name.clear();
+  stock_db = (Stockholm_database*) 0;
 }
 
 void Tree_alignment_database::load (const char* index_filename)
@@ -669,6 +670,7 @@ void Tree_alignment_database::force_binary()
 void Tree_alignment_database::initialise_from_Stockholm_database (const Stockholm_database& stock, bool die_if_trees_missing)
 {
   clear();
+  stock_db = (Stockholm_database*) &stock;   // cast away const
   for_const_contents (list<Stockholm>, stock.align, align)
     {
       // create the Tree_alignment

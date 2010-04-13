@@ -171,10 +171,12 @@ double Branch_expected_loglike::operator() (double t)
 {
   const array2d<double> cond = submat->create_conditional_substitution_matrix (t);
   const int states = counts->xsize();
-  double val = -prior_param * t;
+  Loge val = -prior_param * t;
   for (int i = 0; i < states; ++i)
-    for (int j = 0; j < states; ++j)
-      val += (*counts) (i,j) * Prob2Nats (cond (i, j));
+    for (int j = 0; j < states; ++j) {
+      const Loge ij_loglike = (*counts) (i,j) * Prob2Nats (cond (i, j));
+      NatsPMulAcc (val, ij_loglike);
+    }
   return val;
 }
 
@@ -187,10 +189,12 @@ double Branch_expected_loglike_deriv::operator() (double t)
   const array2d<double> cond = submat->create_conditional_substitution_matrix (t);
   const array2d<double> deriv = submat->differentiate_conditional_substitution_matrix (t);
   const int states = counts->xsize();
-  double val = -prior_param;
+  double val = -prior_param;   // type of val is d/dt(Loge), we currently don't have a typedef for such a thing, but double will do.... IH 4/13/2010
   for (int i = 0; i < states; ++i)
-    for (int j = 0; j < states; ++j)
-      val += (*counts) (i,j) * deriv (i, j) / cond (i, j);
+    for (int j = 0; j < states; ++j) {
+      const Loge ij_loglike_deriv = (*counts) (i,j) * deriv (i, j) / cond (i, j);
+      NatsPMulAcc (val, ij_loglike_deriv);
+    }
   return val;
 }
 
