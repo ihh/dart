@@ -94,6 +94,7 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("x -expand", dump_expanded = "", "dump macro-expanded grammar to file (prior to any training)", false);
 
   opts.add ("e -tree", tree_grammar_filename = "", "load separate tree-estimation grammar from file (point substitution models only)", false);
+  opts.add ("ac -all-chains", use_ECFG_for_branch_length_EM = false, "when doing branch-length optimization, use all chains, not just a point-sub model (UNTESTED)", false);
   opts.add ("l -length", max_subseq_len = -1, "limit maximum length of infix subseqs (context-free grammars only)", false);
 
   sstring gap_chars_help;
@@ -269,7 +270,10 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
 	{
 	  Irrev_EM_matrix nj_hsm (1, 1);  // create temporary EM_matrix
 	  nj_hsm.assign (*tree_estimation_chain->matrix);
-	  align_db.optimise_branch_lengths_by_EM (nj_hsm, 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
+	  if (use_ECFG_for_branch_length_EM)
+	    align_db.optimise_branch_lengths_by_ECFG_EM (*tree_estimation_grammars[0], 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
+	  else
+	    align_db.optimise_branch_lengths_by_EM (nj_hsm, 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
 	}
 
       // clear the (potentially inconsistent with other grammars) Score_profile's

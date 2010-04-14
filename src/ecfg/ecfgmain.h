@@ -6,9 +6,9 @@
 #include "util/rnd.h"
 #include "util/vector_output.h"
 #include "tree/subdistmat.h"
-#include "hsm/branch_length_em.h"
 #include "ecfg/pfold.h"
 #include "ecfg/ecfgdp.h"
+#include "ecfg/ecfg_branch_length_em.h"
 
 struct ECFG_main
 {
@@ -60,12 +60,13 @@ struct ECFG_main
   ECFG_map ecfg_map;  // map from grammar names to grammar objects
 
   const ECFG_chain* tree_estimation_chain;  // contains matrix for doing neighbor-joining, branch-length EM
+  bool use_ECFG_for_branch_length_EM;  // if true, will use the entire ECFG to do branch-length EM, not just a single matrix
 
   // alignment data
   Sequence_database seq_db;
   Stockholm_database stock_db;
   vector<sstring> training_alignment_filename;
-  EM_tree_alignment_database align_db;
+  ECFG_EM_tree_alignment_database align_db;
   vector<Aligned_score_profile> asp_vec;
 
   // training data

@@ -107,21 +107,21 @@ struct ECFG_bell_funcs : Cached_function <ECFG_branch_expected_loglike, ECFG_bra
 };
 
 // extension to Tree_alignment_database incorporating branch length EM
-struct ECFG_EM_tree_alignment_database : Tree_alignment_database
+struct ECFG_EM_tree_alignment_database : EM_tree_alignment_database
 {
   // constructors
   ECFG_EM_tree_alignment_database (Sequence_database& seq_db)
-    : Tree_alignment_database (seq_db)
+    : EM_tree_alignment_database (seq_db)
   { }
 
   ECFG_EM_tree_alignment_database (Sequence_database& seq_db, const char* index_filename)
-    : Tree_alignment_database (seq_db, index_filename)
+    : EM_tree_alignment_database (seq_db, index_filename)
   { }
 
-  // Branch-length EM method; returns final log-likelihood
-  Loge optimise_branch_lengths_by_EM (ECFG_scores& ecfg, double prior_param = 0.,
-				      int em_max_iter = 0, int forgive = 0, double em_min_inc = .001,
-				      double time_resolution = TINY, double time_max = 10., double time_min = 0.);
+  // ECFG branch-length EM method; returns final log-likelihood
+  Loge optimise_branch_lengths_by_ECFG_EM (ECFG_scores& ecfg, double prior_param = 0.,
+					   int em_max_iter = 0, int forgive = 0, double em_min_inc = .001,
+					   double time_resolution = TINY, double time_max = 10., double time_min = 0.);
 };
 
 #endif /* ECFG_BRANCH_LENGTH_EM_INCLUDED */

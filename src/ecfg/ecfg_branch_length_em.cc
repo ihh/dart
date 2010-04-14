@@ -264,7 +264,7 @@ double ECFG_bell_funcs::bell_max()
   return find_max();
 }
 
-Loge ECFG_EM_tree_alignment_database::optimise_branch_lengths_by_EM (ECFG_scores& ecfg, double prior_param, int em_max_iter, int forgive, double em_min_inc, double resolution, double tmax, double tmin)
+Loge ECFG_EM_tree_alignment_database::optimise_branch_lengths_by_ECFG_EM (ECFG_scores& ecfg, double prior_param, int em_max_iter, int forgive, double em_min_inc, double resolution, double tmax, double tmin)
 {
   CTAG(7,TREE_EM) << "Optimizing branch lengths of all trees in alignment database, using EM\n";
 
