@@ -40,7 +40,7 @@ struct Handel_alignment : Handel_base
    // optimises length of branch to resolution tres, up to tmax.
    */
   void propose_optimise_branch_length (const Undirected_pair& branch,
-				       double tmax = 10., double tres = .01);
+				       double tmax = DART_MAX_BRANCH_LENGTH, double tres = .01);
 
   /** MCMC sampling methods.
    */
@@ -84,7 +84,7 @@ struct Handel_alignment : Handel_base
   /** sample_branch_length
   // samples length of branch to resolution tres, up to tmax
   */
-  void propose_sample_branch_length (const Undirected_pair& branch, double kT = 1., double tmax = 10., int sample_points = 4);
+  void propose_sample_branch_length (const Undirected_pair& branch, double kT = 1., double tmax = DART_MAX_BRANCH_LENGTH, int sample_points = 4);
 
   /** align_and_infer_parent
    // aligns two siblings and infers their common ancestor

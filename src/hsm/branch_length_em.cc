@@ -204,12 +204,23 @@ Bell_funcs::Bell_funcs (const Branch_state_counts_map& tree_counts, const Phylog
   : Cached_function <Branch_expected_loglike, Branch_expected_loglike_deriv> (func, deriv, tmin, tmax, tres)
 {
   const Branch_state_counts& bcounts = tree_counts.branch_state_counts.find(branch)->second;
-
-  func = Branch_expected_loglike (bcounts, tree_counts.hsm, tree_counts.prior_param);
-  deriv = Branch_expected_loglike_deriv (bcounts, tree_counts.hsm, tree_counts.prior_param);
+  init (bcounts, tree_counts.hsm, tree_counts.prior_param);
 
   CTAG(2,TREE_EM) << "Branch counts for branch " << tree_counts.tree.branch_specifier (branch)
 		  << ":\n" << bcounts;
+}
+
+Bell_funcs::Bell_funcs (const Branch_state_counts& branch_counts, Substitution_matrix_factory& submat, double prior_param, double tres, double tmax, double tmin)
+  : Cached_function <Branch_expected_loglike, Branch_expected_loglike_deriv> (func, deriv, tmin, tmax, tres)
+{
+  init (branch_counts, submat, prior_param);
+  CTAG(2,TREE_EM) << "Branch counts:\n" << branch_counts;
+}
+
+void Bell_funcs::init (const Branch_state_counts& bcounts, Substitution_matrix_factory& submat, double prior_param)
+{
+  func = Branch_expected_loglike (bcounts, submat, prior_param);
+  deriv = Branch_expected_loglike_deriv (bcounts, submat, prior_param);
 }
 
 double Bell_funcs::bell_max()

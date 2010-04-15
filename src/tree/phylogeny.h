@@ -10,11 +10,14 @@
 #include "util/logfile.h"
 #include "seq/stockholm.h"
 
-// name of root node
-#define DART_ROOT_IDENTIFIER   "root"
+// name of root node (auto-assigned by some methods if no other name defined)
+#define DART_ROOT_IDENTIFIER "root"
+
+// maximum branch length (used by other classes, but defined here)
+#define DART_MAX_BRANCH_LENGTH 10.
+
 
 // Phylogeny: an unrooted tree with a length associated with each branch
-//
 class Phylogeny
 {
  public:
@@ -460,18 +463,30 @@ class PHYLIP_tree : public Phylogeny
       { msg.chop(); msg.append(specifier).append("'\n"); }
   };
 
-  Node    specified_node (const sstring& specifier) const;
+  // find_node methods
+  Node find_node (const char* name) const        // exact matches only
+  {
+    const sstring namestr (name);
+    Node_name_vec::const_iterator node_iter = find (node_name.begin(), node_name.end(), namestr);
+    return node_iter == node_name.end() ? -1 : node_iter - node_name.begin();
+  }
+
+  Node find_node_or_die (const sstring& specifier) const
+  {
+    Node n = find_node(specifier.c_str());
+    if (n < 0)
+      THROW Node_specifier_exception(specifier.c_str());
+    return n;
+  }
+
+  // node specifier methods
+  // node_specifier returns the name of a node, or 'root' for the root, or 'A::B' for common ancestor of A & B
   sstring node_specifier (Node n) const;
+  // specified_node decodes names in the format returned by node_specifier, or throws a Node_specifier exception
+  Node specified_node (const sstring& specifier) const;
+  // branch_specifier
   sstring branch_specifier (const Node_pair& b) const;
   sstring directed_branch_specifier (const Node_pair& b) const;
-
-  Node    find_node (const char* name) const        // exact matches only
-    {
-      const sstring namestr (name);
-      Node_name_vec::const_iterator node_iter = find (node_name.begin(), node_name.end(), namestr);
-      return node_iter == node_name.end() ? -1 : node_iter - node_name.begin();
-    }
-
 };
 
 // Macros for depth-first traversal of Phylogeny

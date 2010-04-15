@@ -30,7 +30,7 @@ struct TKF_dist_func_factory : Dist_func_factory
   // constructor
   TKF_dist_func_factory (const TKF_params& params,
 			 bool use_indels = FALSE, bool use_subst = TRUE,
-			 double tres = .01, double tmax = 10.,
+			 double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH,
 			 int n_realign = 0, double default_time = 1.);
   // factory method
   TKF_dist_func* create_dist_func (const Alignment& align);

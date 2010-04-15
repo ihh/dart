@@ -37,10 +37,10 @@ struct ECFG_branch_state_counts_map
   Loge collect_branch_counts (ECFG_EM_matrix& em_matrix, const ECFG_cell_score_map& annot, double weight = 1.);
 
   // tree update method
-  void update_branch_lengths (double resolution = TINY, double tmax = 10., double tmin = 0.);
+  void update_branch_lengths (double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // EM method for alignment
-  Loge do_EM (double resolution = TINY, double tmax = 10., double tmin = 0.);
+  Loge do_EM (double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // helpers
   void copy_branch_lengths (const PHYLIP_tree& t1, PHYLIP_tree& t2);
@@ -100,7 +100,7 @@ struct ECFG_bell_funcs : Cached_function <ECFG_branch_expected_loglike, ECFG_bra
   ECFG_branch_expected_loglike_deriv deriv;
 
   // constructor
-  ECFG_bell_funcs (const ECFG_branch_state_counts_map& tree_counts, const Phylogeny::Undirected_pair& branch, double tres = .01, double tmax = 10., double tmin = 0.);
+  ECFG_bell_funcs (const ECFG_branch_state_counts_map& tree_counts, const Phylogeny::Undirected_pair& branch, double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // find_max wrapper
   double bell_max();
@@ -121,7 +121,7 @@ struct ECFG_EM_tree_alignment_database : EM_tree_alignment_database
   // ECFG branch-length EM method; returns final log-likelihood
   Loge optimise_branch_lengths_by_ECFG_EM (ECFG_scores& ecfg, double prior_param = 0.,
 					   int em_max_iter = 0, int forgive = 0, double em_min_inc = .001,
-					   double time_resolution = TINY, double time_max = 10., double time_min = 0.);
+					   double time_resolution = TINY, double time_max = DART_MAX_BRANCH_LENGTH, double time_min = 0.);
 };
 
 #endif /* ECFG_BRANCH_LENGTH_EM_INCLUDED */

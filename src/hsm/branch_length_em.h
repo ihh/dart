@@ -4,6 +4,14 @@
 #include "hsm/em_matrix_base.h"
 #include "util/maximise.h"
 
+// Sadly, a subset of the functionality in this file is duplicated by tree/subdistmat.*
+// e.g.
+//  Substitution_counts <--> Branch_state_counts_map
+//  Subst_log_like <--> Branch_expected_loglike
+//  Subst_log_like_dt <--> Branch_expected_loglike_deriv
+// Time to refactor...
+// IH, 4/15/2010
+
 // branch update statistics
 // these can be used to re-estimate branch lengths by EM, among other things
 typedef array2d<double> Branch_state_counts;
@@ -36,10 +44,10 @@ struct Branch_state_counts_map
   void collect_branch_counts (const Column_matrix& colmat, double weight = 1.);
 
   // tree update method
-  void update_branch_lengths (double resolution = TINY, double tmax = 10., double tmin = 0.);
+  void update_branch_lengths (double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // EM method for alignment
-  Loge do_EM (double resolution = TINY, double tmax = 10., double tmin = 0.);
+  Loge do_EM (double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 };
 
 // base class for Branch_expected_loglike and Branch_expected_loglike_deriv
@@ -89,11 +97,15 @@ struct Bell_funcs : Cached_function <Branch_expected_loglike, Branch_expected_lo
   Branch_expected_loglike func;
   Branch_expected_loglike_deriv deriv;
 
-  // constructor
-  Bell_funcs (const Branch_state_counts_map& tree_counts, const Phylogeny::Undirected_pair& branch, double tres = .01, double tmax = 10., double tmin = 0.);
+  // constructors
+  Bell_funcs (const Branch_state_counts_map& tree_counts, const Phylogeny::Undirected_pair& branch, double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
+  Bell_funcs (const Branch_state_counts& branch_counts, Substitution_matrix_factory& submat, double prior_param = 0., double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // find_max wrapper
   double bell_max();
+
+  // helper init method
+  void init (const Branch_state_counts& branch_counts, Substitution_matrix_factory& submat, double prior_param);
 };
 
 // extension to Tree_alignment_database incorporating branch length EM
@@ -109,7 +121,7 @@ struct EM_tree_alignment_database : Tree_alignment_database
   { }
 
   // Branch-length EM method; returns final log-likelihood
-  Loge optimise_branch_lengths_by_EM (EM_matrix_base& hsm, double prior_param = 0., int em_max_iter = 0, int forgive = 0, double em_min_inc = .001, double time_resolution = TINY, double time_max = 10., double time_min = 0.);
+  Loge optimise_branch_lengths_by_EM (EM_matrix_base& hsm, double prior_param = 0., int em_max_iter = 0, int forgive = 0, double em_min_inc = .001, double time_resolution = TINY, double time_max = DART_MAX_BRANCH_LENGTH, double time_min = 0.);
 };
 
 #endif /* BRANCH_LENGTH_EM_INCLUDED */

@@ -94,9 +94,9 @@ struct Handel_base : Tree_alignment
    // optimises length of branch to resolution tres, up to tmax.
    */
   virtual void propose_optimise_branch_length (const Undirected_pair& branch,
-					       double tmax = 10., double tres = .01) = 0;
+					       double tmax = DART_MAX_BRANCH_LENGTH, double tres = .01) = 0;
   void optimise_branch_length (const Undirected_pair& branch,
-			       double tmax = 10., double tres = .01);
+			       double tmax = DART_MAX_BRANCH_LENGTH, double tres = .01);
 
   /** align_and_infer_parent
    // aligns two siblings and infers their common ancestor
@@ -169,8 +169,8 @@ struct Handel_base : Tree_alignment
   /** sample_branch_length
    // samples length of branch to resolution tres, up to tmax
    */
-  virtual void propose_sample_branch_length (const Undirected_pair& branch, double kT = 1., double tmax = 10., int sample_points = 4);
-  void sample_branch_length (const Undirected_pair& branch, double kT = 1., double tmax = 10., int sample_points = 4);
+  virtual void propose_sample_branch_length (const Undirected_pair& branch, double kT = 1., double tmax = DART_MAX_BRANCH_LENGTH, int sample_points = 4);
+  void sample_branch_length (const Undirected_pair& branch, double kT = 1., double tmax = DART_MAX_BRANCH_LENGTH, int sample_points = 4);
 	
   /** indel_parameters
    // dummy functions - samples indel parameters in derived classes

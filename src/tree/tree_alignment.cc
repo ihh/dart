@@ -230,20 +230,19 @@ void Tree_alignment::build_maps_from_names()
 	{
 	  if (seen.find (this_row_name) != seen.end()) THROWEXPR ("Duplicate row name '" << this_row_name << "'");
 	  seen.insert (this_row_name);
-	  Phylogeny::Node node = tree.specified_node (this_row_name);
+	  Phylogeny::Node node = tree.find_node (this_row_name.c_str());
 	  if (node == -1)
-	    THROWEXPR ("Sequence name '" << this_row_name << "' is not a valid node specifier");
-	  if (node2row[node] != -1)
-	    THROWEXPR ("Duplicate node specification: '" << this_row_name << "' and '" << align.row_name[node2row[node]] << "' both refer to same node (index " << node << ", canonical ID '" << tree.node_specifier(node) << "')");
-	  row2node[row]  = node;
-	  node2row[node] = row;
+	    CTAG(3,TREE_ALIGN) << "Sequence name '" << this_row_name << "' is not a valid node specifier\n";
+	  else
+	    {
+	      if (node2row[node] != -1)
+		THROWEXPR ("Duplicate node specification: '" << this_row_name << "' and '" << align.row_name[node2row[node]] << "' both refer to same node (index " << node << ", canonical ID '" << tree.node_specifier(node) << "')");
+	      row2node[row]  = node;
+	      node2row[node] = row;
+	    }
 	}
       else
-	{
-	  sstring buf;
-	  buf << "Row " << row+1 << " is unnamed and has no existing mapping to tree";
-	  THROW Standard_exception (buf);
-	}
+	CTAG(3,TREE_ALIGN) << "Row " << row+1 << " is unnamed and has no existing mapping to tree";
     }
 }
 
@@ -297,7 +296,7 @@ void Tree_alignment::attach_sequences (const Sequence_database& db)
 {
   for_iterator (Sequence_database::const_iterator, seq, db.begin(), db.end())
     {
-      Phylogeny::Node node = tree.specified_node ((*seq).name);
+      Phylogeny::Node node = tree.find_node ((*seq).name.c_str());
       if (node < 0 || node > tree.nodes())
 	CLOGERR << "Warning - sequence '" << (*seq).name << "' not found in tree\n";
       else
@@ -330,9 +329,9 @@ void Tree_alignment::assert_nodes_equal_rows() const
 	THROWEXPR ("Invalid node associated with row #" << node+1);
       if (node2row[node] != row)
 	THROWEXPR ("Node-row map inconsistent for row #" << node+1);
-      Phylogeny::Node snode = tree.specified_node (align.row_name[row]);
+      Phylogeny::Node snode = tree.find_node (align.row_name[row].c_str());
       if (snode != node)
-	THROWEXPR ("Node specifier string '" << align.row_name[row] << "' implies node #" << snode << " whereas map for row (#" << row+1 << ") says corresponding node is #" << node+1);
+	THROWEXPR ("Node name '" << align.row_name[row] << "' implies node #" << snode << " whereas map for row (#" << row+1 << ") says corresponding node is #" << node+1);
     }
 }
 
@@ -350,7 +349,7 @@ void Tree_alignment::assert_leaves_equal_rows() const
 	THROWEXPR ("Non-leaf node associated with row #" << (node+1));
       if (node2row[node] != row)
 	THROWEXPR ("Node-row map inconsistent for row #" << (node+1));
-      if (tree.specified_node (align.row_name[row]) != node)
+      if (tree.find_node (align.row_name[row].c_str()) != node)
 	THROWEXPR ("Node specifier sstring doesn't match associated node for row #" <<  (node+1));
     }
 }
@@ -365,7 +364,7 @@ bool Tree_alignment::nodes_equal_rows() const
       Phylogeny::Node node = row2node[row];
       if (node < 0 || node >= tree.nodes()) return 0;
       if (node2row[node] != row) return 0;
-      if (tree.specified_node (align.row_name[row]) != node)
+      if (tree.find_node (align.row_name[row].c_str()) != node)
 	return 0;
     }
   return 1;
@@ -381,7 +380,7 @@ bool Tree_alignment::leaves_equal_rows() const
       if (node < 0 || node >= tree.nodes()) return 0;
       if (!tree.is_leaf (node)) return 0;
       if (node2row[node] != row) return 0;
-      if (tree.specified_node (align.row_name[row]) != node)
+      if (tree.find_node (align.row_name[row].c_str()) != node)
 	return 0;
     }
   return 1;

@@ -158,7 +158,7 @@ void Tree_shuffler::reset()
 
 void Tree_shuffler::cue (const sstring& node_name)
 {
-  const Node node = tree->specified_node (node_name);
+  const Node node = tree->find_node_or_die (node_name);
   node_pool.push_back (node);
   if (node != tree->root)
     branch_pool.push_back (Branch (tree->parent[node], node, *tree));

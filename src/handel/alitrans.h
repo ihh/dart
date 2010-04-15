@@ -96,7 +96,7 @@ struct Transducer_alignment
   bool propose_optimise_node (Node node);
   bool propose_optimise_branch (const Undirected_pair& branch);
   void propose_optimise_branch_length (const Undirected_pair& branch,
-				       double tmax = 10., double tres = .01);  // UNIMPLEMENTED
+				       double tmax = DART_MAX_BRANCH_LENGTH, double tres = .01);  // UNIMPLEMENTED
 
   // sample methods
   void propose_sample_node (Node node, double kT = 1.);

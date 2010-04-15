@@ -51,8 +51,8 @@ struct TKF_align : Handel_base
   // tree-sampling methods
   void propose_sample_branch_slide (Node grumpa, Node dad, Node son, double kT = 1., int sample_points = 4);
   bool propose_sample_branch_swap (Node aunt, Node nephew, Node grumpa, Node dad, double kT = 1);
-  void propose_sample_branch_length (const Undirected_pair& branch, double kT = 1., double tmax = 10., int sample_points = 4);
-  void propose_optimise_branch_length (const Undirected_pair& branch, double tmax = 10., double tres = .01);
+  void propose_sample_branch_length (const Undirected_pair& branch, double kT = 1., double tmax = DART_MAX_BRANCH_LENGTH, int sample_points = 4);
+  void propose_optimise_branch_length (const Undirected_pair& branch, double tmax = DART_MAX_BRANCH_LENGTH, double tres = .01);
 
   // scoring methods
   Score conditioned_branch_path_score (const Node_pair& branch) const;

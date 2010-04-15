@@ -3,6 +3,15 @@
 
 #include "seq/distmat.h"
 #include "tree/substitution_matrix_factory.h"
+#include "tree/phylogeny.h"
+
+// Sadly, much of the functionality in this file is almost exactly duplicated by hsm/branch_length_em.*
+// e.g.
+//  Substitution_counts <--> Branch_state_counts_map
+//  Subst_log_like <--> Branch_expected_loglike
+//  Subst_log_like_dt <--> Branch_expected_loglike_deriv
+// Time to refactor...
+// IH, 4/15/2010
 
 // substitution counts
 struct Substitution_counts
@@ -61,7 +70,7 @@ struct Subst_dist_func_factory : Dist_func_factory
   double tmax;
   // constructor
   Subst_dist_func_factory (Substitution_matrix_factory& submat_factory,
-			   double tres = .01, double tmax = 10.);
+			   double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH);
   // factory method
   Subst_dist_func* create_dist_func (const Alignment& align);
 };
