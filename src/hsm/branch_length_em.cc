@@ -87,7 +87,9 @@ Loge Branch_state_counts_map::do_EM (double resolution, double tmax, double tmin
 	  colmat.initialise (tree_align, col, coords, wildcard);
 	  colmat.fill_up (hsm, tree, col);
 	  colmat.fill_down (hsm, tree, dummy_stats, col, 1.);
-	  NatsPMulAcc (current, colmat.total_log_likelihood());
+	  const Loge colmat_ll = colmat.total_log_likelihood();
+	  NatsPMulAcc (current, colmat_ll);
+	  CTAG(4,TREE_EM) << "Getting counts for column " << col << ", log-likelihood " << colmat_ll << "\n";
 	  collect_branch_counts (colmat, 1.);
 	  path.inc_seq_coords (coords, col);
 	}

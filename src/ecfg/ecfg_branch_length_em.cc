@@ -32,8 +32,8 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
   // create dummy counts
   ECFG_counts dummy_counts (ecfg);
 
-  // loop over nonterminals in parse tree
-  for_const_contents (ECFG_cell_score_map, annot, ecsm_ptr)
+  // loop over nonterminals in parse tree, using reverse order for easy comparison with hsm/branch_length_em.cc
+  for_const_reverse_contents (ECFG_cell_score_map, annot, ecsm_ptr)
     {
       const Subseq_coords& coords = ecsm_ptr->first.first;
       const int ecfg_state = ecsm_ptr->first.second;
@@ -42,8 +42,6 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
       const ECFG_state_info& info = ecfg.state_info[ecfg_state];
       if (info.emit_size())
 	{
-	  CTAG(6,TREE_EM) << "Getting counts for nonterminal " << info.name << " at subsequence (" << coords.start << ".." << coords.end() << ")\n";
-
 	  // get chain
 	  const int chain_idx = info.matrix;
 	  const ECFG_chain& chain = ecfg.matrix_set.chain[chain_idx];
@@ -53,7 +51,12 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
 
 	  // accumulate log-likelihood
 	  EM_matrix_base::Column_matrix colmat = em_matrix.colmat[ecfg_state];
-	  NatsPMulAcc (final_ll, colmat.total_log_likelihood());
+	  const Loge colmat_ll = colmat.total_log_likelihood();
+	  NatsPMulAcc (final_ll, colmat_ll);
+
+	  // log
+	  CTAG(4,TREE_EM) << "Getting counts for nonterminal " << info.name << " at subsequence (" << coords.start << ".." << coords.end()
+			  << "); log-likelihood " << colmat_ll << "\n";
 
 	  // loop over branches
 	  for_rooted_branches_post (tree, b)
@@ -111,6 +114,7 @@ Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double
 
   const bool try_fast_prune = false;
   ECFG_CYK_matrix cyk_mx (ecfg, stock, asp, env, try_fast_prune);   // create CYK matrix
+  cyk_mx.fill();
   ECFG_cell_score_map cyk_trace = cyk_mx.traceback();  // get traceback
 
   int dec = 0;

@@ -94,7 +94,7 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("x -expand", dump_expanded = "", "dump macro-expanded grammar to file (prior to any training)", false);
 
   opts.add ("e -tree", tree_grammar_filename = "", "load separate tree-estimation grammar from file (point substitution models only)", false);
-  opts.add ("ac -all-chains", use_ECFG_for_branch_length_EM = false, "when doing branch-length optimization, use all chains, not just a point-sub model (UNTESTED)", false);
+  opts.add ("ac -all-chains", use_ECFG_for_branch_length_EM = false, "when doing branch-length optimization, use all chains, not just a point-sub model", false);
   opts.add ("l -length", max_subseq_len = -1, "limit maximum length of infix subseqs (context-free grammars only)", false);
 
   sstring gap_chars_help;
@@ -221,6 +221,7 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
   if (seq_db_ptr == 0)
     seq_db_ptr = &seq_db;
 
+  // read tree-estimation grammar
   Empty_alphabet tree_estimation_grammar_alphabet, tree_estimation_hidden_alphabet;
   vector<ECFG_scores*> tree_estimation_grammars;
   if (tree_estimation_chain == 0 && (tree_grammar_filename.size() > 0 || grammar_alphabet_sexpr != 0))
@@ -236,46 +237,61 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
 	tree_estimation_chain = tree_estimation_grammars[g]->first_single_pseudoterminal_chain();
     }
 
-  if (missing_trees())
+  const bool do_neighbor_joining = missing_trees();
+  const bool do_branch_length_EM = (missing_trees() || (tree_grammar_filename.size() > 0)) && (em_max_iter != 0);   // checking em_max_iter here allows user to force neighbor-joining only, by specifying "--maxrounds 0"
+  const bool need_tree_estimation_chain = do_neighbor_joining || (do_branch_length_EM && !use_ECFG_for_branch_length_EM);
+
+  updated_trees = do_neighbor_joining || do_branch_length_EM;   // this flag can also be set later if any branch lengths are rounded up
+
+  if (need_tree_estimation_chain && tree_estimation_chain == 0)
     {
-      if (tree_estimation_chain == 0) {
-	sstring preamble;
-	preamble << "Every input alignment needs to be annotated with a phylogenetic tree.\n"
-		 << "Given that this isn't the case, I need a rate matrix in order to do some ad-hoc phylogeny\n"
-		 << " (neighbor-joining followed by EM on the branch lengths, if you must know.)\n"
-		 << "I want to get that rate matrix from the tree estimation grammar,\n"
-		 << " in the form of a single-terminal 'chain'.\n";
+      sstring preamble;
+      preamble << "Every input alignment needs to be annotated with a phylogenetic tree.\n"
+	       << "Given that this isn't the case, I need a rate matrix in order to do some ad-hoc phylogeny\n"
+	       << " (neighbor-joining followed by EM on the branch lengths, if you must know.)\n"
+	       << "I want to get that rate matrix from the tree estimation grammar,\n"
+	       << " in the form of a single-terminal 'chain'.\n";
 
-	if (tree_grammar_filename.size() == 0 && grammar_alphabet_sexpr == 0)
-	  THROWEXPR (preamble
-		     << "However, I haven't been told where to find that grammar, so I'm bailing.\n");
-
+      if (tree_grammar_filename.size() == 0 && grammar_alphabet_sexpr == 0)
 	THROWEXPR (preamble
-		   << "However, I wasn't able to find any such chain in that file, so I'm bailing.\n");
-      }
+		   << "However, I haven't been told where to find that grammar, so I'm bailing.\n");
 
+      THROWEXPR (preamble
+		 << "However, I wasn't able to find any such chain in that file, so I'm bailing.\n");
+    }
+
+  if (do_neighbor_joining || do_branch_length_EM)
+    {
       // convert sequences to Score_profile's for tree estimation
       tree_estimation_hidden_alphabet.init_hidden (tree_estimation_grammar_alphabet, tree_estimation_chain->class_labels);
       seq_db_ptr->seqs2scores (tree_estimation_hidden_alphabet);
+    }
 
-      // if any trees are missing, estimate them by neighbor-joining
-      if (missing_trees())
-	{
-	  Subst_dist_func_factory dist_func_factory (*tree_estimation_chain->matrix);
-	  align_db.estimate_missing_trees_by_nj (dist_func_factory);
-	}
+  if (do_neighbor_joining)
+    {
+      // estimate missing trees by neighbor-joining
+      CTAG(5,XRATE) << "Estimating trees by neighbor-joining\n";
+      Subst_dist_func_factory dist_func_factory (*tree_estimation_chain->matrix);
+      align_db.estimate_missing_trees_by_nj (dist_func_factory);
+    }
 
+  if (do_branch_length_EM)
+    {
       // optimise branch lengths by EM
-      if (tree_estimation_chain != 0 && em_max_iter != 0)   // checking em_max_iter here allows user to force neighbor-joining only, by specifying "--maxrounds 0"
+      CTAG(5,XRATE) << "Optimizing tree branch lengths by EM\n";
+      if (use_ECFG_for_branch_length_EM)
+	align_db.optimise_branch_lengths_by_ECFG_EM (*tree_estimation_grammars[0], 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
+      else
 	{
 	  Irrev_EM_matrix nj_hsm (1, 1);  // create temporary EM_matrix
 	  nj_hsm.assign (*tree_estimation_chain->matrix);
-	  if (use_ECFG_for_branch_length_EM)
-	    align_db.optimise_branch_lengths_by_ECFG_EM (*tree_estimation_grammars[0], 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
-	  else
-	    align_db.optimise_branch_lengths_by_EM (nj_hsm, 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
+	  align_db.optimise_branch_lengths_by_EM (nj_hsm, 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
 	}
 
+    }
+
+  if (do_neighbor_joining || do_branch_length_EM)
+    {
       // clear the (potentially inconsistent with other grammars) Score_profile's
       seq_db_ptr->clear_scores();
     }
@@ -286,16 +302,20 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
       PHYLIP_tree& tree = align_db.tree_align[n_align]->tree;
       for_rooted_branches_post (tree, b)
 	if ((*b).length < min_branch_len)
-	  tree.branch_length (*b) = min_branch_len;
+	  {
+	    tree.branch_length (*b) = min_branch_len;
+	    updated_trees = true;
+	  }
     }
 
   // copy all trees back into the Stockholm alignments (ugh)
-  for (int n_align = 0; n_align < align_db.size(); n_align++)
-    {
-      Tree_alignment& tree_align = *align_db.tree_align[n_align];
-      Stockholm& stock = *stock_db.align_index[n_align];
-      tree_align.copy_tree_to_Stockholm (stock);
-    }
+  if (updated_trees)
+    for (int n_align = 0; n_align < align_db.size(); n_align++)
+      {
+	Tree_alignment& tree_align = *align_db.tree_align[n_align];
+	Stockholm& stock = *stock_db.align_index[n_align];
+	tree_align.copy_tree_to_Stockholm (stock);
+      }
 }
 
 void ECFG_main::read_grammars (SExpr* grammar_alphabet_sexpr)
@@ -454,7 +474,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	align_id << "Alignment" << n_align+1;
 
       // print log message
-      CTAG(7,XFOLD) << "Processing alignment " << align_id
+      CTAG(7,XRATE) << "Processing alignment " << align_id
 		    << " (" << n_align+1 << " of " << align_db.size()
 		    << "): " << seqlen << " columns\n";
 
@@ -503,7 +523,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	  bool zero_likelihood = false;  // this flag becomes set if final likelihood is 0, i.e. no traceback path
 	  if (annotate)
 	    {
-	      CTAG(6,XFOLD) << "Annotating using grammar '" << ecfg_name << "'\n";
+	      CTAG(6,XRATE) << "Annotating using grammar '" << ecfg_name << "'\n";
 
 	      // create CYK matrix; get score & traceback; save emit_loglike; & delete matrix
 	      ECFG_CYK_matrix* cyk_mx = new ECFG_CYK_matrix (ecfg, *stock, asp, env, !want_fill_down);
@@ -570,7 +590,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	  const bool want_inside = report_sumscore || want_GFF;
 	  if (want_inside)
 	    {
-	      CTAG(6,XFOLD) << "Running Inside algorithm using grammar '" << ecfg_name << "'\n";
+	      CTAG(6,XRATE) << "Running Inside algorithm using grammar '" << ecfg_name << "'\n";
 
 	      // create Inside matrix, or get score from previously created matrix
 	      if (inout_mx)
@@ -656,10 +676,7 @@ void ECFG_main::run_xrate (ostream& alignment_output_stream)
 {
   parse_opts();
   read_alignments();
-
-  if (tree_estimation_chain != 0 || tree_grammar_filename.size() > 0 || missing_trees())
-    estimate_trees();
-
+  estimate_trees();
   read_grammars();
   convert_sequences();
 
@@ -669,7 +686,7 @@ void ECFG_main::run_xrate (ostream& alignment_output_stream)
       delete_trainers();
     }
 
-  if (annotate || report_sumscore)
+  if (annotate || report_sumscore || updated_trees)
     annotate_alignments (&alignment_output_stream);
 
   // void return value

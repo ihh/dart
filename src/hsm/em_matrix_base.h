@@ -213,7 +213,7 @@ struct EM_matrix_base : Irrev_diagonalised_matrix_factory, EM_matrix_params, Pip
 
     // U, D, L tables
     vector<vector<Loge> > U;  // U[node][state] = log P(subtree rooted at node 'node' | node 'node is in state 'state')
-    vector<vector<Loge> > D;  // D[node][state] = log P(everything *except* subtree rooted at node 'node' | parent of 'node is in state 'state')
+    vector<vector<Loge> > D;  // D[node][state] = log P(everything *except* subtree rooted at node 'node' | parent of 'node' is in state 'state')
     vector<Loge>          L;  // L[node] = log P(clique rooted at 'node')
     Loge tll;  // total log-likelihood
 

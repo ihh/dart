@@ -61,6 +61,7 @@ struct ECFG_main
 
   const ECFG_chain* tree_estimation_chain;  // contains matrix for doing neighbor-joining, branch-length EM
   bool use_ECFG_for_branch_length_EM;  // if true, will use the entire ECFG to do branch-length EM, not just a single matrix
+  bool updated_trees;
 
   // alignment data
   Sequence_database seq_db;

@@ -297,7 +297,7 @@ struct Alignment : Named_rows, Stream_saver
 
   // static methods returning gap and space characters
   inline static char gap_char() { return primary_gap_char; }
-  inline static bool is_gap_char (char c) { return char_is_gap[c]; }
+  inline static bool is_gap_char (char c) { return char_is_gap[(unsigned char) c]; }  // cast to unsigned to prevent vector overflow for c>128; IH, 4/14/2010
   inline static bool is_gapspace_char (char c) { return is_gap_char(c) || c == ' '; }
   inline static bool is_gapspacenull_char (char c) { return is_gap_char(c) || c == ' ' || c == '\0'; }
 

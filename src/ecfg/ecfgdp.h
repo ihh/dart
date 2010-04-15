@@ -380,7 +380,7 @@ void ECFG_EM_matrix::fill_down (ECFG_counts& counts, int subseq_idx, int state_i
       // print fill_down log message
       if (CTAGGING(0,FILL_DOWN))
 	CL << "fill_down: weight=" << weight << "\n";
-      // do pruning
+      // do peeling
       Column_matrix& cm = colmat[state_idx];
       // NB lineage-dependent models: the following two lines need to set up vector<EM_matrix_base*> and vector<Update_statistics*> and set *all* relevant filled_down[] flags
       cm.fill_down (lineage_matrix[info.matrix], tree, lineage_stats[info.matrix], subseq_idx, weight);
