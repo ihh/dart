@@ -85,20 +85,21 @@ void ECFG_placer::populate_counts()
 
 	  // for each unattached row, get state probabilities, take outer product with posterior state probs for each tree node, and accumulate
 	  vector<Loge> row_loglike (chain_states);   // this is a dummy vector, so don't re-initialize it inside the loop
-	  int gapped = 0;  // dummy variable
+	  int gapped = 0;  // flag, set to true by init_row if row is gapped
 	  for_const_contents (vector<int>, unattached_rows, row)
 	    {
 	      vector<Prob> row_prob (chain_states, 0.);
 	      info.init_row (ecfg.alphabet, chain.classes, asp, *row, coords, row_loglike, &row_prob, gapped, false);
-	      for_const_contents (Node_state_prob_map, node_state_probs, nsp)
-		{
-		  const Phylogeny::Node node = nsp->first;
-		  const vector<Prob>& node_prob = nsp->second;
-		  Branch_state_counts& counts = attach_counts[*row][node][chain_idx];
-		  for (int i = 0; i < chain_states; ++i)
-		    for (int j = 0; j < chain_states; ++j)
-		      counts(i,j) += node_prob[i] * row_prob[j];
-		}
+	      if (!gapped)
+		for_const_contents (Node_state_prob_map, node_state_probs, nsp)
+		  {
+		    const Phylogeny::Node node = nsp->first;
+		    const vector<Prob>& node_prob = nsp->second;
+		    Branch_state_counts& counts = attach_counts[*row][node][chain_idx];
+		    for (int i = 0; i < chain_states; ++i)
+		      for (int j = 0; j < chain_states; ++j)
+			counts(i,j) += node_prob[i] * row_prob[j];
+		  }
 	    }
 	}
     }
