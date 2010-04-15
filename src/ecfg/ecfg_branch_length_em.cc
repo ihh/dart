@@ -50,7 +50,7 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
 	  em_matrix.fill_down (dummy_counts, em_matrix.env.find_subseq_idx (coords.start, coords.len), ecfg_state, 1.);
 
 	  // accumulate log-likelihood
-	  EM_matrix_base::Column_matrix colmat = em_matrix.colmat[ecfg_state];
+	  EM_matrix_base::Column_matrix& colmat = em_matrix.colmat[ecfg_state];
 	  const Loge colmat_ll = colmat.total_log_likelihood();
 	  NatsPMulAcc (final_ll, colmat_ll);
 
@@ -61,8 +61,8 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
 	  // loop over branches
 	  for_rooted_branches_post (tree, b)
 	    {
-	      const int p = (*b).first;
-	      const int n = (*b).second;
+	      const Phylogeny::Node p = (*b).first;
+	      const Phylogeny::Node n = (*b).second;
 
 	      if (!colmat.gapped[p] && !colmat.gapped[n])
 		{
@@ -71,7 +71,7 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
 		  for_const_contents (vector<int>, colmat.allowed[p], i)
 		    for_const_contents (vector<int>, colmat.allowed[n], j)
 		    {
-		      const double branch_pp = colmat.branch_post_prob (n, *i, *j, tree, *chain.matrix);
+		      const Prob branch_pp = colmat.branch_post_prob (n, *i, *j, tree, *chain.matrix);
 		      bcounts(*i,*j) += weight * branch_pp;
 		    }
 		}
@@ -217,7 +217,7 @@ ECFG_branch_expected_loglike::ECFG_branch_expected_loglike (const ECFG_branch_st
     chain_bell.push_back (Branch_expected_loglike (counts[c], *ecfg.matrix_set.chain[c].matrix, 0.));
 }
 
-double ECFG_branch_expected_loglike::operator() (double t)
+Loge ECFG_branch_expected_loglike::operator() (double t)
 {
   Loge val = -prior_param * t;
   for_contents (vector<Branch_expected_loglike>, chain_bell, cb)
@@ -245,11 +245,24 @@ ECFG_bell_funcs::ECFG_bell_funcs (const ECFG_branch_state_counts_map& tree_count
 {
   const ECFG_branch_state_counts& bcounts = tree_counts.branch_state_counts.find(branch)->second;
 
-  func = ECFG_branch_expected_loglike (bcounts, tree_counts.ecfg, tree_counts.prior_param);
-  deriv = ECFG_branch_expected_loglike_deriv (bcounts, tree_counts.ecfg, tree_counts.prior_param);
+  init (bcounts, tree_counts.ecfg, tree_counts.prior_param);
 
   CTAG(2,TREE_EM) << "Branch counts for branch " << tree_counts.tree.branch_specifier (branch)
 		  << ":\n" << bcounts;
+}
+
+ECFG_bell_funcs::ECFG_bell_funcs (const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param, double tres, double tmax, double tmin)
+  : Cached_function <ECFG_branch_expected_loglike, ECFG_branch_expected_loglike_deriv> (func, deriv, tmin, tmax, tres)
+{
+  init (branch_counts, ecfg, prior_param);
+
+  CTAG(2,TREE_EM) << "Branch counts:\n" << branch_counts;
+}
+
+void ECFG_bell_funcs::init (const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param)
+{
+  func = ECFG_branch_expected_loglike (branch_counts, ecfg, prior_param);
+  deriv = ECFG_branch_expected_loglike_deriv (branch_counts, ecfg, prior_param);
 }
 
 double ECFG_bell_funcs::bell_max()

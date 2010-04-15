@@ -32,14 +32,16 @@ struct ECFG_branch_state_counts_map
   // reset method
   void clear();
 
-  // method to get branch_state_counts
-  // returns log-likelihood
+  // method to populate branch_state_counts
+  // returns log-likelihood (excluding grammar rule probabilities)
+  // At the moment, the counts are conditioned on a particular parse tree; probably would be better to sum over all parse trees
   Loge collect_branch_counts (ECFG_EM_matrix& em_matrix, const ECFG_cell_score_map& annot, double weight = 1.);
 
   // tree update method
   void update_branch_lengths (double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
-  // EM method for alignment
+  // EM method: optimizes all the branch lengths of the tree
+  // At the moment, the counts are conditioned on the CYK parse tree; probably would be better to sum over all parse trees
   Loge do_EM (double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // helpers
@@ -74,7 +76,7 @@ struct ECFG_branch_expected_loglike : ECFG_branch_expected_loglike_base
   ECFG_branch_expected_loglike (const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param);
 
   // evaluation
-  double operator() (double t);
+  Loge operator() (double t);
 };
 
 // function returning time derivative of expected log-likelihood, given expected branch counts
@@ -99,11 +101,15 @@ struct ECFG_bell_funcs : Cached_function <ECFG_branch_expected_loglike, ECFG_bra
   ECFG_branch_expected_loglike func;
   ECFG_branch_expected_loglike_deriv deriv;
 
-  // constructor
+  // constructors
   ECFG_bell_funcs (const ECFG_branch_state_counts_map& tree_counts, const Phylogeny::Undirected_pair& branch, double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
+  ECFG_bell_funcs (const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param = 0., double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // find_max wrapper
   double bell_max();
+
+  // helper init method
+  void init (const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param);
 };
 
 // extension to Tree_alignment_database incorporating branch length EM
