@@ -112,16 +112,12 @@ struct ECFG_bell_funcs : Cached_function <ECFG_branch_expected_loglike, ECFG_bra
   void init (const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param);
 };
 
-// extension to Tree_alignment_database incorporating branch length EM
+// extension to EM_tree_alignment_database incorporating branch length EM for entire ECFG
 struct ECFG_EM_tree_alignment_database : EM_tree_alignment_database
 {
   // constructors
   ECFG_EM_tree_alignment_database (Sequence_database& seq_db)
     : EM_tree_alignment_database (seq_db)
-  { }
-
-  ECFG_EM_tree_alignment_database (Sequence_database& seq_db, const char* index_filename)
-    : EM_tree_alignment_database (seq_db, index_filename)
   { }
 
   // ECFG branch-length EM method; returns final log-likelihood

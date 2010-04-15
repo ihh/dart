@@ -386,6 +386,13 @@ bool Tree_alignment::leaves_equal_rows() const
   return 1;
 }
 
+bool Tree_alignment::has_unattached_rows() const
+{
+  for_const_contents (vector<int>, row2node, n)
+    if (*n < 0)
+      return true;
+  return false;
+}
 
 vector<Alignment_path::Row_pair> Tree_alignment::row_pairs() const
 {

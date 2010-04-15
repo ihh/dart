@@ -8,7 +8,7 @@
 #include "tree/subdistmat.h"
 #include "ecfg/pfold.h"
 #include "ecfg/ecfgdp.h"
-#include "ecfg/ecfg_branch_length_em.h"
+#include "ecfg/ecfgplacer.h"
 
 struct ECFG_main
 {
@@ -56,18 +56,24 @@ struct ECFG_main
 
   sstring default_grammars;
   vector<sstring> grammar_list; // grammar names
-  vector<ECFG_scores*> grammar;  // grammar objects
+  vector<ECFG_scores*> grammar, grammars_to_delete;  // grammar objects
   ECFG_map ecfg_map;  // map from grammar names to grammar objects
 
-  const ECFG_chain* tree_estimation_chain;  // contains matrix for doing neighbor-joining, branch-length EM
-  bool use_ECFG_for_branch_length_EM;  // if true, will use the entire ECFG to do branch-length EM, not just a single matrix
-  bool updated_trees;
+  Empty_alphabet tree_estimation_grammar_alphabet, tree_estimation_hidden_alphabet;
+  vector<ECFG_scores*> tree_estimation_grammars;
+  ECFG_scores* tree_estimation_grammar;
+  const ECFG_chain* tree_estimation_chain;  // first point-substitution matrix in tree_estimation_grammars
+
+  bool do_branch_length_EM;  // if true, will attempt to optimize branch lengths by EM
+  bool avoid_ECFG_for_branch_length_EM;  // if false, will use the entire ECFG to do branch-length EM, not just a single matrix
+  bool attach_rows;  // if true, will attempt to place unattached alignment rows on the tree
+  bool updated_trees;  // if true, trees were updated
 
   // alignment data
   Sequence_database seq_db;
   Stockholm_database stock_db;
   vector<sstring> training_alignment_filename;
-  ECFG_EM_tree_alignment_database align_db;
+  ECFG_attachable_tree_alignment_database align_db;
   vector<Aligned_score_profile> asp_vec;
 
   // training data
@@ -78,14 +84,14 @@ struct ECFG_main
   ECFG_main();  // calls init_opts implicitly, for embedded usage
 
   // destructor
-  ~ECFG_main() { delete_trainers(); }
+  ~ECFG_main();
 
   // add a preset grammar
   // call this as many times as you like after constructing the ECFG_main object
   void add_grammar (const char* name, ECFG_scores* ecfg);
   void add_standard_grammars(const char* default_grammar_string = "rev");  // adds a few standard "preset" grammars
 
-  // call delete_grammars to delete all the grammars added via add_standard_grammars() and/or add_grammar()
+  // call delete_grammars to delete all the preset grammars added via add_standard_grammars() and/or add_grammar()
   // (or delete these grammar objects yourself, independently; obviously, DO NOT do both)
   void delete_grammars();
 
@@ -115,7 +121,9 @@ struct ECFG_main
   void convert_sequences();  // must be called if train_grammars() or annotate_alignments() is to be called
   void train_grammars();  // can be skipped
   void delete_trainers();  // can be skipped if train_grammars() was skipped
+  void delete_loaded_grammars();   // deletes grammars in grammar_to_delete, that were loaded or created by this class (i.e. NOT presets)
   void annotate_alignments (ostream* align_stream = 0);  // can be skipped
+  void copy_trees_to_stock_db();  // copies trees from align_db to stock_db, following tree estimation steps
 
   // helper to add a particular score annotation to an alignment
   void annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const;

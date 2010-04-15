@@ -146,3 +146,35 @@ ECFG_placer::Attachment_map ECFG_placer::best_attachments (double resolution, do
 
   return attach_map;
 }
+
+void ECFG_placer::attach (double resolution, double tmax, double tmin)
+{
+  Attachment_map attach_map = best_attachments (resolution, tmax, tmin);
+  for_const_contents (Attachment_map, attach_map, row_attachment_branch)
+    {
+      const int row = row_attachment_branch->first;
+      const Attachment_branch& attachment_branch = row_attachment_branch->second;
+
+      const Phylogeny::Node new_node = tree.add_named_node (tree_align.align.row_name[row], attachment_branch.first, attachment_branch.second);
+
+      tree_align.row2node[row] = new_node;
+      tree_align.node2row.push_back (row);
+    }
+
+  tree_align.tree_changed();
+}
+
+void ECFG_attachable_tree_alignment_database::attach_rows (ECFG_scores& ecfg, double prior_param,
+							   double time_resolution, double time_max, double time_min)
+{
+  list<Stockholm>::iterator stock_iter = stock_db->align.begin();
+  for_contents (list<Tree_alignment>, tree_align_list, tree_align)
+    {
+      if (tree_align->has_unattached_rows())
+	{
+	  ECFG_placer placer (ecfg, *stock_iter, *tree_align, prior_param);
+	  placer.attach (time_resolution, time_max, time_min);
+	}
+      ++stock_iter;
+    }
+}

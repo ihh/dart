@@ -75,8 +75,9 @@ struct Tree_alignment
 
   void assert_nodes_equal_rows() const;   // throw an exception if imperfect 1-to-1 map for all nodes
   void assert_leaves_equal_rows() const;  // throw an exception if imperfect 1-to-1 map for leaf nodes
-  bool nodes_equal_rows() const; // TRUE if perfect 1-to-1 map for all nodes
-  bool leaves_equal_rows() const;         // TRUE if perfect 1-to-1 map for leaf nodes
+  bool nodes_equal_rows() const;  // true if perfect 1-to-1 map for all nodes
+  bool leaves_equal_rows() const;  // true if perfect 1-to-1 map for leaf nodes
+  bool has_unattached_rows() const;  // true if any of the alignment rows are missing from the tree
 
   vector<Alignment_path::Row_pair>  row_pairs() const;       // list of pairs of alignment rows, each pair corresponding to a branch of the tree
 

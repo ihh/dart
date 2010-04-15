@@ -28,12 +28,30 @@ struct ECFG_placer
   // constructor
   ECFG_placer (ECFG_scores& ecfg, Stockholm& stock, Tree_alignment& tree_align, double prior_param = 0.);
 
-  // method to return the best (attachment-node,branch-length) pair for each unattached row
+  // method to attach unattached alignment rows to the tree
+  void attach (double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
+
+  // helper method to return the best (attachment-node,branch-length) pair for each unattached row
+  // called by attach()
   Attachment_map best_attachments (double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // helper method to populate attach_counts
+  // called by best_attachments()
   // At the moment, the counts are conditioned on the CYK parse tree; probably would be better to sum over all parse trees
   void populate_counts();
+};
+
+// extension to ECFG_EM_tree_alignment_database incorporating branch length EM for entire ECFG
+struct ECFG_attachable_tree_alignment_database : ECFG_EM_tree_alignment_database
+{
+  // constructors
+  ECFG_attachable_tree_alignment_database (Sequence_database& seq_db)
+    : ECFG_EM_tree_alignment_database (seq_db)
+  { }
+
+  // method to attach all unattached rows
+  void attach_rows (ECFG_scores& ecfg, double prior_param = 0.,
+		    double time_resolution = TINY, double time_max = DART_MAX_BRANCH_LENGTH, double time_min = 0.);
 };
 
 

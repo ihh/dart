@@ -31,6 +31,7 @@ ECFG_main::ECFG_main (int argc, char** argv)
   : opts (argc, argv),
     max_subseq_len (0),
     alph (0),
+    tree_estimation_grammar (0),
     tree_estimation_chain (0),
     align_db (seq_db)
 { }
@@ -39,10 +40,17 @@ ECFG_main::ECFG_main()
   : opts (0, (char**) 0),
     max_subseq_len (0),
     alph (0),
+    tree_estimation_grammar (0),
     tree_estimation_chain (0),
     align_db (seq_db)
 {
   init_opts("");
+}
+
+ECFG_main::~ECFG_main()
+{
+  delete_loaded_grammars();
+  delete_trainers();
 }
 
 void ECFG_main::add_grammar (const char* name, ECFG_scores* ecfg)
@@ -92,9 +100,6 @@ void ECFG_main::init_opts (const char* desc)
     }
 
   opts.add ("x -expand", dump_expanded = "", "dump macro-expanded grammar to file (prior to any training)", false);
-
-  opts.add ("e -tree", tree_grammar_filename = "", "load separate tree-estimation grammar from file (point substitution models only)", false);
-  opts.add ("ac -all-chains", use_ECFG_for_branch_length_EM = false, "when doing branch-length optimization, use all chains, not just a point-sub model", false);
   opts.add ("l -length", max_subseq_len = -1, "limit maximum length of infix subseqs (context-free grammars only)", false);
 
   sstring gap_chars_help;
@@ -102,7 +107,15 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("gc -gapchar", gap_chars = "", gap_chars_help.c_str(), false);
 
   opts.newline();
-  opts.print_title ("Algorithm selection");
+  opts.print_title ("Tree estimation algorithms");
+
+  opts.add ("e -tree", tree_grammar_filename = "", "estimate and/or optimize tree, using the grammar in this file", false);
+  opts.add ("obl -optimize-branch-lengths", do_branch_length_EM = false, "do branch-length optimization");
+  opts.add ("ps -point-sub", avoid_ECFG_for_branch_length_EM = false, "when optimizing branch lengths, use point-substitution model (as with neighbor-joining), rather than entire phylogrammar");
+  opts.add ("at -attach", attach_rows = false, "attempt to place unattached alignment rows on the tree");
+
+  opts.newline();
+  opts.print_title ("Training & annotation algorithms");
 
   opts.add ("t -train", train, "train model by EM, saving grammar to file", false);
   opts.add ("a -annotate", annotate = true, "display & report log-likelihood of maximum-likelihood parse tree (CYK algorithm)");
@@ -215,15 +228,13 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
   // it's conceivable that the Score_profile's could end up getting converted to the "wrong" alphabet here.
   // That is, it'll be the right Alphabet for tree estimation,
   // but wrong for any later operations involving the main grammar.
-  // Workaround: call seq_db_ptr->clear_scores() after tree estimation.
+  // Workaround: call seq_db_ptr->clear_scores() after tree algorithms.
 
   // use our Sequence_database unless caller overrides this
   if (seq_db_ptr == 0)
     seq_db_ptr = &seq_db;
 
   // read tree-estimation grammar
-  Empty_alphabet tree_estimation_grammar_alphabet, tree_estimation_hidden_alphabet;
-  vector<ECFG_scores*> tree_estimation_grammars;
   if (tree_estimation_chain == 0 && (tree_grammar_filename.size() > 0 || grammar_alphabet_sexpr != 0))
     {
       // read tree grammar & alphabet from file or SExpr
@@ -232,35 +243,39 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
       else
 	ECFG_builder::load_xgram_alphabet_and_grammars (tree_grammar_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars);
 
+      // mark grammars for later deletion
+      grammars_to_delete.insert (grammars_to_delete.begin(), tree_estimation_grammars.begin(), tree_estimation_grammars.end());
+
       // set the matrix used for tree estimation to be the first single-character matrix in any grammar in the tree grammar file
       for (int g = 0; tree_estimation_chain == 0 && g < (int) tree_estimation_grammars.size(); ++g)
 	tree_estimation_chain = tree_estimation_grammars[g]->first_single_pseudoterminal_chain();
+
+      if (tree_estimation_grammars.size() > 0)
+	tree_estimation_grammar = tree_estimation_grammars.front();
     }
 
   const bool do_neighbor_joining = missing_trees();
-  const bool do_branch_length_EM = (missing_trees() || (tree_grammar_filename.size() > 0)) && (em_max_iter != 0);   // checking em_max_iter here allows user to force neighbor-joining only, by specifying "--maxrounds 0"
-  const bool need_tree_estimation_chain = do_neighbor_joining || (do_branch_length_EM && !use_ECFG_for_branch_length_EM);
+  const bool need_tree_estimation_grammar = do_neighbor_joining || do_branch_length_EM;
+  const bool need_tree_estimation_chain = do_neighbor_joining || (do_branch_length_EM && avoid_ECFG_for_branch_length_EM);
+  const bool convert_seq_db = do_neighbor_joining || do_branch_length_EM || attach_rows;
 
-  updated_trees = do_neighbor_joining || do_branch_length_EM;   // this flag can also be set later if any branch lengths are rounded up
+  updated_trees = do_neighbor_joining || do_branch_length_EM || attach_rows;   // this flag can also be set later if any branch lengths are rounded up
+
+  sstring error_preamble;
+  if (missing_trees())
+    error_preamble << "Input alignments do not include Newick trees.\n";
+
+  if (need_tree_estimation_grammar && tree_estimation_grammar == 0)
+    THROWEXPR (error_preamble << "In order to estimate trees by neighbor-joining, optimize branch lengths,\n"
+	       "or place unattached rows on the tree, a separate tree-estimation grammar\n"
+	       "must be specified.\n");
 
   if (need_tree_estimation_chain && tree_estimation_chain == 0)
-    {
-      sstring preamble;
-      preamble << "Every input alignment needs to be annotated with a phylogenetic tree.\n"
-	       << "Given that this isn't the case, I need a rate matrix in order to do some ad-hoc phylogeny\n"
-	       << " (neighbor-joining followed by EM on the branch lengths, if you must know.)\n"
-	       << "I want to get that rate matrix from the tree estimation grammar,\n"
-	       << " in the form of a single-terminal 'chain'.\n";
+    THROWEXPR (error_preamble << "The tree-estimation grammar did not contain a single-terminal chain\n"
+	       "(i.e. a point substitution matrix), which is needed for some operations\n"
+	       "(neighbor-joining, or branch-length optimization with the --point-sub option).\n");
 
-      if (tree_grammar_filename.size() == 0 && grammar_alphabet_sexpr == 0)
-	THROWEXPR (preamble
-		   << "However, I haven't been told where to find that grammar, so I'm bailing.\n");
-
-      THROWEXPR (preamble
-		 << "However, I wasn't able to find any such chain in that file, so I'm bailing.\n");
-    }
-
-  if (do_neighbor_joining || do_branch_length_EM)
+  if (convert_seq_db)
     {
       // convert sequences to Score_profile's for tree estimation
       tree_estimation_hidden_alphabet.init_hidden (tree_estimation_grammar_alphabet, tree_estimation_chain->class_labels);
@@ -273,24 +288,31 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
       CTAG(5,XRATE) << "Estimating trees by neighbor-joining\n";
       Subst_dist_func_factory dist_func_factory (*tree_estimation_chain->matrix);
       align_db.estimate_missing_trees_by_nj (dist_func_factory);
+      copy_trees_to_stock_db();
     }
 
   if (do_branch_length_EM)
     {
       // optimise branch lengths by EM
       CTAG(5,XRATE) << "Optimizing tree branch lengths by EM\n";
-      if (use_ECFG_for_branch_length_EM)
-	align_db.optimise_branch_lengths_by_ECFG_EM (*tree_estimation_grammars[0], 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
-      else
+      if (avoid_ECFG_for_branch_length_EM)
 	{
 	  Irrev_EM_matrix nj_hsm (1, 1);  // create temporary EM_matrix
 	  nj_hsm.assign (*tree_estimation_chain->matrix);
 	  align_db.optimise_branch_lengths_by_EM (nj_hsm, 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
 	}
-
+      else
+	align_db.optimise_branch_lengths_by_ECFG_EM (*tree_estimation_grammar, 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
+      copy_trees_to_stock_db();
     }
 
-  if (do_neighbor_joining || do_branch_length_EM)
+  if (attach_rows)
+    {
+      align_db.attach_rows (*tree_estimation_grammar, 0., BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
+      copy_trees_to_stock_db();
+    }
+
+  if (convert_seq_db)
     {
       // clear the (potentially inconsistent with other grammars) Score_profile's
       seq_db_ptr->clear_scores();
@@ -299,23 +321,29 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
   // ensure all tree branches meet minimum length requirement
   for (int n_align = 0; n_align < align_db.size(); n_align++)
     {
+      bool adjusted_lengths = false;
       PHYLIP_tree& tree = align_db.tree_align[n_align]->tree;
       for_rooted_branches_post (tree, b)
 	if ((*b).length < min_branch_len)
 	  {
 	    tree.branch_length (*b) = min_branch_len;
-	    updated_trees = true;
+	    adjusted_lengths = updated_trees = true;
 	  }
-    }
 
+      if (adjusted_lengths)
+	copy_trees_to_stock_db();
+    }
+}
+
+void ECFG_main::copy_trees_to_stock_db()
+{
   // copy all trees back into the Stockholm alignments (ugh)
-  if (updated_trees)
-    for (int n_align = 0; n_align < align_db.size(); n_align++)
-      {
-	Tree_alignment& tree_align = *align_db.tree_align[n_align];
-	Stockholm& stock = *stock_db.align_index[n_align];
-	tree_align.copy_tree_to_Stockholm (stock);
-      }
+  for (int n_align = 0; n_align < align_db.size(); n_align++)
+    {
+      Tree_alignment& tree_align = *align_db.tree_align[n_align];
+      Stockholm& stock = *stock_db.align_index[n_align];
+      tree_align.copy_tree_to_Stockholm (stock);
+    }
 }
 
 void ECFG_main::read_grammars (SExpr* grammar_alphabet_sexpr)
@@ -324,14 +352,21 @@ void ECFG_main::read_grammars (SExpr* grammar_alphabet_sexpr)
   if (grammar_alphabet_sexpr) {
     ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, user_alphabet, grammar, &align_db, max_subseq_len, tres);
     alph = &user_alphabet;
+
+    // mark grammars for later deletion
+    grammars_to_delete.insert (grammars_to_delete.begin(), grammar.begin(), grammar.end());
+
   } else if (grammars_filename.size())
     {
       ECFG_builder::load_xgram_alphabet_and_grammars (grammars_filename, user_alphabet, grammar, &align_db, max_subseq_len, tres);
       alph = &user_alphabet;
+
+      // mark grammars for later deletion
+      grammars_to_delete.insert (grammars_to_delete.begin(), grammar.begin(), grammar.end());
     }
   else
     {
-      // initialise grammars from preset
+      // initialise grammars from preset (and do NOT mark them for later deletion)
       ECFG_map::iterator ecfg_iter = ecfg_map.find (preset);
       if (ecfg_iter == ecfg_map.end())
 	THROWEXPR ("Preset grammar '" << preset << "' not known (did you mean to load a grammar from a file?)");
@@ -436,6 +471,12 @@ void ECFG_main::delete_trainers()
       delete *t;
 
   trainer.clear();
+}
+
+void ECFG_main::delete_loaded_grammars()
+{
+  for_contents (vector<ECFG_scores*>, grammars_to_delete, g)
+    delete *g;
 }
 
 void ECFG_main::annotate_alignments (ostream* align_stream)

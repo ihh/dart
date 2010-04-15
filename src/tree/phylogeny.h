@@ -411,6 +411,14 @@ class PHYLIP_tree : public Phylogeny
   bool force_binary();                                     // returns TRUE if tree was changed
   void rebuild_parents() { parent = find_parents(root); }  // sets up parents vector
 
+  // named version of add_node
+  Node add_named_node (const sstring& name, Node neighbour = -1, double branch_length = 0)
+  {
+    node_name.push_back(name);
+    parent.push_back(neighbour);
+    return add_node(neighbour,branch_length);
+  }
+
   // given a Node_pair, flip it into parent-child order
   Node_pair parent_child_pair (const Node_pair& np) const
     {
