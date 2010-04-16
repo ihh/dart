@@ -22,7 +22,6 @@ struct ECFG_placer
   ECFG_scores& ecfg;
   Stockholm& stock;
   Tree_alignment& tree_align;  // this must be constructed from stock
-  PHYLIP_tree& tree;  // points to tree_align.tree (but there are two other trees that must be updated as well: one in cyk_matrix, and one in stock)
   double prior_param;  // P(branch_length=t) = exp(-prior_param*t)
 
   // constructor

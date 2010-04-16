@@ -19,7 +19,6 @@ struct ECFG_branch_state_counts_map
   ECFG_scores& ecfg;
   Stockholm& stock;
   Tree_alignment& tree_align;  // this must be constructed from stock
-  PHYLIP_tree& tree;  // points to tree_align.tree (but there are two other trees that must be updated as well: one in cyk_matrix, and one in stock)
   double prior_param;  // P(branch_length=t) = exp(-prior_param*t)
 
   // EM params
@@ -38,14 +37,11 @@ struct ECFG_branch_state_counts_map
   Loge collect_branch_counts (ECFG_EM_matrix& em_matrix, const ECFG_cell_score_map& annot, double weight = 1.);
 
   // tree update method
-  void update_branch_lengths (double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
+  void update_branch_lengths (PHYLIP_tree& tree, double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // EM method: optimizes all the branch lengths of the tree
   // At the moment, the counts are conditioned on the CYK parse tree; probably would be better to sum over all parse trees
   Loge do_EM (double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
-
-  // helpers
-  void copy_branch_lengths (const PHYLIP_tree& t1, PHYLIP_tree& t2);
 };
 
 // base class for ECFG_branch_expected_loglike and ECFG_branch_expected_loglike_deriv

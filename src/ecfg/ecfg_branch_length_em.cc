@@ -4,7 +4,6 @@ ECFG_branch_state_counts_map::ECFG_branch_state_counts_map (ECFG_scores& ecfg, S
   ecfg (ecfg),
   stock (stock),
   tree_align (tree_align),
-  tree (tree_align.tree),
   prior_param (prior_param),
   em_max_iter (-1),
   forgive (0),
@@ -15,7 +14,7 @@ ECFG_branch_state_counts_map::ECFG_branch_state_counts_map (ECFG_scores& ecfg, S
 
 void ECFG_branch_state_counts_map::clear()
 {
-  for_rooted_branches_post (tree, b) {
+  for_rooted_branches_post (tree_align.tree, b) {
     branch_state_counts[*b] = vector<Branch_state_counts> (ecfg.matrix_set.chain.size());
     for (int c = 0; c < (int) ecfg.matrix_set.chain.size(); ++c) {
       const int states = ecfg.matrix_set.total_states(c);
@@ -59,7 +58,7 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
 			  << "); log-likelihood " << colmat_ll << "\n";
 
 	  // loop over branches
-	  for_rooted_branches_post (tree, b)
+	  for_rooted_branches_post (em_matrix.tree, b)
 	    {
 	      const Phylogeny::Node p = (*b).first;
 	      const Phylogeny::Node n = (*b).second;
@@ -71,8 +70,9 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
 		  for_const_contents (vector<int>, colmat.allowed[p], i)
 		    for_const_contents (vector<int>, colmat.allowed[n], j)
 		    {
-		      const Prob branch_pp = colmat.branch_post_prob (n, *i, *j, tree, *chain.matrix);
+		      const Prob branch_pp = colmat.branch_post_prob (n, *i, *j, em_matrix.tree, *chain.matrix);
 		      bcounts(*i,*j) += weight * branch_pp;
+		      // CTAG(1,TREE_EM_DEBUG) << "p="<<em_matrix.tree.node_name[p]<<" n="<<em_matrix.tree.node_name[n]<<" i="<<*i<<" j="<<*j<<" prob="<<branch_pp<<"\n";
 		    }
 		}
 	    }
@@ -83,13 +83,15 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
   return final_ll;
 }
 
-void ECFG_branch_state_counts_map::update_branch_lengths (double resolution, double tmax, double tmin)
+void ECFG_branch_state_counts_map::update_branch_lengths (PHYLIP_tree& tree, double resolution, double tmax, double tmin)
 {
   for_rooted_branches_post (tree, b)
     {
       ECFG_bell_funcs bell (*this, *b, resolution, tmax, tmin);
       tree.branch_length (*b) = bell.bell_max();
     }
+  // ensure Tree_alignment's tree stays in sync with this tree
+  tree_align.set_tree (tree);
 }
 
 Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double tmin)
@@ -98,7 +100,7 @@ Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double
   if (CTAGGING(5,TREE_EM))
     {
       CL << "Optimizing tree branch lengths by EM.\nTree before optimization:\n";
-      tree.write (CL);
+      tree_align.tree.write (CL);
     }
 
   Loge best_log_likelihood = 0;
@@ -117,6 +119,10 @@ Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double
   cyk_mx.fill();
   ECFG_cell_score_map cyk_trace = cyk_mx.traceback();  // get traceback
 
+  // ensure Tree_alignment's tree stays in sync with ECFG DP matrix's tree
+  tree_align.set_tree (cyk_mx.tree);
+
+  // do EM
   int dec = 0;
   for (int iter = 0; ; ++iter)
     {
@@ -136,7 +142,7 @@ Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double
       if (iter == 0 || current > best_log_likelihood)
 	{
 	  best_log_likelihood = current;
-	  best_tree = tree;
+	  best_tree = cyk_mx.tree;
 	}
       CTAG(6,TREE_EM) << "EM iteration #" << iter+1 << ": log-likelihood = " << Nats2Bits(current) << " bits\n";
 
@@ -159,16 +165,14 @@ Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double
 	    dec = 0;
 	}
 
-      // update the tree
-      update_branch_lengths (resolution, tmax, tmin);
-      tree_align.tree_changed();
-      copy_branch_lengths (tree, cyk_mx.tree);
+      // update the tree (this method will update tree_align.tree as well)
+      update_branch_lengths (cyk_mx.tree, resolution, tmax, tmin);
 
       // log
       if (CTAGGING(5,TREE_EM))
 	{
 	  CL << "Optimized tree after step #" << iter+1 << ":\n";
-	  tree.write (CL);
+	  tree_align.tree.write (CL);
 	}
     }
   
@@ -180,8 +184,7 @@ Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double
   if (em_max_iter != 0 && final_log_likelihood < best_log_likelihood)
   {
     CTAG(6,TREE_EM) << "Restoring previous best branch lengths\n";
-    tree = best_tree;
-    tree_align.tree_changed();
+    tree_align.set_tree (best_tree);
   }
   else
     best_log_likelihood = final_log_likelihood;
@@ -190,17 +193,11 @@ Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double
   if (CTAGGING(5,TREE_EM))
     {
       CL << "Tree after optimization:\n";
-      tree.write (CL);
+      tree_align.tree.write (CL);
     }
 
   // and return
   return best_log_likelihood;
-}
-
-void ECFG_branch_state_counts_map::copy_branch_lengths (const PHYLIP_tree& t1, PHYLIP_tree& t2)
-{
-  for_rooted_branches_pre (t1, b)
-    t2.branch_length(*b) = t1.branch_length(*b);
 }
 
 ECFG_branch_expected_loglike_base::ECFG_branch_expected_loglike_base (const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param)
@@ -247,7 +244,7 @@ ECFG_bell_funcs::ECFG_bell_funcs (const ECFG_branch_state_counts_map& tree_count
 
   init (bcounts, tree_counts.ecfg, tree_counts.prior_param);
 
-  CTAG(2,TREE_EM) << "Branch counts for branch " << tree_counts.tree.branch_specifier (branch)
+  CTAG(2,TREE_EM) << "Branch counts for branch " << tree_counts.tree_align.tree.branch_specifier (branch)
 		  << ":\n" << bcounts;
 }
 

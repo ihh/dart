@@ -4,7 +4,6 @@ ECFG_placer::ECFG_placer (ECFG_scores& ecfg, Stockholm& stock, Tree_alignment& t
   ecfg (ecfg),
   stock (stock),
   tree_align (tree_align),
-  tree (tree_align.tree),
   prior_param (prior_param)
 {
   for (int row = 0; row < tree_align.align.rows(); ++row)
@@ -23,7 +22,7 @@ void ECFG_placer::populate_counts()
       empty_counts.push_back (Branch_state_counts (states, states, 0.));
     }
   for_const_contents (vector<int>, unattached_rows, row)
-    for_rooted_nodes_post (tree, b)
+    for_rooted_nodes_post (tree_align.tree, b)
     {
       const Phylogeny::Node node = (*b).second;
       attach_counts[*row][node] = empty_counts;
@@ -41,6 +40,9 @@ void ECFG_placer::populate_counts()
   ECFG_CYK_matrix cyk_mx (ecfg, stock, asp, env, try_fast_prune);   // create CYK matrix
   cyk_mx.fill();
   ECFG_cell_score_map cyk_trace = cyk_mx.traceback();  // get traceback
+
+  // ensure Tree_alignment's tree stays in sync with ECFG DP matrix's tree
+  tree_align.set_tree (cyk_mx.tree);
 
   // create dummy counts
   ECFG_counts dummy_counts (ecfg);
@@ -68,7 +70,7 @@ void ECFG_placer::populate_counts()
 
 	  typedef map<Phylogeny::Node,vector<Prob> > Node_state_prob_map;
 	  Node_state_prob_map node_state_probs;
-	  for_rooted_nodes_post (tree, b)
+	  for_rooted_nodes_post (cyk_mx.tree, b)
 	    {
 	      const Phylogeny::Node n = (*b).second;
 	      vector<Prob> state_probs = chain.matrix->create_prior();   // by default (e.g. if gapped), assume prior distribution
@@ -76,7 +78,7 @@ void ECFG_placer::populate_counts()
 		{
 		  for_const_contents (vector<int>, colmat.allowed[n], i)
 		    {
-		      const Prob node_pp = colmat.node_post_prob (n, *i, tree, *chain.matrix);
+		      const Prob node_pp = colmat.node_post_prob (n, *i, cyk_mx.tree, *chain.matrix);
 		      state_probs[*i] = node_pp;
 		    }
 		}
@@ -155,7 +157,8 @@ void ECFG_placer::attach (double resolution, double tmax, double tmin)
       const int row = row_attachment_branch->first;
       const Attachment_branch& attachment_branch = row_attachment_branch->second;
 
-      const Phylogeny::Node new_node = tree.add_named_node (tree_align.align.row_name[row], attachment_branch.first, attachment_branch.second);
+      // we are updating the Tree_alignment's tree in place here, which is a bit sketchy... IH 4/15/2010
+      const Phylogeny::Node new_node = tree_align.tree.add_named_node (tree_align.align.row_name[row], attachment_branch.first, attachment_branch.second);
 
       tree_align.row2node[row] = new_node;
       tree_align.node2row.push_back (row);

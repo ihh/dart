@@ -34,6 +34,7 @@ void Branch_state_counts_map::collect_branch_counts (const Column_matrix& colmat
 	    {
 	      const double branch_pp = colmat.branch_post_prob (n, *i, *j, tree, hsm);
 	      bcounts(*i,*j) += weight * branch_pp;
+	      // CTAG(1,TREE_EM_DEBUG) << "p="<<tree.node_name[p]<<" n="<<tree.node_name[n]<<" i="<<*i<<" j="<<*j<<" prob="<<branch_pp<<"\n";
 	    }
 	}
     }
