@@ -12,9 +12,9 @@
   (components
    (&foreach-branch  ;; loop over node names
     NODE
-    ((label NODE) (terminal ((. COD0_ NODE)
-			     (. COD1_ NODE)
-			     (. COD2_ NODE))))
+    ((label NODE) (terminal ((&. COD0_ NODE)
+			     (&. COD1_ NODE)
+			     (&. COD2_ NODE))))
     )
    )
   )
@@ -26,22 +26,22 @@
   ;; Parameters
   ;; Branch-specific codon bias
   (pgroup
-   (((. p0_ GC_ NODE) .5) ((. p0_ AT_ NODE) .5))
-   (((. p1_ GC_ NODE) .5) ((. p1_ AT_ NODE) .5))
-   (((. p2_ GC_ NODE) .5) ((. p2_ AT_ NODE) .5))
+   (((&. p0_ GC_ NODE) .5) ((&. p0_ AT_ NODE) .5))
+   (((&. p1_ GC_ NODE) .5) ((&. p1_ AT_ NODE) .5))
+   (((&. p2_ GC_ NODE) .5) ((&. p2_ AT_ NODE) .5))
    )
 
   ;; Branch-specific substitution rate
   (rate
-   ((. RATE_ NODE) 1)
+   ((&. RATE_ NODE) 1)
    )
 
   ;; Branch-specific substitution rate matrix
   (chain
    (update-policy parametric)
-   (terminal ((. COD0_ NODE)
-	      (. COD1_ NODE)
-	      (. COD2_ NODE)))
+   (terminal ((&. COD0_ NODE)
+	      (&. COD1_ NODE)
+	      (&. COD2_ NODE)))
 
    (&foreach-token
     i0
@@ -49,11 +49,11 @@
      i1
      (&foreach-token
       i2
-      (&warn Initializing: codon (. i0 i1 i2) , branch NODE)
+      (&warn Initializing: codon (&. i0 i1 i2) , branch NODE)
       ;; initial probability distribution
-      (initial (state (i0 i1 i2)) (prob ((. p0_ (? (&or (= i0 g) (= i0 c)) GC AT) _ NODE)
-					 * (. p1_ (? (&or (= i1 g) (= i1 c)) GC AT) _ NODE)
-					 * (. p2_ (? (&or (= i2 g) (= i2 c)) GC AT) _ NODE))))
+      (initial (state (i0 i1 i2)) (prob ((&. p0_ (&? (&or (&= i0 g) (&= i0 c)) GC AT) _ NODE)
+					 * (&. p1_ (&? (&or (&= i1 g) (&= i1 c)) GC AT) _ NODE)
+					 * (&. p2_ (&? (&or (&= i2 g) (&= i2 c)) GC AT) _ NODE))))
 
       ;; mutation rates
       (&foreach-token
@@ -62,16 +62,16 @@
 	j1
 	(&foreach-token
 	 j2
-	 (?
-	  (&and (= i0 j0) (= i1 j1) (= i2 j2))
+	 (&?
+	  (&and (&= i0 j0) (&= i1 j1) (&= i2 j2))
 	  ()
 	  (mutate
 	   (from (i0 i1 i2))
 	   (to (j0 j1 j2))
-	   (rate (((. RATE_ NODE)
-		   * (. p0_ (? (&or (= j0 g) (= j0 c)) GC AT) _ NODE)
-		   * (. p1_ (? (&or (= j1 g) (= j1 c)) GC AT) _ NODE)
-		   * (. p2_ (? (&or (= j2 g) (= j2 c)) GC AT) _ NODE))))
+	   (rate (((&. RATE_ NODE)
+		   * (&. p0_ (&? (&or (&= j0 g) (&= j0 c)) GC AT) _ NODE)
+		   * (&. p1_ (&? (&or (&= j1 g) (&= j1 c)) GC AT) _ NODE)
+		   * (&. p2_ (&? (&or (&= j2 g) (&= j2 c)) GC AT) _ NODE))))
 	   )
 	  )
 	 )

@@ -130,10 +130,10 @@
   ;;  and r = 166*p/(1-p) ~= 0.67  !!???
 
   ;; That r~1 is confirmed by the following crude gridsearch over negative binomial parameter space:
-  ;; cat exon.gff | perl -ane 'print $F[4]-$F[3],"\n"' | linbins 50 | perl -e 'while(<>){($n,$c)=split;$c{$n}=$c}for($p=.001;$p<=.005;$p+=.001){for($r=1;$r<=5;++$r){$ll=0;while(($n,$c)=each%c){$ll+=$c*($r*log($p)+$n*log(1-$p)+logfac($n+$r)-logfac($n)-logfac($r))}print"p= $p r= $r ll= $ll\n"}}sub logfac{my$n=shift;my$ll=0;for my$i(2..$n){$ll+=log($i)}return $ll}'
+  ;; cat exon.gff | perl -ane 'print $F[4]-$F[3],"\n"' | linbins 50 | perl -e 'while(&<>){($n,$c)=split;$c{$n}=$c}for($p=.001;$p<=.005;$p+=.001){for($r=1;$r<=5;++$r){$ll=0;while(($n,$c)=each%c){$ll+=$c*($r*log($p)+$n*log(1-$p)+logfac($n+$r)-logfac($n)-logfac($r))}print"p= $p r= $r ll= $ll\n"}}sub logfac{my$n=shift;my$ll=0;for my$i(2..$n){$ll+=log($i)}return $ll}'
 
-  ;; There are roughly 0.75 introns per exon (=47676/64113)
-  ;;       and roughly 4.4    exons per gene (=64113/14449)
+  ;; There are roughly 0.75 introns per exon (&=47676/64113)
+  ;;       and roughly 4.4    exons per gene (&=64113/14449)
 
   ;; Thus,
   ;;  NUMBER_OF_CODING_STATES ~ 1
@@ -192,7 +192,7 @@
  ;;  The negative binomial is the discrete analogue of the gamma,
  ;;  obtained in this case as a convolution of identical geometric distrib'ns.)
 
- ;; Despite IH's intuition that this should be a peaked distribution (>1), empirically a geometric distribution (=1) seems to be a better fit.
+ ;; Despite IH's intuition that this should be a peaked distribution (&>1), empirically a geometric distribution (&=1) seems to be a better fit.
  (&define NUMBER_OF_CODING_STATES 1)
 
  ;; Length of features.
@@ -363,12 +363,12 @@
   NUM
   (1 NUMBER_OF_CODING_STATES)
 
-  (nonterminal (name (. FWD_CODING_ NUM)))
-  (nonterminal (name (. REV_CODING_ NUM)))
+  (nonterminal (name (&. FWD_CODING_ NUM)))
+  (nonterminal (name (&. REV_CODING_ NUM)))
 
   ;; state FWD_CODING_[NUM]
-  (transform (from ((. FWD_CODING_ NUM)))
-	     (to (COD1 COD2 COD3 (. FWD_CODING_ NUM *)))
+  (transform (from ((&. FWD_CODING_ NUM)))
+	     (to (COD1 COD2 COD3 (&. FWD_CODING_ NUM *)))
 	     (gaps-ok)
 	     (annotate (row CODING) (column COD1) (label 0))
 	     (annotate (row CODING) (column COD2) (label 1))
@@ -377,24 +377,24 @@
 	     (annotate (row STRAND) (column COD2) (label +))
 	     (annotate (row STRAND) (column COD3) (label +)))
 
-  (transform (from ((. FWD_CODING_ NUM *)))
-	     (to ((. FWD_CODING_ NUM)))
+  (transform (from ((&. FWD_CODING_ NUM *)))
+	     (to ((&. FWD_CODING_ NUM)))
 	     (prob extend_coding))
 
-  (transform (from ((. FWD_CODING_ NUM *)))
+  (transform (from ((&. FWD_CODING_ NUM *)))
 	     (to (FWD_INSERT_INTRON))
 	     (prob insert_intron))
 
-  (transform (from ((. FWD_CODING_ NUM *)))
-	     (to ((?
-		   (= NUM NUMBER_OF_CODING_STATES)
+  (transform (from ((&. FWD_CODING_ NUM *)))
+	     (to ((&?
+		   (&= NUM NUMBER_OF_CODING_STATES)
 		   CONSERVED
-		   (. FWD_CODING_ (+ NUM 1)))))
+		   (&. FWD_CODING_ (&+ NUM 1)))))
 	     (prob end_coding))
 
   ;; state REV_CODING_[NUM]
-  (transform (from ((. REV_CODING_ NUM)))
-	     (to (~COD3 ~COD2 ~COD1 (. REV_CODING_ NUM *)))
+  (transform (from ((&. REV_CODING_ NUM)))
+	     (to (~COD3 ~COD2 ~COD1 (&. REV_CODING_ NUM *)))
 	     (gaps-ok)
 	     (annotate (row CODING) (column COD3) (label 2))
 	     (annotate (row CODING) (column COD2) (label 1))
@@ -403,19 +403,19 @@
 	     (annotate (row STRAND) (column COD2) (label -))
 	     (annotate (row STRAND) (column COD1) (label -)))
 
-  (transform (from ((. REV_CODING_ NUM *)))
-	     (to ((. REV_CODING_ NUM)))
+  (transform (from ((&. REV_CODING_ NUM *)))
+	     (to ((&. REV_CODING_ NUM)))
 	     (prob extend_coding))
 
-  (transform (from ((. REV_CODING_ NUM *)))
+  (transform (from ((&. REV_CODING_ NUM *)))
 	     (to (REV_INSERT_INTRON))
 	     (prob insert_intron))
 
-  (transform (from ((. REV_CODING_ NUM *)))
-	     (to ((?
-		   (= NUM NUMBER_OF_CODING_STATES)
+  (transform (from ((&. REV_CODING_ NUM *)))
+	     (to ((&?
+		   (&= NUM NUMBER_OF_CODING_STATES)
 		   CONSERVED
-		   (. REV_CODING_ (+ NUM 1)))))
+		   (&. REV_CODING_ (&+ NUM 1)))))
 	     (prob end_coding))
 
   ;; end of coding state generation macro

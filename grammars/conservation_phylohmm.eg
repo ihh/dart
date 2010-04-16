@@ -17,7 +17,7 @@
  (pgroup
 
   ;; Initial distribution over states
-  ((&foreach-token TOK ((. p TOK) (/ 1 &TOKENS))))
+  ((&foreach-token TOK ((&. p TOK) (&/ 1 &TOKENS))))
   ;; The above expression should evaluate to
   ;; ((pa .25) (pc .25) (pg .25) (pt .25))
 
@@ -38,12 +38,12 @@
   ;; Markov chain for residue substitution
   (chain
    (update-policy parametric)
-   (terminal ((. X CLASS)))
+   (terminal ((&. X CLASS)))
 
    ;; initial probability distribution
    (&foreach-token
     TOK
-    (initial (state (TOK)) (prob (. p TOK)))
+    (initial (state (TOK)) (prob (&. p TOK)))
     )
 
    ;; mutation rates
@@ -51,10 +51,10 @@
     SRC
     (&foreach-token
      DEST
-     (?
-      (= SRC DEST)
+     (&?
+      (&= SRC DEST)
       ()
-      (mutate (from (SRC)) (to (DEST)) (rate (lambda * (/ CLASS CLASSES) * (. p DEST))))
+      (mutate (from (SRC)) (to (DEST)) (rate (lambda * (&/ CLASS CLASSES) * (&. p DEST))))
       )
      )
     )
@@ -64,19 +64,19 @@
 
   (transform
    (from (START))
-   (to ((. S CLASS)))
-   (prob (/ 1 CLASSES)))
+   (to ((&. S CLASS)))
+   (prob (&/ 1 CLASSES)))
 
   (transform
-   (from ((. S CLASS)))
-   (to ((. X CLASS) (. S CLASS *)))
+   (from ((&. S CLASS)))
+   (to ((&. X CLASS) (&. S CLASS *)))
    (annotate
     (row CONSERVATION)
-    (column (. X CLASS))
-    (label (&chr (+ (- CLASSES CLASS) (&ord 0))))))  ;; classes are annotated '0' (fastest), '1', '2' ...
+    (column (&. X CLASS))
+    (label (&chr (&+ (&- CLASSES CLASS) (&ord 0))))))  ;; classes are annotated '0' (fastest), '1', '2' ...
 
   (transform
-   (from ((. S CLASS *)))
+   (from ((&. S CLASS *)))
    (to ()) (prob 1))
 
   ;; transitions
@@ -84,12 +84,12 @@
    DEST_CLASS
    (1 CLASSES)
    (transform
-    (from ((. S CLASS *)))
-    (to ((. S DEST_CLASS)))
-    (prob (?
-	   (= CLASS DEST_CLASS)
+    (from ((&. S CLASS *)))
+    (to ((&. S DEST_CLASS)))
+    (prob (&?
+	   (&= CLASS DEST_CLASS)
 	   (stayProb)
-	   (leaveProb / (- CLASSES 1))
+	   (leaveProb / (&- CLASSES 1))
 	   )
 	  ))
    )

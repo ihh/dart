@@ -20,7 +20,7 @@
   (components
    (&foreach-branch  ;; loop over node names
     NODE
-    ((label NODE) (terminal ((. CHAIN_ NODE))))  ;; if the #=GS tag has value NODE, set the chain to CHAIN_NODE
+    ((label NODE) (terminal ((&. CHAIN_ NODE))))  ;; if the #=GS tag has value NODE, set the chain to CHAIN_NODE
     )
    )
   )
@@ -32,26 +32,26 @@
   ;; Parameters
   ;; Branch-specific GC/AT content
   (pgroup
-   (((. pGC_ NODE) 0.5) ((. pAT_ NODE) 0.5))
+   (((&. pGC_ NODE) 0.5) ((&. pAT_ NODE) 0.5))
    )
 
   ;; Branch-specific substitution rate
   (rate
-   ((. RATE_ NODE) 1)
+   ((&. RATE_ NODE) 1)
    )
 
   ;; Branch-specific substitution rate matrix
   (chain
    (update-policy parametric)
-   (terminal ((. CHAIN_ NODE)))
+   (terminal ((&. CHAIN_ NODE)))
 
    (&foreach-token
     SRC
     ;; initial probability distribution
-    (initial (state (SRC)) (prob ((. (?
+    (initial (state (SRC)) (prob ((&. (&?
 				      (&or
-				       (= SRC g)
-				       (= SRC c)
+				       (&= SRC g)
+				       (&= SRC c)
 				       )
 				      pGC_
 				      pAT_
@@ -61,16 +61,16 @@
     ;; mutation rates
     (&foreach-token
      DEST
-     (?
-      (= SRC DEST)
+     (&?
+      (&= SRC DEST)
       ()
       (mutate
        (from (SRC))
        (to (DEST))
-       (rate (((. RATE_ NODE) * (. (?
+       (rate (((&. RATE_ NODE) * (&. (&?
 				    (&or
-				     (= DEST g)
-				     (= DEST c)
+				     (&= DEST g)
+				     (&= DEST c)
 				     )
 				    pGC_
 				    pAT_

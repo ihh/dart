@@ -18,9 +18,9 @@
 ;; (foreach-node NODE EXPRLIST)     -- same as foreach, but the list is the set of nodes in the tree (requires that Stockholm database contains exactly one alignment)
 ;; (foreach-branch NODE EXPRLIST)   -- same as foreach-node, but excludes the root node (requires that Stockholm database contains exactly one alignment)
 ;; (foreach-leaf NODE EXPRLIST)     -- same as foreach-node, but leaf nodes only (requires that Stockholm database contains exactly one alignment)
-;; (. LIST)                         -- concatenates a list of atoms into a single atom, e.g. (. A B C) evaluates to ABC
-;; (+ LIST)                         -- sums the integer values of LIST, e.g. (+ 1 4 -3) evaluates to 2
-;; (* LIST)                         -- multiplies the integer values of LIST, e.g. (* 5 2 3) evaluates to 30
+;; (&. LIST)                         -- concatenates a list of atoms into a single atom, e.g. (&. A B C) evaluates to ABC
+;; (&+ LIST)                         -- sums the integer values of LIST, e.g. (&+ 1 4 -3) evaluates to 2
+;; (&* LIST)                         -- multiplies the integer values of LIST, e.g. (&* 5 2 3) evaluates to 30
 ;; &NODES                           -- number of nodes on the tree
 ;; &LEAVES                          -- number of leaves
 ;; &BRANCHES                        -- number of branches = &NODES - 1
@@ -33,8 +33,8 @@
  (foreach-branch
   NODE
   (hybrid-chain
-   (terminal ((. H- NODE)))
-   (row (. = NODE))
+   (terminal ((&. H- NODE)))
+   (row (&. = NODE))
    (components
     ((label 0) (terminal (X)))
     ((label 1) (terminal (Y)))
@@ -42,25 +42,25 @@
    )
 
   (hybrid-chain
-   (terminal ((. I- NODE)))
-   (row (. : NODE))
+   (terminal ((&. I- NODE)))
+   (row (&. : NODE))
    (components
     ((label 0) (terminal (X)))
     ((label 1) (terminal (Y)))
     )
    )
 
-  (transform (from ((. S- NODE))) (to ((. H- NODE) (. S- NODE *))))
-  (transform (from ((. S- NODE *))) (to ()) (prob 1))
+  (transform (from ((&. S- NODE))) (to ((&. H- NODE) (&. S- NODE *))))
+  (transform (from ((&. S- NODE *))) (to ()) (prob 1))
 
   (foreach-branch  ;; note that one foreach construct can be nested inside another...
    NODE2
-   (transform (from ((. S- NODE *))) (to ((. S- NODE2))) (prob (1 / &BRANCHES)))
+   (transform (from ((&. S- NODE *))) (to ((&. S- NODE2))) (prob (1 / &BRANCHES)))
    )
 
-  (transform (from ((. T- NODE))) (to ((. I- NODE) (. T- NODE *))))
-  (transform (from ((. T- NODE *))) (to ((. T- NODE))) (prob 1))
-  (transform (from ((. T- NODE *))) (to ()) (prob 1))
+  (transform (from ((&. T- NODE))) (to ((&. I- NODE) (&. T- NODE *))))
+  (transform (from ((&. T- NODE *))) (to ((&. T- NODE))) (prob 1))
+  (transform (from ((&. T- NODE *))) (to ()) (prob 1))
 
   )
 

@@ -1,5 +1,5 @@
 ;; Example of usage:
-;; cat ~/rfam/Families/U12.stock | perl -pe 'if(/SS_cons/){s/\./_/g}' | xrate --tree ~/dart/data/jukescantor.eg --grammar ~/dart/data/loopstem.eg --train ~/tmp/U12.loopstem.eg -log 6
+;; cat ~/rfam/Families/U12.stock | perl -pe 'if(&/SS_cons/){s/\./_/g}' | xrate --tree ~/dart/data/jukescantor.eg --grammar ~/dart/data/loopstem.eg --train ~/tmp/U12.loopstem.eg -log 6
 ;; grep Rate ~/tmp/U12.loopstem.eg | head -2
 
 (alphabet

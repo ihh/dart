@@ -138,15 +138,15 @@
  ;; nulprob
  (pgroup
   ((&foreach-token i
-		   ((. nulprob i) SEED))))
+		   ((&. nulprob i) SEED))))
 
  ;; nulrate
  (rate
   (&foreach-token i
 		  (&foreach-token j
-				  (? (= i j)
-				     ((. nuldummy i 2 j) 0)
-				     ((. nulrate i 2 j) SEED)))))
+				  (&? (&= i j)
+				     ((&. nuldummy i 2 j) 0)
+				     ((&. nulrate i 2 j) SEED)))))
 
  ;; nonstruct
  ;; nonstruct -> ns1 | ns2 | ... | nsCLASSES
@@ -155,38 +155,38 @@
  (&define CLASSES 3)
  (&foreach-integer X (1 CLASSES)
 	   ;; nonstruct -> nsX
-	   (transform (prob SEED) (from (nonstruct)) (to ((. ns X))))
+	   (transform (prob SEED) (from (nonstruct)) (to ((&. ns X))))
 
 	   ;; nulratemulX parameter
-	   (rate ((. nulratemul X) (* (+ X 1) SEED)))
+	   (rate ((&. nulratemul X) (&* (&+ X 1) SEED)))
 
 	   ;; matrix (NULX)
 	   (chain
-	    (terminal ((. NUL X)))
+	    (terminal ((&. NUL X)))
 	    (update-policy parametric)
 	    (&foreach-token i
-			    (initial (state (i)) (prob ((. nulprob i))))
+			    (initial (state (i)) (prob ((&. nulprob i))))
 			    (&foreach-token j
-					    (? (= i j) ()
+					    (&? (&= i j) ()
 					       (mutate (from (i)) (to (j))
 						       (rate
-							((. nulratemul X)
-							 (. nulrate i 2 j))))))))
+							((&. nulratemul X)
+							 (&. nulrate i 2 j))))))))
 
 	   ;; nsX -> NULX nsX*
 	   (transform
-	    (from ((. ns X)))
-	    (to ((. NUL X) (. ns X *)))
-	    (annotate (row SubRate) (column (. NUL X)) (label (&chr (+ X (&ord 0)))))
-	    (annotate (row SS_cons) (column (. NUL X)) (label ,))
-	    (annotate (row RdFrame) (column (. NUL X)) (label ,)))
+	    (from ((&. ns X)))
+	    (to ((&. NUL X) (&. ns X *)))
+	    (annotate (row SubRate) (column (&. NUL X)) (label (&chr (&+ X (&ord 0)))))
+	    (annotate (row SS_cons) (column (&. NUL X)) (label ,))
+	    (annotate (row RdFrame) (column (&. NUL X)) (label ,)))
 
 	   ;; nsX* -> end
-	   (transform (prob SEED) (from ((. ns X *))) (to ()))
+	   (transform (prob SEED) (from ((&. ns X *))) (to ()))
 
 	   (&foreach-integer Y (1 CLASSES)
 			     ;; nsX -> nsY
-			     (transform (prob SEED) (from ((. ns X *))) (to ((. ns Y))))))
+			     (transform (prob SEED) (from ((&. ns X *))) (to ((&. ns Y))))))
 
 
  ;; struct submodel
@@ -255,164 +255,164 @@
  ;; NSi
  (pgroup
   ((&foreach-token i
-		   ((. NS i) SEED))))
+		   ((&. NS i) SEED))))
 
  ;; NSi2j
  (rate
   (&foreach-token i
 		  (&foreach-token j
-				  (? (= i j)
-				     ((. NSdummy i 2 j) 0)
-				     ((. NS i 2 j) SEED)))))
+				  (&? (&= i j)
+				     ((&. NSdummy i 2 j) 0)
+				     ((&. NS i 2 j) SEED)))))
 
  ;; nonterminals
  (&foreach X (0 1 2)
-	   (nonterminal (name (. fns X)))
+	   (nonterminal (name (&. fns X)))
 	   (&foreach Y (0 1 2)
-		     (nonterminal (name (. fpp X Y)) (sum-from))))
+		     (nonterminal (name (&. fpp X Y)) (sum-from))))
 
  ;; outer loop over reading frames
  (&foreach X (0 1 2)
 	   ;; LmulX parameter
-	   (rate ((. Lmul X) (* (+ X 1) SEED)))
+	   (rate ((&. Lmul X) (&* (&+ X 1) SEED)))
 
 	   ;; matrix (LX)
 	   (chain
-	    (terminal ((. L X)))
+	    (terminal ((&. L X)))
 	    (update-policy parametric)
 	    (&foreach-token i
-			    (initial (state (i)) (prob ((. L i))))
+			    (initial (state (i)) (prob ((&. L i))))
 			    (&foreach-token j
-					    (? (= i j) ()
+					    (&? (&= i j) ()
 					       (mutate (from (i)) (to (j))
 						       (rate
-							((. Lmul X)
-							 (. L i 2 j))))))))
+							((&. Lmul X)
+							 (&. L i 2 j))))))))
 
 	   ;; matrix (NSX)
 	   (chain
-	    (terminal ((. NS X)))
+	    (terminal ((&. NS X)))
 	    (update-policy parametric)
 	    (&foreach-token i
-			    (initial (state (i)) (prob ((. NS i))))
+			    (initial (state (i)) (prob ((&. NS i))))
 			    (&foreach-token j
-					    (? (= i j) ()
+					    (&? (&= i j) ()
 					       (mutate (from (i)) (to (j))
 						       (rate
-							((. NS i 2 j))))))))
+							((&. NS i 2 j))))))))
 
 	   ;; fns(X) -> NSX fns*(X)
 	   (transform
-	    (from ((. fns X)))
-	    (to ((. NS X) (. fns X *)))
-	    (annotate (row SubRate) (column (. NS X)) (label ,))
-	    (annotate (row SS_cons) (column (. NS X)) (label ,))
-	    (annotate (row RdFrame) (column (. NS X)) (label X)))
+	    (from ((&. fns X)))
+	    (to ((&. NS X) (&. fns X *)))
+	    (annotate (row SubRate) (column (&. NS X)) (label ,))
+	    (annotate (row SS_cons) (column (&. NS X)) (label ,))
+	    (annotate (row RdFrame) (column (&. NS X)) (label X)))
 
 	   ;; fns*(X) -> fns(X+1)
-	   (transform (prob SEED) (from ((. fns X *))) (to ((. fns (% (+ X 1) 3)))))
+	   (transform (prob SEED) (from ((&. fns X *))) (to ((&. fns (&% (&+ X 1) 3)))))
 
 	   ;; inner loop over reading frames
 	   (&foreach Y (0 1 2)
 
 		     ;; PPmulXY parameter
-		     (rate ((. PPmul X Y) (* (+ X 1) (+ Y 1) SEED)))
+		     (rate ((&. PPmul X Y) (&* (&+ X 1) (&+ Y 1) SEED)))
 
 		     ;; matrix (PP_LXY PP_RXY)
 		     (chain
-		      (terminal ((. PP_L X Y) (. PP_R X Y)))
+		      (terminal ((&. PP_L X Y) (&. PP_R X Y)))
 		      (update-policy parametric)
 		      (&foreach-token i
 				      (&foreach-token j
-						      (initial (state (i j)) (prob ((. PP i j))))
+						      (initial (state (i j)) (prob ((&. PP i j))))
 						      (&foreach-token k
 								      (&foreach-token l
-										      (? (= (. i j) (. k l)) ()
+										      (&? (&= (&. i j) (&. k l)) ()
 											 (mutate
 											  (from (i j)) (to (k l))
 											  (rate
-											   ((. PPmul X Y)
-											    (. PP i j 2 k l))))))))))
+											   ((&. PPmul X Y)
+											    (&. PP i j 2 k l))))))))))
 
 		     ;; fl, flX, flY
 		     ;; note: ambiguous ordering of ...->(flX|flY)->... is summed-out in fpp->... transitions
 
 		     ;; fl
 		     ;; fl(X,Y) -> flX(X,Y)
-		     (transform (prob SEED) (from ((. fl X Y))) (to ((. flX X Y))))
+		     (transform (prob SEED) (from ((&. fl X Y))) (to ((&. flX X Y))))
 
 		     ;; fl(X,Y) -> flY(X,Y)
-		     (transform (prob SEED) (from ((. fl X Y))) (to ((. flY X Y))))
+		     (transform (prob SEED) (from ((&. fl X Y))) (to ((&. flY X Y))))
 
 		     ;; fl(X,Y) -> fpp(X,Y)
-		     (transform (prob SEED) (from ((. fl X Y))) (to ((. fpp X Y))))
+		     (transform (prob SEED) (from ((&. fl X Y))) (to ((&. fpp X Y))))
 
 		     ;; flX
 		     ;; flX(X,Y) -> LX flX*(X,Y)
 		     (transform
-		      (from ((. flX X Y)))
-		      (to ((. L X) (. flX X Y *)))
-		      (annotate (row SubRate) (column (. L X)) (label ,))
-		      (annotate (row SS_cons) (column (. L X)) (label ,))
-		      (annotate (row RdFrame) (column (. L X)) (label X)))
+		      (from ((&. flX X Y)))
+		      (to ((&. L X) (&. flX X Y *)))
+		      (annotate (row SubRate) (column (&. L X)) (label ,))
+		      (annotate (row SS_cons) (column (&. L X)) (label ,))
+		      (annotate (row RdFrame) (column (&. L X)) (label X)))
 
 		     ;; flX*(X,Y) -> flX(X+1,Y)
-		     (transform (prob SEED) (from ((. flX X Y *))) (to ((. flX (% (+ X 1) 3) Y))))
+		     (transform (prob SEED) (from ((&. flX X Y *))) (to ((&. flX (&% (&+ X 1) 3) Y))))
 
 		     ;; flX*(X,Y) -> flY(X+1,Y)
-		     (transform (prob SEED) (from ((. flX X Y *))) (to ((. flY (% (+ X 1) 3) Y))))
+		     (transform (prob SEED) (from ((&. flX X Y *))) (to ((&. flY (&% (&+ X 1) 3) Y))))
 
 		     ;; flX*(X,Y) -> fpp(X+1,Y)
-		     (transform (prob SEED) (from ((. flX X Y *))) (to ((. fpp (% (+ X 1) 3) Y))))
+		     (transform (prob SEED) (from ((&. flX X Y *))) (to ((&. fpp (&% (&+ X 1) 3) Y))))
 
 		     ;; flX*(X,X) -> end
-		     (? (= X Y)
-			(transform (prob SEED) (from ((. flX X Y *))) (to ()))
+		     (&? (&= X Y)
+			(transform (prob SEED) (from ((&. flX X Y *))) (to ()))
 			())
 
 		     ;; flY
 		     ;; flY(X,Y) -> flY*(X,Y) ~LY
 		     (transform
-		      (from ((. flY X Y)))
-		      (to ((. flY X Y *) (. ~L Y)))
-		      (annotate (row SubRate) (column (. L Y)) (label ,))
-		      (annotate (row SS_cons) (column (. L Y)) (label ,))
-		      (annotate (row RdFrame) (column (. L Y)) (label Y)))
+		      (from ((&. flY X Y)))
+		      (to ((&. flY X Y *) (&. ~L Y)))
+		      (annotate (row SubRate) (column (&. L Y)) (label ,))
+		      (annotate (row SS_cons) (column (&. L Y)) (label ,))
+		      (annotate (row RdFrame) (column (&. L Y)) (label Y)))
 
 		     ;; flY*(X,Y) -> flX(X,Y-1)
-		     (transform (prob SEED) (from ((. flY X Y *))) (to ((. flX X (% (+ Y 2) 3)))))
+		     (transform (prob SEED) (from ((&. flY X Y *))) (to ((&. flX X (&% (&+ Y 2) 3)))))
 
 		     ;; flY*(X,Y) -> flY(X,Y-1)
-		     (transform (prob SEED) (from ((. flY X Y *))) (to ((. flY X (% (+ Y 2) 3)))))
+		     (transform (prob SEED) (from ((&. flY X Y *))) (to ((&. flY X (&% (&+ Y 2) 3)))))
 
 		     ;; flY*(X,Y) -> fpp(X,Y-1)
-		     (transform (prob SEED) (from ((. flY X Y *))) (to ((. fpp X (% (+ Y 2) 3)))))
+		     (transform (prob SEED) (from ((&. flY X Y *))) (to ((&. fpp X (&% (&+ Y 2) 3)))))
 
 		     ;; flY*(X,X) -> end
-		     (? (= X Y)
-			(transform (prob SEED) (from ((. flY X Y *))) (to ()))
+		     (&? (&= X Y)
+			(transform (prob SEED) (from ((&. flY X Y *))) (to ()))
 			())
 
 		     ;; fpp
 		     ;; fpp(X,Y) -> PP_LXY fpp*(X,Y) PP_RXY
 		     (transform
-		      (from ((. fpp X Y)))
-		      (to ((. PP_L X Y) (. fpp X Y *) (. PP_R X Y)))
-		      (annotate (row SubRate) (column (. PP_L X Y)) (label ,))
-		      (annotate (row SubRate) (column (. PP_R X Y)) (label ,))
-		      (annotate (row SS_cons) (column (. PP_L X Y)) (label <))
-		      (annotate (row SS_cons) (column (. PP_R X Y)) (label >))
-		      (annotate (row RdFrame) (column (. PP_L X Y)) (label X))
-		      (annotate (row RdFrame) (column (. PP_R X Y)) (label Y)))
+		      (from ((&. fpp X Y)))
+		      (to ((&. PP_L X Y) (&. fpp X Y *) (&. PP_R X Y)))
+		      (annotate (row SubRate) (column (&. PP_L X Y)) (label ,))
+		      (annotate (row SubRate) (column (&. PP_R X Y)) (label ,))
+		      (annotate (row SS_cons) (column (&. PP_L X Y)) (label <))
+		      (annotate (row SS_cons) (column (&. PP_R X Y)) (label >))
+		      (annotate (row RdFrame) (column (&. PP_L X Y)) (label X))
+		      (annotate (row RdFrame) (column (&. PP_R X Y)) (label Y)))
 
 		     ;; fpp*(X,Y) -> flX(X+1,Y-1)
-		     (transform (prob SEED) (from ((. fpp X Y *))) (to ((. flX (% (+ X 1) 3) (% (+ Y 2) 3)))))
+		     (transform (prob SEED) (from ((&. fpp X Y *))) (to ((&. flX (&% (&+ X 1) 3) (&% (&+ Y 2) 3)))))
 
 		     ;; fpp*(X,Y) -> flY(X+1,Y-1)
-		     (transform (prob SEED) (from ((. fpp X Y *))) (to ((. flY (% (+ X 1) 3) (% (+ Y 2) 3)))))
+		     (transform (prob SEED) (from ((&. fpp X Y *))) (to ((&. flY (&% (&+ X 1) 3) (&% (&+ Y 2) 3)))))
 
 		     ;; fpp*(X,Y) -> fpp(X+1,Y-1)
-		     (transform (prob SEED) (from ((. fpp X Y *))) (to ((. fpp (% (+ X 1) 3) (% (+ Y 2) 3)))))))
+		     (transform (prob SEED) (from ((&. fpp X Y *))) (to ((&. fpp (&% (&+ X 1) 3) (&% (&+ Y 2) 3)))))))
 
 
 
@@ -422,23 +422,23 @@
   (update-policy parametric)
   (&foreach-token i
 		  (&foreach-token j
-				  (initial (state (i j)) (prob ((. PP i j))))
+				  (initial (state (i j)) (prob ((&. PP i j))))
 				  (&foreach-token k
 						  (&foreach-token l
-								  (? (= (. i j) (. k l)) ()
+								  (&? (&= (&. i j) (&. k l)) ()
 								     (mutate (from (i j)) (to (k l))
-									     (rate ((. PP i j 2 k l))))))))))
+									     (rate ((&. PP i j 2 k l))))))))))
 
  ;; matrix (NUC)
  (chain
   (terminal (NUC))
   (update-policy parametric)
   (&foreach-token i
-		  (initial (state (i)) (prob ((. L i))))
+		  (initial (state (i)) (prob ((&. L i))))
 		  (&foreach-token j
-				  (? (= i j) ()
+				  (&? (&= i j) ()
 				     (mutate (from (i)) (to (j))
-					     (rate ((. L i 2 j))))))))
+					     (rate ((&. L i 2 j))))))))
 
 ;; PFOLD submodel parameters
  (const-pgroup

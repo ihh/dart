@@ -13,9 +13,9 @@
   (components
    (&foreach-branch  ;; loop over node names
     NODE
-    ((label NODE) (terminal ((. COD0_ NODE)
-			     (. COD1_ NODE)
-			     (. COD2_ NODE))))
+    ((label NODE) (terminal ((&. COD0_ NODE)
+			     (&. COD1_ NODE)
+			     (&. COD2_ NODE))))
     )
    )
   )
@@ -34,7 +34,7 @@
       j
       (&foreach-token
        k
-       ((. P i j k _ NODE) (/ 1 (* &TOKENS &TOKENS &TOKENS)))
+       ((&. P i j k _ NODE) (&/ 1 (&* &TOKENS &TOKENS &TOKENS)))
        )
       )
      )
@@ -43,15 +43,15 @@
 
   ;; Branch-specific substitution rate
   (rate
-   ((. RATE_ NODE) 1)
+   ((&. RATE_ NODE) 1)
    )
 
   ;; Branch-specific substitution rate matrix
   (chain
    (update-policy parametric)
-   (terminal ((. COD0_ NODE)
-	      (. COD1_ NODE)
-	      (. COD2_ NODE)))
+   (terminal ((&. COD0_ NODE)
+	      (&. COD1_ NODE)
+	      (&. COD2_ NODE)))
 
    (&foreach-token
     i
@@ -59,9 +59,9 @@
      j
      (&foreach-token
       k
-      (&warn Initializing: codon (. i j k) , branch NODE)
+      (&warn Initializing: codon (&. i j k) , branch NODE)
       ;; initial probability distribution
-      (initial (state (i j k)) (prob ((. P i j k _ NODE))))
+      (initial (state (i j k)) (prob ((&. P i j k _ NODE))))
 
     ;; mutation rates
       (&foreach-token
@@ -70,13 +70,13 @@
 	y
 	(&foreach-token
 	 z
-	 (?
-	  (&and (= i x) (= j y) (= k z))
+	 (&?
+	  (&and (&= i x) (&= j y) (&= k z))
 	  ()
 	  (mutate
 	   (from (i j k))
 	   (to (x y z))
-	   (rate (((. RATE_ NODE) * (. P x y z _ NODE))))
+	   (rate (((&. RATE_ NODE) * (&. P x y z _ NODE))))
 	   )
 	  )
 	 )

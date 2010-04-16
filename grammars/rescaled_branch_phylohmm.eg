@@ -13,7 +13,7 @@
  (pgroup
 
   ;; Initial distribution over states
-  ((&foreach-token TOK ((. p TOK) (/ 1 &TOKENS))))
+  ((&foreach-token TOK ((&. p TOK) (&/ 1 &TOKENS))))
 
   ;; Probability of staying in the same branch-scale class, or leaving
   ((stayProb .9) (leaveProb .1))
@@ -33,12 +33,12 @@
   ;; Markov chain for residue substitution
   (chain
    (update-policy parametric)
-   (terminal ((. TYPE _chain)))
+   (terminal ((&. TYPE _chain)))
 
    ;; initial probability distribution
    (&foreach-token
     TOK
-    (initial (state (TOK)) (prob (. p TOK)))
+    (initial (state (TOK)) (prob (&. p TOK)))
     )
 
    ;; mutation rates
@@ -46,10 +46,10 @@
     SRC
     (&foreach-token
      DEST
-     (?
-      (= SRC DEST)
+     (&?
+      (&= SRC DEST)
       ()
-      (mutate (from (SRC)) (to (DEST)) (rate (((. TYPE _ rate) * (. p DEST)))))
+      (mutate (from (SRC)) (to (DEST)) (rate (((&. TYPE _ rate) * (&. p DEST)))))
       )
      )
     )
@@ -62,8 +62,8 @@
 
   ;; Define a hybrid chain for each branch
   (hybrid-chain
-   (terminal ((. hybrid_ NODE)))
-   (row (. = NODE))
+   (terminal ((&. hybrid_ NODE)))
+   (row (&. = NODE))
    (components
     ((label 0) (terminal (regular_chain)))
     ((label 1) (terminal (rescaled_chain)))
@@ -73,41 +73,41 @@
   ;; transformation rules for state S{NODE}
   (transform
    (from (START))
-   (to ((. SCALE_ NODE)))
-   (prob (+ 1 (/ 1 &BRANCHES))))
+   (to ((&. SCALE_ NODE)))
+   (prob (&+ 1 (&/ 1 &BRANCHES))))
 
   (transform
    (from (REGULAR*))
-   (to ((. SCALE_ NODE)))
-   (prob leaveProb * (/ 1 (+ 1 &BRANCHES))))
+   (to ((&. SCALE_ NODE)))
+   (prob leaveProb * (&/ 1 (&+ 1 &BRANCHES))))
 
   (transform
-   (from ((. SCALE_ NODE)))
-   (to ((. hybrid_ NODE) (. SCALE_ NODE *)))
+   (from ((&. SCALE_ NODE)))
+   (to ((&. hybrid_ NODE) (&. SCALE_ NODE *)))
    (annotate
-    (row (. NODE _rescaled))
-    (column (. hybrid_ NODE))
+    (row (&. NODE _rescaled))
+    (column (&. hybrid_ NODE))
     (label 1)))
 
   (transform
-   (from ((. SCALE_ NODE *)))
+   (from ((&. SCALE_ NODE *)))
    (to ()) (prob 1))
 
   (transform
-   (from ((. SCALE_ NODE *)))
+   (from ((&. SCALE_ NODE *)))
    (to (REGULAR))
-   (prob leaveProb * (/ 1 (+ 1 &BRANCHES))))
+   (prob leaveProb * (&/ 1 (&+ 1 &BRANCHES))))
 
   ;; transitions
   (&foreach-branch
    DEST_NODE
    (transform
-    (from ((. SCALE_ NODE *)))
-    (to ((. SCALE_ DEST_NODE)))
-    (prob (?
-	   (= NODE DEST_NODE)
+    (from ((&. SCALE_ NODE *)))
+    (to ((&. SCALE_ DEST_NODE)))
+    (prob (&?
+	   (&= NODE DEST_NODE)
 	   (stayProb)
-	   (leaveProb * (/ 1 (+ 1 &BRANCHES)))
+	   (leaveProb * (&/ 1 (&+ 1 &BRANCHES)))
 	   )
 	  ))
    )
@@ -118,7 +118,7 @@
  (transform
   (from (START))
   (to (REGULAR))
-  (prob (/ 1 (+ 1 &BRANCHES))))
+  (prob (&/ 1 (&+ 1 &BRANCHES))))
 
  ;; Add a START->END transition, so empty alignments don't have zero likelihood
  (transform
