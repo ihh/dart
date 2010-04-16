@@ -73,15 +73,15 @@ void ECFG_placer::populate_counts()
 	  for_rooted_nodes_post (cyk_mx.tree, b)
 	    {
 	      const Phylogeny::Node n = (*b).second;
-	      vector<Prob> state_probs = chain.matrix->create_prior();   // by default (e.g. if gapped), assume prior distribution
-	      if (!colmat.gapped[n])
-		{
-		  for_const_contents (vector<int>, colmat.allowed[n], i)
-		    {
-		      const Prob node_pp = colmat.node_post_prob (n, *i, cyk_mx.tree, *chain.matrix);
-		      state_probs[*i] = node_pp;
-		    }
-		}
+	      vector<Prob> state_probs (chain_states, 0.);
+	      if (colmat.gapped[n])
+		state_probs = chain.matrix->create_prior();   // by default (if gapped), assume prior distribution
+	      else
+		for_const_contents (vector<int>, colmat.allowed[n], i)
+		  {
+		    const Prob node_pp = colmat.node_post_prob (n, *i, cyk_mx.tree, *chain.matrix);
+		    state_probs[*i] = node_pp;
+		  }
 	      node_state_probs[n] = state_probs;
 	    }
 
@@ -101,6 +101,7 @@ void ECFG_placer::populate_counts()
 		    for (int i = 0; i < chain_states; ++i)
 		      for (int j = 0; j < chain_states; ++j)
 			counts(i,j) += node_prob[i] * row_prob[j];
+		    // CTAG(1,PLACER_DEBUG) << "node="<<cyk_mx.tree.node_specifier(node)<<" row="<<tree_align.align.row_name[*row]<<" node_prob=("<<node_prob<<") row_prob=("<<row_prob<<")\n";
 		  }
 	    }
 	}
