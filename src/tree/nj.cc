@@ -78,7 +78,7 @@ void NJ_tree::build (const Node_name_vec& nn, const array2d<double>& distance_ma
       dist[k][k] = 0;
       const double d_ij = dist[min_i][min_j];
       for (Node m = 0; m < k; ++m)
-	dist[m].push_back (dist[k][m] = dist[min_i][m] + dist[min_j][m] - d_ij);
+	dist[m].push_back (dist[k][m] = 0.5 * (dist[min_i][m] + dist[min_j][m] - d_ij));
       double d_ik = 0.5 * (d_ij + avg_dist[min_i] - avg_dist[min_j]);
       double d_jk = d_ij - d_ik;
       CTAG(1,NJ) << "Before Kuhner-Felsenstein:\ni=" << min_i << ", j=" << min_j << ", k=" << k << ", d_ij=" << d_ij << ", d_ik=" << d_ik << ", d_jk=" << d_jk << "\nDistances from k to other nodes: " << dist[k] << "\n";
