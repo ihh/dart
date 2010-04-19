@@ -85,7 +85,6 @@ void ECFG_main::init_opts (const char* desc)
 {
   INIT_CONSTRUCTED_OPTS_LIST (opts, -1, "[options] [<alignment database(s) in Stockholm format>]", desc);
 
-  opts.newline();
   opts.print_title ("Tree estimation algorithms");
 
   opts.add ("e -tree", tree_grammar_filename = "", "estimate and/or optimize tree, using the grammar in this file", false);
@@ -93,6 +92,7 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("ps -point-sub", avoid_ECFG_for_branch_length_EM = false, "when optimizing branch lengths, use point-substitution model (as with neighbor-joining), rather than entire phylogrammar");
   opts.add ("at -attach", attach_rows = false, "attempt to place unattached alignment rows on the tree");
 
+  opts.newline();
   opts.print_title ("Training & annotation model selection");
 
   opts.add ("g -grammar", grammars_filename, "load grammar from file", false);
