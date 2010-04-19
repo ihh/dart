@@ -355,10 +355,6 @@ struct ECFG_counts : ECFG<Prob>
   vector<Update_statistics> stats;  // EM_matrix update statistics
   vector<bool> filled_down;  // flag indicating whether, for each matrix, fill_down() has been called at least once
 
-  // indel update statistics (pseudo-indel states only)
-  vector<double> ins_count, del_count, ins_wait, del_wait;
-  vector<double> link_extend_count, link_end_count;
-
   // annotation counts
   typedef map<sstring,Prob> String_counts;
   vector<vector<String_counts> > state_annot_count;  // indexed as state_annot_count[stateIndex][gcFeatureTag][columnAnnotationString]

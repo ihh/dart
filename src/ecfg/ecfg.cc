@@ -1097,13 +1097,6 @@ ECFG_counts::ECFG_counts (const ECFG_scores& ecfg) :
   stats (ecfg.matrix_set.chain.size(), Update_statistics (0)),
   filled_down (ecfg.matrix_set.chain.size(), false),
 
-  ins_count (ecfg.states(), 0.),
-  del_count (ecfg.states(), 0.),
-  ins_wait (ecfg.states(), 0.),
-  del_wait (ecfg.states(), 0.),
-  link_extend_count (ecfg.states(), 0.),
-  link_end_count (ecfg.states(), 0.),
-
   state_annot_count (ecfg.states(), vector<String_counts> (ecfg.gc_feature_set().size())),
 
   var_counts (ecfg.pscores)
@@ -1129,12 +1122,8 @@ void ECFG_counts::clear (double pseud_init, double pseud_mutate, double pseud_wa
 	transition (src, dest) = 0.;
     }
   for (int s = 0; s < states(); ++s)
-    {
-      ins_count[s] = del_count[s] = ins_wait[s] = del_wait[s] = 0.;
-      link_extend_count[s] = link_end_count[s] = 0.;
-      for_contents (vector<String_counts>, state_annot_count[s], sc)
-	sc->clear();
-    }
+    for_contents (vector<String_counts>, state_annot_count[s], sc)
+      sc->clear();
 }
 
 void ECFG_counts::update_ecfg (ECFG_scores& ecfg)
