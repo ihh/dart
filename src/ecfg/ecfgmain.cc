@@ -93,6 +93,10 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("at -attach", attach_rows = false, "attempt to place unattached alignment rows on the tree");
 
   opts.newline();
+  opts.add ("bmin -branch-min", min_branch_len = .0001, "minimum branch length in phylogenies");
+  opts.add ("bres -branch-resolution", tres = .0001, "resolution of branch lengths in phylogenies");
+
+  opts.newline();
   opts.print_title ("Training & annotation model selection");
 
   opts.add ("g -grammar", grammars_filename, "load grammar from file", false);
@@ -137,9 +141,6 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("pi -pseudinitial", pseud_init = 1e-9, "pseudocount for initial state occupancies and probability parameters");
   opts.add ("pm -pseudmutate", pseud_mutate = 0., "pseudocount for mutation rates and rate parameters");
   opts.add ("pt -pseudtime", pseud_wait = 1e-4, "pseudo-wait time for mutation rates and rate parameters");
-
-  opts.add ("bmin -branch-min", min_branch_len = .0001, "minimum branch length in phylogenies... not strictly a pseudocount");
-  opts.add ("bres -branch-resolution", tres = .0001, "resolution of branch lengths in phylogenies... not strictly a pseudocount");
 
   opts.newline();
   opts.print_title ("Ancestral reconstruction algorithms");
