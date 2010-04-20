@@ -40,6 +40,8 @@
 #define EG_TRANSFORM_PREFIX    "prefix"
 #define EG_TRANSFORM_SUFFIX    "suffix"
 
+#define EG_FOLD_STRING_TAG     "fold-string-tag"
+
 #define EG_TRANSFORM_SUM_FROM  "sum-from"
 
 #define EG_TRANSFORM_NO_GAPS     "no-gaps"

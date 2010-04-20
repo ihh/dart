@@ -738,7 +738,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // create & run the validator
   SExpr_validator ecfg_validator
     ("Grammar->('"EG_GRAMMAR" GrammarProperty*);"
-     "GrammarProperty->Name|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
+     "GrammarProperty->Name|('"EG_FOLD_STRING_TAG" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
      "Name->('"EG_NAME" Atom);"
      "ParametricFlag->('"EG_PARAMETRIC" End);"
      "MinimumLength->('"EG_TRANSFORM_MINLEN" Atom);"
@@ -808,6 +808,11 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
       const vector<SExpr*> all_meta_sexpr = grammar_sexpr.find_all (EG_META, 1);
       for_const_contents (vector<SExpr*>, all_meta_sexpr, meta_sexpr)
 	ecfg->meta.push_back (**meta_sexpr);
+
+      // initialise fold string
+      SExpr* fold_string_sexpr = grammar_sexpr.find (EG_FOLD_STRING_TAG, 1);
+      if (fold_string_sexpr)
+	ecfg->fold_string_tag = (*fold_string_sexpr)[1].get_atom();
 
       // initialise PScores
       sym2pvar.clear();
@@ -1141,6 +1146,10 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	out << "\n  (" << *meta << ")";
       out << ")\n";
     }
+
+  // print fold string
+  if (ecfg.fold_string_tag.size() > 0)
+    out << " (" << EG_FOLD_STRING_TAG << ' ' << ecfg.fold_string_tag << ")\n";
 
   // parametric?
   if (ecfg.has_parametric_transitions)

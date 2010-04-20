@@ -5,6 +5,8 @@
  (update-rates 1)
  (update-rules 0)
 
+ (fold-string-tag PFOLD)
+
  ;; Nonterminal declarations and modifiers
 
  (nonterminal (name pfoldS))

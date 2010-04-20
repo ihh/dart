@@ -23,6 +23,8 @@
  (update-rates 1)
  (update-rules 1)
 
+ (fold-string-tag PFOLD)
+
  (chain
   (update-policy rev)
   (terminal (LNUC RNUC))

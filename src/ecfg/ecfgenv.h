@@ -13,11 +13,16 @@ struct ECFG_envelope
   int seqlen, max_subseq_len;
   vector<Subseq_coords> subseq;
 
+  // data for optional Fold_envelope
+  bool use_foldenv;
+  Fold_envelope foldenv;
+
   // constructor
   ECFG_envelope (int seqlen = 0, int max_subseq_len = 0);
 
-  // initialiser
+  // initialisers
   void init (int seqlen, int max_subseq_len);
+  void init_from_fold_string (const sstring& fold_string);
 
   // accessors
   inline int subseqs() const { return subseq.size(); }
@@ -26,17 +31,22 @@ struct ECFG_envelope
   inline int find_subseq_idx (int start, int len) const
   {
     int idx = -1;
-    if (start >= 0 && len >= 0 && start + len <= seqlen)
+    if (use_foldenv)
+      idx = foldenv.find_subseq_idx (start, len);
+    else
       {
-	if (len <= max_subseq_len)
-	  idx = len * (2*seqlen + 3 - len) / 2 + start;   // = start + sum_{k=0}^{len-1} (seqlen + 1 - k)
-	else if (start == 0)
-	  idx = (max_subseq_len + 1) * (2*seqlen - max_subseq_len - 2) / 2 + len * 2;  // = 2*(len - max_subseq_len - 1) + sum_{k=0}^{max_subseq_len} (seqlen + 1 - k)
-	else if (start + len == seqlen)
-	  idx = (max_subseq_len + 1) * (2*seqlen - max_subseq_len - 2) / 2 + len * 2 + 1;  // = 1 + 2*(len - max_subseq_len - 1) + sum_{k=0}^{max_subseq_len} (seqlen + 1 - k)
+	if (start >= 0 && len >= 0 && start + len <= seqlen)
+	  {
+	    if (len <= max_subseq_len)
+	      idx = len * (2*seqlen + 3 - len) / 2 + start;   // = start + sum_{k=0}^{len-1} (seqlen + 1 - k)
+	    else if (start == 0)
+	      idx = (max_subseq_len + 1) * (2*seqlen - max_subseq_len - 2) / 2 + len * 2;  // = 2*(len - max_subseq_len - 1) + sum_{k=0}^{max_subseq_len} (seqlen + 1 - k)
+	    else if (start + len == seqlen)
+	      idx = (max_subseq_len + 1) * (2*seqlen - max_subseq_len - 2) / 2 + len * 2 + 1;  // = 1 + 2*(len - max_subseq_len - 1) + sum_{k=0}^{max_subseq_len} (seqlen + 1 - k)
+	  }
       }
 #ifdef DART_DEBUG
-    if (idx >= 0)
+	if (idx >= 0)
       if (subseq[idx].start != start || subseq[idx].len != len)
 	THROWEXPR ("Incorrectly calculated subsequence (" << start << '+' << len << ')');
 #endif
@@ -46,55 +56,70 @@ struct ECFG_envelope
   // methods to get indices of bifurcation connections
   inline void get_bif_in (const Subseq_coords& out, vector<Subseq::Bifurc_in>& bif_in) const
   {
-    bif_in.clear();
-    const int start = out.start;
-    const int end = out.end();
-    const int min_r_start = end == seqlen ? start : (end - max_subseq_len);
-    const int max_l_end = start == 0 ? end : (start + max_subseq_len);
-    for (int mid = max_l_end; mid >= min_r_start; --mid)
+    if (use_foldenv)
+      bif_in = foldenv.subseq[foldenv.find_subseq_idx(out.start,out.len)].bif_in;
+    else
       {
-	const int l = find_subseq_idx (start, mid - start);
-	if (l >= 0)
+	bif_in.clear();
+	const int start = out.start;
+	const int end = out.end();
+	const int min_r_start = end == seqlen ? start : (end - max_subseq_len);
+	const int max_l_end = start == 0 ? end : (start + max_subseq_len);
+	for (int mid = max_l_end; mid >= min_r_start; --mid)
 	  {
-	    const int r = find_subseq_idx (mid, end - mid);
-	    if (r >= 0)
-	      bif_in.push_back (Subseq::Bifurc_in (l, r));
+	    const int l = find_subseq_idx (start, mid - start);
+	    if (l >= 0)
+	      {
+		const int r = find_subseq_idx (mid, end - mid);
+		if (r >= 0)
+		  bif_in.push_back (Subseq::Bifurc_in (l, r));
+	      }
 	  }
       }
   }
 
   inline void get_bif_outl (const Subseq_coords& r, vector<Subseq::Bifurc_out_l>& bif_outl) const
   {
-    bif_outl.clear();
-    const int mid = r.start;
-    const int end = r.end();
-    // TODO: calculate min_out_start and min_l_start here
-    for (int start = 0; start <= mid; ++start)
+    if (use_foldenv)
+      bif_outl = foldenv.subseq[foldenv.find_subseq_idx(r.start,r.len)].bif_out_l;
+    else
       {
-	const int out = find_subseq_idx (start, end - start);
-	if (out >= 0)
+	bif_outl.clear();
+	const int mid = r.start;
+	const int end = r.end();
+	// TODO: calculate min_out_start and min_l_start here
+	for (int start = 0; start <= mid; ++start)
 	  {
-	    const int l = find_subseq_idx (start, mid - start);
-	    if (l >= 0)
-	      bif_outl.push_back (Subseq::Bifurc_out_l (out, l));
+	    const int out = find_subseq_idx (start, end - start);
+	    if (out >= 0)
+	      {
+		const int l = find_subseq_idx (start, mid - start);
+		if (l >= 0)
+		  bif_outl.push_back (Subseq::Bifurc_out_l (out, l));
+	      }
 	  }
       }
   }
 
   inline void get_bif_outr (const Subseq_coords& l, vector<Subseq::Bifurc_out_r>& bif_outr) const
   {
-    bif_outr.clear();
-    const int start = l.start;
-    const int mid = l.end();
-    // TODO: calculate max_out_end and max_r_end here
-    for (int end = seqlen; end >= mid; --end)
+    if (use_foldenv)
+      bif_outr = foldenv.subseq[foldenv.find_subseq_idx(l.start,l.len)].bif_out_r;
+    else
       {
-	const int out = find_subseq_idx (start, end - start);
-	if (out >= 0)
+	bif_outr.clear();
+	const int start = l.start;
+	const int mid = l.end();
+	// TODO: calculate max_out_end and max_r_end here
+	for (int end = seqlen; end >= mid; --end)
 	  {
-	    const int r = find_subseq_idx (mid, end - mid);
-	    if (r >= 0)
-	      bif_outr.push_back (Subseq::Bifurc_out_r (out, r));
+	    const int out = find_subseq_idx (start, end - start);
+	    if (out >= 0)
+	      {
+		const int r = find_subseq_idx (mid, end - mid);
+		if (r >= 0)
+		  bif_outr.push_back (Subseq::Bifurc_out_r (out, r));
+	      }
 	  }
       }
   }
@@ -102,9 +127,13 @@ struct ECFG_envelope
   // methods to count bifurcations
   inline double n_bif (int subseq_idx) const
   {
+    if (use_foldenv)
+      return foldenv.subseq[subseq_idx].bif_in.size();
+
     const int len = subseq[subseq_idx].len;
     return len > max_subseq_len ? (max_subseq_len + 2) : len + 1;
   }
+
   inline double n_bif() const
   {
     double b = 0.;

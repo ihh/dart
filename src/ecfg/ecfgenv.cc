@@ -1,8 +1,21 @@
 #include "ecfgenv.h"
 
 ECFG_envelope::ECFG_envelope (int seqlen, int max_subseq_len)
+  : use_foldenv(false)
 {
   init (seqlen, max_subseq_len);
+}
+
+void ECFG_envelope::init_from_fold_string (const sstring& fold_string)
+{
+  foldenv.initialise_from_fold_string (fold_string);
+  use_foldenv = true;
+
+  // copy Subseq_coords
+  subseq.clear();
+  subseq.reserve (foldenv.subseq.size());
+  for_const_contents (vector<Subseq>, foldenv.subseq, ss)
+    subseq.push_back (*ss);
 }
 
 void ECFG_envelope::init (int S, int L)
@@ -10,6 +23,9 @@ void ECFG_envelope::init (int S, int L)
   CTAG(4,FOLDENV) << "Initialising fold envelope: " << S << " columns, max subseq length = " << L << '\n';
   if (L == 0)
     CL << "NB max subseq length is 0. This is only suitable for left- or right-regular grammars.\n";
+
+  use_foldenv = false;
+  foldenv = Fold_envelope();  // empty dummy
 
   seqlen = S;
   max_subseq_len = L >= 0 ? L : S;

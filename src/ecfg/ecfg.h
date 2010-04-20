@@ -247,6 +247,7 @@ struct ECFG_scores : ECFG<Score>
   ECFG_matrix_set matrix_set;
   vector<ECFG_state_info> state_info;
   sstring name;
+  sstring fold_string_tag;  // optional tag for ECFG_auto_envelope to create fold envelopes
   list<SExpr> meta;  // contains "(meta ...)" expressions, which are preserved but ignored
   list<SExpr> transient_meta;  // contains "(meta ...)" expressions, which are ignored and NOT preserved (they're output, but won't be read back in again)
 
@@ -390,8 +391,13 @@ struct ECFG_counts : ECFG<Prob>
 
 // automatically initialized ECFG_envelope
 struct ECFG_auto_envelope : ECFG_envelope {
-  ECFG_auto_envelope (int seqlen, const ECFG_scores& ecfg, int max_subseq_len = -1) {
-    init (seqlen, ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len);
+  ECFG_auto_envelope (Stockholm& stock, const ECFG_scores& ecfg, int max_subseq_len = -1)
+  {
+    sstring fold_string;
+    if (ecfg.fold_string_tag.size() > 0 && (fold_string = stock.get_gc_annot(ecfg.fold_string_tag)).size() > 0)
+      init_from_fold_string (fold_string);
+    else
+      init (stock.columns(), ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len);
   }
 };
 

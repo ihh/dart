@@ -107,9 +107,8 @@ Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double
   PHYLIP_tree best_tree;
 
   // get CYK matrix & trace
-  const int seqlen = tree_align.align.columns();
   const int max_subseq_len = -1;   // unlimit subsequence lengths
-  ECFG_auto_envelope env (seqlen, ecfg, max_subseq_len);  // create fold envelope
+  ECFG_auto_envelope env (stock, ecfg, max_subseq_len);  // create fold envelope
 
   Aligned_score_profile asp;
   asp.init (tree_align.align, stock.np, ecfg.alphabet);
