@@ -123,8 +123,6 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("c -confidence", report_confidence = false, "report posterior log-probabilities of nodes in CYK parse tree");
   opts.add ("pp -postprob", report_postprob = false, "report posterior log-probabilities of all possible parse tree nodes");
   opts.add ("hc -hidden-classes", report_hidden_classes = false, "impute ML hidden classes at each site (for substitution models with hidden classes)");
-  opts.add ("ar -ancrec-cyk-map", ancrec_CYK_MAP = false, "reconstruct Maximum-A-Posteriori ancestral sequence, conditional on CYK parse tree");
-  opts.add ("arpp -ancrec-postprob", ancrec_postprob = false, "report P(ancestral residues | observed residues, phylo-alignment, parse tree)");
 
   opts.newline();
   opts.print_title ("EM convergence criteria");
@@ -142,6 +140,13 @@ void ECFG_main::init_opts (const char* desc)
 
   opts.add ("bmin -branch-min", min_branch_len = .0001, "minimum branch length in phylogenies... not strictly a pseudocount");
   opts.add ("bres -branch-resolution", tres = .0001, "resolution of branch lengths in phylogenies... not strictly a pseudocount");
+
+  opts.newline();
+  opts.print_title ("Ancestral reconstruction algorithms");
+
+  opts.add ("ar -ancrec-cyk-map", ancrec_CYK_MAP = false, "reconstruct Maximum-A-Posteriori ancestral sequence, conditional on CYK parse tree");
+  opts.add ("arpp -ancrec-postprob", ancrec_postprob = false, "report P(ancestors|alignment,phylogeny,CYK)");
+  opts.add ("marp -min-ancrec-prob", min_ancrec_postprob = .01, "minimum ancestral reconstruction posterior probability to report");
 
   opts.newline();
   opts.print_title ("Output");
@@ -558,7 +563,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 
 	  // decide whether we need to do peeling as well as pruning
 	  const bool want_hidden_classes = report_hidden_classes && ecfg.has_hidden_classes();
-	  const bool want_fill_down = want_hidden_classes || ancrec_CYK_MAP;
+	  const bool want_ancestral_reconstruction = ancrec_CYK_MAP || ancrec_postprob;
+	  const bool want_fill_down = want_hidden_classes || want_ancestral_reconstruction;
 
 	  // do CYK algorithm, if requested
 	  bool zero_likelihood = false;  // this flag becomes set if final likelihood is 0, i.e. no traceback path
@@ -585,7 +591,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	      cyk_mx = 0;
 
 	      // if posterior probabilities requested, or ECFG has hidden classes, do inside-outside
-	      if ((report_postprob || report_confidence || want_hidden_classes || ancrec_CYK_MAP) && !zero_likelihood)
+	      if ((report_postprob || report_confidence || want_hidden_classes || want_ancestral_reconstruction) && !zero_likelihood)
 		{
 		  inout_mx = new ECFG_inside_outside_matrix (ecfg, *stock, asp, env, (ECFG_counts*) 0);
 		  inout_mx->inside.use_precomputed (cyk_emit_loglike);  // re-use emit log-likelihoods calculated by CYK
@@ -617,8 +623,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 		      if (want_hidden_classes)
 			inout_mx->annotate_hidden_classes (*stock, cyk_trace);
 
-		      if (ancrec_CYK_MAP)
-			inout_mx->inside.reconstruct_MAP (*stock, cyk_trace, CYK_MAP_reconstruction_tag, ancrec_postprob);
+		      if (want_ancestral_reconstruction)
+			inout_mx->inside.reconstruct_MAP (*stock, cyk_trace, CYK_MAP_reconstruction_tag, ancrec_CYK_MAP, ancrec_postprob);
 		    }
 		}
 

@@ -21,8 +21,6 @@ struct ECFG_main
 
   // command-line params
   bool annotate;
-  bool ancrec_CYK_MAP;
-  bool ancrec_postprob;
   bool report_sumscore;
   bool report_confidence;
   bool report_postprob;
@@ -47,6 +45,10 @@ struct ECFG_main
   double pseud_wait;
 
   double min_branch_len;
+
+  bool ancrec_CYK_MAP;
+  bool ancrec_postprob;
+  double min_ancrec_postprob;
 
   bool use_beagle;
 

@@ -10,6 +10,9 @@
 // conditional on MAP Cocke-Younger-Kasami (CYK) parse tree.
 #define CYK_MAP_reconstruction_tag "ancrec_CYK_MAP"
 
+// min postprob for ancrec reporting
+#define DEFAULT_MIN_ANCREC_POSTPROB 0.01
+
 // DP matrix base class
 // Cell scores are stored in this class, but intermediate emission log-likelihoods (as e.g. computed by libHMSBeagle) are stored in a subclass
 struct ECFG_matrix : ECFG_enum, Stream_saver
@@ -106,7 +109,7 @@ struct ECFG_EM_matrix : ECFG_matrix
   inline void add_trans_counts (int src_state, int dest_state, double weight, ECFG_counts& counts) const;
 
   // ancestral state reconstruction
-  void reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_map& annot, const char* ancrec_tag = CYK_MAP_reconstruction_tag, bool annotate_postprobs = false);
+  void reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_map& annot, const char* ancrec_tag = CYK_MAP_reconstruction_tag, bool annotate_map = true, bool annotate_postprobs = false, Prob min_reported_postprob = DEFAULT_MIN_ANCREC_POSTPROB);
 
   // display
   void show_emit (int subseq, ostream& out) const;

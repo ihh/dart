@@ -673,7 +673,7 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 #endif /* BEAGLE_INCLUDED */
 }
 
-void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_map& annot, const char* ancrec_tag_cstr, bool annotate_postprobs)
+void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_map& annot, const char* ancrec_tag_cstr, bool annotate_MAP, bool annotate_postprobs, Prob min_reported_postprob)
 {
   // create dummy counts
   ECFG_counts dummy_counts (ecfg);
@@ -721,6 +721,10 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
   // print log message
   CTAG(7,ANCREC) << "Reconstructing the following nodes: (" << names_of_nodes_to_build << ")\n";
 
+  // container for postprob annotations
+  typedef map<Phylogeny::Node,list<sstring> > Postprob_annot_map;
+  Postprob_annot_map annot_map;
+
   // loop over nonterminals in parse tree
   for_const_contents (ECFG_cell_score_map, annot, ecsm_ptr)
     {
@@ -742,7 +746,10 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 	  // loop over nodes we want to reconstruct
 	  for_const_contents (vector<int>, nodes_to_build, n)
 	    {
-	      // find max a posteriori chain state at this node
+	      // find max a posteriori chain state at this node (and record postprobs of all states)
+	      typedef map<sstring,Prob> Tuple_prob_map;
+	      Tuple_prob_map tuple_postprob;
+
 	      int ml_chain_state = -1;
 	      Prob ml_chain_state_prob = 0.;
 	      const EM_matrix_base& matrix (chain.matrix ? *chain.matrix : *lineage_matrix[info.matrix][*n]);
@@ -753,6 +760,28 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 		    {
 		      ml_chain_state = chain_state;
 		      ml_chain_state_prob = chain_state_prob;
+		    }
+
+		  // accumulate postprob of this emit tuple
+		  if (chain_state_prob >= min_reported_postprob)
+		    {
+		      sstring tuple;
+		      bool found_nongap = false;
+		      for (int emit_pos = 0; emit_pos < info.l_emit + info.r_emit; ++emit_pos)
+			{
+			  const int col = info.column_index (coords, emit_pos);
+			  if (row_path[*n][col])
+			    {
+			      const int emit_sym = (ml_chain_state / info.mul[emit_pos]) % ecfg.alphabet.size();
+			      const char emit_char = ecfg.alphabet.int2char (emit_sym);
+			      tuple << emit_char;
+			      found_nongap = true;
+			    }
+			  else
+			    tuple << Alignment::gap_char();
+			}
+		      if (found_nongap)
+			tuple_postprob[tuple] += chain_state_prob;
 		    }
 		}
 
@@ -775,29 +804,31 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 		    {
 		      const int emit_sym = (ml_chain_state / info.mul[emit_pos]) % ecfg.alphabet.size();
 		      const char emit_char = ecfg.alphabet.int2char (emit_sym);
+		      emit_chars.push_back (emit_char);
 		      seq[*n][col] = emit_char;
 		      ppchars[*n][col] = ppchar;
-		      emit_chars.push_back (emit_char);
 		    }
 		  rebuilt_cols.push_back (col + 1);
 		  emit_state.push_back (chain.state[pos]);
 		}
 
 	      // add posterior probability info to Stockholm
-	      if (annotate_postprobs)
+	      const sstring node_name = tree.node_specifier (*n);
+	      if (annotate_postprobs && !tuple_postprob.empty())
 		{
-		  const sstring node_name = tree.node_specifier (*n);
-		  sstring gs_val = stock.get_gs_annot (node_name, ancrec_tag_pp);
-		  gs_val << "State " << info.name
-			 << " columns (" << rebuilt_cols
-			 << ") chars (" << emit_chars
-			 << ") postprob " << ml_chain_state_prob
-			 << '\n';
-		  stock.set_gs_annot (node_name, ancrec_tag_pp, gs_val);
+		  sstring gs_val;
+		  gs_val << "Nonterm " << info.name << " columns (";
+		  for (int i = 0; i < (int) rebuilt_cols.size(); ++i)
+		    gs_val << (i > 0 ? "," : "") << rebuilt_cols[i];
+		  gs_val << ")";
+		  for_const_contents (Tuple_prob_map, tuple_postprob, tp)
+		    gs_val << " P(" << tp->first << ")=" << min(1.,tp->second);
+		  gs_val << '\n';
+		  annot_map[*n].push_front (gs_val);
 		}
 
 	      // print log message
-	      CTAG(5,ANCREC) << "Reconstructed sequence " << tree.node_specifier(*n) << " columns (" << rebuilt_cols << ") pseudoterminals (" << emit_state << ") chars (" << emit_chars << ") with post.prob. " << ml_chain_state_prob << '\n';
+	      CTAG(3,ANCREC) << "Reconstructed sequence " << tree.node_specifier(*n) << " columns (" << rebuilt_cols << ") pseudoterminals (" << emit_state << ") chars (" << emit_chars << ") with post.prob. " << ml_chain_state_prob << '\n';
 	    }
 	}
     }
@@ -819,9 +850,21 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 	  tree.node2row[*n] = new_row_index;
 	}
 
+      // set #=GS annotations
+      if (annotate_postprobs && annot_map.find(*n) != annot_map.end())
+	{
+	  sstring gs_val = stock.get_gs_annot (node_name, ancrec_tag_pp);
+	  for_const_contents (list<sstring>, annot_map[*n], s)
+	    gs_val << *s;
+	  stock.set_gs_annot (node_name, ancrec_tag_pp, gs_val);
+	}
+
       // set #=GR annotations
-      stock.set_gr_annot (node_name, ancrec_tag, seq[*n]);
-      stock.set_gr_annot (node_name, ancrec_tag_pp, ppchars[*n]);
+      if (annotate_MAP)
+	{
+	  stock.set_gr_annot (node_name, ancrec_tag, seq[*n]);
+	  stock.set_gr_annot (node_name, ancrec_tag_pp, ppchars[*n]);
+	}
     }
 }
 
