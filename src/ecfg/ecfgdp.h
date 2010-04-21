@@ -345,6 +345,7 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
 	  joint_ll = cm.total_log_likelihood();
 	}
       emit_ll = NatsPMul3 (annot_emit_ll, joint_ll, -marginal_ll);  // add in annot_emit_ll
+      // log
       if (CTAGGING(3,FILL_UP))
 	{
 	  CL << "(Subseq " << subseq.start << "+" << subseq.len << ", state " << state_idx << ") ";
@@ -356,6 +357,12 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
 	  else
 	    CL << "Emit log likelihood: " << Nats2Bits(emit_ll) << " bits\n";
 	}
+      // check that emit log-likelihood is negative; if not, something's pretty damn wrong
+      if (emit_ll > 0.)
+	CLOGERR << "Warning: positive emit log-likelihood (" << Nats2Bits(emit_ll)
+		<< " bits at subseq [" << subseq.start << ".." << subseq.end() << "] state " << info.name
+		<< ") - this is usually a sign that something has gone wrong (e.g. parameters are not normalized, there has been a rounding error, etc.)\n";
+      // return
       return true;  // success
     }
   else
