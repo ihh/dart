@@ -247,7 +247,7 @@ struct ECFG_scores : ECFG<Score>
   ECFG_matrix_set matrix_set;
   vector<ECFG_state_info> state_info;
   sstring name;
-  sstring fold_string_tag;  // optional tag for ECFG_auto_envelope to create fold envelopes
+  sstring fold_string_tag;  // optional #=GC feature tag for ECFG_auto_envelope to create fold envelopes; if empty, the ECFG has no such tag
   list<SExpr> meta;  // contains "(meta ...)" expressions, which are preserved but ignored
   list<SExpr> transient_meta;  // contains "(meta ...)" expressions, which are ignored and NOT preserved (they're output, but won't be read back in again)
 
@@ -320,6 +320,7 @@ struct ECFG_scores : ECFG<Score>
   vector<int> bifurc_states() const;
   vector<vector<int> > left_bifurc() const;  // left_bifurc()[rdest] = list of states bifurcating to (*,rdest)
   vector<vector<int> > right_bifurc() const;  // right_bifurc()[ldest] = list of states bifurcating to (ldest,*)
+  set<sstring> autodetect_potential_fold_string_tags() const;
 
   // bifurcation pseudo-transitions to fake out the topological sort
   void add_fake_bifurcation_transitions();

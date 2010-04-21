@@ -380,6 +380,53 @@ vector<vector<int> > ECFG_scores::right_bifurc() const
   return result;
 }
 
+set<sstring> ECFG_scores::autodetect_potential_fold_string_tags() const
+{
+  set<sstring> fstag;
+  const set<sstring> gc_tag = gc_feature_set();
+  const vector<int> emits = emit_states();
+  for_const_contents (set<sstring>, gc_tag, gc)
+    {
+      bool consistent = true;
+      for (int i = 0; consistent && i < (int) emits.size(); ++i)
+	{
+	  const ECFG_state_info& info = state_info[emits[i]];
+	  ECFG_state_info::ECFG_state_annotation::const_iterator gc_iter = info.annot.find(*gc);
+	  if (gc_iter == info.annot.end())
+	    consistent = false;
+	  else
+	    {
+	      const ECFG_state_info::String_prob_dist& spdist = gc_iter->second;
+	      if (info.l_emit == 1 && info.r_emit == 1)
+		for_const_contents (ECFG_state_info::String_prob_dist, spdist, sp)
+		  {
+		    const sstring& annot = sp->first;
+		    if (!Fold_char_enum::is_lchar(annot[0]) || !Fold_char_enum::is_rchar(annot[1]))
+		      {
+			consistent = false;
+			break;
+		      }
+		  }
+	      else if ((info.l_emit == 1 && info.r_emit == 0) || (info.l_emit == 0 && info.r_emit == 1))
+		for_const_contents (ECFG_state_info::String_prob_dist, spdist, sp)
+		  {
+		    const sstring& annot = sp->first;
+		    if (Fold_char_enum::is_lchar(annot[0]) || Fold_char_enum::is_rchar(annot[0]))
+		      {
+			consistent = false;
+			break;
+		      }
+		  }
+	      else
+		consistent = false;
+	    }
+	}
+      if (consistent)
+	fstag.insert(*gc);
+    }
+  return fstag;
+}
+
 void ECFG_scores::write (ostream& out) const
 {
   for (int i = 0; i < (int) matrix_set.chain.size(); ++i)

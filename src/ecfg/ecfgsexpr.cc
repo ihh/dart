@@ -970,6 +970,19 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // evaluate PFunc's, in case any subsequent routine tries to use ECFG_scores
   ecfg->eval_funcs();
 
+  // do the user the favor of notifying if there is a potential fold string
+  if (ecfg->fold_string_tag.size() == 0)
+    {
+      const set<sstring> fstag = ecfg->autodetect_potential_fold_string_tags();
+      if (!fstag.empty())
+	{
+	  CLOGERR << "Consider adding " << (fstag.size() > 1 ? "one of the following lines" : "the following line")
+		  << " to your grammar to accelerate inference algorithms when secondary structure is specified:\n";
+	  for_const_contents (set<sstring>, fstag, tag)
+	    CLOGERR << " (" << EG_FOLD_STRING_TAG << ' ' << *tag << ")\n";
+	}
+    }
+
   // return
   return ecfg;
 }
