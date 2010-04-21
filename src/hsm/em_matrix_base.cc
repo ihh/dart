@@ -307,51 +307,87 @@ void EM_matrix_base::Update_statistics::clear_DJU()
 void EM_matrix_base::Update_statistics::check_waits_transitions (const EM_matrix_base& hsm)
 {
   // get alphabet
-  const Alphabet& alphabet = ((EM_matrix_base&) hsm).alphabet();  // cast away const
   const int C = hsm.C;
   const int A = hsm.A;
 
   // zero counts that have somehow become negative
   // also zero counts where the corresponding rate is effectively zero (but have become nonzero due to precision errors)
   // (this latter problem reported by Carolin Kosiol, 10/5/2005)
+  // also zero anything that is nan (not a number), issuing a loud warning/complaint - added 4/20/2010
+  int zeroes = 0;
   for (int ci = 0; ci < C; ++ci)
     for (int ai = 0; ai < A; ++ai)
     {
       const int i = hsm.ca (ci, ai);
-      if (s[i] < 0)
-      {
-        CTAG(4,RATE_EM_WARNING) << "Warning: zeroing negative start count (s[" << alphabet.int2char(ai) << ci+1 << "] = " << s[i] << ")\n";
-        s[i] = 0;
-      }
-      if (w[i] <= 0)
-      {
-        CTAG(4,RATE_EM_WARNING) << "Warning: setting negative wait time (w[" << alphabet.int2char(ai) << ci+1 << "] = " << w[i] << ") to "
-          << HSM_MINIMUM_WAIT_TIME << "\n";
-        w[i] = HSM_MINIMUM_WAIT_TIME;
-	// ih, 7/8/05: removed the "short_wait" hack which was over-complicated & causing problems
-	// (in particular, no reason to expect that first cycle of EM is exempt from negative wait time problems)
-      }
+      if (std::isnan(s[i]))
+	{
+	  CLOGERR << "Warning: zeroing start count (s[" << i << "] = nan). NB: 'nan' = not a number. Not a good sign, either.\n";
+	  s[i] = 0;
+	  ++zeroes;
+	}
+      else if (s[i] < 0)
+	{
+	  CTAG(4,RATE_EM_WARNING) << "Warning: zeroing negative start count (s[" << i << "] = " << s[i] << ")\n";
+	  s[i] = 0;
+	  ++zeroes;
+	}
+      if (std::isnan(w[i]))
+	{
+	  CLOGERR << "Warning: setting wait time (w[" << i << "] = nan) to "
+		  << HSM_MINIMUM_WAIT_TIME << ". NB: 'nan' = not a number. Not a good sign, either.\n";
+	  w[i] = HSM_MINIMUM_WAIT_TIME;
+	  ++zeroes;
+	}
+      else if (w[i] <= 0)
+	{
+	  CTAG(4,RATE_EM_WARNING) << "Warning: setting negative wait time (w[" << i << "] = " << w[i] << ") to "
+				  << HSM_MINIMUM_WAIT_TIME << "\n";
+	  w[i] = HSM_MINIMUM_WAIT_TIME;
+	  // ih, 7/8/05: removed the "short_wait" hack which was over-complicated & causing problems
+	  // (in particular, no reason to expect that first cycle of EM is exempt from negative wait time problems)
+	  ++zeroes;
+	}
       for (int aj = 0; aj < A; ++aj)
         if (ai != aj)
         {
           const int j = hsm.ca (ci, aj);
-          if (u(i,j) < 0)
-          {
-            CTAG(4,RATE_EM_WARNING) << "Warning: zeroing negative transition usage (u[" << alphabet.int2char(ai) << ci+1 << "->" << alphabet.int2char(aj) << ci+1 << "] = " << u(i,j) << ")\n";
-            u(i,j) = 0;
-          }
+	  if (std::isnan(u(i,j)))
+	    {
+	      CLOGERR << "Warning: zeroing transition usage (u(" << i << "," << j << ") = nan). NB: 'nan' = not a number. Not a good sign, either.\n";
+	      u(i,j) = 0;
+	      ++zeroes;
+	    }
+          else if (u(i,j) < 0)
+	    {
+	      CTAG(4,RATE_EM_WARNING) << "Warning: zeroing negative transition usage (u(" << i << "," << j << ") = " << u(i,j) << ")\n";
+	      u(i,j) = 0;
+	      ++zeroes;
+	    }
         }
       for (int cj = 0; cj < C; ++cj)
         if (ci != cj)
         {
           const int j = hsm.ca (cj, ai);
-          if (u(i,j) < 0)
-          {
-            CTAG(4,RATE_EM_WARNING) << "Warning: zeroing negative transition usage (u[" << alphabet.int2char(ai) << ci+1 << "->" << alphabet.int2char(ai) << cj+1 << "] = " << u(i,j) << ")\n";
-            u(i,j) = 0;
-          }
+	  if (std::isnan(u(i,j)))
+	    {
+	      CLOGERR << "Warning: zeroing transition usage (u(" << i << "," << j << ") = " << u(i,j) << "). NB: 'nan' = not a number. Not a good sign, either.\n";
+	      u(i,j) = 0;
+	      ++zeroes;
+	    }
+          else if (u(i,j) < 0)
+	    {
+	      CTAG(4,RATE_EM_WARNING) << "Warning: zeroing negative transition usage (u(" << i << "," << j << ") = " << u(i,j) << ")\n";
+	      u(i,j) = 0;
+	      ++zeroes;
+	    }
         }
     }
+
+  // log
+  if (zeroes == 0)
+    CTAG(5,RATE_EM) << "Checked start counts, wait times and transition counts; no negative or nan values found\n";
+  else
+    CTAG(5,RATE_EM) << "Checked start counts, wait times and transition counts; zeroed " << zeroes << " nan/negative value" << (zeroes > 1 ? "s" : "") << "\n";
 }
 
 void EM_matrix_base::Update_statistics::transform (const EM_matrix_base& hsm, bool symmetrise)
@@ -359,7 +395,7 @@ void EM_matrix_base::Update_statistics::transform (const EM_matrix_base& hsm, bo
   // derived class specific update of wait counts, transition usages
   hsm.transform_symmetrised_waits_transitions (*this, symmetrise);
 
-  // check for negative or zero wait times, transition usages
+  // check for negative/zero/nan wait times, transition usages
   // also zero any transition usages if the corresponding rates are zero
   check_waits_transitions (hsm);
 }

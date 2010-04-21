@@ -1217,7 +1217,6 @@ void ECFG_counts::update_ecfg_rates (ECFG_scores& ecfg)
 	CL << "Update statistics for matrix #" << i << ":\n" << stats[i];
       em_matrix.quick_M (stats[i], true, true);
     }
-
 }
 
 void ECFG_counts::update_ecfg_rules (ECFG_scores& ecfg)
@@ -1275,7 +1274,10 @@ void ECFG_counts::show (const ECFG_scores& ecfg, ostream& out) const
   for (int c = 0; c < (int) stats.size(); ++c)
     {
       out << "Chain " << c << "\n";
-      out << stats[c];
+      if (!filled_down[c])
+	out << "[not filled]\n";
+      else
+	out << stats[c];
     }
   if (ecfg.has_parametric_functions())
     {

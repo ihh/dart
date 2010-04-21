@@ -1573,18 +1573,19 @@ void ECFG_trainer::iterate_quick_EM (int forgive)
     do_dp (true);
 
     // write grammar with counts to training log
-    if (training_log) {
-      ECFG_scores ecfg_copy (ecfg);
-      sstring iter_str, loglike_str, best_loglike_str;
-      iter_str << EG_EM_UPDATE << " " << iter;
-      loglike_str << EG_EM_BITS << " " << -Nats2Bits(loglike);
-      best_loglike_str << EG_EM_BEST_BITS << " " << -Nats2Bits(loglike);
-      ecfg_copy.meta.insert(ecfg_copy.meta.begin(),SExpr(best_loglike_str.begin(),best_loglike_str.end()));
-      ecfg_copy.meta.insert(ecfg_copy.meta.begin(),SExpr(loglike_str.begin(),loglike_str.end()));
-      ecfg_copy.meta.insert(ecfg_copy.meta.begin(),SExpr(iter_str.begin(),iter_str.end()));
-      ECFG_builder::ecfg2stream (*training_log, ecfg_copy.alphabet, ecfg_copy, iter>0 ? &counts : 0);
-      training_log->flush();
-    }
+    if (training_log)
+      {
+	ECFG_scores ecfg_copy (ecfg);
+	sstring iter_str, loglike_str, best_loglike_str;
+	iter_str << EG_EM_UPDATE << " " << iter;
+	loglike_str << EG_EM_BITS << " " << -Nats2Bits(loglike);
+	best_loglike_str << EG_EM_BEST_BITS << " " << -Nats2Bits(loglike);
+	ecfg_copy.meta.insert(ecfg_copy.meta.begin(),SExpr(best_loglike_str.begin(),best_loglike_str.end()));
+	ecfg_copy.meta.insert(ecfg_copy.meta.begin(),SExpr(loglike_str.begin(),loglike_str.end()));
+	ecfg_copy.meta.insert(ecfg_copy.meta.begin(),SExpr(iter_str.begin(),iter_str.end()));
+	ECFG_builder::ecfg2stream (*training_log, ecfg_copy.alphabet, ecfg_copy, iter>0 ? &counts : 0);
+	training_log->flush();
+      }
 
     // update ECFG
     counts.update_ecfg (ecfg);

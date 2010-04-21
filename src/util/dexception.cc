@@ -1,58 +1,25 @@
+// Commented out as it doesn't work on OSX 10.4 - IH 4/20/2010
+// #include <execinfo.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "util/logfile.h"
 
-// uncomment the following #define to allow debugging display of the function stack
-// (finally decided against leaving this as the default behaviour: it garbled the error message too many times - ihh, 8/15/03)
-// #define __SHOW_FUNCTION_STACK__
-
+#define MAX_BACKTRACE_DEPTH 10
 Dart_exception::Dart_exception()
 {
-  stack_trace.clear();  // dummy, redundant line of code just so we have some place to set a breakpoint
-#ifdef __SHOW_FUNCTION_STACK__
-#ifdef __GNUC__
-  // this code is VERY messy and doesn't work right, but a stack trace is a nice thing to have, even a half-working one
-  void* ret_addr[20];
-  int d = 0;
-  void* fa;
-  fa = __builtin_frame_address(0);
-  if (fa) { ret_addr[d++] = __builtin_return_address(0); fa = __builtin_frame_address(1); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(1); fa = __builtin_frame_address(2); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(2); fa = __builtin_frame_address(3); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(3); fa = __builtin_frame_address(4); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(4); fa = __builtin_frame_address(5); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(5); fa = __builtin_frame_address(6); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(6); fa = __builtin_frame_address(7); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(7); fa = __builtin_frame_address(8); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(8); fa = __builtin_frame_address(9); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(9); fa = __builtin_frame_address(10); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(10); fa = __builtin_frame_address(11); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(11); fa = __builtin_frame_address(12); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(12); fa = __builtin_frame_address(13); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(13); fa = __builtin_frame_address(14); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(14); fa = __builtin_frame_address(15); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(15); fa = __builtin_frame_address(16); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(16); fa = __builtin_frame_address(17); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(17); fa = __builtin_frame_address(18); }
-  if (fa) { ret_addr[d++] = __builtin_return_address(18); fa = __builtin_frame_address(19); }
-  if (fa) ret_addr[d++] = __builtin_return_address(19);
-  // the following line was added to work around mysterious, intermittent corruption of stack_trace...
-  // this now seems to have disappeared, but it did that once before and came back... perhaps the code is haunted?
-  stack_trace << "*** exception *** exception *** exception *** exception *** exception *** exception *** exception *** exception ***\n";
-  stack_trace << "Function stack (depth=" << d;
-  if (d == 20) stack_trace << '+';
-  stack_trace << "):";
-  for (int level = 0; level < d; ++level)
-    {
-      char hex[100];   // i assume this will never run on a >400-bit machine
-      sprintf (hex, "%.8x", ret_addr[level]);
-      stack_trace << " *0x" << hex;
-    }
-  if (d == 20) stack_trace << " ...";
-  stack_trace << '\n';
-  stack_trace << "*** exception *** exception *** exception *** exception *** exception *** exception *** exception *** exception ***\n";
-  stack_trace << '\n';
-#endif  /* __GNUC__ */  
-#endif  /* __SHOW_FUNCTION_STACK__ */
+  stack_trace.clear();
+  // Commented out as it doesn't work on OSX 10.4 - IH 4/20/2010
+  /*
+  void *array[MAX_BACKTRACE_DEPTH];
+  size_t size = backtrace (array, MAX_BACKTRACE_DEPTH);
+  char** strings = backtrace_symbols (array, size);
+
+  for (size_t i = 0; i < size; i++)
+    stack_trace << strings[i] << '\n';
+
+  free (strings);
+  */
 }
 
 Dart_exception::~Dart_exception() { }
