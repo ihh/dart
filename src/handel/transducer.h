@@ -14,9 +14,9 @@ using namespace std;
 #include "hsm/em_matrix_base.h"
 
 // default transducer state names
-#define Default_name_for_transducer_start_state "Start"
-#define Default_name_for_transducer_end_state   "End"
-#define Undefined_transducer_state_name         "Undef"
+#define Default_name_for_transducer_start_state Grammar_start_state_name
+#define Default_name_for_transducer_end_state   Grammar_end_state_name
+#define Undefined_transducer_state_name         Grammar_undef_state_name
 
 // max number of tries for feeding a parent sequence through a transducer
 // (some kind of DP algorithm would be more robust..)

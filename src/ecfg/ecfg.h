@@ -348,7 +348,7 @@ struct ECFG_scores : ECFG<Score>
   int         element_width() const { return 10; }
   void        show_element (const Score& element, ostream& o) const { ShowScore (element, o); }
 
-  sstring desc (int state) const { return state == Start ? "Start" : (state == End ? "End" : state_info[state].name); }
+  sstring desc (int state) const { return state == Start ? Grammar_start_state_name : (state == End ? Grammar_end_state_name : state_info[state].name); }
 };
 
 // ECFG_counts: container for accumulating expected counts during E-step of EM

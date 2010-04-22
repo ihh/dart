@@ -53,7 +53,7 @@ struct CM_end : CM_node
   }
   void connect (Pair_PCFG& cfg) const { }
   // node type descriptor
-  const char* cm_node_type() { return "End"; }
+  const char* cm_node_type() { return Grammar_end_state_name; }
 };
 
 struct CM_bifurc : CM_node

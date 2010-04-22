@@ -48,13 +48,6 @@
 #define EG_TRANSFORM_STRICT_GAPS "strict-gaps"
 #define EG_TRANSFORM_IGNORE_GAPS "gaps-ok"
 
-#define EG_GFF         "gff"
-#define EG_GFF_NONTERM EG_NONTERMINAL
-#define EG_GFF_SOURCE  "source"
-#define EG_GFF_TYPE    "type"
-#define EG_GFF_STRAND  "strand"
-#define EG_GFF_FRAME   "frame"
-
 #define EG_UPDATE_RATES "update-rates"
 #define EG_UPDATE_RULES "update-rules"
 
@@ -79,8 +72,24 @@
 #define EG_HYBRID_CHAIN      "hybrid-chain"
 #define EG_HYBRID_COMPONENTS "components"
 
+// GFF output
+#define EG_GFF         "gff"
+#define EG_GFF_NONTERM EG_NONTERMINAL
+#define EG_GFF_SOURCE  "source"
+#define EG_GFF_TYPE    "type"
+#define EG_GFF_STRAND  "strand"
+#define EG_GFF_FRAME   "frame"
+
+// wiggle output
+#define EG_WIGGLE           "wiggle"
+#define EG_WIGGLE_NAME      EG_NAME
+#define EG_WIGGLE_COMPONENT "component"
+#define EG_WIGGLE_WEIGHT    "weight"
+#define EG_WIGGLE_TERM      EG_TERMINAL
+#define EG_WIGGLE_NONTERM   EG_NONTERMINAL
+
 // not quite keywords, but important for grammar
-#define ECFG_default_start_nonterminal "Start"
+#define ECFG_default_start_nonterminal Grammar_start_state_name   /* "Start" */
 #define ECFG_complement_character '~'
 #define ECFG_post_emit_character '*'
 #define ECFG_deprecated_post_emit_character '\''   /* for backward compatibility */

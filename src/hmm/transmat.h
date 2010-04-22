@@ -5,6 +5,11 @@
 #include "seq/local.h"
 #include "seq/pfunc.h"
 
+// Start, End and Undef string constants
+#define Grammar_start_state_name "Start"
+#define Grammar_end_state_name   "End"
+#define Grammar_undef_state_name "Undef"
+
 // Grammar state enumeration. A trivial class purely for inheriting from
 struct Grammar_state_enum
 {

@@ -808,9 +808,9 @@ ECFG_simulation::ECFG_simulation (const ECFG_scores& ecfg, const PHYLIP_tree& tr
       // log
       if (CTAGGING(0,ECFG_SIM))
 	CL << "Transforming: "
-	   << (state == Start ? ECFG_default_start_nonterminal : ecfg.state_info[state].name.c_str())
+	   << (state == Start ? Grammar_start_state_name : ecfg.state_info[state].name.c_str())
 	   << " => "
-	   << (dest == End ? "End" : ecfg.state_info[dest].name.c_str())
+	   << (dest == End ? Grammar_end_state_name : ecfg.state_info[dest].name.c_str())
 	   << '\n';
 
       state = dest;

@@ -43,9 +43,9 @@ sstring Transition_matrix<T,T_matrix>::dotfile_node_id (int state) const
 {
   sstring s;
   if (state == Start)
-    s << "Start";
+    s << Grammar_start_state_name;
   else if (state == End)
-    s << "End";
+    s << Grammar_end_state_name;
   else
     s << state + 1;
   return s;
@@ -122,9 +122,9 @@ void Transition_matrix<T,T_matrix>::show_transitions (ostream& o) const
   o << "State" << " ";
   for (int i = 0; i < tm_states(); i++) { o.width(w); o << i; o << " "; }
   o.width(w);
-  o << "End" << "\n";
+  o << Grammar_end_state_name << "\n";
   o.width(s);
-  o << "Start" << " ";
+  o << Grammar_start_state_name << " ";
   for (int i = 0; i < tm_states(); i++) { o.width(w); show_element(start[i],o); o << " "; }
   o.width(w);
   show_element(start_to_end(),o);

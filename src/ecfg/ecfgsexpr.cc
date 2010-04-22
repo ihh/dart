@@ -685,7 +685,7 @@ void ECFG_builder::ECFG_rule_block::parse (ECFG_scores& ecfg)
       switch (rhs.pos_nonterm.size())
 	{
 	case 0:  // transition to end state
-	  dest_state_text = "End";
+	  dest_state_text = Grammar_end_state_name;
 	  if (parametric_transitions)
 	    ecfg.trans_funcs.transition (lhs_nonterm, End) = pfunc;
 	  else
