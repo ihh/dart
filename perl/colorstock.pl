@@ -22,7 +22,7 @@ my %gapchar = map (($_=>1), '-', '.', '_', ',');
 my %strongly_bonded = map (($_ => 1), qw(AU GC CG UA GU UG));
 
 # display parameters
-my $screenColumns = 80;
+my $screenColumns = (`tput cols` + 0) || 80;
 my $covOnly = 0;
 my $canOnly = 0;
 my $diffName;
@@ -44,7 +44,7 @@ $progname =~ s/^.*?([^\/]+)$/$1/;
 my $usage = "Usage: $progname <Stockholm file>\n";
 $usage .=   "          [-h] print this message\n";
 $usage .=   "       [-less] pipe file through '$less' instead of '$cat'\n";
-$usage .=   "   [-cols <N>] number of columns per row\n";
+$usage .=   "   [-cols <N>] number of columns per row (default is $screenColumns)\n";
 $usage .=   "   [-gc <TAG>] '#=GC' tag for secondary structure; default is '$SS_CONS'\n";
 $usage .=   "        [-cov] only color columns with compensatory mutations\n";
 $usage .=   "        [-can] only color canonical (and wobble) base-pairs\n";
@@ -323,6 +323,9 @@ while (1) {
 		$w = max ($w, map (length, map ("#=GR $name $_", keys %$gr)));
 	    }
 
+	    # figure out display columns
+	    my $seqColumns = $screenColumns - $w - 1;
+
 	    # number the stems
 	    my $stemString = join ("", map ($_<0?'.':$stemChar[$stemNum[$_] % $stemChars], @stem));
 
@@ -338,9 +341,9 @@ while (1) {
 
 	    # print the alignment
 	    print LESS $preamble if defined $preamble;
-	    for (my $col = 0; $col < $seqlen; $col += $screenColumns) {
+	    for (my $col = 0; $col < $seqlen; $col += $seqColumns) {
 
-		my $width = min ($screenColumns, $seqlen - $col);
+		my $width = min ($seqColumns, $seqlen - $col);
 		my @printRowArgs = ($col, $width, $w);
 
 		my @stemSlice = @stem[$col .. $col + $width - 1];
