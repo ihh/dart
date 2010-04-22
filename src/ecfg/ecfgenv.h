@@ -22,7 +22,7 @@ struct ECFG_envelope
 
   // initialisers
   void init (int seqlen, int max_subseq_len);
-  void init_from_fold_string (const sstring& fold_string);
+  void init_from_fold_string (const sstring& fold_string, bool connect_all_bifurcations = true);
 
   // accessors
   inline int subseqs() const { return subseq.size(); }
