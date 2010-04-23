@@ -75,12 +75,15 @@ PFOLD_ECFG::PFOLD_ECFG (const char* tag)
   state_info[pfoldU] = ECFG_emitl_state_info (matrix_set.add_matrix (1));
 
   state_info[pfoldF].annot[sstring(tag)][sstring ("<>")] = PFunc(1.);
-  state_info[pfoldU].annot[sstring(tag)][sstring (".")] = PFunc(1.);
+  state_info[pfoldU].annot[sstring(tag)][sstring ("_")] = PFunc(1.);
 
   matrix_set.chain[0].state[0] = "LNUC";
   matrix_set.chain[0].state[1] = "RNUC";
 
   matrix_set.chain[1].state[0] = "NUC";
+
+  // set fold string
+  fold_string_tag = tag;
 
   // set transition probabilities
   transition (Start, pfoldS) = Prob2Score (1);

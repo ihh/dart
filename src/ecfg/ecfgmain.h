@@ -33,6 +33,7 @@ struct ECFG_main
   sstring train;
   sstring training_log_filename;
   sstring gff_filename;
+  sstring wiggle_filename;
   sstring gap_chars;
 
   double em_min_inc;
@@ -51,6 +52,7 @@ struct ECFG_main
   double min_ancrec_postprob;
 
   bool use_beagle;
+  bool use_fast_prune;
 
   // alphabet & grammar data
   const Alphabet* alph;

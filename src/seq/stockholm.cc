@@ -473,6 +473,13 @@ void Stockholm::add_gf_annot (const sstring& tag, const sstring& val)
   gf_index[tag].insert ((int) gf_annot.size() - 1);
 }
 
+void Stockholm::add_multiline_gf_annot (const sstring& tag, const sstring& multiline_val)
+{
+  const vector<sstring> vals = multiline_val.split("\n");
+  for_const_contents (vector<sstring>, vals, val)
+    add_gf_annot (tag, *val);
+}
+
 void Stockholm::set_gc_annot (const sstring& tag, const sstring& val)
 {
   gc_annot[tag] = val;

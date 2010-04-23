@@ -976,7 +976,7 @@ void ECFG_outside_matrix::fill()
 		  if (src_emit_coords_idx >= 0)
 		    {
 		      // calculate transition score; add counts
-		      const Loge incoming_ll_s_d = NatsPMul (cell (source_subseq_idx, s), incoming_ll_d[s]);
+		      const Loge incoming_ll_s_d = NatsPMul (cell (source_subseq_idx, s), incoming_ll_d[incoming_idx]);
 		      if (counts)
 			inside.add_trans_counts (s, *d, Nats2Prob (NatsPMul (incoming_ll_s_d, inside_minus_final_ll)), *counts);
 		      NatsPSumAcc (ll, incoming_ll_s_d);
@@ -1077,7 +1077,6 @@ Loge ECFG_inside_outside_matrix::post_transition_ll (int src_state, int dest_sta
 	  inout_loglike = inside.cell (subseq_idx, dest_state);
 	}
     }
-
   else
     {
       // Find actual emit coords of src_state, and check it's in envelope
@@ -1109,6 +1108,25 @@ Loge ECFG_inside_outside_matrix::post_state_ll (int dest_state, int subseq_idx) 
   // sum over transitions
   for_const_contents (vector<int>, inside.incoming[dest_state], s)
     NatsPSumAcc (state_ll, post_transition_ll (*s, dest_state, subseq_idx));
+
+  // debug
+  if (Nats2Prob(state_ll) > 2)
+    {
+      for_const_contents (vector<int>, inside.incoming[dest_state], s)
+	{
+	  Prob tp = Nats2Prob(post_transition_ll (*s, dest_state, subseq_idx));
+	  if (tp > 2)
+	    {
+	      CLOGERR<<"s="<<*s<<" dest="<<dest_state<<" subseq_idx="<<subseq_idx<<" post_trans="<<tp<<"\n";
+
+	      Score out_sc = Nats2Score(outside.cell (subseq_idx, *s));
+	      Score in_sc = Nats2Score(inside.cell (subseq_idx, dest_state));
+	      Score trans_sc = Nats2Score(inside.trans_ll (*s, dest_state));
+	      Score final_sc = Nats2Score(inside.final_loglike);
+	      CLOGERR<<"out="<<out_sc<<" in="<<in_sc<<" trans="<<trans_sc<<" final="<<final_sc<<"\n";
+	    }
+	}
+    }
 
   if (subseq_idx == inside.env.subseqs() - 1)
     NatsPSumAcc (state_ll, post_transition_ll (Start, dest_state, subseq_idx));

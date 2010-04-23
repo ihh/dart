@@ -13,11 +13,13 @@ void ECFG_envelope::init_from_fold_string (const sstring& fold_string, bool conn
     foldenv.connect_all();
   use_foldenv = true;
 
-  // copy Subseq_coords
+  // copy Subseq_coords and seqlen
   subseq.clear();
   subseq.reserve (foldenv.subseq.size());
   for_const_contents (vector<Subseq>, foldenv.subseq, ss)
     subseq.push_back (*ss);
+
+  seqlen = foldenv.seqlen();
 }
 
 void ECFG_envelope::init (int S, int L)

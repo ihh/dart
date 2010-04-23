@@ -303,8 +303,10 @@ struct ECFG_scores : ECFG<Score>
   // method to test if ECFG has any chains with hidden classes
   bool has_hidden_classes() const;
 
-  // method to test if there are any GFF annotations
+  // methods to test if there are any #=GC, GFF, or wiggle annotations
+  bool has_GC() const;
   bool has_GFF() const;
+  bool has_wiggle() const;
 
   // method to set max_len for infix states, and issue warnings for non-prefix and non-suffix states with excessive max_len
   void set_infix_len (int max_subseq_len);
@@ -321,6 +323,7 @@ struct ECFG_scores : ECFG<Score>
   vector<vector<int> > left_bifurc() const;  // left_bifurc()[rdest] = list of states bifurcating to (*,rdest)
   vector<vector<int> > right_bifurc() const;  // right_bifurc()[ldest] = list of states bifurcating to (ldest,*)
   set<sstring> autodetect_potential_fold_string_tags() const;
+  vector<int> get_pos2term (int state) const;
 
   // bifurcation pseudo-transitions to fake out the topological sort
   void add_fake_bifurcation_transitions();
@@ -331,12 +334,19 @@ struct ECFG_scores : ECFG<Score>
   void read (istream& in);
 
   // annotation
+  // #=GC lines
   void annotate (Stockholm& stock, const ECFG_cell_score_map& annot) const;
+  // GFF
   void make_GFF (GFF_list& gff_list,
 		 const ECFG_cell_score_map& annot,
 		 const char* seqname = ECFG_GFF_default_seqname,
-		 ECFG_posterior_probability_calculator* pp_calc = 0,
-		 ECFG_inside_calculator* ins_calc = 0) const;
+		 const ECFG_posterior_probability_calculator* pp_calc = 0,
+		 const ECFG_inside_calculator* ins_calc = 0) const;
+  // Wiggle
+  void make_wiggle (ostream& wig_stream,
+		    const ECFG_envelope& env,
+		    const ECFG_posterior_probability_calculator& pp_calc,
+		    const char* chrom = "alignment");
 
   // evaluate PFunc's for parametric rates & probabilities
   void eval_funcs();

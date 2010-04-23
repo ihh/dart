@@ -42,7 +42,9 @@
 #define Stockholm_New_Hampshire_tag                 "NH"
 #define Stockholm_bit_score_tag                     "SC"
 #define Stockholm_Dart_alignment_weight_tag         "WT"
+
 #define Stockholm_GFF_tag                           "GFF"
+#define Stockholm_WIG_tag                           "WIG"
 
 // other stuff
 #define Default_alignment_wildcard_char             '*'
@@ -127,6 +129,8 @@ struct Stockholm : Alignment, Fold_char_enum
   void set_gc_annot (const sstring& tag, const sstring& val);  // GC accessor
   void set_gs_annot (const sstring& seqname, const sstring& tag, const sstring& val);  // GS accessor
   void set_gr_annot (const sstring& seqname, const sstring& tag, const sstring& val);  // GR accessor
+
+  void add_multiline_gf_annot (const sstring& tag, const sstring& multiline_val);  // splits multiline_val by '\n', then calls add_gf_annot for each line
 
   // method to erase empty columns & update #=GC/#=GR annotations
   void erase_empty_columns();

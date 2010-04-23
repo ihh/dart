@@ -380,6 +380,19 @@ vector<vector<int> > ECFG_scores::right_bifurc() const
   return result;
 }
 
+vector<int> ECFG_scores::get_pos2term (int state) const
+{
+  const ECFG_state_info& info = state_info[state];
+  const ECFG_chain& chain = matrix_set.chain[info.matrix];
+  const Alphabet& alph = alphabet;
+  vector<int> pos2term (chain.word_len, -1);
+  for (int mul = 1, i = 0; i < chain.word_len; mul *= alph.size(), ++i)
+    for (int k = 0; k < (int) info.mul.size(); ++k)
+      if (info.mul[k] == mul)
+	pos2term[k] = i;
+  return pos2term;
+}
+
 set<sstring> ECFG_scores::autodetect_potential_fold_string_tags() const
 {
   set<sstring> fstag;
@@ -520,8 +533,8 @@ void ECFG_scores::annotate (Stockholm& stock, const ECFG_cell_score_map& annot) 
 void ECFG_scores::make_GFF (GFF_list& gff_list,
 			    const ECFG_cell_score_map& annot,
 			    const char* seqname,
-			    ECFG_posterior_probability_calculator* pp_calc,
-			    ECFG_inside_calculator* ins_calc) const
+			    const ECFG_posterior_probability_calculator* pp_calc,
+			    const ECFG_inside_calculator* ins_calc) const
 {
   // loop over subseq->state mappings
   for_const_contents (ECFG_cell_score_map, annot, ss)
@@ -568,6 +581,40 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
     }
 }
 
+void ECFG_scores::make_wiggle (ostream& wig_stream,
+			       const ECFG_envelope& env,
+			       const ECFG_posterior_probability_calculator& pp_calc,
+			       const char* chrom)
+{
+  for_const_contents (list<ECFG_wiggle_track>, wiggle, wig)
+    {
+      vector<double> wig_score (env.seqlen, 0.);
+      for_const_contents (vector<Subseq_coords>, env.subseq, ss)
+	{
+	  for_const_contents (ECFG_wiggle_track::Component_weight_map, wig->component_weight, cw)
+	    {
+	      const int nonterm_index = cw->first.first;
+	      const int emit_pos = cw->first.second;
+	      const double weight = cw->second;
+	      const ECFG_state_info& info = state_info[nonterm_index];
+	      if (ss->len >= info.emit_size())
+		{
+		  const int column = emit_pos < info.l_context + info.l_emit
+		    ? (ss->start + emit_pos - info.l_context)
+		    : (ss->end() + emit_pos - info.l_context - info.l_emit - info.r_emit);
+		  const Prob prob = Nats2Prob (pp_calc.post_state_ll (nonterm_index, *ss));
+		  wig_score[column] += weight * prob;
+		}
+	    }
+	}
+
+      wig_stream << "track type=wiggle_0 name=" << wig->name << '\n'
+		 << "fixedStep chrom=" << chrom << " start=0 step=1\n";
+      for (int col = 0; col < env.seqlen; ++col)
+	wig_stream << wig_score[col] << '\n';
+    }
+}
+
 bool ECFG_scores::has_parametric_functions() const
 {
   if (has_parametric_transitions)
@@ -595,6 +642,19 @@ bool ECFG_scores::has_GFF() const
     if (!info->gff.empty())
       return true;
   return false;
+}
+
+bool ECFG_scores::has_GC() const
+{
+  for_const_contents (vector<ECFG_state_info>, state_info, info)
+    if (!info->annot.empty())
+      return true;
+  return false;
+}
+
+bool ECFG_scores::has_wiggle() const
+{
+  return !wiggle.empty();
 }
 
 void ECFG_scores::eval_funcs()

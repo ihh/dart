@@ -152,12 +152,14 @@ void ECFG_main::init_opts (const char* desc)
   opts.newline();
   opts.print_title ("Output");
   opts.add ("gff", gff_filename, "save GFF annotations to file, rather than interleaving into Stockholm output", false);
+  opts.add ("wig -wiggle", wiggle_filename, "save Wiggle annotations to file, rather than interleaving into Stockholm output", false);
   opts.add ("tlog -training-log", training_log_filename = "", "during EM, dump every intermediate grammar to this file", false);
 
   opts.newline();
-  opts.print_title ("Miscellaneous");
+  opts.print_title ("Algorithm acceleration (experimental)");
 
-  opts.add ("bgl -beagle", use_beagle = false, "use Beagle GPU library to compute likelihoods, if available");
+  opts.add ("fp -fast-prune", use_fast_prune = false, "attempt pruning algorithm in probability-space, rather than log-space (caveat: prone to underflow)");
+  opts.add ("bgl -beagle", use_beagle = false, "use Beagle GPU library (if available) to do pruning");
 }
 
 void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
@@ -562,19 +564,33 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	  ECFG_EM_matrix::Emit_loglike_matrix cyk_emit_loglike;
 	  bool cyk_emit_loglike_initialized = false;
 
-	  // decide whether we need to do peeling as well as pruning
-	  const bool want_hidden_classes = report_hidden_classes && ecfg.has_hidden_classes();
+	  // decide what annotations we want
 	  const bool want_ancestral_reconstruction = ancrec_CYK_MAP || ancrec_postprob;
-	  const bool want_fill_down = want_hidden_classes || want_ancestral_reconstruction;
+	  const bool want_hidden_classes = report_hidden_classes && ecfg.has_hidden_classes();
+	  const bool want_GC = annotate && ecfg.has_GC();
+	  const bool want_GFF = annotate && ecfg.has_GFF();
+	  const bool want_wiggle = (annotate || wiggle_filename.size() > 0) && ecfg.has_wiggle();
 
-	  // do CYK algorithm, if requested
+	  // decide whether we need CYK, Inside, Outside, peeling
+	  const bool want_CYK = want_GFF || want_GC;
+	  const bool want_outside = report_postprob || report_confidence || want_wiggle || want_hidden_classes || want_ancestral_reconstruction;
+	  const bool want_inside = report_sumscore || want_outside;
+	  const bool want_fill_down = want_hidden_classes || want_ancestral_reconstruction;
+	  const bool want_fast_prune = use_fast_prune && !want_fill_down;
+
+	  // for backward compatibility, issue a warning if inside-outside data unavailable to GFF
+	  if (want_GFF && !want_outside)
+	    CLOGERR << "Warning: --score, --postprob or --confidence options not specified. GFF annotations\n"
+		    << "will not contain Inside likelihoods or Inside-Outside posterior probabilities.\n";
+
+	  // if needed, do CYK algorithm
 	  bool zero_likelihood = false;  // this flag becomes set if final likelihood is 0, i.e. no traceback path
-	  if (annotate)
+	  if (want_CYK)
 	    {
 	      CTAG(6,XRATE) << "Annotating using grammar '" << ecfg_name << "'\n";
 
 	      // create CYK matrix; get score & traceback; save emit_loglike; & delete matrix
-	      ECFG_CYK_matrix* cyk_mx = new ECFG_CYK_matrix (ecfg, *stock, asp, env, !want_fill_down);
+	      ECFG_CYK_matrix* cyk_mx = new ECFG_CYK_matrix (ecfg, *stock, asp, env, want_fast_prune);
 	      if (use_beagle)
 		cyk_mx->compute_phylo_likelihoods_with_beagle();
 	      cyk_mx->fill();
@@ -591,8 +607,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	      delete cyk_mx;
 	      cyk_mx = 0;
 
-	      // if posterior probabilities requested, or ECFG has hidden classes, do inside-outside
-	      if ((report_postprob || report_confidence || want_hidden_classes || want_ancestral_reconstruction) && !zero_likelihood)
+	      // if needed, do inside-outside
+	      if (want_outside && !zero_likelihood)
 		{
 		  inout_mx = new ECFG_inside_outside_matrix (ecfg, *stock, asp, env, (ECFG_counts*) 0);
 		  inout_mx->inside.use_precomputed (cyk_emit_loglike);  // re-use emit log-likelihoods calculated by CYK
@@ -633,9 +649,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	      annotate_loglike (*stock, "SC_max", ecfg_name, cyk_loglike);
 	    }
 
-	  // do Inside algorithm, if requested
-	  const bool want_GFF = annotate && ecfg.has_GFF();
-	  const bool want_inside = report_sumscore || want_GFF;
+	  // if needed, do Inside algorithm (or retrieve previously-computed Inside matrix)
 	  if (want_inside)
 	    {
 	      CTAG(6,XRATE) << "Running Inside algorithm using grammar '" << ecfg_name << "'\n";
@@ -670,11 +684,26 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 		annotate_loglike (*stock, "SC_sum", ecfg_name, inside_mx->final_loglike);
 	    }
 
-	  // annotate CYK traceback *after* DP is finished
-	  if (annotate)
+	  // annotate CYK traceback *after* DP is finished, to make use of inside-outside probs if available
+	  if (want_GC)
+	    ecfg.annotate (*stock, cyk_trace);
+
+	  if (want_GFF)
+	    ecfg.make_GFF (gff_list, cyk_trace, align_id.c_str(), inout_mx, inside_mx);
+
+	  if (want_wiggle && inout_mx != 0)
 	    {
-	      ecfg.annotate (*stock, cyk_trace);
-	      ecfg.make_GFF (gff_list, cyk_trace, align_id.c_str(), inout_mx, inside_mx);
+	      if (wiggle_filename.size())
+		{
+		  ofstream wiggle_file (wiggle_filename.c_str());
+		  ecfg.make_wiggle (wiggle_file, env, *inout_mx);
+		}
+	      else
+		{
+		  sstring wiggle_string;
+		  ecfg.make_wiggle (wiggle_string, env, *inout_mx);
+		  stock->add_multiline_gf_annot (sstring(Stockholm_WIG_tag), wiggle_string);
+		}
 	    }
 
 	  // flush GFF
