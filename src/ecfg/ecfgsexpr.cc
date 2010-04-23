@@ -738,8 +738,10 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // create & run the validator
   SExpr_validator ecfg_validator
     ("Grammar->('"EG_GRAMMAR" GrammarProperty*);"
-     "GrammarProperty->Name|('"EG_FOLD_STRING_TAG" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
+     "GrammarProperty->Name|('"EG_WIGGLE" WiggleProperty*)|('"EG_FOLD_STRING_TAG" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
      "Name->('"EG_NAME" Atom);"
+     "WiggleProperty->('"EG_WIGGLE_NAME" Atom)|('"EG_WIGGLE_COMPONENT" WiggleComponentProperty*);"
+     "WiggleComponentProperty->('"EG_WIGGLE_WEIGHT" Atom)|('"EG_WIGGLE_TERM" Atom)|('"EG_WIGGLE_NONTERM" Atom);"
      "ParametricFlag->('"EG_PARAMETRIC" End);"
      "MinimumLength->('"EG_TRANSFORM_MINLEN" Atom);"
      "MaximumLength->('"EG_TRANSFORM_MAXLEN" Atom);"
@@ -954,6 +956,82 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
       init_gff (ecfg, info, *gff_sexpr);
     }
 
+  // initialise wiggle tracks
+  const vector<SExpr*> all_wiggle_sexpr = grammar_sexpr.find_all (EG_WIGGLE, 1);
+  for_const_contents (vector<SExpr*>, all_wiggle_sexpr, wiggle_sexpr)
+    {
+      ECFG_wiggle_track wig;
+      wig.name = (**wiggle_sexpr)(EG_WIGGLE_NAME).get_atom();
+      const vector<SExpr*> all_wiggle_component_sexpr = (**wiggle_sexpr).find_all (EG_WIGGLE_COMPONENT, 1);
+      if (all_wiggle_component_sexpr.empty())
+	THROWEXPR("In '" << **wiggle_sexpr << "': no " << EG_WIGGLE_COMPONENT << " blocks");
+      for_const_contents (vector<SExpr*>, all_wiggle_component_sexpr, wiggle_component_sexpr)
+	{
+	  SExpr* wiggle_weight_sexpr = (*wiggle_component_sexpr)->find(EG_WIGGLE_WEIGHT);
+	  SExpr* wiggle_term_sexpr = (*wiggle_component_sexpr)->find(EG_WIGGLE_TERM);
+	  SExpr* wiggle_nonterm_sexpr = (*wiggle_component_sexpr)->find(EG_WIGGLE_NONTERM);
+
+	  const double weight = wiggle_weight_sexpr ? wiggle_weight_sexpr->value().get_atom().to_double() : 1.;
+
+	  int nonterm_index = -1;
+	  if (wiggle_nonterm_sexpr != 0)
+	    {
+	      const sstring& nonterm_name = wiggle_nonterm_sexpr->value().get_atom();
+	      if (nonterm2state.find (nonterm_name) == nonterm2state.end())
+		THROWEXPR ("In '" << **wiggle_component_sexpr << "': nonterminal " << nonterm_name << " not known");
+	      nonterm_index = nonterm2state[nonterm_name];
+
+	      if (ecfg->state_info[nonterm_index].emit_size() == 0)
+		THROWEXPR ("In '" << **wiggle_component_sexpr << "': nonterminal " << nonterm_name << " does not emit anything, so can't be used for a wiggle track");
+	    }
+
+	  int chain_index = -1, term_index = -1;
+	  if (wiggle_term_sexpr != 0)
+	    {
+	      const sstring& term_name = wiggle_term_sexpr->value().get_atom();
+	      if (term2chain.find (term_name) == term2chain.end())
+		THROWEXPR ("In '" << **wiggle_component_sexpr << "': pseudoterminal " << term_name << " not known");
+	      chain_index = term2chain[term_name];
+
+	      const vector<sstring>& state = ecfg->matrix_set.chain[chain_index].state;
+	      term_index = find (state.begin(), state.end(), term_name) - state.begin();
+	    }
+
+	  if (wiggle_nonterm_sexpr != 0 && wiggle_term_sexpr != 0)
+	    {
+	      if (chain_index != ecfg->state_info[nonterm_index].matrix)
+		{
+		  const sstring& term_name = wiggle_term_sexpr->value().get_atom();
+		  const sstring& nonterm_name = wiggle_nonterm_sexpr->value().get_atom();
+		  THROWEXPR ("In '" << **wiggle_component_sexpr << "': pseudoterminal " << term_name << " not used by nonterminal " << nonterm_name);
+		}
+
+	      const vector<int> pos2term = get_pos2term(*ecfg,nonterm_index);
+	      const int emit_pos = find (pos2term.begin(), pos2term.end(), term_index) - pos2term.begin();
+	      wig.component_weight[ECFG_wiggle_track::Nonterminal_position(nonterm_index,emit_pos)] = weight;
+	    }
+	  else if (wiggle_nonterm_sexpr != 0)
+	    {
+	      const ECFG_state_info& info = ecfg->state_info[nonterm_index];
+	      for (int emit_pos = info.l_context; emit_pos < info.l_context + info.emit_size(); ++emit_pos)
+		wig.component_weight[ECFG_wiggle_track::Nonterminal_position(nonterm_index,emit_pos)] = weight;
+	    }
+	  else if (wiggle_term_sexpr != 0)
+	    {
+	      for (int state = 0; state < ecfg->states(); ++state)
+		if (chain_index == ecfg->state_info[state].matrix)
+		  {
+		    const vector<int> pos2term = get_pos2term(*ecfg,state);
+		    const int emit_pos = find (pos2term.begin(), pos2term.end(), term_index) - pos2term.begin();
+		    wig.component_weight[ECFG_wiggle_track::Nonterminal_position(state,emit_pos)] = weight;
+		  }
+	    }
+	  else
+	    THROWEXPR("In '" << **wiggle_component_sexpr << "': no " << EG_WIGGLE_NONTERM << " or " << EG_WIGGLE_TERM << " specified");
+	}
+      ecfg->wiggle.push_back(wig);
+    }
+
   // initialise update_rates and update_rules
   SExpr* update_rates_sexpr = grammar_sexpr.find (EG_UPDATE_RATES, 1);
   if (update_rates_sexpr && update_rates_sexpr->has_value())
@@ -1164,6 +1242,29 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
   if (ecfg.fold_string_tag.size() > 0)
     out << " (" << EG_FOLD_STRING_TAG << ' ' << ecfg.fold_string_tag << ")\n";
 
+  // print wiggle tracks
+  for_const_contents (list<ECFG_wiggle_track>, ecfg.wiggle, wig)
+    {
+      out << " (" << EG_WIGGLE
+	  << " (" << EG_WIGGLE_NAME << ' ' << wig->name << ')';
+      for_const_contents (ECFG_wiggle_track::Component_weight_map, wig->component_weight, cw)
+	{
+	  const int nonterm_index = cw->first.first;
+	  const int emit_pos = cw->first.second;
+	  const double weight = cw->second;
+	  const ECFG_state_info& info = ecfg.state_info[nonterm_index];
+	  const vector<int> pos2term = get_pos2term (ecfg, nonterm_index);
+	  const int term_index = pos2term[emit_pos];
+	  const int chain_index = info.matrix;
+	  out << "\n  (" << EG_WIGGLE_COMPONENT
+	      << " (" << EG_WIGGLE_NONTERM << ' ' << info.name
+	      << ") (" << EG_WIGGLE_TERM << ' ' << ecfg.matrix_set.chain[chain_index].state[term_index]
+	      << ") (" << EG_WIGGLE_WEIGHT << ' ' << weight
+	      << "))";
+	}
+      out << ")\n";
+    }
+
   // parametric?
   if (ecfg.has_parametric_transitions)
     out << " (" << EG_PARAMETRIC << ")\n";
@@ -1278,12 +1379,7 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	    {
 	      trans_block << " (" << EG_TRANSFORM << " (" << EG_FROM << " (";
 	      const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
-	      // figure out pos2term map
-	      vector<int> pos2term (chain.word_len, -1);
-	      for (int mul = 1, i = 0; i < chain.word_len; mul *= alph.size(), ++i)
-		for (int k = 0; k < (int) info.mul.size(); ++k)
-		  if (info.mul[k] == mul)
-		    pos2term[k] = i;
+	      const vector<int> pos2term = get_pos2term(ecfg,s);
 	      // print LHS of emit rule
 	      sstring sep, complement_chr;
 	      complement_chr << ECFG_complement_character;
@@ -1537,6 +1633,19 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 
   // close grammar block
   out << "\n)  ;; end grammar " << ecfg.name << "\n\n";
+}
+
+vector<int> ECFG_builder::get_pos2term (const ECFG_scores& ecfg, int state)
+{
+  const ECFG_state_info& info = ecfg.state_info[state];
+  const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
+  const Alphabet& alph = ecfg.alphabet;
+  vector<int> pos2term (chain.word_len, -1);
+  for (int mul = 1, i = 0; i < chain.word_len; mul *= alph.size(), ++i)
+    for (int k = 0; k < (int) info.mul.size(); ++k)
+      if (info.mul[k] == mul)
+	pos2term[k] = i;
+  return pos2term;
 }
 
 void ECFG_builder::print_state (ostream& out, int state, int wordlen, const Alphabet& alph, const vector<sstring>& class_alph)

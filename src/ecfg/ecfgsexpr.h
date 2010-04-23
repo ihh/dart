@@ -104,6 +104,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   };
 
   // parser helper methods
+  static vector<int> get_pos2term (const ECFG_scores& ecfg, int state);
   static int token_list_to_state (SExpr& token_list, const Alphabet& alph, int word_len, const vector<sstring>& class_alph);
 
   static const char* policy2string (Update_policy type);

@@ -88,6 +88,22 @@
 #define EG_WIGGLE_TERM      EG_TERMINAL
 #define EG_WIGGLE_NONTERM   EG_NONTERMINAL
 
+// macros
+// iterator macros
+#define EG_FOREACH_TOKEN    "&foreach-token"
+#define EG_FOREACH_NODE     "&foreach-node"
+#define EG_FOREACH_BRANCH   "&foreach-branch"
+#define EG_FOREACH_LEAF     "&foreach-leaf"
+#define EG_FOREACH_ANCESTOR "&foreach-ancestor"
+
+// scalar macros
+#define EG_TOKENS    "&TOKENS"
+#define EG_NODES     "&NODES"
+#define EG_LEAVES    "&LEAVES"
+#define EG_ANCESTORS "&ANCESTORS"
+#define EG_BRANCHES  "&BRANCHES"
+#define EG_COLUMNS   "&COLUMNS"
+
 // not quite keywords, but important for grammar
 #define ECFG_default_start_nonterminal Grammar_start_state_name   /* "Start" */
 #define ECFG_complement_character '~'
@@ -102,18 +118,14 @@
 #define ECFG_IMPLICIT_GS_VALUE_TRUE   "1"    /* "true" value for for implicit boolean "#=GS" tags */
 #define ECFG_IMPLICIT_GS_VALUE_FALSE  "0"    /* "false" value for for implicit boolean "#=GS" tags */
 
-// macros
-#define EG_FOREACH_TOKEN    "&foreach-token"
-#define EG_FOREACH_NODE     "&foreach-node"
-#define EG_FOREACH_BRANCH   "&foreach-branch"
-#define EG_FOREACH_LEAF     "&foreach-leaf"
-#define EG_FOREACH_ANCESTOR "&foreach-ancestor"
+// Miscellaneous #define's for input/output
+#define ECFG_annotation_wildcard Default_annotation_wildcard_char
+#define ECFG_default_name        "ECFG"
+#define ECFG_default_nonterminal "S"
 
-#define EG_TOKENS    "&TOKENS"
-#define EG_NODES     "&NODES"
-#define EG_LEAVES    "&LEAVES"
-#define EG_ANCESTORS "&ANCESTORS"
-#define EG_BRANCHES  "&BRANCHES"
-#define EG_COLUMNS   "&COLUMNS"
+// GFF tags
+#define ECFG_GFF_default_seqname   "Alignment"
+#define ECFG_GFF_LogPostProb_tag   "lgPost"      /* log_2 P(Parse Tree Uses Nonterminal | Alignment)  */
+#define ECFG_GFF_LogInsideProb_tag "lgInside"    /* log_2 P(Inside Annotation, Inside Alignment | Parse Tree Rooted At Nonterminal)  */
 
 #endif /* ECFG_SEXPR_KEYWORDS */

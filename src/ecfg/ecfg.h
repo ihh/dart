@@ -10,16 +10,6 @@
 #include "ecfg/fastprune.h"
 #include "seq/gff.h"
 
-// Miscellaneous #define's for input/output
-#define ECFG_annotation_wildcard Default_annotation_wildcard_char
-#define ECFG_default_name        "ECFG"
-#define ECFG_default_nonterminal "S"
-
-// GFF tags
-#define ECFG_GFF_default_seqname   "Alignment"
-#define ECFG_GFF_LogPostProb_tag   "lgPost"      /* log_2 P(Parse Tree Uses Nonterminal | Alignment)  */
-#define ECFG_GFF_LogInsideProb_tag "lgInside"    /* log_2 P(Inside Annotation, Inside Alignment | Parse Tree Rooted At Nonterminal)  */
-
 // ECFG enums & typedefs
 struct ECFG_enum : Grammar_state_enum
 {
@@ -240,6 +230,15 @@ struct ECFG_posterior_probability_calculator
   virtual Loge post_state_ll (int dest_state, const Subseq_coords& subseq) const = 0;
 };
 
+// wiggle tracks
+struct ECFG_wiggle_track
+{
+  typedef pair<int,int> Nonterminal_position;  // first=state_index, second=emit_pos
+  typedef map<Nonterminal_position,double> Component_weight_map;
+  sstring name;
+  map<Nonterminal_position,double> component_weight;
+};
+
 // ECFG_scores
 struct ECFG_scores : ECFG<Score>
 {
@@ -250,6 +249,7 @@ struct ECFG_scores : ECFG<Score>
   sstring fold_string_tag;  // optional #=GC feature tag for ECFG_auto_envelope to create fold envelopes; if empty, the ECFG has no such tag
   list<SExpr> meta;  // contains "(meta ...)" expressions, which are preserved but ignored
   list<SExpr> transient_meta;  // contains "(meta ...)" expressions, which are ignored and NOT preserved (they're output, but won't be read back in again)
+  list<ECFG_wiggle_track> wiggle;
 
   // parametric stuff
   bool has_parametric_transitions;  // if true, then trans_funcs are used
