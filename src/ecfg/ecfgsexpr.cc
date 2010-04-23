@@ -740,7 +740,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
     ("Grammar->('"EG_GRAMMAR" GrammarProperty*);"
      "GrammarProperty->Name|('"EG_WIGGLE" WiggleProperty*)|('"EG_FOLD_STRING_TAG" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
      "Name->('"EG_NAME" Atom);"
-     "WiggleProperty->('"EG_WIGGLE_NAME" Atom)|('"EG_WIGGLE_COMPONENT" WiggleComponentProperty*);"
+     "WiggleProperty->WiggleComponentProperty|('"EG_WIGGLE_NAME" Atom)|('"EG_WIGGLE_COMPONENT" WiggleComponentProperty*);"
      "WiggleComponentProperty->('"EG_WIGGLE_WEIGHT" Atom)|('"EG_WIGGLE_TERM" Atom)|('"EG_WIGGLE_NONTERM" Atom);"
      "ParametricFlag->('"EG_PARAMETRIC" End);"
      "MinimumLength->('"EG_TRANSFORM_MINLEN" Atom);"
@@ -962,9 +962,9 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
     {
       ECFG_wiggle_track wig;
       wig.name = (**wiggle_sexpr)(EG_WIGGLE_NAME).get_atom();
-      const vector<SExpr*> all_wiggle_component_sexpr = (**wiggle_sexpr).find_all (EG_WIGGLE_COMPONENT, 1);
+      vector<SExpr*> all_wiggle_component_sexpr = (**wiggle_sexpr).find_all (EG_WIGGLE_COMPONENT, 1);
       if (all_wiggle_component_sexpr.empty())
-	THROWEXPR("In '" << **wiggle_sexpr << "': no " << EG_WIGGLE_COMPONENT << " blocks");
+	all_wiggle_component_sexpr.push_back (*wiggle_sexpr);
       for_const_contents (vector<SExpr*>, all_wiggle_component_sexpr, wiggle_component_sexpr)
 	{
 	  SExpr* wiggle_weight_sexpr = (*wiggle_component_sexpr)->find(EG_WIGGLE_WEIGHT);
