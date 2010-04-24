@@ -84,9 +84,9 @@ struct SExpr_visitor
   // virtual destructor
   virtual ~SExpr_visitor() { }
   // virtual visitor method
-  virtual bool visit (SExpr& sexpr) { return true; }  // if this method returns false, preorder traversal will be terminated
+  virtual void visit (SExpr& sexpr) { }
   // preorder & postorder visit wrappers
-  bool log_visit (SExpr& sexpr);
+  void log_visit (SExpr& sexpr);
   void preorder_visit (SExpr& sexpr);
   void postorder_visit (SExpr& sexpr);
 };
@@ -95,7 +95,7 @@ struct SExpr_visitor
 struct SExpr_file_operations : SExpr_visitor
 {
   // methods
-  bool visit (SExpr& sexpr);
+  void visit (SExpr& sexpr);
 };
 
 // SExpr substitutions, iterators & replacements
@@ -105,7 +105,7 @@ struct SExpr_macros : SExpr_visitor
   map<sstring,sstring> replace;  // substitutions
   map<sstring,vector<sstring> > foreach;  // predefined "foreach" lists
   // methods
-  bool visit (SExpr& sexpr);
+  void visit (SExpr& sexpr);
   void visit_child (SExpr& sexpr, SExprIter& child_iter, list<SExprIter>& erase_list);
   void visit_and_reap (SExpr& sexpr);  // cleans up erased children
   void handle_replace (SExpr& sexpr);
@@ -116,7 +116,7 @@ struct SExpr_macros : SExpr_visitor
 struct SExpr_list_operations : SExpr_visitor
 {
   // methods
-  bool visit (SExpr& sexpr);
+  void visit (SExpr& sexpr);
 };
 
 #endif /* SEXPR_VISITOR_INCLUDED */

@@ -51,9 +51,9 @@ SExpr_macro_aliases sexpr_macro_aliases;
 
 void SExpr_visitor::preorder_visit (SExpr& sexpr)
 {
-  if (log_visit (sexpr))
-    for_contents (list<SExpr>, sexpr.child, c)
-      preorder_visit (*c);
+  log_visit (sexpr);
+  for_contents (list<SExpr>, sexpr.child, c)
+    preorder_visit (*c);
 }
 
 void SExpr_visitor::postorder_visit (SExpr& sexpr)
@@ -63,24 +63,21 @@ void SExpr_visitor::postorder_visit (SExpr& sexpr)
   log_visit (sexpr);
 }
 
-bool SExpr_visitor::log_visit (SExpr& sexpr)
+void SExpr_visitor::log_visit (SExpr& sexpr)
 {
   // log pre-visit
   if (CTAGGING(-1,SEXPR_MACROS))
     CL << "Visiting " << sexpr << '\n';
 
   // do the visit
-  const bool ok = visit (sexpr);
+  visit (sexpr);
 
   // log post-visit
   if (CTAGGING(-2,SEXPR_MACROS))
     CL << "Post-visit: " << sexpr << '\n';
-
-  // return
-  return ok;
 }
 
-bool SExpr_file_operations::visit (SExpr& parent_sexpr)
+void SExpr_file_operations::visit (SExpr& parent_sexpr)
 {
   // prepare list of include statement nodes to erase
   list<SExprIter> erase_pos;
@@ -130,22 +127,16 @@ bool SExpr_file_operations::visit (SExpr& parent_sexpr)
   // erase the include statements
   for_contents (list<SExprIter>, erase_pos, erase_iter)
     parent_sexpr.child.erase (*erase_iter);
-
-  // return
-  return true;
 }
 
 
-bool SExpr_macros::visit (SExpr& parent_sexpr)
+void SExpr_macros::visit (SExpr& parent_sexpr)
 {
   // process substitutions at top level
   handle_replace (parent_sexpr);
 
   // look at children
   visit_and_reap (parent_sexpr);
-
-  // return
-  return true;
 }
 
 void SExpr_macros::visit_and_reap (SExpr& parent_sexpr)
@@ -285,7 +276,7 @@ void SExpr_macros::expand_foreach (SExpr& parent_sexpr, SExprIter& parent_pos, u
   erase.push_back (parent_pos);
 }
 
-bool SExpr_list_operations::visit (SExpr& parent_sexpr)
+void SExpr_list_operations::visit (SExpr& parent_sexpr)
 {
   for_iterator (list<SExpr>::iterator, child_iter, parent_sexpr.child.begin(), parent_sexpr.child.end())
     {
@@ -417,7 +408,4 @@ bool SExpr_list_operations::visit (SExpr& parent_sexpr)
 	    }
 	}
     }
-
-  // return
-  return true;
 }
