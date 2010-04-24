@@ -54,11 +54,12 @@
 #define SEXPR_CHR         "&chr"
 #define SEXPR_ORD         "&ord"
 
+#define SEXPR_EVAL        "&eval"
+#define SEXPR_EXEC        "&exec"
+
+
 // singleton shorthand map
-// TODO: instead of expanding this on-the-fly, do a single preorder pass over the entire SExpr tree,
-// expanding shorthand forms *only* when they are not inside an &eval block.
-// Shorthand forms inside an &eval block should cause an error, as they may conflict with Scheme primitives.
-// Then, write code that iterates over the SExpr tree, passing &eval blocks to guile (suitably wrapped with #ifdef GUILE_INCLUDED).
+// TODO: write code that iterates over the SExpr tree, passing &eval/&exec blocks to guile (suitably wrapped with #ifdef GUILE_INCLUDED).
 // NB we first need to initialize guile with scm_with_guile.
 // Ideally, we would also make the alphabet, alignment & tree available to the Scheme code in the &eval block
 // (though most of the required ensuing functionality could be hackily achieved using &foreach-token, etc.)
@@ -83,9 +84,9 @@ struct SExpr_visitor
   // virtual destructor
   virtual ~SExpr_visitor() { }
   // virtual visitor method
-  virtual void visit (SExpr& sexpr) { }
+  virtual bool visit (SExpr& sexpr) { return true; }  // if this method returns false, preorder traversal will be terminated
   // preorder & postorder visit wrappers
-  void log_visit (SExpr& sexpr);
+  bool log_visit (SExpr& sexpr);
   void preorder_visit (SExpr& sexpr);
   void postorder_visit (SExpr& sexpr);
 };
@@ -94,7 +95,7 @@ struct SExpr_visitor
 struct SExpr_file_operations : SExpr_visitor
 {
   // methods
-  void visit (SExpr& sexpr);
+  bool visit (SExpr& sexpr);
 };
 
 // SExpr substitutions, iterators & replacements
@@ -104,7 +105,7 @@ struct SExpr_macros : SExpr_visitor
   map<sstring,sstring> replace;  // substitutions
   map<sstring,vector<sstring> > foreach;  // predefined "foreach" lists
   // methods
-  void visit (SExpr& sexpr);
+  bool visit (SExpr& sexpr);
   void visit_child (SExpr& sexpr, SExprIter& child_iter, list<SExprIter>& erase_list);
   void visit_and_reap (SExpr& sexpr);  // cleans up erased children
   void handle_replace (SExpr& sexpr);
@@ -115,7 +116,7 @@ struct SExpr_macros : SExpr_visitor
 struct SExpr_list_operations : SExpr_visitor
 {
   // methods
-  void visit (SExpr& sexpr);
+  bool visit (SExpr& sexpr);
 };
 
 #endif /* SEXPR_VISITOR_INCLUDED */
