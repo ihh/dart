@@ -3,7 +3,7 @@
 
 void PVar::show (ostream& o, const vector<vector<sstring> >* group_suffix, bool no_group_prefix) const
 {
-  sstring text;
+  SExpr_atom text;
   if (no_group_prefix)
     text << (*group_suffix)[group_idx][var_idx];
   else

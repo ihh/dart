@@ -10,8 +10,18 @@
 
 ;; Now comes the grammar
 (grammar
- (name PhastCons_Doppelganger)
+ (name ConservationPhyloHMM)
  (parametric)
+
+ ;; Wiggle track
+ (wiggle
+  (name Conservation)
+  (&foreach-integer
+   CLASS
+   (1 CLASSES)
+   (component
+    (terminal (&. X CLASS))
+    (weight (&+ 1 (&- CLASSES CLASS))))))
 
  ;; Probability parameters
  (pgroup
@@ -101,7 +111,7 @@
   (from (START))
   (to ()))
 
- )  ;; end grammar PhastCons_Doppelganger
+ )  ;; end grammar
 
 
 (alphabet

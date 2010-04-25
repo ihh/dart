@@ -10,6 +10,18 @@
 #include "util/sstring.h"
 #include "util/Regexp.h"
 
+struct SExpr_atom : sstring
+{
+  // constructors
+  SExpr_atom() : sstring() { }
+  SExpr_atom(const sstring& s) : sstring(s) { }
+  SExpr_atom(const char* s) : sstring(s) { }
+  SExpr_atom(const SExpr_atom& s) : sstring(s) { }
+  // vector of strings
+  static vector<SExpr_atom> from_vector (const vector<sstring>& s);
+  // quoted output
+  friend ostream& operator<< (ostream& out, const SExpr_atom& atom);
+};
 
 struct SExpr
 {
@@ -19,17 +31,17 @@ struct SExpr
 
   // data
   // note: it should never be the case that both atom.size() and child.size() are nonzero
-  sstring atom;
+  SExpr_atom atom;
   list<SExpr> child;
 
   // constructors
   // (default copy constructor automatically does a deep copy)
   SExpr();  // creates an empty SExpr
-  SExpr (Ptr begin, Ptr end);  // parses a text block into an SExpr
+  SExpr (Ptr begin, Ptr end, bool allow_quotes = true);  // parses a text block into an SExpr
   SExpr (const char* atom);  // creates an atomic SExpr
 
   // initialiser
-  void init (Ptr begin, Ptr end);
+  void init (Ptr begin, Ptr end, bool allow_quotes = true);
 
   // swap method
   void swap (SExpr& sexpr);
@@ -100,13 +112,13 @@ struct SExpr_file
   sstring text;
   SExpr sexpr;
   // constructors
-  SExpr_file (const char* filename);  // null pointer will use stdin
-  SExpr_file (const vector<sstring>& filename);  // empty list will use stdin
+  SExpr_file (const char* filename, bool allow_quotes = true);  // null pointer will use stdin
+  SExpr_file (const vector<sstring>& filename, bool allow_quotes = true);  // empty list will use stdin
   // builders -- treat as private
   void read_text_from_file (const char* filename);
   void read_text_from_stream (istream& in);
   void read_text_from_stdin();
-  void parse_text();
+  void parse_text(bool allow_quotes = true);
 };
 
 // SExpr syntax validation grammar

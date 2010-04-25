@@ -23,7 +23,7 @@ void PFunc_builder::alphabet2stream (ostream& out, const Alphabet& alph)
   // print alphabet
   out << ";; Alphabet " << alph.name << "\n;;\n";
   out << '(' << PK_ALPHABET << '\n';
-  out << " (" << PK_NAME << ' ' << alph.name << ")\n";
+  out << " (" << PK_NAME << ' ' << SExpr_atom(alph.name) << ")\n";
   out << " (" << PK_ALPHABET_TOKEN << " (";
   for (int i = 0; i < alph.size(); ++i)
     {
@@ -171,9 +171,9 @@ sstring PFunc_builder::token_list_to_string (SExpr& token_list, const Alphabet& 
   for_const_contents (vector<sstring>, toks, tok)
     {
       assert_valid_token (*tok, alph, token_list);
-      s << *tok;
+      s << SExpr_atom(*tok);
     }
-  s << state_class;
+  s << SExpr_atom(state_class);
   return s;
 }
 
@@ -235,14 +235,14 @@ void PFunc_builder::pscores2stream (ostream& out, const PScores& pscores, const 
 {
   if (pgroups_to_show.size())
     {
-      out << indent << '(' << tag << '\n';
+      out << indent << '(' << SExpr_atom(tag) << '\n';
       for_const_contents (vector<int>, pgroups_to_show, g)
 	{
 	  out << indent << " (";
 	  const int sz = pscores.group_size(*g);
 	  if (sz == 1)
 	    {
-	      out << pscores.group_suffix[*g][0] << ' ' << score_sexpr (pscores[PVar(*g,0)], use_bitscores);
+	      out << SExpr_atom(pscores.group_suffix[*g][0]) << ' ' << score_sexpr (pscores[PVar(*g,0)], use_bitscores);
 	      // commented out due to clutter...
 #if 0
 	      if (pcounts)
@@ -257,7 +257,7 @@ void PFunc_builder::pscores2stream (ostream& out, const PScores& pscores, const 
 	      {
 		if (v > 0)
 		  out << '\n' << indent << "  ";
-		out << '(' << pscores.group_suffix[*g][v] << ' ' << score_sexpr (pscores[PVar(*g,v)], use_bitscores);
+		out << '(' << SExpr_atom(pscores.group_suffix[*g][v]) << ' ' << score_sexpr (pscores[PVar(*g,v)], use_bitscores);
 
 		// commented out due to clutter...
 #if 0
@@ -276,7 +276,7 @@ void PFunc_builder::pscores2stream (ostream& out, const PScores& pscores, const 
 void PFunc_builder::pcounts2stream (ostream& out, const PCounts& pcounts, const char* tag, const PCounts* baseline_pcounts,
 				   bool interpret_single_element_pgroups_as_rate_variables, bool print_zero_counts)
 {
-  out << " (" << tag << "\n";
+  out << " (" << SExpr_atom(tag) << "\n";
   for (int g = 0; g < pcounts.groups(); ++g)
     {
       const int sz = pcounts.group_size(g);
@@ -290,7 +290,7 @@ void PFunc_builder::pcounts2stream (ostream& out, const PCounts& pcounts, const 
 	      ptime -= baseline_pcounts->wait[g];
 	    }
 	  if (pcount > 0. || ptime > 0.)
-	    out << "  (" << pcounts.group_suffix[g][0]
+	    out << "  (" << SExpr_atom(pcounts.group_suffix[g][0])
 		<< ' ' << pcount
 		<< ' ' << ptime
 		<< ")\n";
@@ -302,7 +302,7 @@ void PFunc_builder::pcounts2stream (ostream& out, const PCounts& pcounts, const 
 	    if (baseline_pcounts)
 	      pcount -= (*baseline_pcounts)[PVar(g,v)];
 	    if (pcount > 0. || print_zero_counts)
-	      out << "  (" << pcounts.group_suffix[g][v]
+	      out << "  (" << SExpr_atom(pcounts.group_suffix[g][v])
 		  << ' ' << pcount
 		  << ")\n";
 	  }
@@ -314,7 +314,6 @@ void PFunc_builder::pfunc2stream (ostream& out, const PScores& pscores, const PF
 {
   pfunc.show (out, &pscores.group_suffix, true);
 }
-
 
 void PFunc_builder::init_pgroups (PScores& pscores, SymPVar& sym2pvar, SExpr& grammar_sexpr, const char* tag, set<int>* mutable_pgroups, bool force_rate, bool disallow_rate, bool use_bitscores)
 {

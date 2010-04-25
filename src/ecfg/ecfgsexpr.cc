@@ -1235,7 +1235,7 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
   out << '(' << EG_GRAMMAR << '\n';
 
   // print name
-  out << " (" << EG_NAME << ' ' << ecfg.name << ")\n";
+  out << " (" << EG_NAME << ' ' << SExpr_atom(ecfg.name) << ")\n";
 
   // print meta-info
   if (ecfg.meta.size())
@@ -1254,33 +1254,6 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
       out << ")\n";
     }
 
-  // print fold string
-  if (ecfg.fold_string_tag.size() > 0)
-    out << " (" << EG_FOLD_STRING_TAG << ' ' << ecfg.fold_string_tag << ")\n";
-
-  // print wiggle tracks
-  for_const_contents (list<ECFG_wiggle_track>, ecfg.wiggle, wig)
-    {
-      out << " (" << EG_WIGGLE
-	  << " (" << EG_WIGGLE_NAME << ' ' << wig->name << ')';
-      for_const_contents (ECFG_wiggle_track::Component_weight_map, wig->component_weight, cw)
-	{
-	  const int nonterm_index = cw->first.first;
-	  const int emit_pos = cw->first.second;
-	  const double weight = cw->second;
-	  const ECFG_state_info& info = ecfg.state_info[nonterm_index];
-	  const vector<int> pos2term = ecfg.get_pos2term (nonterm_index);
-	  const int term_index = pos2term[emit_pos];
-	  const int chain_index = info.matrix;
-	  out << "\n  (" << EG_WIGGLE_COMPONENT
-	      << " (" << EG_WIGGLE_NONTERM << ' ' << info.name
-	      << ") (" << EG_WIGGLE_TERM << ' ' << ecfg.matrix_set.chain[chain_index].state[term_index]
-	      << ") (" << EG_WIGGLE_WEIGHT << ' ' << weight
-	      << "))";
-	}
-      out << ")\n";
-    }
-
   // parametric?
   if (ecfg.has_parametric_transitions)
     out << " (" << EG_PARAMETRIC << ")\n";
@@ -1288,6 +1261,37 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
   // print update_rules and update_rates
   out << " (" << EG_UPDATE_RATES << ' ' << (ecfg.update_rates ? 1 : 0) << ")\n";
   out << " (" << EG_UPDATE_RULES << ' ' << (ecfg.update_rules ? 1 : 0) << ")\n";
+
+  // print fold string
+  if (ecfg.fold_string_tag.size() > 0)
+    out << "\n ;; Fold envelope\n (" << EG_FOLD_STRING_TAG << ' ' << SExpr_atom(ecfg.fold_string_tag) << ")\n";
+
+  // print wiggle tracks
+  if (!ecfg.wiggle.empty())
+    {
+      out << "\n ;; Wiggle tracks\n";
+      for_const_contents (list<ECFG_wiggle_track>, ecfg.wiggle, wig)
+	{
+	  out << "\n (" << EG_WIGGLE
+	      << " (" << EG_WIGGLE_NAME << ' ' << SExpr_atom(wig->name) << ')';
+	  for_const_contents (ECFG_wiggle_track::Component_weight_map, wig->component_weight, cw)
+	    {
+	      const int nonterm_index = cw->first.first;
+	      const int emit_pos = cw->first.second;
+	      const double weight = cw->second;
+	      const ECFG_state_info& info = ecfg.state_info[nonterm_index];
+	      const vector<int> pos2term = ecfg.get_pos2term (nonterm_index);
+	      const int term_index = pos2term[emit_pos];
+	      const int chain_index = info.matrix;
+	      out << "\n  (" << EG_WIGGLE_COMPONENT
+		  << " (" << EG_WIGGLE_NONTERM << ' ' << SExpr_atom(info.name)
+		  << ") (" << EG_WIGGLE_TERM << ' ' << SExpr_atom(ecfg.matrix_set.chain[chain_index].state[term_index])
+		  << ") (" << EG_WIGGLE_WEIGHT << ' ' << weight
+		  << "))";
+	    }
+	  out << ")\n";
+	}
+    }
 
   // Print nonterminal declarations; buffer up transformation rules
   out << "\n ;; Nonterminal declarations and modifiers\n\n";
@@ -1327,16 +1331,16 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
       // this is pretty fragile...
       const sstring start_name (ECFG_default_start_nonterminal);  // could do a bit more work here, to ensure name is unique
       out << " (" << EG_NONTERMINAL << " (" << EG_NAME << ' ' << start_name << "))\n";
-      trans_block << "\n ;; Nonterminal " << start_name << "\n ;;\n";
+      trans_block << "\n ;; Nonterminal " << SExpr_atom(start_name) << "\n ;;\n";
       if (start_to_end)
 	starts.push_back (End);
       for_const_contents (vector<int>, starts, s_iter)
 	{
 	  trans_block << " ("
 		      << EG_TRANSFORM << " ("
-		      << EG_FROM << " (" << start_name << ")) ("
+		      << EG_FROM << " (" << SExpr_atom(start_name) << ")) ("
 		      << EG_TO << " ("
-		      << (*s_iter == End ? "" : ecfg.state_info[*s_iter].name.c_str())
+		      << SExpr_atom(*s_iter == End ? "" : ecfg.state_info[*s_iter].name.c_str())
 		      << ")) (" << EG_PROB << ' ';
 	  if (ecfg.has_parametric_transitions)
 	    pfunc2stream (trans_block, ecfg.pscores, ecfg.trans_funcs.transition (Start, *s_iter));
@@ -1352,7 +1356,7 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
       const int s = *s_iter;
       const ECFG_state_info& info = ecfg.state_info[s];
 
-      out << " (" << EG_NONTERMINAL << " (" << EG_NAME << ' ' << info.name << ')';
+      out << " (" << EG_NONTERMINAL << " (" << EG_NAME << ' ' << SExpr_atom(info.name) << ')';
       if (info.min_len > info.emit_size())
 	out << " (" << EG_TRANSFORM_MINLEN << ' ' << info.min_len << ')';
       if (info.infix)
@@ -1369,9 +1373,9 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	{
 	  out << " (" << EG_GFF;
 	  if (gff->source != ecfg.name)
-	    out << " (" << EG_GFF_SOURCE << ' ' << gff->source << ')';
+	    out << " (" << EG_GFF_SOURCE << ' ' << SExpr_atom(gff->source) << ')';
 	  if (gff->feature != info.name)
-	    out << " (" << EG_GFF_TYPE << ' ' << gff->feature << ')';
+	    out << " (" << EG_GFF_TYPE << ' ' << SExpr_atom(gff->feature) << ')';
 	  if (gff->strand != GFF_enum::NoStrand)
 	    out << " (" << EG_GFF_STRAND << ' ' << (gff->strand > 0 ? '+' : '-') << ')';
 	  if (gff->frame != GFF_enum::NoFrame)
@@ -1385,8 +1389,8 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	{
 	  trans_block << " ("
 		      << EG_TRANSFORM << " ("
-		      << EG_FROM << " (" << info.name << ")) ("
-		      << EG_TO << " (" << ecfg.state_info[info.ldest].name << ' ' << ecfg.state_info[info.rdest].name
+		      << EG_FROM << " (" << SExpr_atom(info.name) << ")) ("
+		      << EG_TO << " (" << SExpr_atom(ecfg.state_info[info.ldest].name) << ' ' << SExpr_atom(ecfg.state_info[info.rdest].name)
 		      << ")))\n";
 	}
       else  // emit or null
@@ -1401,27 +1405,37 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	      complement_chr << ECFG_complement_character;
 	      for (int i = 0; i < info.l_context; ++i)
 		{
-		  trans_block << sep << (info.comp[i] ? complement_chr : "") << chain.state[pos2term[i]];
+		  SExpr_atom with_comp;
+		  with_comp << (info.comp[i] ? complement_chr : "") << chain.state[pos2term[i]];
+		  trans_block << sep << with_comp;
 		  sep = " ";
 		}
 	      trans_block << sep << info.name;
-	      for (int i = info.r_context - 1; i >= 0; --i) {
-		const int j = chain.word_len - 1 - i;
-		trans_block << ' ' << (info.comp[j] ? complement_chr : "") << chain.state[pos2term[j]];
-	      }
+	      for (int i = info.r_context - 1; i >= 0; --i)
+		{
+		  const int j = chain.word_len - 1 - i;
+		  SExpr_atom with_comp;
+		  with_comp << (info.comp[j] ? complement_chr : "") << chain.state[pos2term[j]];
+		  trans_block << ' ' << with_comp;
+		}
 	      trans_block << ")) (" << EG_TO << " (";
 	      // print RHS of emit rule
 	      sep = "";
 	      for (int i = 0; i < info.l_context + info.l_emit; ++i)
 		{
-		  trans_block << sep << (info.comp[i] ? complement_chr : "") << chain.state[pos2term[i]];
+		  SExpr_atom with_comp;
+		  with_comp << (info.comp[i] ? complement_chr : "") << chain.state[pos2term[i]];
+		  trans_block << sep << with_comp;
 		  sep = " ";
 		}
 	      trans_block << sep << info.name << ECFG_post_emit_character;
-	      for (int i = info.r_emit + info.r_context - 1; i >= 0; --i) {
-		const int j = chain.word_len - 1 - i;
-		trans_block << ' ' << (info.comp[j] ? complement_chr : "") << chain.state[pos2term[j]];
-	      }
+	      for (int i = info.r_emit + info.r_context - 1; i >= 0; --i)
+		{
+		  const int j = chain.word_len - 1 - i;
+		  SExpr_atom with_comp;
+		  with_comp << (info.comp[j] ? complement_chr : "") << chain.state[pos2term[j]];
+		  trans_block << ' ' << with_comp;
+		}
 	      trans_block << "))";
 
 	      // gap model
@@ -1443,23 +1457,24 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 		      if (label[i] != ECFG_annotation_wildcard)
 			trans_block << "\n  ("
 				    << EG_TRANSFORM_ANNOTATE << " ("
-				    << EG_TRANSFORM_ROW << ' ' << row << ") ("
-				    << EG_TRANSFORM_COLUMN << ' ' << chain.state[pos2term[info.l_context + i]] << ") ("
+				    << EG_TRANSFORM_ROW << ' ' << SExpr_atom(row) << ") ("
+				    << EG_TRANSFORM_COLUMN << ' ' << SExpr_atom(chain.state[pos2term[info.l_context + i]]) << ") ("
 				    << EG_TRANSFORM_LABEL << ' ' << label[i] << "))";
 		  } else {
 		    // probabilistic
 		    trans_block << "\n  ("
 				<< EG_TRANSFORM_ANNOTATE << " ("
-				<< EG_TRANSFORM_ROW << ' ' << row << ")";
+				<< EG_TRANSFORM_ROW << ' ' << SExpr_atom(row) << ")";
 		    for_const_contents (ECFG_state_info::String_prob_dist, row_annot->second, label_prob) {
 		      const sstring& label = label_prob->first;
 		      const PFunc& prob = label_prob->second;
 		      trans_block << "\n   (" << EG_ANNOTATE_EMIT << " (" << EG_TRANSFORM_LABEL << " (";
-		      for (int i = 0; i < (int) label.size(); ++i) {
-			if (i > 0)
-			  trans_block << ' ';
-			trans_block << label[i];
-		      }
+		      for (int i = 0; i < (int) label.size(); ++i)
+			{
+			  if (i > 0)
+			    trans_block << ' ';
+			  trans_block << label[i];
+			}
 		      trans_block << ")) (" << EG_PROB << ' ';
 		      pfunc2stream (trans_block, ecfg.pscores, prob);
 		      trans_block << "))";
@@ -1483,12 +1498,13 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 
 		if (print_transition)
 		  {
-		    trans_block << " (" << EG_TRANSFORM << " (" << EG_FROM << " (" << info.name;
+		    SExpr_atom with_postemit;
+		    with_postemit << info.name;
 		    if (info.emit_size())  // add post-emit character
-		      trans_block << ECFG_post_emit_character;
-		    trans_block << ")) (" << EG_TO << " (";
+		      with_postemit << ECFG_post_emit_character;
+		    trans_block << " (" << EG_TRANSFORM << " (" << EG_FROM << " (" << with_postemit << ")) (" << EG_TO << " (";
 		    if (d != End)
-		      trans_block << ecfg.state_info[d].name;
+		      trans_block << SExpr_atom(ecfg.state_info[d].name);
 
 		    trans_block << ")) (" << EG_PROB << ' ';
 		    if (ecfg.has_parametric_transitions)
@@ -1537,19 +1553,19 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	{
 	  // hybrid-chain
 	  out << "\n (" << EG_HYBRID_CHAIN << '\n';
-	  out << "  (" << EG_CHAIN_TERMINAL << " (" << chain.state << "))\n";
+	  out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
 	  if (chain.classes > 1)
 	    {
 	      out << "  (" << EG_CHAIN_CLASS << "\n";
-	      out << "   (" << EG_TRANSFORM_ROW << ' ' << chain.class_row << ")\n";
-	      out << "   (" << EG_TRANSFORM_LABEL << " (" << chain.class_labels << ")))\n";
+	      out << "   (" << EG_TRANSFORM_ROW << ' ' << SExpr_atom(chain.class_row) << ")\n";
+	      out << "   (" << EG_TRANSFORM_LABEL << " (" << SExpr_atom::from_vector(chain.class_labels) << ")))\n";
 	    }
-	  out << "  (" << EG_TRANSFORM_ROW << ' ' << chain.gs_tag << ")\n";
+	  out << "  (" << EG_TRANSFORM_ROW << ' ' << SExpr_atom(chain.gs_tag) << ")\n";
 
 	  out << "  (" << EG_HYBRID_COMPONENTS << '\n';
 	  for_const_contents (vector<sstring>, chain.gs_values, gs_value)
-	    out << "   ((" << EG_TRANSFORM_LABEL << ' ' << *gs_value
-		<< ") (" << EG_CHAIN_TERMINAL << " (" << ecfg.matrix_set.chain[((map<sstring,int>&) chain.gs_tag_value_chain_index)[*gs_value]].state  // cast away const
+	    out << "   ((" << EG_TRANSFORM_LABEL << ' ' << SExpr_atom(*gs_value)
+		<< ") (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(ecfg.matrix_set.chain[((map<sstring,int>&) chain.gs_tag_value_chain_index)[*gs_value]].state)  // cast away const
 		<< ")))\n";
 
 	  out << "  )\n";
@@ -1564,12 +1580,12 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	    THROWEXPR ("Don't know how to display EM_matrix objects with hidden states");
 	  out << "\n (" << EG_CHAIN << '\n';
 	  out << "  (" << EG_CHAIN_POLICY << ' ' << chain.matrix->update_policy() << ")\n";
-	  out << "  (" << EG_CHAIN_TERMINAL << " (" << chain.state << "))\n";
+	  out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
 	  if (chain.classes > 1)
 	    {
 	      out << "  (" << EG_CHAIN_CLASS << "\n";
-	      out << "   (" << EG_TRANSFORM_ROW << ' ' << chain.class_row << ")\n";
-	      out << "   (" << EG_TRANSFORM_LABEL << " (" << chain.class_labels << ")))\n";
+	      out << "   (" << EG_TRANSFORM_ROW << ' ' << SExpr_atom(chain.class_row) << ")\n";
+	      out << "   (" << EG_TRANSFORM_LABEL << " (" << SExpr_atom::from_vector(chain.class_labels) << ")))\n";
 	    }
 
 	  out << "\n  ;; initial probability distribution\n";
@@ -1662,7 +1678,7 @@ void ECFG_builder::print_state (ostream& out, int state, int wordlen, const Alph
       out << alph.int2char ((state / mul) % alph.size());
     }
   if (class_alph.size() > 1)
-    out << ' ' << class_alph[(state / mul) % class_alph.size()];
+    out << ' ' << SExpr_atom(class_alph[(state / mul) % class_alph.size()]);
   out << ')';
 }
 
@@ -1689,7 +1705,7 @@ void ECFG_builder::chain_counts2stream (ostream& out, const Alphabet& alph, cons
 	  {
 	    const Update_statistics& stats = counts.stats[n_chain];
 
-	    out << "  ((" << EG_CHAIN_TERMINAL << " (" << chain.state << "))\n";
+	    out << "  ((" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
 
 	    for (int s = 0; s < chain.matrix->m(); ++s)
 	      {

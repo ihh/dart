@@ -338,9 +338,9 @@ void SExpr_list_operations::visit (SExpr& parent_sexpr)
 	  // functions with one atomic argument
 	  else if (op == SEXPR_INT || op == SEXPR_CHR || op == SEXPR_ORD || op == SEXPR_NOT)
 	    {
-	      CTAG(1,SEXPR_MACROS) << "Processing " << SEXPR_CHR << '\n';
+	      CTAG(1,SEXPR_MACROS) << "Processing " << op << '\n';
 	      if (sexpr.child.size() != 2 || !sexpr[1].is_atom())
-		THROWEXPR ("Expected one integer argument for " << SEXPR_CHR << ": " << sexpr);
+		THROWEXPR ("Expected one integer argument for " << op << ": " << sexpr);
 	      const sstring arg = sexpr[1].atom;
 	      sexpr.child.clear();
 	      sexpr.atom.clear();

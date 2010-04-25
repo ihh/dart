@@ -225,8 +225,8 @@ void PCFG_builder::grammar2stream (ostream& out, const Pair_PCFG& pcfg, const PS
   ind << ' ';
 
   // model, name
-  out << indent << '(' << tag << '\n';
-  out << ind << '(' << CFG_NAME << ' ' << pcfg.name << ")\n";
+  out << indent << '(' << SExpr_atom(tag) << '\n';
+  out << ind << '(' << CFG_NAME << ' ' << SExpr_atom(pcfg.name) << ")\n";
 
   // params
   if (null_emit_group_index >= 0)
@@ -259,7 +259,7 @@ void PCFG_builder::grammar2stream (ostream& out, const Pair_PCFG& pcfg, const PS
     {
       // state, name
       out << ind << '(' << CFG_STATE << '\n';
-      out << ind << " (" << CFG_NAME << ' ' << pcfg.state_name[s] << ")\n";
+      out << ind << " (" << CFG_NAME << ' ' << SExpr_atom(pcfg.state_name[s]) << ")\n";
 
       // padding?
       if (pad_states)
@@ -271,8 +271,8 @@ void PCFG_builder::grammar2stream (ostream& out, const Pair_PCFG& pcfg, const PS
       out << ind << " (" << CFG_TYPE;
       if (t == Bifurc)  // bifurcations
 	out << " (" << CFG_BIFURCATION
-	    << " (" << CFG_BIFURC_LEFT << ' ' << pcfg.state_name[pcfg.bifurc[s].l]
-	    << ") (" << CFG_BIFURC_RIGHT << ' ' << pcfg.state_name[pcfg.bifurc[s].r] << "))";
+	    << " (" << CFG_BIFURC_LEFT << ' ' << SExpr_atom(pcfg.state_name[pcfg.bifurc[s].l])
+	    << ") (" << CFG_BIFURC_RIGHT << ' ' << SExpr_atom(pcfg.state_name[pcfg.bifurc[s].r]) << "))";
 
       else if (t == Null)
 	out << " (" << CFG_TYPE_NULL << ")";
@@ -354,8 +354,8 @@ void PCFG_builder::grammar2stream (ostream& out, const Pair_PCFG& pcfg, const PS
 	      {
 		out << ind
 		    << "(" << CFG_TRANSITION
-		    << " (" << CFG_FROM << ' ' << (src == Start ? start_string : pcfg.state_name[src])
-		    << ") (" << CFG_TO << ' ' << (dest == End ? end_string : pcfg.state_name[dest])
+		    << " (" << CFG_FROM << ' ' << SExpr_atom(src == Start ? start_string : pcfg.state_name[src])
+		    << ") (" << CFG_TO << ' ' << SExpr_atom(dest == End ? end_string : pcfg.state_name[dest])
 		    << ") (" << CFG_PROB << ' ';
 		pfunc2stream (out, pscores, f);
 		out << "))\n";
@@ -407,7 +407,7 @@ void PCFG_builder::gramset2stream (ostream& out, const Gramset& gramset, const c
   for_const_contents (PHMM_CFG_map, gramset.phmm_cfg_map, name_phmm_cfg)
     {
       out << " (" << CFG_PARAM_SET
-	  << "\n  (" << CFG_NAME << ' ' << name_phmm_cfg->first << ")\n";
+	  << "\n  (" << CFG_NAME << ' ' << SExpr_atom(name_phmm_cfg->first) << ")\n";
       hmm2stream (out, name_phmm_cfg->second.hmm, name_phmm_cfg->second.hmm_pscores, name_phmm_cfg->second.hmm_mutable_pgroups, CFG_PAIR_HMM, "  ", name_phmm_cfg->second.hmm_null_emit.group_idx, &name_phmm_cfg->second.hmm_pad_states);
       grammar2stream (out, name_phmm_cfg->second.cfg, name_phmm_cfg->second.cfg_pscores, name_phmm_cfg->second.cfg_mutable_pgroups, CFG_PAIR_SCFG, "  ", name_phmm_cfg->second.cfg.null_emit.group_idx, name_phmm_cfg->second.cfg.null_extend.group_idx);
       out << " )  ; end " << CFG_PARAM_SET << ' ' << name_phmm_cfg->first << '\n';

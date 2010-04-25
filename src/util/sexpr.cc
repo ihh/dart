@@ -9,15 +9,15 @@
 SExpr::SExpr()
 { }
 
-SExpr::SExpr (Ptr begin, Ptr end)
+SExpr::SExpr (Ptr begin, Ptr end, bool allow_quotes)
 {
-  init (begin, end);
+  init (begin, end, allow_quotes);
 }
 
 SExpr::SExpr (const char* atom) : atom (atom)
 { }
 
-void SExpr::init (Ptr begin, Ptr end)
+void SExpr::init (Ptr begin, Ptr end, bool allow_quotes)
 {
   // set member vars
   atom.clear();
@@ -26,82 +26,139 @@ void SExpr::init (Ptr begin, Ptr end)
   // set up stacks
   stack<SExprIter> ancestral_sexpr;
   stack<Ptr> ancestral_ptr;
-  bool in_word = false, in_comment = false;
+  enum State { InAtom, InQuotes, EscapedInQuotes, InComment, Between } state = Between;
   Ptr word_begin;
 
   // parse text
   for (Ptr ptr = begin; ptr != end; ++ptr)
     {
       // get current SExpr
-    GetCurrent:
       SExpr& current (ancestral_sexpr.size() ? *ancestral_sexpr.top() : *this);
 
       // parse next char
-      if (in_comment)
+      switch (state)
 	{
+	case InComment:
+	  //	  CLOGERR << "InComment " << *ptr << '\n';
 	  if (*ptr == '\n' || *ptr == '\r')
-	    in_comment = false;
+	    state = Between;
+	  break;
+
+	case InAtom:
+	  //	  CLOGERR << "InAtom " << *ptr << '\n';
+	  switch (*ptr)
+	    {
+	    case ' ':
+	    case '\t':
+	    case '\n':
+	    case '\r':
+	    case '\0':
+	    case '(':
+	    case ')':
+	    case ';':
+	      current.atom = sstring (word_begin, ptr);
+	      pop_or_stop (ancestral_sexpr, ancestral_ptr, ptr, begin);
+	      state = Between;
+	      --ptr;  // back up and consider this character again
+	      break;
+	      
+	    default:
+	      break;
+	    }
+	  break;
+
+	case InQuotes:
+	  //	  CLOGERR << "InQuotes " << *ptr << '\n';
+	  if (!allow_quotes)
+	    THROWEXPR ("SExpr: This program uses a limited S-expression format in which quoted atoms are not allowed.\nContext '" << get_context (ptr, begin) << "'");
+	  switch (*ptr)
+	    {
+	    case '\\':
+	      state = EscapedInQuotes;
+	      break;
+
+	    case '"':
+	      state = Between;
+	      pop_or_stop (ancestral_sexpr, ancestral_ptr, ptr, begin);
+	      break;
+	      
+	    default:
+	      current.atom.push_back (*ptr);
+	      break;
+	    }
+	  break;
+
+	case EscapedInQuotes:
+	  //	  CLOGERR << "EscapedInQuotes " << *ptr << '\n';
+	  current.atom.push_back (*ptr);
+	  state = InQuotes;
+	  break;
+
+	case Between:
+	  //	  CLOGERR << "Between " << *ptr << '\n';
+	  switch (*ptr)
+	    {
+	    case ' ':
+	    case '\t':
+	    case '\n':
+	    case '\r':
+	    case '\0':
+	      break;
+
+	    case '(':
+	      current.child.push_back (SExpr());
+	      ancestral_sexpr.push (--current.child.end());
+	      ancestral_ptr.push (ptr);
+	      break;
+
+	    case ')':
+	      pop_or_stop (ancestral_sexpr, ancestral_ptr, ptr, begin);
+	      break;
+
+	    case ';':
+	      state = InComment;
+	      break;
+
+	    case '"':
+	      state = InQuotes;
+	      current.child.push_back (SExpr());
+	      ancestral_sexpr.push (--current.child.end());
+	      ancestral_ptr.push (ptr);
+	      break;
+
+	    default:
+	      state = InAtom;
+	      word_begin = ptr;
+	      current.child.push_back (SExpr());
+	      ancestral_sexpr.push (--current.child.end());
+	      ancestral_ptr.push (ptr);
+	      break;
+	    }
+	  break;
+
+	default:
+	  THROWEXPR("Unreachable");
+	  break;
 	}
-
-      else if (in_word)
-	switch (*ptr)
-	  {
-	  case ' ':
-	  case '\t':
-	  case '\n':
-	  case '\r':
-	  case '\0':
-	  case '(':
-	  case ')':
-	  case ';':
-	    current.atom = sstring (word_begin, ptr);
-	    in_word = false;
-	    pop_or_stop (ancestral_sexpr, ancestral_ptr, ptr, begin);
-	    goto GetCurrent;
-
-	  default:
-	    break;
-	  }
-
-      else
-	switch (*ptr)
-	  {
-	  case ' ':
-	  case '\t':
-	  case '\n':
-	  case '\r':
-	  case '\0':
-	    break;
-
-	  case '(':
-	    current.child.push_back (SExpr());
-	    ancestral_sexpr.push (--current.child.end());
-	    ancestral_ptr.push (ptr);
-	    break;
-
-	  case ')':
-	    pop_or_stop (ancestral_sexpr, ancestral_ptr, ptr, begin);
-	    break;
-
-	  case ';':
-	    in_comment = true;
-	    break;
-
-	  default:
-	    in_word = true;
-	    word_begin = ptr;
-	    current.child.push_back (SExpr());
-	    ancestral_sexpr.push (--current.child.end());
-	    ancestral_ptr.push (ptr);
-	    break;
-	  }
     }
 
-  if (in_word)
+  switch (state)
     {
-      SExpr& current (*ancestral_sexpr.top());
-      current.atom = sstring (word_begin, end);
-      pop_or_stop (ancestral_sexpr, ancestral_ptr, end, begin);  // tests if current is valid
+    case InAtom:
+      {
+	SExpr& current (*ancestral_sexpr.top());
+	current.atom = sstring (word_begin, end);
+	pop_or_stop (ancestral_sexpr, ancestral_ptr, end, begin);  // tests if current is valid
+      }
+      break;
+
+    case InQuotes:
+    case EscapedInQuotes:
+      THROWEXPR("SExpr: Missing end-quote '\"' at end of S-expression");
+      break;
+
+    default:
+      break;
     }
 
   if (ancestral_sexpr.size())
@@ -166,6 +223,34 @@ ostream& operator<< (ostream& out, const SExpr& sexpr)
 	}
     }
   return out;
+}
+
+Regexp space_regexp("[ \t\r\n]");
+ostream& operator<< (ostream& out, const SExpr_atom& atom)
+{
+  if (space_regexp.Match(atom.c_str()))
+    {
+      out << '"';
+      for_const_contents (sstring, atom, chr)
+	{
+	  if (*chr == '"' || *chr == '\\')
+	    out << '\\';
+	  out << *chr;
+	}
+      out << '"';
+    }
+  else
+    out << (sstring&) atom;
+  return out;
+}
+
+vector<SExpr_atom> SExpr_atom::from_vector (const vector<sstring>& s)
+{
+  vector<SExpr_atom> v;
+  v.reserve(s.size());
+  for_const_contents (vector<sstring>, s, str)
+    v.push_back (SExpr_atom (*str));
+  return v;
 }
 
 sstring& SExpr::tag()
@@ -336,23 +421,23 @@ bool SExpr::operator!= (const SExpr& sexpr) const
   return !(*this == sexpr);
 }
 
-SExpr_file::SExpr_file (const vector<sstring>& filename)
+SExpr_file::SExpr_file (const vector<sstring>& filename, bool allow_quotes)
 {
   if (filename.size())
     for_const_contents (vector<sstring>, filename, fn)
       read_text_from_file (fn->c_str());
   else
     read_text_from_stdin();
-  parse_text();
+  parse_text(allow_quotes);
 }
 
-SExpr_file::SExpr_file (const char* filename)
+SExpr_file::SExpr_file (const char* filename, bool allow_quotes)
 {
   if (filename)
     read_text_from_file (filename);
   else
     read_text_from_stdin();
-  parse_text();
+  parse_text(allow_quotes);
 }
 
 void SExpr_file::read_text_from_file (const char* filename)
@@ -379,9 +464,9 @@ void SExpr_file::read_text_from_stdin()
   read_text_from_stream (cin);
 }
 
-void SExpr_file::parse_text()
+void SExpr_file::parse_text(bool allow_quotes)
 {
-  sexpr.init (text.begin(), text.end());
+  sexpr.init (text.begin(), text.end(), allow_quotes);
 }
 
 Regexp SExpr_validator::brackets_regexp ("^[ \t]*\\([ \t]*([^ \t\\(\\)]+)[ \t]*\\)[ \t]*$");

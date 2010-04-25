@@ -5,7 +5,7 @@
 
 void Handel_movement::read_composition (const vector<sstring>& filenames)
 {
-  SExpr_file sexpr_file (filenames);
+  SExpr_file sexpr_file (filenames, false);  // disallow quotes, to avoid the hassle of dealing with them in output (lazy hack!)
   composition = Transducer_SExpr_file (sexpr_file.sexpr);
   // copy centroid params in from Transducer_SExpr_file
   use_centroid = composition.use_centroid_band;
