@@ -211,6 +211,16 @@ sstring SExpr::to_string() const
   return s;
 }
 
+sstring SExpr::to_parenthesized_string() const
+{
+  sstring s;
+  if (is_list())
+    s << '(' << *this << ')';
+  else
+    s << *this;
+  return s;
+}
+
 ostream& operator<< (ostream& out, const SExpr& sexpr)
 {
   if (sexpr.is_atom())

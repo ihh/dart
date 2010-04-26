@@ -4,6 +4,10 @@
 #include "util/sexpr.h"
 #include <map>
 
+#ifdef GUILE_INCLUDED
+#include <libguile.h>
+#endif /* GUILE_INCLUDED */
+
 // keywords
 #define SEXPR_WARN        "&warn"
 #define SEXPR_DEFINE      "&define"
@@ -55,7 +59,7 @@
 #define SEXPR_ORD         "&ord"
 
 #define SEXPR_EVAL        "&scheme"
-#define SEXPR_EXEC        "&scheme-defs"
+#define SEXPR_EXEC        "&scheme-discard"
 
 
 // singleton shorthand map
@@ -120,6 +124,10 @@ struct SExpr_list_operations : SExpr_visitor
 // We'd then need to bind the alignment and tree to appropriate smobs.
 struct SExpr_Scheme_evaluator
 {
+  // data
+#ifdef GUILE_INCLUDED
+  SCM write_proc;
+#endif /* GUILE_INCLUDED */
   // constructor - initializes Guile
   SExpr_Scheme_evaluator();
   // method to expand all eval/exec blocks in an SExpr tree

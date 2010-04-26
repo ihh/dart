@@ -102,8 +102,9 @@ struct SExpr
   static sstring get_context (Ptr& ptr, Ptr& begin);
 
   // output methods
-  friend ostream& operator<< (ostream& out, const SExpr& sexpr);
-  sstring to_string() const;
+  friend ostream& operator<< (ostream& out, const SExpr& sexpr);  // does NOT add enclosing parentheses to lists
+  sstring to_string() const;  // simple wrapper for operator<<
+  sstring to_parenthesized_string() const;  // wrapper for to_string() that DOES add enclosing parentheses to lists
 };
 
 // SExpr input from file, list of files, or standard input

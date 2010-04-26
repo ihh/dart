@@ -1289,7 +1289,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --without-guile         disable support for guile Scheme interpreter
-  --without-beagle        disable support for Beagle library (phylogenetic
+  --with-beagle           enable support for Beagle library (phylogenetic
                           likelihood computation on GPUs)
 
 Some influential environment variables:
@@ -3418,9 +3418,9 @@ fi
 
 # Check whether --with-beagle was given.
 if test "${with_beagle+set}" = set; then :
-  withval=$with_beagle; with_beagle=no
+  withval=$with_beagle; with_beagle=yes
 else
-  with_beagle=yes
+  with_beagle=no
 fi
 
 

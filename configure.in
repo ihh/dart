@@ -51,10 +51,10 @@ AC_DEFUN([BEAGLE_YES],
   ])
 
 AC_ARG_WITH([beagle],
-            [AS_HELP_STRING([--without-beagle],
-              [disable support for Beagle library (phylogenetic likelihood computation on GPUs)])],
-            [with_beagle=no],
-            [with_beagle=yes])
+            [AS_HELP_STRING([--with-beagle],
+              [enable support for Beagle library (phylogenetic likelihood computation on GPUs)])],
+            [with_beagle=yes],
+            [with_beagle=no])
           
 PKG_CHECK_MODULES([BEAGLE], [hmsbeagle-1.0], [BEAGLE_YES], [BEAGLE_NO])
 

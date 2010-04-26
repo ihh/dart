@@ -4,10 +4,6 @@
 #include "util/logfile.h"
 #include "util/vector_output.h"
 
-#ifdef GUILE_INCLUDED
-#include <libguile.h>
-#endif /* GUILE_INCLUDED */
-
 SExpr_macro_aliases::SExpr_macro_aliases()
 {
 
@@ -424,6 +420,7 @@ SExpr_Scheme_evaluator::SExpr_Scheme_evaluator()
 {
 #ifdef GUILE_INCLUDED
   scm_with_guile (&register_functions, NULL);
+  write_proc = scm_variable_ref (scm_c_lookup("write"));
 #endif /* GUILE_INCLUDED */
 }
 
@@ -434,30 +431,23 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
   for_contents (list<SExpr>, sexpr.child, c)
     {
       bool is_scheme = false;
-      if (sexpr.is_list() && !sexpr.child.empty() && sexpr[0].is_atom())
+      if (c->is_list() && !c->child.empty() && (*c)[0].is_atom())
 	{
-	  const SExpr_atom& op (sexpr[0].get_atom());
+	  const SExpr_atom& op ((*c)[0].get_atom());
 	  if (op == SEXPR_EVAL)
 	    {
-	      // evaluate &eval arguments as Scheme expressions, insert each result into sexpr.child before c
-	      SExprIter iter = sexpr.child.begin();
-	      for (++iter; iter != sexpr.child.end(); ++iter)
-		if (iter->is_list())
-		  {
-		    SExpr result = evaluate(*iter);
-		    if (result.is_atom())
-		      sexpr.child.insert (c, result);
-		    else
-		      sexpr.child.insert (c, result.child.begin(), result.child.end());
-		  }
+	      // evaluate &eval arguments as Scheme expression, splice results into sexpr.child before c
+	      SExpr result = evaluate(*c);
+	      if (result.is_atom())
+		c->child.insert (c, result);
+	      else
+		c->child.insert (c, result.child.begin(), result.child.end());
 	      is_scheme = true;
 	    }
 	  else if (op == SEXPR_EXEC)
 	    {
 	      // evaluate &exec arguments as Scheme expressions, discard results
-	      SExprIter iter = sexpr.child.begin();
-	      for (++iter; iter != sexpr.child.end(); ++iter)
-		evaluate(*iter);
+	      evaluate(*c);
 	      is_scheme = true;
 	    }
 	}
@@ -474,13 +464,31 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
 
 SExpr SExpr_Scheme_evaluator::evaluate (SExpr& sexpr) const
 {
+  if (sexpr.is_atom())
+    THROWEXPR("SExpr_Scheme_evaluator::evaluate called on an atom");
+  if (sexpr.is_empty_list())
+    THROWEXPR("SExpr_Scheme_evaluator::evaluate called on an empty list");
 #ifdef GUILE_INCLUDED
-  const sstring sexpr_string = sexpr.to_string();
-  SCM scm_result = scm_c_eval_string (sexpr_string.c_str());
-  SCM scm_string = scm_object_to_string (scm_result);
-  const char* result_c_string = scm_to_locale_string (scm_string);
-  const sstring result_string (result_c_string);
-  const SExpr result_sexpr (result_string);
+  sstring result_string;
+  // iterate over all but the first child
+  SExpr::SExprIter iter = sexpr.child.begin();
+  for (++iter; iter != sexpr.child.end(); ++iter)
+    {
+      sstring sexpr_string = iter->to_parenthesized_string();
+      // evaluate; convert to C string
+      CTAG(3,GUILE) << "Evaluating Scheme expression: " << sexpr_string << '\n';
+      SCM result_scm = scm_c_eval_string (sexpr_string.c_str());
+      SCM result_scm_string = scm_object_to_string (result_scm, write_proc);
+      const char* result_c_string = scm_to_locale_string (result_scm_string);
+      CTAG(3,GUILE) << "Result of Scheme evaluation: " << result_c_string << '\n';
+      // catch SCM_UNSPECIFIED
+      if (result_scm == SCM_UNSPECIFIED)
+	CTAG(3,GUILE) << "Discarding unspecified return value from Scheme evaluation\n";
+      else
+	result_string << result_c_string << ' ';
+    }
+  // convert to SExpr, and return
+  const SExpr result_sexpr (result_string.begin(), result_string.end());
   return result_sexpr;
 #else /* GUILE_INCLUDED */
   THROWEXPR("This program was not compiled with the GNU Guile library, so " << SEXPR_EVAL << " and " << SEXPR_EXEC << " are not available.\n"
