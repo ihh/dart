@@ -436,7 +436,7 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
 	  const SExpr_atom& op ((*c)[0].get_atom());
 	  if (op == SEXPR_EVAL)
 	    {
-	      // evaluate &eval arguments as Scheme expression, splice results into sexpr.child before c
+	      // evaluate &scheme arguments as Scheme expression, splice results into sexpr.child before c
 	      SExpr result = evaluate(*c);
 	      if (result.is_atom())
 		c->child.insert (c, result);

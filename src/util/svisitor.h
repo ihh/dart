@@ -116,8 +116,8 @@ struct SExpr_list_operations : SExpr_visitor
 };
 
 // SExpr Scheme macros using Guile
-// TODO: make the alphabet, alignment & tree available to the Scheme code in the &eval block
-// (though most of the required ensuing functionality could be hackily achieved using &foreach-token, etc.)
+// TODO: make the alphabet, alignment & tree available to the Scheme code in &scheme blocks
+// (currently most of the ensuing functionality could be hackily achieved using &foreach-token, etc.)
 // To do this, we'd need to first call the following smob initializers, as per inner_main() in dart/src/guile/darts.cc:
 //   init_stockholm_type();
 //   init_newick_type();
