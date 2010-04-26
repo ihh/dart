@@ -419,7 +419,7 @@ register_functions (void* data)
 }
 #endif /* GUILE_INCLUDED */
 
-// SExpr_Scheme
+// SExpr_Scheme_evaluator
 SExpr_Scheme_evaluator::SExpr_Scheme_evaluator()
 {
 #ifdef GUILE_INCLUDED

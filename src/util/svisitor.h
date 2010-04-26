@@ -59,14 +59,6 @@
 
 
 // singleton shorthand map
-// TODO: write code that iterates over the SExpr tree, passing &eval/&exec blocks to guile (suitably wrapped with #ifdef GUILE_INCLUDED).
-// NB we first need to initialize guile with scm_with_guile.
-// Ideally, we would also make the alphabet, alignment & tree available to the Scheme code in the &eval block
-// (though most of the required ensuing functionality could be hackily achieved using &foreach-token, etc.)
-// To do this, we'd need to first call the following smob initializers, as per inner_main() in dart/src/guile/darts.cc:
-//   init_stockholm_type();
-//   init_newick_type();
-// We'd then need to bind the alignment and tree to appropriate smobs.
 struct SExpr_macro_aliases
 {
   map<sstring,sstring> short2long;
@@ -120,6 +112,12 @@ struct SExpr_list_operations : SExpr_visitor
 };
 
 // SExpr Scheme macros using Guile
+// TODO: make the alphabet, alignment & tree available to the Scheme code in the &eval block
+// (though most of the required ensuing functionality could be hackily achieved using &foreach-token, etc.)
+// To do this, we'd need to first call the following smob initializers, as per inner_main() in dart/src/guile/darts.cc:
+//   init_stockholm_type();
+//   init_newick_type();
+// We'd then need to bind the alignment and tree to appropriate smobs.
 struct SExpr_Scheme_evaluator
 {
   // constructor - initializes Guile
