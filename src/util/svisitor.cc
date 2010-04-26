@@ -409,3 +409,48 @@ void SExpr_list_operations::visit (SExpr& parent_sexpr)
 	}
     }
 }
+
+#ifdef GUILE_INCLUDED
+// dummy function to pass to scm_with_guile
+static void*
+register_functions (void* data)
+{
+  return NULL;
+}
+#endif /* GUILE_INCLUDED */
+
+// SExpr_Scheme
+SExpr_Scheme_evaluator::SExpr_Scheme_evaluator()
+{
+#ifdef GUILE_INCLUDED
+  scm_with_guile (&register_functions, NULL);
+#endif /* GUILE_INCLUDED */
+}
+
+void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr)
+{
+  typedef SExpr::SExprIter SExprIter;
+  list<SExprIter> erase_pos;
+  for_contents (list<SExpr>, sexpr.child, c)
+    if (sexpr.is_list() && !sexpr.child.empty() && sexpr[0].is_atom())
+      {
+	const sstring& op (sexpr[0].atom);
+	if (op == SEXPR_EVAL)
+	  {
+	    // evaluate &eval block as Scheme expression, insert result into sexpr.child before c
+	    erase_pos.push_back(c);
+	  }
+	else if (op == SEXPR_EXEC)
+	  {
+	    // evaluate &exec block as Scheme expression, discard result
+	    erase_pos.push_back(c);
+	  }
+	else
+	  expand_Scheme_expressions (*c);
+      }
+
+  // erase the SExpr's marked for deletion
+  for_contents (list<SExprIter>, erase_pos, erase_iter)
+    sexpr.child.erase (*erase_iter);
+}
+

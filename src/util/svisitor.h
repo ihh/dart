@@ -119,4 +119,14 @@ struct SExpr_list_operations : SExpr_visitor
   void visit (SExpr& sexpr);
 };
 
+// SExpr Scheme macros using Guile
+struct SExpr_Scheme_evaluator
+{
+  // constructor - initializes Guile
+  SExpr_Scheme_evaluator();
+  // method to expand all eval/exec blocks in an SExpr tree
+  // will throw an exception if an eval/exec block is encountered & program was compiled without Guile
+  void expand_Scheme_expressions (SExpr& sexpr);
+};
+
 #endif /* SEXPR_VISITOR_INCLUDED */
