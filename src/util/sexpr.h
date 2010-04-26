@@ -53,7 +53,7 @@ struct SExpr
 
   // tag() returns the atom of the first child, or an error if that doesn't exist
   inline bool has_tag();
-  sstring& tag();
+  SExpr_atom& tag();
 
   // value() returns the second child, or an error if there aren't exactly two children
   inline bool has_value();
@@ -80,7 +80,7 @@ struct SExpr
   SExpr* find_recursive (const char* tag, int max_depth = -1);
 
   // get_atom() throws an error if this is not an atom
-  const sstring& get_atom() const;
+  const SExpr_atom& get_atom() const;
 
   // atoms_to_strings() converts childrens' atoms into a vector of strings
   vector<sstring> atoms_to_strings (int offset = 0);
@@ -101,8 +101,9 @@ struct SExpr
   static void pop_or_stop (stack<SExprIter>& sexpr_stack, stack<Ptr>& ptr_stack, Ptr& ptr, Ptr& begin);
   static sstring get_context (Ptr& ptr, Ptr& begin);
 
-  // output method
+  // output methods
   friend ostream& operator<< (ostream& out, const SExpr& sexpr);
+  sstring to_string() const;
 };
 
 // SExpr input from file, list of files, or standard input

@@ -204,6 +204,13 @@ void SExpr::swap (SExpr& sexpr)
   child.swap (sexpr.child);
 }
 
+sstring SExpr::to_string() const
+{
+  sstring s;
+  s << *this;
+  return s;
+}
+
 ostream& operator<< (ostream& out, const SExpr& sexpr)
 {
   if (sexpr.is_atom())
@@ -253,7 +260,7 @@ vector<SExpr_atom> SExpr_atom::from_vector (const vector<sstring>& s)
   return v;
 }
 
-sstring& SExpr::tag()
+SExpr_atom& SExpr::tag()
 {
   if (is_atom())
     THROWEXPR ("In SExpr (" << *this << "):\nAttempt to find name of atom");
@@ -358,7 +365,7 @@ vector<SExpr*> SExpr::find_all (const char* child_tag, int offset)
   return find_all (sstring (child_tag), offset);
 }
 
-const sstring& SExpr::get_atom() const
+const SExpr_atom& SExpr::get_atom() const
 {
   if (!is_atom())
     THROWEXPR ("In SExpr (" << *this << "):\nSExpr is not an atom");

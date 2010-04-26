@@ -1224,6 +1224,9 @@ void ECFG_builder::expand_macros (SExpr& grammars_sexpr, const Alphabet& alph, c
   SExpr_list_operations list_ops;
   list_ops.postorder_visit (grammars_sexpr);
 
+  SExpr_Scheme_evaluator scheme;
+  scheme.expand_Scheme_expressions (grammars_sexpr);
+
   if (CTAGGING(4,ECFG ECFG_MACROS))
     CL << "Grammar S-expression following macro expansion:\n" << grammars_sexpr << '\n';
 }

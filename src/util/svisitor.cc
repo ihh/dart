@@ -427,30 +427,65 @@ SExpr_Scheme_evaluator::SExpr_Scheme_evaluator()
 #endif /* GUILE_INCLUDED */
 }
 
-void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr)
+void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
 {
   typedef SExpr::SExprIter SExprIter;
   list<SExprIter> erase_pos;
   for_contents (list<SExpr>, sexpr.child, c)
-    if (sexpr.is_list() && !sexpr.child.empty() && sexpr[0].is_atom())
-      {
-	const sstring& op (sexpr[0].atom);
-	if (op == SEXPR_EVAL)
-	  {
-	    // evaluate &eval block as Scheme expression, insert result into sexpr.child before c
-	    erase_pos.push_back(c);
-	  }
-	else if (op == SEXPR_EXEC)
-	  {
-	    // evaluate &exec block as Scheme expression, discard result
-	    erase_pos.push_back(c);
-	  }
-	else
-	  expand_Scheme_expressions (*c);
-      }
+    {
+      bool is_scheme = false;
+      if (sexpr.is_list() && !sexpr.child.empty() && sexpr[0].is_atom())
+	{
+	  const SExpr_atom& op (sexpr[0].get_atom());
+	  if (op == SEXPR_EVAL)
+	    {
+	      // evaluate &eval arguments as Scheme expressions, insert each result into sexpr.child before c
+	      SExprIter iter = sexpr.child.begin();
+	      for (++iter; iter != sexpr.child.end(); ++iter)
+		if (iter->is_list())
+		  {
+		    SExpr result = evaluate(*iter);
+		    if (result.is_atom())
+		      sexpr.child.insert (c, result);
+		    else
+		      sexpr.child.insert (c, result.child.begin(), result.child.end());
+		  }
+	      is_scheme = true;
+	    }
+	  else if (op == SEXPR_EXEC)
+	    {
+	      // evaluate &exec arguments as Scheme expressions, discard results
+	      SExprIter iter = sexpr.child.begin();
+	      for (++iter; iter != sexpr.child.end(); ++iter)
+		evaluate(*iter);
+	      is_scheme = true;
+	    }
+	}
+      if (is_scheme)
+	erase_pos.push_back (c);  // mark block for deletion
+      else
+	expand_Scheme_expressions (*c);  // recursively descend
+    }
 
   // erase the SExpr's marked for deletion
   for_contents (list<SExprIter>, erase_pos, erase_iter)
     sexpr.child.erase (*erase_iter);
+}
+
+SExpr SExpr_Scheme_evaluator::evaluate (SExpr& sexpr) const
+{
+#ifdef GUILE_INCLUDED
+  const sstring sexpr_string = sexpr.to_string();
+  SCM scm_result = scm_c_eval_string (sexpr_string.c_str());
+  SCM scm_string = scm_object_to_string (scm_result);
+  const char* result_c_string = scm_to_locale_string (scm_string);
+  const sstring result_string (result_c_string);
+  const SExpr result_sexpr (result_string);
+  return result_sexpr;
+#else /* GUILE_INCLUDED */
+  THROWEXPR("This program was not compiled with the GNU Guile library, so " << SEXPR_EVAL << " and " << SEXPR_EXEC << " are not available.\n"
+	    << "Recompile with Guile enabled to access these Scheme functions.");
+  return SExpr();
+#endif /* GUILE_INCLUDED */
 }
 

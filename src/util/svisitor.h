@@ -54,8 +54,8 @@
 #define SEXPR_CHR         "&chr"
 #define SEXPR_ORD         "&ord"
 
-#define SEXPR_EVAL        "&eval"
-#define SEXPR_EXEC        "&exec"
+#define SEXPR_EVAL        "&scheme"
+#define SEXPR_EXEC        "&scheme-defs"
 
 
 // singleton shorthand map
@@ -124,7 +124,9 @@ struct SExpr_Scheme_evaluator
   SExpr_Scheme_evaluator();
   // method to expand all eval/exec blocks in an SExpr tree
   // will throw an exception if an eval/exec block is encountered & program was compiled without Guile
-  void expand_Scheme_expressions (SExpr& sexpr);
+  void expand_Scheme_expressions (SExpr& sexpr) const;
+  // helper method to evaluate an SExpr as a Scheme expression using guile, then return the result encoded as another SExpr
+  SExpr evaluate (SExpr& sexpr) const;
 };
 
 #endif /* SEXPR_VISITOR_INCLUDED */
