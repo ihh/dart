@@ -595,7 +595,8 @@ void ECFG_scores::make_wiggle (ostream& wig_stream,
 	    {
 	      const int nonterm_index = cw->first.first;
 	      const int emit_pos = cw->first.second;
-	      const double weight = cw->second;
+	      const PFunc weight_pfunc = cw->second;
+	      const double weight = Score2Prob (weight_pfunc.eval_sc (pscores));
 	      const ECFG_state_info& info = state_info[nonterm_index];
 	      if (ss->len >= info.emit_size())
 		{

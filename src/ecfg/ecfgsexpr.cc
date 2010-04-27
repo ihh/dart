@@ -971,7 +971,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
 	  SExpr* wiggle_term_sexpr = (*wiggle_component_sexpr)->find(EG_WIGGLE_TERM);
 	  SExpr* wiggle_nonterm_sexpr = (*wiggle_component_sexpr)->find(EG_WIGGLE_NONTERM);
 
-	  const double weight = wiggle_weight_sexpr ? wiggle_weight_sexpr->value().get_atom().to_double() : 1.;
+	  const PFunc weight = wiggle_weight_sexpr ? init_pfunc(sym2pvar,*wiggle_weight_sexpr,1) : PFunc(1.);
 
 	  int nonterm_index = -1;
 	  if (wiggle_nonterm_sexpr != 0)
@@ -1281,7 +1281,7 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	    {
 	      const int nonterm_index = cw->first.first;
 	      const int emit_pos = cw->first.second;
-	      const double weight = cw->second;
+	      const PFunc weight = cw->second;
 	      const ECFG_state_info& info = ecfg.state_info[nonterm_index];
 	      const vector<int> pos2term = ecfg.get_pos2term (nonterm_index);
 	      const int term_index = pos2term[emit_pos];
@@ -1289,8 +1289,9 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	      out << "\n  (" << EG_WIGGLE_COMPONENT
 		  << " (" << EG_WIGGLE_NONTERM << ' ' << SExpr_atom(info.name)
 		  << ") (" << EG_WIGGLE_TERM << ' ' << SExpr_atom(ecfg.matrix_set.chain[chain_index].state[term_index])
-		  << ") (" << EG_WIGGLE_WEIGHT << ' ' << weight
-		  << "))";
+		  << ") (" << EG_WIGGLE_WEIGHT << ' ';
+	      pfunc2stream (out, ecfg.pscores, weight);
+	      out << "))";
 	    }
 	  out << ")\n";
 	}

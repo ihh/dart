@@ -234,9 +234,9 @@ struct ECFG_posterior_probability_calculator
 struct ECFG_wiggle_track
 {
   typedef pair<int,int> Nonterminal_position;  // first=state_index, second=emit_pos
-  typedef map<Nonterminal_position,double> Component_weight_map;
+  typedef map<Nonterminal_position,PFunc> Component_weight_map;
   sstring name;
-  map<Nonterminal_position,double> component_weight;
+  Component_weight_map component_weight;
 };
 
 // ECFG_scores
