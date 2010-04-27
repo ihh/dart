@@ -246,6 +246,15 @@ void Tree_alignment::build_maps_from_names()
     }
 }
 
+vector<int> Tree_alignment::unattached_rows() const
+{
+  vector<int> ur;
+  for (int row = 0; row < align.rows(); ++row)
+    if (row2node[row] < 0)
+      ur.push_back (row);
+  return ur;
+}
+
 void Tree_alignment::set_node_profile (Phylogeny::Node node, Score_profile* profile)
 {
   if (node_profile.find(node) != node_profile.end())

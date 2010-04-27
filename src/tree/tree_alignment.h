@@ -18,11 +18,11 @@ struct Stockholm_tree : PHYLIP_tree
 struct Tree_alignment
 {
   PHYLIP_tree tree;
-  Alignment   align;
+  Alignment align;
 
-  // maps:
-  Phylogeny::Node_vector  row2node;
-  vector<int>             node2row;
+  // row<-->node index maps
+  Phylogeny::Node_vector row2node;
+  vector<int> node2row;
 
   // node_profile is a list of node-associated Score_profile's owned exclusively by this object
   // DO NOT set this directly; use set_node_profile() method instead
@@ -69,6 +69,8 @@ struct Tree_alignment
   void update_tree_node_names_from_maps();      // copy alignment row names to tree nodes
   void update_alignment_row_names_from_maps();  // copy tree node names to alignment rows
 
+  vector<int> unattached_rows() const;  // rows that are not in the tree
+
   void make_empty_alignment();        // make an empty alignment row for each tree node
   void add_empty_alignment_row_for_node (Phylogeny::Node node);  // add an empty alignment row for tree node #node
   void attach_sequences (const Sequence_database& db);  // for every sequence in db whose name is a valid tree node specifier, attach it to corresponding alignment row
@@ -87,13 +89,14 @@ struct Tree_alignment
   // subpath() method returns pairwise subpath consistent with alignment tree
   // (i.e. no match columns unless intervening nodes have matches too)
   // group_inserts flag prevents messy gaps, e.g. _--_--__--_ becomes ------_____
-  //
   Pairwise_path subpath (Phylogeny::Node_pair pair, bool group_inserts = 0) const;
 
+  // methods to change the alignment by realigning a branch or node - used by tkfalign
   Pairwise_path realign_pair (const Phylogeny::Node_pair& pair, const Pairwise_path& ppath);               // realign a branch
   Pairwise_path realign_node (const Phylogeny::Node node, const Pairwise_path& align_to_new_row_map);      // realign a node
 
-  void show_decomposition (ostream& o, const Alignment_path::Decomposition& decomp) const;        // debugging output method
+  // debugging output method
+  void show_decomposition (ostream& o, const Alignment_path::Decomposition& decomp) const;
 
   // method to estimate tree by neighbor-joining
   // NB: may break if alignment contains ancestral sequences with DART node-munged names
@@ -104,7 +107,7 @@ struct Tree_alignment
   // copy a tree into a Stockholm alignment (messy)
   void copy_tree_to_Stockholm (Stockholm& stock) const;
 
-  // benchmarking methods
+  // benchmarking methods (obsolete?)
   void read_benchmark_alignment (const char* benchmark_filename, Sequence_database& db);  // reads reference alignment in MUL format
   int  benchmark_residue_pair_overlap() const;
   void log_benchmark_results (const char* alignment_name = "Current alignment") const;  // print some stats to logfile

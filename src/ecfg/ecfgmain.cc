@@ -159,7 +159,11 @@ void ECFG_main::init_opts (const char* desc)
   opts.print_title ("Algorithm acceleration (experimental)");
 
   opts.add ("fp -fast-prune", use_fast_prune = false, "attempt pruning algorithm in probability-space, rather than log-space (caveat: prone to underflow)");
-  opts.add ("bgl -beagle", use_beagle = false, "use Beagle GPU library (if available) to do pruning");
+#ifdef BEAGLE_INCLUDED
+  opts.add ("bgl -beagle", use_beagle = false, "use Beagle GPU library to do pruning");
+#else /* BEAGLE_INCLUDED */
+  opts.add ("bgl -beagle", use_beagle = false);   // if Beagle not compiled, then allow this option, but don't advertise it (using it will cause a warning)
+#endif /* BEAGLE_INCLUDED */
 }
 
 void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
@@ -572,7 +576,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	  const bool want_wiggle = (annotate || wiggle_filename.size() > 0) && ecfg.has_wiggle();
 
 	  // decide whether we need CYK, Inside, Outside, peeling
-	  const bool want_CYK = want_GFF || want_GC;
+	  const bool want_CYK = annotate;
 	  const bool want_outside = report_postprob || report_confidence || want_wiggle || want_hidden_classes || want_ancestral_reconstruction;
 	  const bool want_inside = report_sumscore || want_outside;
 	  const bool want_fill_down = want_hidden_classes || want_ancestral_reconstruction;

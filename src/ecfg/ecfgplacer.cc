@@ -4,12 +4,9 @@ ECFG_placer::ECFG_placer (ECFG_scores& ecfg, Stockholm& stock, Tree_alignment& t
   ecfg (ecfg),
   stock (stock),
   tree_align (tree_align),
+  unattached_rows (tree_align.unattached_rows()),
   prior_param (prior_param)
-{
-  for (int row = 0; row < tree_align.align.rows(); ++row)
-    if (tree_align.row2node[row] < 0)
-      unattached_rows.push_back (row);
-}
+{ }
 
 void ECFG_placer::populate_counts()
 {

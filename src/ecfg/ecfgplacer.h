@@ -17,11 +17,11 @@ struct ECFG_placer
 
   // data
   ECFG_unaligned_attachment_counts attach_counts;  // attach_counts[alignment_row][tree_node][chain_idx](src_state,dest_state)
-  vector<int> unattached_rows;
 
   ECFG_scores& ecfg;
   Stockholm& stock;
   Tree_alignment& tree_align;  // this must be constructed from stock
+  vector<int> unattached_rows;
   double prior_param;  // P(branch_length=t) = exp(-prior_param*t)
 
   // constructor
