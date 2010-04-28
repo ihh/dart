@@ -123,8 +123,8 @@ void ECFG_main::init_opts (const char* desc)
   opts.print_title ("Training & annotation algorithms");
 
   opts.add ("t -train", train, "\"train\" (fit) model by EM, saving grammar to file", false);
-  opts.add ("a -annotate", annotate = true, "display & report log-likelihood of maximum-likelihood (CYK) parse tree");
-  opts.add ("s -score", report_sumscore = false, "report log-likelihood, summed over all parse trees (Inside algorithm)");
+  opts.add ("a -annotate", annotate = true, "display CYK log-likelihood, i.e. score of maximum-likelihood parse tree");
+  opts.add ("s -score", report_sumscore = false, "report Inside log-likelihood, i.e. summed over all parse trees");
   opts.add ("c -confidence", report_confidence = false, "report posterior log-probabilities of nodes in CYK parse tree");
   opts.add ("pp -postprob", report_postprob = false, "report posterior log-probabilities of all possible parse tree nodes");
   opts.add ("hc -hidden-classes", report_hidden_classes = false, "impute ML hidden classes at each site (for substitution models with hidden classes)");
