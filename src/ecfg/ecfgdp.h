@@ -82,7 +82,7 @@ struct ECFG_EM_matrix : ECFG_matrix
   bool use_fast_prune;  // set this to use fast pruning algorithm
   vector<Fast_prune> fast_prune;  // faster implementation of the pruning algorithm; only used if use_fast_prune is TRUE
   bool fill_up_flag;  // clear this flag if emit_loglike() is precomputed
-  vector<Subseq::Bifurc_in> bif_in;
+  vector<Subseq::Bifurc_in> bif_in;  // scratch, used to store bifurcation list returned by envelope during DP
 
   // constructor
   ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock, const Aligned_score_profile& asp, const ECFG_envelope& env, bool use_fast_prune = false);
@@ -90,7 +90,7 @@ struct ECFG_EM_matrix : ECFG_matrix
   // EM methods
   inline bool calc_annot_emit_ll (int subseq_idx, int state_idx, Loge& annot_emit_ll);  // calculates likelihood due to probabilistic/deterministic annotation tracks, places in annot_emit_ll, returns true if annot_emit_ll > -InfinityLoge
   inline bool fill_up (int subseq_idx, int state_idx, bool condition_on_context = true);  // returns TRUE if fill_up was called on Column_matrix (i.e. kosher emit state)
-  inline void fill_down (ECFG_counts& counts, int subseq_idx, int state_idx, double weight);  // updates stats, returns log-likelihood
+  inline void fill_down (int subseq_idx, int state_idx, ECFG_counts* counts = 0, vector<vector<Update_statistics*> >* lineage_stats = 0, double weight = 1.);  // updates stats, returns log-likelihood
 
   // Beagle helper methods
   typedef map<Phylogeny::Node,vector<double> > Partial_map;   // indexing: Partial_map[node][subseq*STATES + state]
@@ -116,6 +116,9 @@ struct ECFG_EM_matrix : ECFG_matrix
   // display
   void show_emit (int subseq, ostream& out) const;
   void show_coords (ostream& out, int subseq_idx, int state_idx) const;
+
+  // other helpers
+  vector<vector<Update_statistics*> > get_lineage_stats (ECFG_counts& counts);
 };
 
 // ECFG trainer
@@ -180,6 +183,7 @@ struct ECFG_outside_matrix : ECFG_matrix
   // data
   ECFG_inside_matrix& inside;
   ECFG_counts* counts;
+  vector<vector<Update_statistics*> > lineage_stats;
   bool want_substitution_counts;  // if false, EM down-fill won't be called
   // constructor
   ECFG_outside_matrix (ECFG_inside_matrix& inside, ECFG_counts* counts);
@@ -404,13 +408,8 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
   return false;
 }
 
-void ECFG_EM_matrix::fill_down (ECFG_counts& counts, int subseq_idx, int state_idx, double weight)
+void ECFG_EM_matrix::fill_down (int subseq_idx, int state_idx, ECFG_counts* counts, vector<vector<Update_statistics*> >* lineage_stats, double weight)
 {
-  // set up lineage_stats
-  vector<vector<Update_statistics*> > lineage_stats (ecfg.matrix_set.chain.size(), vector<Update_statistics*> (tree.nodes()));
-  for (int c = 0; c < (int) ecfg.matrix_set.chain.size(); ++c)
-    for (int n = 0; n < tree.nodes(); ++n)
-      lineage_stats[c][n] = &counts.stats[lineage_chain_index[c][n]];
   // check state info
   const ECFG_state_info& info = ecfg.state_info[state_idx];
   if (info.bifurc || info.total_size() == 0)
@@ -424,9 +423,27 @@ void ECFG_EM_matrix::fill_down (ECFG_counts& counts, int subseq_idx, int state_i
       // do peeling
       Column_matrix& cm = colmat[state_idx];
       // NB lineage-dependent models: the following two lines need to set up vector<EM_matrix_base*> and vector<Update_statistics*> and set *all* relevant filled_down[] flags
-      cm.fill_down (lineage_matrix[info.matrix], tree, lineage_stats[info.matrix], subseq_idx, weight);
-      for (int n = 0; n < tree.nodes(); ++n)
-	counts.filled_down[lineage_chain_index[info.matrix][n]] = true;		// pk for EM - remember that this matrix has been filled down
+      cm.fill_down (lineage_matrix[info.matrix], tree, lineage_stats ? &(*lineage_stats)[info.matrix] : (vector<Update_statistics*>*) 0, subseq_idx, weight);
+      if (counts)
+	for (int n = 0; n < tree.nodes(); ++n)
+	  counts->filled_down[lineage_chain_index[info.matrix][n]] = true;		// pk for EM - remember that this matrix has been filled down
+
+      // unattached rows
+      if (counts && tree.unattached_rows.size())
+	{
+	  const Subseq_coords& subseq = env.subseq[subseq_idx];
+	  const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
+	  const int chain_states = ecfg.matrix_set.total_states(info.matrix);
+	  vector<double>& s = counts->stats[lineage_chain_index[state_idx][tree.root]].s;
+	  vector<Loge>& ll_scratch = ll_row[state_idx];
+	  vector<Prob>& prob_scratch = prob_row[state_idx];
+	  int gapped = 0;
+	  for_const_contents (vector<int>, tree.unattached_rows, row)
+	    if (info.init_row (ecfg.alphabet, chain.classes, asp, *row, subseq, ll_scratch, &prob_scratch, gapped, false))
+	      if (!gapped)
+		for (int chain_state = 0; chain_state < chain_states; ++chain_state)
+		  s[chain_state] += prob_scratch[chain_state] * weight;
+	}
     }
 }
 

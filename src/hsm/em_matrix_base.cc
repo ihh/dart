@@ -730,12 +730,12 @@ void EM_matrix_base::Column_matrix::fill_down (const EM_matrix_base& hsm,
 {
   const vector<const EM_matrix_base*> hsm_vec (tree.nodes(), &hsm);
   const vector<Update_statistics*> stats_vec (tree.nodes(), &stats);
-  fill_down (hsm_vec, tree, stats_vec, position_descriptor, weight);
+  fill_down (hsm_vec, tree, &stats_vec, position_descriptor, weight);
 }
 
 void EM_matrix_base::Column_matrix::fill_down (const vector<const EM_matrix_base*>& hsm_vec,
 					       const PHYLIP_tree& tree,
-					       const vector<Update_statistics*>& stats_vec,
+					       const vector<Update_statistics*>* stats_vec,
 					       const sstring& position_descriptor,
 					       double weight)
 {
@@ -754,18 +754,23 @@ void EM_matrix_base::Column_matrix::fill_down (const vector<const EM_matrix_base
 
   // do we want stats? setting stats.states=0 is a hacky way of signaling bypass of EM statistic collection during down-fill
   bool want_stats = true;
-  for_const_contents (vector<Update_statistics*>, stats_vec, s)
-    if ((*s)->states == 0)
-      {
-	want_stats = false;
-	break;
-      }
+  if (stats_vec)
+    {
+      for_const_contents (vector<Update_statistics*>, *stats_vec, s)
+	if ((*s)->states == 0)
+	  {
+	    want_stats = false;
+	    break;
+	  }
+    }
+  else
+    want_stats = false;
 
   // calculate update counts for start states
   if (want_stats)
     for_const_contents (vector<int>, clique, c)
       for_const_contents (vector<int>, allowed[*c], j)
-      stats_vec[*c]->s[*j] += weight * Nats2Prob (NatsPMul3 (hsm_vec[*c]->log_pi[*j], U[*c][*j], -L[*c]));
+      (*stats_vec)[*c]->s[*j] += weight * Nats2Prob (NatsPMul3 (hsm_vec[*c]->log_pi[*j], U[*c][*j], -L[*c]));
 
   // for clique roots, fill D table with zeroes for allowed states
   for_const_contents (vector<int>, clique, r)
@@ -841,7 +846,7 @@ void EM_matrix_base::Column_matrix::fill_down (const vector<const EM_matrix_base
 		const EM_matrix_base::Timepoint_data& pn = hsm_n.timepoint_data (pn_branch_length);
 		if (want_stats)
 		  {
-		    EM_matrix_base::Update_statistics& stats = *stats_vec[n];
+		    EM_matrix_base::Update_statistics& stats = *(*stats_vec)[n];
 		    for (int k = 0; k < states; ++k)
 		      for (int l = 0; l < states; ++l)
 			{
@@ -856,14 +861,14 @@ void EM_matrix_base::Column_matrix::fill_down (const vector<const EM_matrix_base
 		  {
 		    // the following perl snippet extracts the weighted counts from the logfile
 		    // cat LOG | perl -ne 'if(/^ P.*= (\S+)/){$w=$1;$f=0;$p=1}elsif($p && /^\s+([0-9\-\+\.]+)/){@g=split;for$i(0..@g-1){$tot[$f]->[$i]+=$g[$i]*$w}++$f}elsif($p && $f){$p=0}elsif(/end phylo/){for$row(@tot){print"@$row\n"}@tot=();print"\n"}'
-		    EM_matrix_base::Update_statistics tmp_stats = *stats_vec[n];
+		    EM_matrix_base::Update_statistics tmp_stats = *(*stats_vec)[n];
 		    tmp_stats.transform (hsm_n, true);
 
 		    const array2d<double> rmx = hsm_n.rate_matrix();
 
 		    CTAG(-2,CUMULATIVE_BRANCH_LOG_TAGS) << "(begin phylo-EM block)\n";
 		    CL << "Branch length " << pn_branch_length << " from node " << p << " '" << tree.node_specifier(p) << "' (parent) to node " << n << " '" << tree.node_specifier(n) << "' (child)\n";
-		    CL << "U_basis=(" << U_basis << "), D_basis=(" << D_basis << "), root_likelihood=" << root_likelihood << ", cumulative eigencounts matrix:\n" << stats_vec[n]->DJU;
+		    CL << "U_basis=(" << U_basis << "), D_basis=(" << D_basis << "), root_likelihood=" << root_likelihood << ", cumulative eigencounts matrix:\n" << (*stats_vec)[n]->DJU;
 		    CL << "Cumulative wait times: (" << tmp_stats.w << ")\n";
 		    CL << "Cumulative transition counts:\n" << tmp_stats.u;
 		    CL << "Rate matrix (reconstructed from eigenvalues/eigenvectors):\n";

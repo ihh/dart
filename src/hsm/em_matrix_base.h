@@ -274,7 +274,7 @@ struct EM_matrix_base : Irrev_diagonalised_matrix_factory, EM_matrix_params, Pip
 
     void fill_down (const vector<const EM_matrix_base*>& hsm_vec,
 		    const PHYLIP_tree& tree,
-		    const vector<Update_statistics*>& stats_vec,
+		    const vector<Update_statistics*>* stats_vec,
 		    const sstring& position_descriptor,
 		    double weight = 1.);
 

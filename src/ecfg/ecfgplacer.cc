@@ -40,9 +40,6 @@ void ECFG_placer::populate_counts()
   // ensure Tree_alignment's tree stays in sync with ECFG DP matrix's tree
   tree_align.set_tree (cyk_mx.tree);
 
-  // create dummy counts
-  ECFG_counts dummy_counts (ecfg);
-
   // loop over nonterminals in parse tree, using reverse order for easy comparison with methods that loop over columns in left-to-right order
   for_const_reverse_contents (ECFG_cell_score_map, cyk_trace, ecsm_ptr)
     {
@@ -59,7 +56,7 @@ void ECFG_placer::populate_counts()
 	  const int chain_states = ecfg.matrix_set.total_states(chain_idx);
 
 	  // call fill_down
-	  cyk_mx.fill_down (dummy_counts, cyk_mx.env.find_subseq_idx (coords.start, coords.len), ecfg_state, 1.);
+	  cyk_mx.fill_down (cyk_mx.env.find_subseq_idx (coords.start, coords.len), ecfg_state);
 
 	  // get posterior state probabilities for each node
 	  EM_matrix_base::Column_matrix& colmat = cyk_mx.colmat[ecfg_state];

@@ -28,9 +28,6 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
   // final log-likelihood
   Loge final_ll = 0.;
 
-  // create dummy counts
-  ECFG_counts dummy_counts (ecfg);
-
   // loop over nonterminals in parse tree, using reverse order for easy comparison with hsm/branch_length_em.cc
   for_const_reverse_contents (ECFG_cell_score_map, annot, ecsm_ptr)
     {
@@ -46,7 +43,7 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
 	  const ECFG_chain& chain = ecfg.matrix_set.chain[chain_idx];
 
 	  // call fill_down
-	  em_matrix.fill_down (dummy_counts, em_matrix.env.find_subseq_idx (coords.start, coords.len), ecfg_state, 1.);
+	  em_matrix.fill_down (em_matrix.env.find_subseq_idx (coords.start, coords.len), ecfg_state);
 
 	  // accumulate log-likelihood
 	  EM_matrix_base::Column_matrix& colmat = em_matrix.colmat[ecfg_state];

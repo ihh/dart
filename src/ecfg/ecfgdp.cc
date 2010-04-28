@@ -679,9 +679,6 @@ void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 
 void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_map& annot, const char* ancrec_tag_cstr, bool annotate_MAP, bool annotate_postprobs, Prob min_reported_postprob)
 {
-  // create dummy counts
-  ECFG_counts dummy_counts (ecfg);
-
   // #=GR tag
   const sstring ancrec_tag (ancrec_tag_cstr);
   sstring ancrec_tag_pp;
@@ -745,7 +742,7 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 	  const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
 
 	  // call fill_down
-	  fill_down (dummy_counts, env.find_subseq_idx (coords.start, coords.len), ecfg_state, 1.);
+	  fill_down (env.find_subseq_idx (coords.start, coords.len), ecfg_state);
 
 	  // loop over nodes we want to reconstruct
 	  for_const_contents (vector<int>, nodes_to_build, n)
@@ -919,7 +916,19 @@ ECFG_outside_matrix::ECFG_outside_matrix (ECFG_inside_matrix& inside, ECFG_count
     inside (inside),
     counts (counts),
     want_substitution_counts (true)
-{ }
+{
+  if (counts)
+    lineage_stats = inside.get_lineage_stats(*counts);
+}
+
+vector<vector<Update_statistics*> > ECFG_EM_matrix::get_lineage_stats (ECFG_counts& counts)
+{
+  vector<vector<Update_statistics*> > lineage_stats (ecfg.matrix_set.chain.size(), vector<Update_statistics*> (tree.nodes()));
+  for (int c = 0; c < (int) ecfg.matrix_set.chain.size(); ++c)
+    for (int n = 0; n < tree.nodes(); ++n)
+      lineage_stats[c][n] = &counts.stats[lineage_chain_index[c][n]];
+  return lineage_stats;
+}
 
 void ECFG_outside_matrix::fill()
 {
@@ -1008,7 +1017,7 @@ void ECFG_outside_matrix::fill()
 
 	      // call fill_down to accumulate EM_matrix counts
 	      if (counts && want_substitution_counts)
-		inside.fill_down (*counts, source_subseq_idx, *d, post_prob);
+		inside.fill_down (source_subseq_idx, *d, counts, &lineage_stats, post_prob);
 
 	      // accumulate annotation counts
 	      if (counts)
@@ -1250,7 +1259,6 @@ void ECFG_inside_outside_matrix::annotate_hidden_classes (Stockholm& stock, cons
 	}
     }
 
-  ECFG_counts dummy_counts (inside.ecfg);
   for_const_contents (ECFG_cell_score_map, annot, ss)
     {
       const Subseq_coords& subseq = ss->first.first;
@@ -1264,8 +1272,7 @@ void ECFG_inside_outside_matrix::annotate_hidden_classes (Stockholm& stock, cons
 	    {
 	      const int subseq_idx = inside.env.find_subseq_idx (subseq.start, subseq.len);
 	      inside.fill_up (subseq_idx, state);
-	      dummy_counts.stats[info.matrix].states = 0;  // signal that we don't want substitution counts
-	      inside.fill_down (dummy_counts, subseq_idx, state, 1.);
+	      inside.fill_down (subseq_idx, state);
 
 	      Column_matrix& colmat (inside.colmat[state]);
 	      const int observed_states = inside.ecfg.matrix_set.observed_states (info.matrix);
