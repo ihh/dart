@@ -87,9 +87,9 @@ void ECFG_main::init_opts (const char* desc)
 
   opts.print_title ("Tree estimation algorithms");
 
-  opts.add ("nj -neighbor-joining", do_neighbor_joining = false, "do neighbor-joining for alignments with no trees annotated");
-  opts.add ("obl -optimize-branch-lengths", do_branch_length_EM = false, "do branch-length optimization by EM");
-  opts.add ("ps -point-sub", avoid_ECFG_for_branch_length_EM = false, "use point-substitution model, rather than entire phylogrammar, for tree estimation");
+  opts.add ("nj -neighbor-joining", do_neighbor_joining = false, "do neighbor-joining to estimate trees for alignments which have none already annotated");
+  opts.add ("obl -optimize-branch-lengths", do_branch_length_EM = false, "optimize branch lengths in trees, using EM");
+  opts.add ("ps -point-sub", avoid_ECFG_for_branch_length_EM = false, "use point-substitution model, rather than entire phylogrammar, for --optimize-branch-lengths option");
   opts.add ("at -attach", attach_rows = false, "attempt to place unattached alignment rows on the tree");
 
   opts.newline();
