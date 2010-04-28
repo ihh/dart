@@ -88,17 +88,11 @@ AUTOTESTS  = $(SHELLTESTS) $(PERLTESTS) $(EXECTESTS)
 INCDIRS    = -I$(SRCDIR)
 LIBDIRS    = -L$(LIBDIR)
 
-ifeq ($(DIRNAME),gfx)
-GFXLIBS    = -lgd -lpng -lz
-else
-GFXLIBS    = 
-endif
-
 DARTLIBS   = $(addprefix -ldart,$(DEPS))
 MATHLIBS   = -lm
 CPPLIBS    = -lstdc++
 THISLIB    = -l$(LIBNAME)
-LIBRARIES  = $(DARTLIBS) $(GFXLIBS) $(MATHLIBS) $(CPPLIBS)
+LIBRARIES  = $(DARTLIBS) $(MATHLIBS) $(CPPLIBS)
 
 PPFLAGS    = $(INCDIRS) $(DEFINES) $(INCLUDES)
 CCFLAGS    = $(INCDIRS) $(DEBUGFLAGS) $(DEFINES) $(INCLUDES) $(GUILE_CFLAGS) $(BEAGLE_CFLAGS) -Wall
@@ -126,7 +120,7 @@ test: $(TARGETS) $(LIBTARGET) $(EXECTESTS)
 # The 'test FILE1 -nt FILE2' construct (for testing if FILE1 is newer than FILE2) works for GNU test (e.g. Linux or Macs), but not e.g. OSF1.
 # This is acceptable, as we pretty much rely on a GNU setup on development machines. For clean builds, the test should not be invoked.
 #
-$(TARGETS): $(OBJDIR)
+$(TARGETS): $(OBJDIR) $(PREREQS)
 	$(LN) -f $(SRCFILES) $(OBJDIR)
 	$(TEST) -e $(BINDIR)/$@ && $(LN) -f $(BINDIR)/$@ $(OBJDIR)/$@.tmp || eval
 	( cat Makefile; \
@@ -138,7 +132,7 @@ $(TARGETS): $(OBJDIR)
 
 # The library rule - same as the executables rule (above), but creates a library containing every object file.
 #
-$(LIBTARGET): $(OBJDIR)
+$(LIBTARGET): $(OBJDIR) $(PREREQS)
 	$(LN) -f $(SRCFILES) $(OBJDIR)
 	$(TEST) -e $(LIBDIR)/$@ && $(LN) -f $(LIBDIR)/$@ $(OBJDIR)/$@.tmp || eval
 	( cat Makefile; \

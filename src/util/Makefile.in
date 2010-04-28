@@ -3,6 +3,8 @@
 logtags.h:
 	perl make-logtags.pl >$@
 
+PREREQS    = logtags.h
+
 TESTS      = testpiper testcatch testsqrt testlogprob
 TARGETS    = $(TESTS)
 DIRNAME    = util
