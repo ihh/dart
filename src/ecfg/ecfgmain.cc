@@ -85,18 +85,6 @@ void ECFG_main::init_opts (const char* desc)
 {
   INIT_CONSTRUCTED_OPTS_LIST (opts, -1, "[options] [<alignment database(s) in Stockholm format>]", desc);
 
-  opts.print_title ("Tree estimation algorithms");
-
-  opts.add ("nj -neighbor-joining", do_neighbor_joining = false, "do neighbor-joining to estimate trees for alignments which have none already annotated");
-  opts.add ("obl -optimize-branch-lengths", do_branch_length_EM = false, "optimize branch lengths in trees, using EM");
-  opts.add ("ps -point-sub", avoid_ECFG_for_branch_length_EM = false, "use point-substitution model, rather than entire phylogrammar, for --optimize-branch-lengths option");
-  opts.add ("at -attach", attach_rows = false, "attempt to place unattached alignment rows on the tree");
-
-  opts.newline();
-  opts.add ("bmin -branch-min", min_branch_len = .0001, "minimum branch length in phylogenies");
-  opts.add ("bres -branch-resolution", tres = .0001, "resolution of branch lengths in phylogenies");
-
-  opts.newline();
   opts.print_title ("Model selection");
 
   opts.add ("g -grammar", grammars_filename, "filename of grammar to use for training & annotation", false);
@@ -120,9 +108,43 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("gc -gapchar", gap_chars = "", gap_chars_help.c_str(), false);
 
   opts.newline();
-  opts.print_title ("Training & annotation algorithms");
+  opts.print_title ("Tree estimation algorithms");
+
+  opts.add ("nj -neighbor-joining", do_neighbor_joining = false, "do neighbor-joining to estimate trees for alignments which have none already annotated");
+  opts.add ("obl -optimize-branch-lengths", do_branch_length_EM = false, "optimize branch lengths in trees, using EM");
+  opts.add ("ps -point-sub", avoid_ECFG_for_branch_length_EM = false, "modifies --optimize-branch-lengths option to use point-substitution model, rather than entire phylogrammar");
+  opts.add ("at -attach", attach_rows = false, "attempt to place unattached alignment rows on the tree by adding extra branches");
+
+  opts.newline();
+  opts.print_title ("Precision of tree estimation");
+
+  opts.add ("bmin -branch-min", min_branch_len = .0001, "minimum branch length in phylogenies");
+  opts.add ("bres -branch-resolution", tres = .0001, "resolution of branch lengths in phylogenies");
+
+  opts.newline();
+  opts.print_title ("Parameter estimation algorithms");
 
   opts.add ("t -train", train, "use EM algorithm to \"train\" model (i.e. fit it to alignment data), saving trained grammar to file", false);
+  opts.add ("tlog -training-log", training_log_filename = "", "use EM to train model, dumping every intermediate grammar to this file", false);
+
+  opts.newline();
+  opts.print_title ("Pseudocounts for parameter estimation");
+  opts.print ("(Pseudocount options are obsolescent; they are superceded by pseudocount tags within the grammar. See biowiki.org/XrateFormat)\n\n");
+
+  opts.add ("pi -pseudinitial", pseud_init = 1e-9, "pseudocount for initial state occupancies and probability parameters");
+  opts.add ("pm -pseudmutate", pseud_mutate = 0., "pseudocount for mutation rates and rate parameters");
+  opts.add ("pt -pseudtime", pseud_wait = 1e-4, "pseudo-wait time for mutation rates and rate parameters");
+
+  opts.newline();
+  opts.print_title ("Convergence criteria for tree/parameter estimation");
+
+  opts.add ("mr -maxrounds", em_max_iter = -1, "max number of \"rounds\" (iterations) of EM", false);
+  opts.add ("mi -mininc", em_min_inc = .001, "minimum fractional increase in log-likelihood per round of EM");
+  opts.add ("f -forgive", em_forgive = 0, "number of consecutive non-increasing rounds of EM to \"forgive\" before stopping");
+
+  opts.newline();
+  opts.print_title ("Annotation algorithms");
+
   opts.add ("a -annotate", annotate = true, "generate #=GC, GFF and/or WIG annotations, running CYK/Inside/Outside algorithms as appropriate");
   opts.add ("ms -maxscore", report_maxscore = false, "report CYK log-likelihood, corresponding to maximum-likelihood parse tree");
   opts.add ("s -score", report_sumscore = false, "report Inside log-likelihood, corresponding to a sum over all parse trees");
@@ -131,34 +153,12 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("hc -hidden-classes", report_hidden_classes = false, "impute ML hidden classes at each site (for substitution models with hidden classes)");
 
   opts.newline();
-  opts.print_title ("EM convergence criteria");
-
-  opts.add ("mr -maxrounds", em_max_iter = -1, "max number of \"rounds\" (iterations) of EM", false);
-  opts.add ("mi -mininc", em_min_inc = .001, "minimum fractional increase in log-likelihood per round of EM");
-  opts.add ("f -forgive", em_forgive = 0, "number of consecutive non-increasing rounds of EM to \"forgive\" before stopping");
-
-  opts.newline();
-  opts.print_title ("Pseudocounts");
-  opts.print ("(Pseudocounts are obsolete; they are superceded by pseudocount tags. See biowiki.org/XrateFormat)\n\n");
-  opts.add ("pi -pseudinitial", pseud_init = 1e-9, "pseudocount for initial state occupancies and probability parameters");
-  opts.add ("pm -pseudmutate", pseud_mutate = 0., "pseudocount for mutation rates and rate parameters");
-  opts.add ("pt -pseudtime", pseud_wait = 1e-4, "pseudo-wait time for mutation rates and rate parameters");
-
-  opts.newline();
-  opts.print_title ("Ancestral reconstruction algorithms");
-
-  opts.add ("ar -ancrec-cyk-map", ancrec_CYK_MAP = false, "reconstruct Maximum-A-Posteriori ancestral sequence, conditional on CYK parse tree");
-  opts.add ("arpp -ancrec-postprob", ancrec_postprob = false, "report P(ancestors|alignment,phylogeny,CYK)");
-  opts.add ("marp -min-ancrec-prob", min_ancrec_postprob = .01, "minimum ancestral reconstruction posterior probability to report");
-
-  opts.newline();
-  opts.print_title ("Output");
+  opts.print_title ("Annotation output");
   opts.add ("gff", gff_filename, "save GFF annotations to file, rather than interleaving into Stockholm output", false);
   opts.add ("wig -wiggle", wiggle_filename, "save Wiggle annotations to file, rather than interleaving into Stockholm output", false);
-  opts.add ("tlog -training-log", training_log_filename = "", "during EM, dump every intermediate grammar to this file", false);
 
   opts.newline();
-  opts.print_title ("Algorithm acceleration (experimental)");
+  opts.print_title ("Acceleration of annotation DP algorithms (experimental)");
 
   opts.add ("fp -fast-prune", use_fast_prune = false, "attempt pruning algorithm in probability-space, rather than log-space (caveat: prone to underflow)");
 #ifdef BEAGLE_INCLUDED
@@ -166,6 +166,14 @@ void ECFG_main::init_opts (const char* desc)
 #else /* BEAGLE_INCLUDED */
   opts.add ("bgl -beagle", use_beagle = false);   // if Beagle not compiled, then allow this option, but don't advertise it (using it will cause a warning)
 #endif /* BEAGLE_INCLUDED */
+
+  opts.newline();
+  opts.print_title ("Ancestral reconstruction");
+
+  opts.add ("ar -ancrec-cyk-map", ancrec_CYK_MAP = false, "reconstruct Maximum-A-Posteriori ancestral sequences, using CYK parse tree");
+  opts.add ("arpp -ancrec-postprob", ancrec_postprob = false, "report posterior probabilties of alternate reconstructions on CYK parse tree");
+  opts.add ("marp -min-ancrec-prob", min_ancrec_postprob = .01, "minimum probability to report for --ancrec-postprob option");
+
 }
 
 void ECFG_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
@@ -205,10 +213,12 @@ void ECFG_main::read_alignments (const Stockholm_database* stock)
     Alignment::set_gap_chars (gap_chars);
 
   // initialise Stockholm_database
-  if (stock != 0) {
-    stock_db.add (*stock);
-    training_alignment_filename.push_back ("-");  // default "filename" for alignments supplied through the API
-  } else if (!opts.args.size())
+  if (stock != 0)
+    {
+      stock_db.add (*stock);
+      training_alignment_filename.push_back ("-");  // default "filename" for alignments supplied through the API
+    }
+  else if (!opts.args.size())
     {
       // no alignment filenames specified; read from stdin
       CLOGERR << "[waiting for alignments on standard input]\n";
@@ -453,10 +463,11 @@ void ECFG_main::train_grammars()
 
     // init training log
     ofstream* training_log = 0;
-    if (training_log_filename.size()) {
-      training_log = new ofstream(training_log_filename.c_str());
-      ECFG_builder::alphabet2stream (*training_log, *alph);
-    }
+    if (training_log_filename.size())
+      {
+	training_log = new ofstream(training_log_filename.c_str());
+	ECFG_builder::alphabet2stream (*training_log, *alph);
+      }
 
     // loop over grammars
     for (int n_grammar = 0; n_grammar < (int) grammar.size(); ++n_grammar)
@@ -476,11 +487,12 @@ void ECFG_main::train_grammars()
 	tr->iterate_quick_EM (em_forgive);
       }
 
-    if (training_log) {
-      training_log->close();
-      delete training_log;
-      training_log = 0;
-    }
+    if (training_log)
+      {
+	training_log->close();
+	delete training_log;
+	training_log = 0;
+      }
   }
 
   // save
@@ -813,7 +825,7 @@ void ECFG_main::run_xrate (ostream& alignment_output_stream)
   read_grammars();
   convert_sequences();
 
-  if (train.size() > 0)
+  if (train.size() || training_log_filename.size())
     {
       train_grammars();
       delete_trainers();
