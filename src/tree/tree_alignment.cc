@@ -27,6 +27,7 @@ Stockholm_tree::Stockholm_tree (const Stockholm& stock, bool die_if_tree_missing
       read (tree_in);
       // create the node-to-row mapping
       node2row = vector<int> (nodes(), -1);
+      vector<int> in_tree (stock.rows(), (int) false);
       for (int n = 0; n < nodes(); ++n)
 	{
 	  const sstring& nn = node_name[n];
@@ -34,9 +35,17 @@ Stockholm_tree::Stockholm_tree (const Stockholm& stock, bool die_if_tree_missing
 	    {
 	      const Phonebook::const_iterator r_iter = stock.row_index.find (nn);
 	      if (r_iter != stock.row_index.end())
-		node2row[n] = r_iter->second;
+		{
+		  const int row = r_iter->second;
+		  node2row[n] = row;
+		  in_tree[row] = (int) true;
+		}
 	    }
 	}
+      unattached_rows.reserve (stock.rows());
+      for (int r = 0; r < stock.rows(); ++r)
+	if (!in_tree[r])
+	  unattached_rows.push_back(r);
     }
   else  // if we get here, then Stockholm alignment didn't have a "#=GF NH" tag
     if (die_if_tree_missing)

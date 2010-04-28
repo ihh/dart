@@ -244,7 +244,8 @@ ECFG_EM_matrix::ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock,
 				bool use_fast_prune)
   : ECFG_matrix (ecfg, stock, env),
     asp (asp),
-
+    ll_row (ecfg.states()),
+    prob_row (ecfg.states()),
     use_fast_prune (use_fast_prune),
     fast_prune (ecfg.states()),
     fill_up_flag (true)
@@ -257,28 +258,31 @@ ECFG_EM_matrix::ECFG_EM_matrix (const ECFG_scores& ecfg, Stockholm& stock,
       CL << "Switched off fast_prune\n";
     }
 
-  // create colmat vector of Column_matrix objects
-  Column_matrix tmp_colmat;
-  colmat = vector<Column_matrix> (ecfg.states(), tmp_colmat);
-
   // allocate emit_loglike
   if (CTAGGING(3,ALLOC))
     CL << "Allocating " << sizeof(Loge)*env.subseqs()*ecfg.states() << " bytes for emit scores ("
        << env.subseqs() << " subseqs * " << ecfg.states() << " states)\n";
   emit_loglike.resize (env.subseqs(), ecfg.states(), 0.);  // default emit_loglike is zero
 
-  // allocate Column_matrix's
+  // create colmat, ll_row, prob_row
+  Column_matrix tmp_colmat;
+  colmat = vector<Column_matrix> (ecfg.states(), tmp_colmat);
+
+  // allocate colmat, ll_row, prob_row
   if (CTAGGING(-1,ECFG_EM_MATRIX))
     asp.show (CL);
   for (int s = 0; s < ecfg.states(); ++s)
     if (ecfg.state_info[s].emit_size())
       {
 	const int chain_idx = ecfg.state_info[s].matrix;
+	const int chain_states = ecfg.matrix_set.total_states (chain_idx);
 	colmat[s].alloc (tree.nodes(),
-			 ecfg.matrix_set.total_states (chain_idx),
+			 chain_states,
 			 false); // don't allocate class labels
 	if (use_fast_prune)
 	  fast_prune[s].prepare (tree, lineage_matrix[chain_idx], colmat[s]);
+	ll_row[s] = vector<Loge> (chain_states);
+	prob_row[s] = vector<Prob> (chain_states);
       }
 
   // initialise feature lookup

@@ -9,7 +9,7 @@
 struct Stockholm_tree : PHYLIP_tree
 {
   // data
-  vector<int> node2row;  // node-to-row mapping
+  vector<int> node2row, unattached_rows;  // node-to-row mapping
 
   // constructor
   Stockholm_tree (const Stockholm& stock, bool die_if_tree_missing = true);

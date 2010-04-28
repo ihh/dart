@@ -76,7 +76,9 @@ struct ECFG_EM_matrix : ECFG_matrix
   void use_precomputed (Emit_loglike_matrix& emit_loglike);  // swaps in emit_loglike, clears fill_up_flag
 
   // workspace
-  vector<Column_matrix> colmat;   // "scratch" Column_matrix's, indexed by state
+  vector<Column_matrix> colmat;   // colmat[nonterm] = scratch Column_matrix, indexed by nonterm
+  vector<vector<Loge> > ll_row;  // ll_row[nonterm][state] = scratch log-likelihood vector for unattached rows, indexed by nonterm & chain state
+  vector<vector<Prob> > prob_row;  // prob_row[nonterm][state] = scratch probability vector for unattached rows, indexed by nonterm & chain state
   bool use_fast_prune;  // set this to use fast pruning algorithm
   vector<Fast_prune> fast_prune;  // faster implementation of the pruning algorithm; only used if use_fast_prune is TRUE
   bool fill_up_flag;  // clear this flag if emit_loglike() is precomputed
@@ -311,6 +313,13 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
   Column_matrix& cm = colmat[state_idx];
   Fast_prune& fp = fast_prune[state_idx];
 
+  // stuff for unattached rows...
+  const int chain_states = ecfg.matrix_set.total_states(info.matrix);
+  const vector<double>& pi = lineage_matrix[info.matrix][tree.root]->pi;
+  vector<Loge>& ll_scratch = ll_row[state_idx];
+  vector<Prob>& prob_scratch = prob_row[state_idx];
+  int gapped = 0;
+
   // first, compute Felsenstein likelihood with emitted columns replaced with wildcards, in order to condition on the context
   Loge marginal_ll = 0.;
   const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
@@ -326,6 +335,17 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
 	      cm.fill_up (lineage_matrix[info.matrix], tree, subseq_idx);
 	      marginal_ll = cm.total_log_likelihood();
 	    }
+	  // unattached rows
+	  for_const_contents (vector<int>, tree.unattached_rows, row)
+	    if (info.init_row (ecfg.alphabet, chain.classes, asp, *row, subseq, ll_scratch, &prob_scratch, gapped, true))
+	      if (!gapped)
+		{
+		  Prob row_prob = 0.;
+		  for (int chain_state = 0; chain_state < chain_states; ++chain_state)
+		    row_prob += prob_scratch[chain_state] * pi[chain_state];
+		  NatsPMulAcc (marginal_ll, Prob2Nats (row_prob));
+		}
+	  // log
 	  if (CTAGGING(3,FILL_UP))
 	    CL << "Marginal log likelihood (context): " << Nats2Bits(marginal_ll) << " bits\n";
 	}
@@ -344,7 +364,18 @@ bool ECFG_EM_matrix::fill_up (int subseq_idx, int state_idx, bool condition_on_c
 	  cm.fill_up (lineage_matrix[info.matrix], tree, subseq_idx);
 	  joint_ll = cm.total_log_likelihood();
 	}
-      emit_ll = NatsPMul3 (annot_emit_ll, joint_ll, -marginal_ll);  // add in annot_emit_ll
+      // unattached rows
+      for_const_contents (vector<int>, tree.unattached_rows, row)
+	if (info.init_row (ecfg.alphabet, chain.classes, asp, *row, subseq, ll_scratch, &prob_scratch, gapped, false))
+	  if (!gapped)
+	    {
+	      Prob row_prob = 0.;
+	      for (int chain_state = 0; chain_state < chain_states; ++chain_state)
+		row_prob += prob_scratch[chain_state] * pi[chain_state];
+	      NatsPMulAcc (joint_ll, Prob2Nats (row_prob));
+	    }
+      // calculate emit_ll = annot_emit_ll + joint_ll - marginal_ll
+      emit_ll = NatsPMul3 (annot_emit_ll, joint_ll, -marginal_ll);
       // log
       if (CTAGGING(3,FILL_UP))
 	{
