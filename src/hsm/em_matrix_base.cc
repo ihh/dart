@@ -704,7 +704,7 @@ void EM_matrix_base::Column_matrix::fill_up (const vector<const EM_matrix_base*>
       if (position_descriptor.size())
 	CL << " for " << position_descriptor;
       for_const_contents (vector<int>, clique, c)
-	CL << " (clique " << *c << ": " << Nats2Bits(L[*c]) << " bits)";
+	CL << " (clique " << *c << ", root '" << tree.node_specifier(root[*c]) << "': " << Nats2Bits(L[*c]) << " bits)";
       CL << '\n';
     }
 }
