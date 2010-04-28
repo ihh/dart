@@ -124,7 +124,7 @@ void ECFG_main::init_opts (const char* desc)
 
   opts.add ("t -train", train, "use EM algorithm to \"train\" model (i.e. fit it to alignment data), saving trained grammar to file", false);
   opts.add ("a -annotate", annotate = true, "generate #=GC, GFF and/or WIG annotations, running CYK/Inside/Outside algorithms as appropriate");
-  opts.add ("ms -maxscore", report_maxscore = true, "report CYK log-likelihood, corresponding to maximum-likelihood parse tree");
+  opts.add ("ms -maxscore", report_maxscore = false, "report CYK log-likelihood, corresponding to maximum-likelihood parse tree");
   opts.add ("s -score", report_sumscore = false, "report Inside log-likelihood, corresponding to a sum over all parse trees");
   opts.add ("c -confidence", report_confidence = false, "report Inside-Outside posterior log-probabilities of nodes in CYK parse tree");
   opts.add ("pp -postprob", report_postprob = false, "report Inside-Outside posterior log-probabilities of all possible parse tree nodes");
@@ -697,9 +697,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 		    }
 		}
 
-	      // add score annotation
-	      if (report_maxscore)
-		annotate_loglike (*stock, ECFG_max_score_tag, ecfg_name, cyk_loglike);
+	      // since we have computed the CYK score, add it as annotation, regardless of whether it was requested
+	      annotate_loglike (*stock, ECFG_max_score_tag, ecfg_name, cyk_loglike);
 	    }
 
 	  // if needed, do Inside algorithm (or retrieve previously-computed Inside matrix)
@@ -732,9 +731,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	      // get the tracebacks
 	      // do the MAP ancestral reconstructions (rename ancrec_CYK_MAP to ancrec_MAP)
 
-	      // add score annotation
-	      if (report_sumscore)
-		annotate_loglike (*stock, ECFG_sum_score_tag, ecfg_name, inside_mx->final_loglike);
+	      // since we have computed the Inside score, add it as annotation, regardless of whether it was requested
+	      annotate_loglike (*stock, ECFG_sum_score_tag, ecfg_name, inside_mx->final_loglike);
 	    }
 
 	  // annotate CYK traceback *after* DP is finished, to make use of inside-outside probs if available
