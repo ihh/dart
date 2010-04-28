@@ -124,7 +124,7 @@ void ECFG_main::init_opts (const char* desc)
 
   opts.add ("t -train", train, "use EM algorithm to \"train\" model (i.e. fit it to alignment data), saving trained grammar to file", false);
   opts.add ("a -annotate", annotate = true, "generate #=GC, GFF and/or WIG annotations, running CYK/Inside/Outside algorithms as appropriate");
-  opts.add ("ms -max-score", report_maxscore = true, "report CYK log-likelihood, corresponding to maximum-likelihood parse tree");
+  opts.add ("ms -maxscore", report_maxscore = true, "report CYK log-likelihood, corresponding to maximum-likelihood parse tree");
   opts.add ("s -score", report_sumscore = false, "report Inside log-likelihood, corresponding to a sum over all parse trees");
   opts.add ("c -confidence", report_confidence = false, "report Inside-Outside posterior log-probabilities of nodes in CYK parse tree");
   opts.add ("pp -postprob", report_postprob = false, "report Inside-Outside posterior log-probabilities of all possible parse tree nodes");
