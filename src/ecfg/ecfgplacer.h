@@ -48,6 +48,9 @@ struct ECFG_attachable_tree_alignment_database : ECFG_EM_tree_alignment_database
     : ECFG_EM_tree_alignment_database (seq_db)
   { }
 
+  // helper
+  bool has_unattached_rows() const;
+
   // method to attach all unattached rows
   void attach_rows (ECFG_scores& ecfg, double prior_param = 0.,
 		    double time_resolution = TINY, double time_max = DART_MAX_BRANCH_LENGTH, double time_min = 0.);

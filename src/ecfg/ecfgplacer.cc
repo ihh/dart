@@ -161,6 +161,14 @@ void ECFG_placer::attach (double resolution, double tmax, double tmin)
   tree_align.tree_changed();
 }
 
+bool ECFG_attachable_tree_alignment_database::has_unattached_rows() const
+{
+  for_const_contents (list<Tree_alignment>, tree_align_list, tree_align)
+    if (tree_align->has_unattached_rows())
+      return true;
+  return false;
+}
+
 void ECFG_attachable_tree_alignment_database::attach_rows (ECFG_scores& ecfg, double prior_param,
 							   double time_resolution, double time_max, double time_min)
 {

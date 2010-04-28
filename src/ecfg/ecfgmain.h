@@ -68,6 +68,7 @@ struct ECFG_main
   ECFG_scores* tree_estimation_grammar;
   const ECFG_chain* tree_estimation_chain;  // first point-substitution matrix in tree_estimation_grammars
 
+  bool do_neighbor_joining;  // if true, will attempt neighbor-joining for alignments without trees
   bool do_branch_length_EM;  // if true, will attempt to optimize branch lengths by EM
   bool avoid_ECFG_for_branch_length_EM;  // if false, will use the entire ECFG to do branch-length EM, not just a single matrix
   bool attach_rows;  // if true, will attempt to place unattached alignment rows on the tree
@@ -132,8 +133,9 @@ struct ECFG_main
   // helper to add a particular score annotation to an alignment
   void annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const;
 
-  // helper to test if any trees are missing
+  // helper to test if any trees are missing, or alignment rows unattached to trees
   bool missing_trees() const;
+  bool unattached_rows() const;
 };
 
 #endif /* ECFG_MAIN_INCLUDED */
