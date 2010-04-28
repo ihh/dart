@@ -10,6 +10,11 @@
 #include "ecfg/ecfgdp.h"
 #include "ecfg/ecfgplacer.h"
 
+// score annotation tags
+#define ECFG_max_score_tag "SC_max"
+#define ECFG_sum_score_tag "SC_sum"
+
+// main xrate runtime class
 struct ECFG_main
 {
   // typedefs
@@ -21,6 +26,7 @@ struct ECFG_main
 
   // command-line params
   bool annotate;
+  bool report_maxscore;
   bool report_sumscore;
   bool report_confidence;
   bool report_postprob;

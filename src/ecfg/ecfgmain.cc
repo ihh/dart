@@ -122,11 +122,12 @@ void ECFG_main::init_opts (const char* desc)
   opts.newline();
   opts.print_title ("Training & annotation algorithms");
 
-  opts.add ("t -train", train, "\"train\" (fit) model by EM, saving grammar to file", false);
-  opts.add ("a -annotate", annotate = true, "display CYK log-likelihood, i.e. score of maximum-likelihood parse tree");
-  opts.add ("s -score", report_sumscore = false, "report Inside log-likelihood, i.e. summed over all parse trees");
-  opts.add ("c -confidence", report_confidence = false, "report posterior log-probabilities of nodes in CYK parse tree");
-  opts.add ("pp -postprob", report_postprob = false, "report posterior log-probabilities of all possible parse tree nodes");
+  opts.add ("t -train", train, "use EM algorithm to \"train\" model (i.e. fit it to alignment data), saving trained grammar to file", false);
+  opts.add ("a -annotate", annotate = true, "generate #=GC, GFF and/or WIG annotations, running CYK/Inside/Outside algorithms as appropriate");
+  opts.add ("ms -max-score", report_maxscore = true, "report CYK log-likelihood, corresponding to maximum-likelihood parse tree");
+  opts.add ("s -score", report_sumscore = false, "report Inside log-likelihood, corresponding to a sum over all parse trees");
+  opts.add ("c -confidence", report_confidence = false, "report Inside-Outside posterior log-probabilities of nodes in CYK parse tree");
+  opts.add ("pp -postprob", report_postprob = false, "report Inside-Outside posterior log-probabilities of all possible parse tree nodes");
   opts.add ("hc -hidden-classes", report_hidden_classes = false, "impute ML hidden classes at each site (for substitution models with hidden classes)");
 
   opts.newline();
@@ -138,7 +139,7 @@ void ECFG_main::init_opts (const char* desc)
 
   opts.newline();
   opts.print_title ("Pseudocounts");
-  opts.print ("(Pseudocounts are obsolete; pseudocount tags are cooler! See biowiki.org/XrateFormat)\n\n");
+  opts.print ("(Pseudocounts are obsolete; they are superceded by pseudocount tags. See biowiki.org/XrateFormat)\n\n");
   opts.add ("pi -pseudinitial", pseud_init = 1e-9, "pseudocount for initial state occupancies and probability parameters");
   opts.add ("pm -pseudmutate", pseud_mutate = 0., "pseudocount for mutation rates and rate parameters");
   opts.add ("pt -pseudtime", pseud_wait = 1e-4, "pseudo-wait time for mutation rates and rate parameters");
@@ -604,11 +605,30 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	  const bool want_wiggle = (annotate || wiggle_filename.size() > 0) && ecfg.has_wiggle();
 
 	  // decide whether we need CYK, Inside, Outside, peeling
-	  const bool want_CYK = annotate;
+	  const bool want_CYK = report_maxscore || want_GC || want_GFF;
 	  const bool want_outside = report_postprob || report_confidence || want_wiggle || want_hidden_classes || want_ancestral_reconstruction;
 	  const bool want_inside = report_sumscore || want_outside;
 	  const bool want_fill_down = want_hidden_classes || want_ancestral_reconstruction;
 	  const bool want_fast_prune = use_fast_prune && !want_fill_down;
+
+	  // log what we're doing
+	  CTAG(6,XRATE) << "Desired annotations:"
+			<< " " << (want_ancestral_reconstruction ? CYK_MAP_reconstruction_tag : "")
+			<< (want_GC ? " Stockholm(#=GC)" : "")
+			<< (want_GFF ? " GFF" : "")
+			<< (want_wiggle ? " Wiggle" : "")
+			<< (report_maxscore ? " CYK_score" : "")
+			<< (report_sumscore ? " Inside_score" : "")
+			<< (report_confidence ? " CYK_postprobs" : "")
+			<< (report_postprob ? " All_postprobs" : "")
+			<< '\n';
+
+	  CTAG(6,XRATE) << "Selected algorithms:"
+			<< (want_inside ? " Inside" : "")
+			<< (want_outside ? " Outside" : "")
+			<< (want_CYK ? " CYK" : "")
+			<< (want_fill_down ? " Peeling" : "")
+			<< '\n';
 
 	  // for backward compatibility, issue a warning if inside-outside data unavailable to GFF
 	  if (want_GFF && !want_outside)
@@ -639,7 +659,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	      delete cyk_mx;
 	      cyk_mx = 0;
 
-	      // if needed, do inside-outside
+	      // if needed, do inside-outside as well as CYK
 	      if (want_outside && !zero_likelihood)
 		{
 		  inout_mx = new ECFG_inside_outside_matrix (ecfg, *stock, asp, env, (ECFG_counts*) 0);
@@ -678,7 +698,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 		}
 
 	      // add score annotation
-	      annotate_loglike (*stock, "SC_max", ecfg_name, cyk_loglike);
+	      if (report_maxscore)
+		annotate_loglike (*stock, ECFG_max_score_tag, ecfg_name, cyk_loglike);
 	    }
 
 	  // if needed, do Inside algorithm (or retrieve previously-computed Inside matrix)
@@ -713,7 +734,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 
 	      // add score annotation
 	      if (report_sumscore)
-		annotate_loglike (*stock, "SC_sum", ecfg_name, inside_mx->final_loglike);
+		annotate_loglike (*stock, ECFG_sum_score_tag, ecfg_name, inside_mx->final_loglike);
 	    }
 
 	  // annotate CYK traceback *after* DP is finished, to make use of inside-outside probs if available
