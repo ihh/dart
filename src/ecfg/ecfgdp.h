@@ -434,7 +434,7 @@ void ECFG_EM_matrix::fill_down (int subseq_idx, int state_idx, ECFG_counts* coun
 	  const Subseq_coords& subseq = env.subseq[subseq_idx];
 	  const ECFG_chain& chain = ecfg.matrix_set.chain[info.matrix];
 	  const int chain_states = ecfg.matrix_set.total_states(info.matrix);
-	  vector<double>& s = counts->stats[lineage_chain_index[state_idx][tree.root]].s;
+	  vector<double>& s = counts->stats[lineage_chain_index[info.matrix][tree.root]].s;
 	  vector<Loge>& ll_scratch = ll_row[state_idx];
 	  vector<Prob>& prob_scratch = prob_row[state_idx];
 	  int gapped = 0;
