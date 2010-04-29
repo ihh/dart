@@ -60,6 +60,7 @@ AC_DEFUN([GUILE_PROGS],
       AC_WARN([guile not found - Scheme support will not be enabled])
       AC_SUBST(GUILE_INCLUDED,[0])
       AC_SUBST(GUILE_CDEFS,[])
+      AC_SUBST(GUILE_DEPS,[])
   else
     AC_SUBST(GUILE)
     AC_PATH_PROG(GUILE_CONFIG,guile-config)
@@ -68,12 +69,14 @@ AC_DEFUN([GUILE_PROGS],
       AC_WARN([guile-config not found - Scheme support will not be enabled])
       AC_SUBST(GUILE_INCLUDED,[0])
       AC_SUBST(GUILE_CDEFS,[])
+      AC_SUBST(GUILE_DEPS,[])
     else
       AC_SUBST(GUILE_CONFIG)
       AC_PATH_PROG(GUILE_TOOLS,guile-tools)
       AC_SUBST(GUILE_TOOLS)
       AC_SUBST(GUILE_INCLUDED,[1])
       AC_SUBST(GUILE_CDEFS,[-DGUILE_INCLUDED])
+      AC_SUBST(GUILE_DEPS,[guile])
     fi
   fi
  ])

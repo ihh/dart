@@ -29,6 +29,7 @@ GUILE_FLAGS
 if test "x$with_guile" == "xno"
 then
 	GUILE_CDEFS=""
+	GUILE_DEPS=""
 	GUILE_CFLAGS=""
 	GUILE_LDFLAGS=""
 	GUILE_INCLUDED=0
@@ -99,6 +100,7 @@ AC_CONFIG_FILES([Makefile
                  src/amap/Makefile
                  src/ecfg/Makefile
                  src/evoldoer/Makefile
+                 src/guile/Makefile
                  src/handel/Makefile
                  src/hmm/Makefile
                  src/hsm/Makefile
