@@ -605,6 +605,7 @@ GUILE_LDFLAGS
 GUILE_CFLAGS
 GUILE_TOOLS
 GUILE_CONFIG
+GUILE_DEPS
 GUILE_CDEFS
 GUILE_INCLUDED
 GUILE
@@ -3289,6 +3290,7 @@ $as_echo "$as_me: WARNING: guile not found - Scheme support will not be enabled"
       GUILE_INCLUDED=0
 
 
+
   else
 
     # Extract the first word of "guile-config", so it can be a program name with args.
@@ -3338,6 +3340,7 @@ $as_echo "$as_me: WARNING: guile-config not found - Scheme support will not be e
       GUILE_INCLUDED=0
 
 
+
     else
 
       # Extract the first word of "guile-tools", so it can be a program name with args.
@@ -3385,6 +3388,8 @@ fi
 
       GUILE_CDEFS=-DGUILE_INCLUDED
 
+      GUILE_DEPS=guile
+
     fi
   fi
 
@@ -3404,6 +3409,7 @@ $as_echo "$GUILE_LDFLAGS" >&6; }
 if test "x$with_guile" == "xno"
 then
 	GUILE_CDEFS=""
+	GUILE_DEPS=""
 	GUILE_CFLAGS=""
 	GUILE_LDFLAGS=""
 	GUILE_INCLUDED=0
@@ -4955,7 +4961,7 @@ done
 
 
 # create the makefiles
-ac_config_files="$ac_config_files Makefile src/make.defs src/make.common src/Weighbor/Makefile src/amap/Makefile src/ecfg/Makefile src/evoldoer/Makefile src/handel/Makefile src/hmm/Makefile src/hsm/Makefile src/indiegram/Makefile src/irrev/Makefile src/newmat/Makefile src/psw/Makefile src/randlib/Makefile src/scfg/Makefile src/seq/Makefile src/stemloc/Makefile src/telegraph/Makefile src/tkf/Makefile src/tree/Makefile src/util/Makefile"
+ac_config_files="$ac_config_files Makefile src/make.defs src/make.common src/Weighbor/Makefile src/amap/Makefile src/ecfg/Makefile src/evoldoer/Makefile src/guile/Makefile src/handel/Makefile src/hmm/Makefile src/hsm/Makefile src/indiegram/Makefile src/irrev/Makefile src/newmat/Makefile src/psw/Makefile src/randlib/Makefile src/scfg/Makefile src/seq/Makefile src/stemloc/Makefile src/telegraph/Makefile src/tkf/Makefile src/tree/Makefile src/util/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5643,6 +5649,7 @@ do
     "src/amap/Makefile") CONFIG_FILES="$CONFIG_FILES src/amap/Makefile" ;;
     "src/ecfg/Makefile") CONFIG_FILES="$CONFIG_FILES src/ecfg/Makefile" ;;
     "src/evoldoer/Makefile") CONFIG_FILES="$CONFIG_FILES src/evoldoer/Makefile" ;;
+    "src/guile/Makefile") CONFIG_FILES="$CONFIG_FILES src/guile/Makefile" ;;
     "src/handel/Makefile") CONFIG_FILES="$CONFIG_FILES src/handel/Makefile" ;;
     "src/hmm/Makefile") CONFIG_FILES="$CONFIG_FILES src/hmm/Makefile" ;;
     "src/hsm/Makefile") CONFIG_FILES="$CONFIG_FILES src/hsm/Makefile" ;;
