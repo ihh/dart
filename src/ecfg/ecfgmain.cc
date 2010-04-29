@@ -33,6 +33,7 @@ ECFG_main::ECFG_main (int argc, char** argv)
     alph (0),
     tree_estimation_grammar (0),
     tree_estimation_chain (0),
+    updated_trees (false),
     align_db (seq_db)
 { }
 
@@ -42,6 +43,7 @@ ECFG_main::ECFG_main()
     alph (0),
     tree_estimation_grammar (0),
     tree_estimation_chain (0),
+    updated_trees (false),
     align_db (seq_db)
 {
   init_opts("");
