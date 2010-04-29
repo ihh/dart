@@ -3,9 +3,6 @@
 #include "util/logfile.h"
 #include "util/vector_output.h"
 
-#define GFF_group_field_split_char  ';'
-#define GFF_group_field_assign_char '='
-
 Regexp GFF::regexp ("^[^\t]*\t[^\t]*\t[^\t]*\t[^\t]*\t[^\t]*\t[^\t]*\t[^\t]*\t[^\t]*\t[^\t]*$");
 
 NSE::NSE()
@@ -149,6 +146,18 @@ void GFF::set_values (const map<sstring,sstring>& key_val)
   for_const_contents (ssmap, key_val, kv)
     group << kv->first << GFF_group_field_assign_char << kv->second << GFF_group_field_split_char;
   group.chomp (GFF_group_field_split_char);
+}
+
+vector<sstring> GFF::split_values (const sstring& val)
+{
+  const sstring GFF_group_field_multival_string ((int) 1, (char) GFF_group_field_multival_char);
+  return val.split (GFF_group_field_multival_string.c_str());
+}
+
+sstring GFF::join_values (const vector<sstring>& vals)
+{
+  const sstring GFF_group_field_multival_string ((int) 1, (char) GFF_group_field_multival_char);
+  return sstring::join (vals, GFF_group_field_multival_string.c_str());
 }
 
 const char* GFF::mask_tens_key = "mask";

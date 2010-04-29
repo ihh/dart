@@ -577,13 +577,15 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 	  // handle Parent
 	  if (group_key_val.find(parent_tag) != group_key_val.end())
 	    {
-	      const sstring& parent_val = group_key_val[parent_tag];
-	      if (id_lookup.find (parent_val) != id_lookup.end())
-		{
-		  const GFF& parent_gff = id_lookup[parent_val];
-		  if (parent_gff.start <= gff.start && parent_gff.end >= gff.end)
-		    group_key_val[parent_tag] = parent_gff.get_value (GFF_ID_tag);
-		}
+	      vector<sstring> parent_vals = GFF::split_values (group_key_val[parent_tag]);
+	      for_contents (vector<sstring>, parent_vals, parent_val)
+		if (id_lookup.find (*parent_val) != id_lookup.end())
+		  {
+		    const GFF& parent_gff = id_lookup[*parent_val];
+		    if (parent_gff.start <= gff.start && parent_gff.end >= gff.end)
+		      *parent_val = parent_gff.get_value (GFF_ID_tag);
+		  }
+	      group_key_val[parent_tag] = GFF::join_values (parent_vals);
 	    }
 
 	  // record CYK score

@@ -6,6 +6,11 @@
 #include "util/Regexp.h"
 #include "seq/biosequence.h"
 
+// special characters for group field
+#define GFF_group_field_split_char    ';'
+#define GFF_group_field_assign_char   '='
+#define GFF_group_field_multival_char ','
+
 // special keys for group field (GFF3)
 #define GFF_ID_tag     "ID"
 #define GFF_Parent_tag "Parent"
@@ -50,6 +55,9 @@ struct GFF : GFF_enum, NSE
   map<sstring,sstring> get_key_value_map() const;
   void set_value (const char* key, const char* val);
   void set_values (const map<sstring,sstring>& key_val);
+
+  static vector<sstring> split_values (const sstring& val);
+  static sstring join_values (const vector<sstring>& vals);
 
   // specific methods for masking
   static const char* mask_tens_key;
