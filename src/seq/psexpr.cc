@@ -231,6 +231,23 @@ sstring PFunc_builder::score_sexpr (Score sc, bool use_bitscores)
   return s;
 }
 
+sstring PFunc_builder::score_sexpr (FScore sc, bool use_bitscores)
+{
+  sstring s;
+  if (use_bitscores)
+    {
+      if (sc <= -InfinityScore)
+	s << PK_INFINITE;
+      else if (sc == 0)
+	s << 0;
+      else
+	s << -FScore2Bits (sc);
+    }
+  else
+    s << FScore2Prob (sc);
+  return s;
+}
+
 void PFunc_builder::pscores2stream (ostream& out, const PScores& pscores, const char* tag, const vector<int>& pgroups_to_show, const char* indent, const PCounts* pcounts, bool use_bitscores)
 {
   if (pgroups_to_show.size())
@@ -330,7 +347,7 @@ PGroup PFunc_builder::init_pgroup (PScores& pscores, SymPVar& sym2pvar, SExpr& p
 {
   // get all param names & values
   vector<sstring> suffix;
-  vector<Score> score;
+  vector<FScore> score;
   // check if first two child S-expressions are atoms, not lists; if so, this is a rate declaration
   const bool looks_like_rate = pgroup_sexpr.child.size() >= 2 && pgroup_sexpr[0].is_atom() && pgroup_sexpr[1].is_atom();
   if (disallow_rate && looks_like_rate)
@@ -340,7 +357,7 @@ PGroup PFunc_builder::init_pgroup (PScores& pscores, SymPVar& sym2pvar, SExpr& p
   if (force_rate || looks_like_rate)
     {
       suffix.push_back (pgroup_sexpr[0].get_atom());
-      score.push_back (Prob2Score (pgroup_sexpr[1].get_atom().to_nonneg_double_strict()));
+      score.push_back (Prob2FScore (pgroup_sexpr[1].get_atom().to_nonneg_double_strict()));
     }
   else  // treat it as a group of probability parameters (KNOWN BUG: internal representation means that single-element PGroups are still treated as rates)
     for_contents (list<SExpr>, pgroup_sexpr.child, child_iter)
@@ -355,9 +372,9 @@ PGroup PFunc_builder::init_pgroup (PScores& pscores, SymPVar& sym2pvar, SExpr& p
 	  sc = -InfinityScore;
 	}
       else if (use_bitscores)
-	sc =  -Bits2Score(dbl_string.to_double());
+	sc =  -Bits2FScore(dbl_string.to_double());
       else
-	sc = Prob2Score (dbl_string.to_nonneg_double_strict());
+	sc = Prob2FScore (dbl_string.to_nonneg_double_strict());
       score.push_back (sc);
     }
 

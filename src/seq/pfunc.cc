@@ -102,7 +102,7 @@ void PFunc::Stack_index::eval_node_sc (const PScores& var_sc)
 	  node_sc[i] = f.const_sc[cp_idx[i]];
 	  break;
 	case POW:
-	  node_sc[i] = (Score) (Score2Bits (f.const_sc[cp_idx[i]]) * (double) node_sc[l_operand_idx[i]]);
+	  node_sc[i] = (Score) (FScore2Bits (f.const_sc[cp_idx[i]]) * (double) node_sc[l_operand_idx[i]]);
 	  break;
 	case PVAR:
 	case INERT_PVAR:
@@ -164,7 +164,7 @@ Prob PFunc::eval_dlogf_dlogp (const PScores& var_sc, const PVar& pv) const
 	  dlognodesc_dlogp[i] = dlognodesc_dlogp[stack_idx.l_operand_idx[i]] - dlognodesc_dlogp[stack_idx.r_operand_idx[i]];
 	  break;
 	case POW:
-	  dlognodesc_dlogp[i] = (Score) (Score2Bits (const_sc[stack_idx.cp_idx[i]]) * (double) dlognodesc_dlogp[stack_idx.l_operand_idx[i]]);
+	  dlognodesc_dlogp[i] = (Score) (FScore2Bits (const_sc[stack_idx.cp_idx[i]]) * (double) dlognodesc_dlogp[stack_idx.l_operand_idx[i]]);
 	  break;
 	default:   // never get here
 	  break;
@@ -193,7 +193,7 @@ PFunc::PFunc() : opcode(), const_sc(), pvar() { }
 
 PFunc::PFunc (Prob constant)
   : opcode (1, CONST),
-    const_sc (1, (Score) Prob2Score(constant)),
+    const_sc (1, (FScore) Prob2FScore(constant)),
     pvar()
 { }
 
@@ -207,7 +207,7 @@ PFunc::PFunc (PFunc f, Prob exponent)
     THROW Standard_exception ("Tried to exponentiate a null PFunc");
 
   opcode.push_back (POW);
-  const_sc.push_back ((Score) Bits2Score(exponent));
+  const_sc.push_back ((FScore) Bits2FScore(exponent));
 }
 
 PFunc::PFunc (PVar pv) : opcode (1, (Opcode) PVAR), const_sc(), pvar (1, pv) { }
@@ -256,7 +256,7 @@ void PFunc::show (ostream& o, const vector<vector<sstring> >* group_suffix, bool
       switch (opcode[i])
 	{
 	case CONST:
-	  text << Score2Prob (const_sc[c_idx]);
+	  text << FScore2Prob (const_sc[c_idx]);
 	  break;
 
 	case PVAR:
@@ -298,7 +298,7 @@ void PFunc::show (ostream& o, const vector<vector<sstring> >* group_suffix, bool
 	  break;
 
 	case POW:
-	  text << "((" << node_text[l_idx] << ") ^ " << Score2Bits (const_sc[c_idx]) << ')';
+	  text << "((" << node_text[l_idx] << ") ^ " << FScore2Bits (const_sc[c_idx]) << ')';
 	  break;
 
 	default:   // never get here

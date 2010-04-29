@@ -36,6 +36,7 @@ struct PFunc_builder
   static void pfunc2stream (ostream& out, const PScores& pscores, const PFunc& pfunc);
 
   static sstring score_sexpr (Score sc, bool use_bitscores);
+  static sstring score_sexpr (FScore sc, bool use_bitscores);
 
   // Alphabet
   static void alphabet2stream (ostream& out, const Alphabet& alph);

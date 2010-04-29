@@ -26,7 +26,15 @@ void PScores::normalise()
 {
   for (int g = 0; g < groups(); ++g)
     if (group_size (g) > 1)
-      NormaliseSc (group[g]);
+      {
+	// too lazy to write a NormaliseFSc right now - 4/29/2010
+	vector<Score> sc (group_size(g));
+	for (int v = 0; v < group_size(g); ++v)
+	  sc[v] = FScore2Score (group[g][v]);
+	NormaliseSc (sc);
+	for (int v = 0; v < group_size(g); ++v)
+	  group[g][v] = Score2FScore (sc[v]);
+      }
 }
 
 void PScores::set_null_model (const Sequence_database& seq_db, const Alphabet_group& null_emit, const Boolean_group& null_extend)

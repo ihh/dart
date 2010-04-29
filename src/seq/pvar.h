@@ -348,7 +348,7 @@ struct PScope
 // PScores class
 // this is the main class for specifying both the dimensions of a parameter space & the scores for each parameter.
 
-class PScores : public PScope, public PVar_container<Score>
+class PScores : public PScope, public PVar_container<FScore>
 {
 public:
   PScores() { }
@@ -372,7 +372,7 @@ public:
   void set_null_model (const Sequence_database& seq_db, const Alphabet_group& null_emit, const Boolean_group& null_extend);
 
   // debugging output method
-  void show (ostream&o) const { PVar_container<Score>::show(o,"scores"); }
+  void show (ostream&o) const { PVar_container<FScore>::show(o,"scores"); }
   
   // crude I/O
   void write (ostream& out) const;

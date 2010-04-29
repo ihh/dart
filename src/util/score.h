@@ -15,10 +15,10 @@
 typedef double Prob;       // a Prob represents a probability
 typedef long double Rate;  // a Rate represents a rate (changed from "double" to "long double" to fix xrate large-matrix precision problems at suggestion of Peter Schattner -- 12/15/2008, IH)
 
-typedef int    Score;  // a Score is a log-probability in base 2^.001, rounded to the nearest integer
-typedef double Scorf;  // a Scorf is a log-probability in base 2^.001, not rounded
-typedef double Loge;   // a Loge is a log-probability in base e
-typedef double Log2;   // a Log2 is a log-probability in base 2
+typedef int    Score;   // a Score is a log-probability in base 2^.001, rounded to the nearest integer
+typedef double FScore;  // an FScore (Floating-point Score) is a log-probability in base 2^.001, not rounded
+typedef double Loge;    // a Loge is a log-probability in base e
+typedef double Log2;    // a Log2 is a log-probability in base 2
 
 // public global constant macros
 // the only guaranteed relationship between the infinity's is:    Score2Nats(InfinityScore) <= InfinityLoge
@@ -54,6 +54,18 @@ typedef double Log2;   // a Log2 is a log-probability in base 2
 #define Score2Bits(S) Score_fns::score2bits(S)
 #define Bits2Score(B) Score_fns::bits2score(B)
 
+#define Score2FScore(S) ((FScore) S)
+#define FScore2Score(F) ((Score) round(F))
+
+#define Prob2FScore(P) Score_fns::prob2fscore(P)
+#define FScore2Prob(S) Score_fns::fscore2prob(S)
+
+#define Nats2FScore(N) Score_fns::loglike2fscore(N)
+#define FScore2Nats(S) Score_fns::fscore2loglike(S)
+
+#define FScore2Bits(S) Score_fns::fscore2bits(S)
+#define Bits2FScore(B) Score_fns::bits2fscore(B)
+
 #define Nats2Bits(N)  Score_fns::loglike2bits(N)
 #define Bits2Nats(B)  Score_fns::bits2loglike(B)
 
@@ -71,6 +83,8 @@ typedef double Log2;   // a Log2 is a log-probability in base 2
 #define Score2ProbVecNorm(SV)   Score_fns::score2prob_vector_normalised(SV)
 #define Score2ProbVecUnnorm(SV) Score_fns::score2prob_vector_unnormalised(SV)
 
+#define Prob2FScoreVec(PV)      Score_fns::prob2fscore_vector(PV)
+
 #define Prob2ScoreArray2d(PA) Score_fns::prob2score_array2d(PA)
 #define Score2ProbArray2d(SA) Score_fns::score2prob_array2d(SA)
 
@@ -80,8 +94,8 @@ typedef double Log2;   // a Log2 is a log-probability in base 2
 #define Score2Boltzmann(S,KT)     Score_fns::score2boltzmann(S,KT)
 #define Score2BoltzmannVec(SV,KT) Score_fns::score2boltzmann_vector(SV,KT)
 
-#define NormaliseSc(SVEC) Score_fns::normalise_sc(SVEC)
 #define NormalisePr(PVEC) Score_fns::normalise_pr(PVEC)
+#define NormaliseSc(SVEC) Score_fns::normalise_sc(SVEC)
 
 // probability-space arithmetic macros
 
@@ -180,6 +194,30 @@ public:
   static inline Log2  score2bits (const Score score) { return ((double) score) / ((double) DartScore2BitsRatio); }
   static inline Score bits2score (const Log2 bits) { return (Score) round (bits * ((double) DartScore2BitsRatio)); }
 
+  static inline FScore prob2fscore (const Prob p)
+  { return p >= InfinityProb ? InfinityScore : (p <= ZeroProb ? -InfinityScore : (FScore) (DartScore2NatsRatio * log(p))); }
+  static inline Prob   fscore2prob (const FScore sc)  // exp(...) calls in this function were formerly DartScore2ProbTiny
+    {
+      if (sc <= 0)
+	return sc <= -DartScoreHuge ? 0. : exp ((double) sc / DartScore2NatsRatio);
+      else
+	return sc >= DartScoreHuge ? InfinityProb : exp ((double) sc / DartScore2NatsRatio);
+    }
+
+  static inline Log2  fscore2bits (const FScore score) { return (score) / (DartScore2BitsRatio); }
+  static inline Score bits2fscore (const Log2 bits) { return (FScore) (bits * ((double) DartScore2BitsRatio)); }
+
+  static inline FScore loglike2fscore (const Loge loglike)
+    {
+      return (FScore) minmax (loglike * DartScore2NatsRatio, (Loge) -InfinityScore, (Loge) InfinityScore);
+    }
+  static inline Loge   fscore2loglike (const FScore sc)
+    {
+      if (sc >= InfinityScore) return InfinityLoge;
+      if (sc <= -InfinityScore) return -InfinityLoge;
+      return ((Loge) sc) / DartScore2NatsRatio;
+    }
+  
   static inline Log2 loglike2bits (const Loge loglike) { return loglike / Loge2; }
   static inline Loge bits2loglike (const Log2 bits) { return bits * Loge2; }
 
@@ -195,6 +233,13 @@ public:
     {
       vector<Score> v (p_vector.size());
       for (int i = 0; i < (int) p_vector.size(); ++i) v[i] = prob2score (p_vector[i]);
+      return v;
+    }
+
+  static inline vector<FScore> prob2fscore_vector (const vector<Prob>& p_vector)
+    {
+      vector<FScore> v (p_vector.size());
+      for (int i = 0; i < (int) p_vector.size(); ++i) v[i] = prob2fscore (p_vector[i]);
       return v;
     }
 

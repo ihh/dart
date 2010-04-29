@@ -425,7 +425,7 @@ void Stemloc::init_align_params()
 {
   // initialise null emit scores
   for_contents (PHMM_CFG_map, gramset.phmm_cfg_map, name_phmm_cfg)
-    name_phmm_cfg->second.hmm_pscores[name_phmm_cfg->second.hmm_null_emit] = Prob2ScoreVec (null_emit_prob);
+    name_phmm_cfg->second.hmm_pscores[name_phmm_cfg->second.hmm_null_emit] = Prob2FScoreVec (null_emit_prob);
 
   // train params, if asked
   if (trainalign.size())

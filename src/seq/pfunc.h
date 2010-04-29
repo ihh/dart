@@ -21,7 +21,7 @@ public:
 private:
   // reverse Polish expression
   vector<Opcode> opcode;    // the opcodes
-  vector<Score>  const_sc;  // the scores (for CONST nodes)
+  vector<FScore> const_sc;  // the scores (for CONST nodes)
   vector<PVar>   pvar;      // the PVar's (for PVAR and INERT_PVAR nodes)
 
   // Structure of internal pointers and node scores for the reverse Polish
