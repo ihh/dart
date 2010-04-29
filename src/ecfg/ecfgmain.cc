@@ -752,7 +752,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	    ecfg.annotate (*stock, cyk_trace);
 
 	  if (want_GFF)
-	    ecfg.make_GFF (gff_list, cyk_trace, align_id.c_str(), inout_mx, inside_mx);
+	    ecfg.make_GFF (gff_list, cyk_trace, align_id.c_str(), inout_mx, inside_mx, false);
 
 	  if (want_wiggle && inout_mx != 0)
 	    {

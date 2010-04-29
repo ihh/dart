@@ -341,7 +341,8 @@ struct ECFG_scores : ECFG<Score>
 		 const ECFG_cell_score_map& annot,
 		 const char* seqname = ECFG_GFF_default_seqname,
 		 const ECFG_posterior_probability_calculator* pp_calc = 0,
-		 const ECFG_inside_calculator* ins_calc = 0) const;
+		 const ECFG_inside_calculator* ins_calc = 0,
+		 bool record_probs_of_all_states = false) const;
   // Wiggle
   void make_wiggle (ostream& wig_stream,
 		    const ECFG_envelope& env,

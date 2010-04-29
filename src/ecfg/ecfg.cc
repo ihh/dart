@@ -537,7 +537,8 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 			    const ECFG_cell_score_map& annot,
 			    const char* seqname,
 			    const ECFG_posterior_probability_calculator* pp_calc,
-			    const ECFG_inside_calculator* ins_calc) const
+			    const ECFG_inside_calculator* ins_calc,
+			    bool record_probs_of_all_states) const
 {
   // sort (subseq,state) tuples inside-->outside
   const ECFG_subseq_state_inside_ordering inside_order (*this);
@@ -591,25 +592,27 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 	  cyk_val << Nats2Bits (cyk_ll);
 	  group_key_val[cyk_tag] = cyk_val;
 
-	  // record posterior probability
+	  // record posterior probabilities
 	  if (pp_calc)
 	    for (int s = 0; s < states(); ++s)
-	      {
-		sstring pp_val, pp_tag;
-		pp_tag << ECFG_GFF_LogPostProb_tag << '(' << state_info[s].name << ')';
-		pp_val << Nats2Bits (pp_calc->post_state_ll (s, subseq));
-		group_key_val[pp_tag] = pp_val;
-	      }
+	      if (s == state || record_probs_of_all_states)
+		{
+		  sstring pp_val, pp_tag;
+		  pp_tag << ECFG_GFF_LogPostProb_tag << '(' << state_info[s].name << ')';
+		  pp_val << Nats2Bits (pp_calc->post_state_ll (s, subseq));
+		  group_key_val[pp_tag] = pp_val;
+		}
 
-	  // record inside probability
+	  // record inside probabilities
 	  if (ins_calc)
 	    for (int s = 0; s < states(); ++s)
-	      {
-		sstring ins_val, ins_tag;
-		ins_tag << ECFG_GFF_LogInsideProb_tag << '(' << state_info[s].name << ')';
-		ins_val << Nats2Bits (ins_calc->state_inside_ll (s, subseq));
-		group_key_val[ins_tag] = ins_val;
-	      }
+	      if (s == state || record_probs_of_all_states)
+		{
+		  sstring ins_val, ins_tag;
+		  ins_tag << ECFG_GFF_LogInsideProb_tag << '(' << state_info[s].name << ')';
+		  ins_val << Nats2Bits (ins_calc->state_inside_ll (s, subseq));
+		  group_key_val[ins_tag] = ins_val;
+		}
 
 	  // update group field
 	  gff.set_values (group_key_val);
