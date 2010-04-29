@@ -330,25 +330,26 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
 	       "(i.e. a point substitution matrix), which is needed for some operations\n"
 	       "(neighbor-joining, or branch-length optimization with the --point-sub option).\n");
 
+  // convert sequences to Score_profile's for tree estimation
   if (convert_seq_db)
     {
-      // convert sequences to Score_profile's for tree estimation
       tree_estimation_hidden_alphabet.init_hidden (tree_estimation_grammar_alphabet, tree_estimation_chain->class_labels);
       seq_db_ptr->seqs2scores (tree_estimation_hidden_alphabet);
     }
 
+  // estimate missing trees by neighbor-joining
   if (do_neighbor_joining && missing_trees())
     {
-      // estimate missing trees by neighbor-joining
       CTAG(6,XRATE) << "Estimating missing trees by neighbor-joining\n";
       Subst_dist_func_factory dist_func_factory (*tree_estimation_chain->matrix);
       align_db.estimate_missing_trees_by_nj (dist_func_factory);
+      // copy trees to Stockholm database (do this every time trees are changed)
       copy_trees_to_stock_db();
     }
 
+  // optimise branch lengths by EM
   if (do_branch_length_EM)
     {
-      // optimise branch lengths by EM
       CTAG(6,XRATE) << "Optimizing tree branch lengths by EM\n";
       if (avoid_ECFG_for_branch_length_EM)
 	{
@@ -358,22 +359,22 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
 	}
       else
 	align_db.optimise_branch_lengths_by_ECFG_EM (*tree_estimation_grammar, 0., em_max_iter, em_forgive, em_min_inc, BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
+      // copy trees to Stockholm database (do this every time trees are changed)
       copy_trees_to_stock_db();
     }
 
+  // attach all alignment rows to tree
   if (attach_rows && unattached_rows())
     {
-      // attach all alignment rows to tree
       CTAG(6,XRATE) << "Placing unattached alignment rows on trees\n";
       align_db.attach_rows (*tree_estimation_grammar, 0., BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
+      // copy trees to Stockholm database (do this every time trees are changed)
       copy_trees_to_stock_db();
     }
 
+  // clear the (potentially inconsistent with other grammars) Score_profile's
   if (convert_seq_db)
-    {
-      // clear the (potentially inconsistent with other grammars) Score_profile's
-      seq_db_ptr->clear_scores();
-    }
+    seq_db_ptr->clear_scores();
 
   // ensure all tree branches meet minimum length requirement
   for (int n_align = 0; n_align < align_db.size(); n_align++)
@@ -387,6 +388,7 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
 	    adjusted_lengths = updated_trees = true;
 	  }
 
+      // copy trees to Stockholm database (do this every time trees are changed)
       if (adjusted_lengths)
 	copy_trees_to_stock_db();
     }
