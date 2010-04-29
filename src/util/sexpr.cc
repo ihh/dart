@@ -250,7 +250,7 @@ ostream& operator<< (ostream& out, const SExpr_atom& atom)
       out << '"';
       for_const_contents (sstring, atom, chr)
 	{
-	  if (*chr == '"' || *chr == '\\' || *chr == ';')
+	  if (*chr == '"' || *chr == '\\')
 	    out << '\\';
 	  out << *chr;
 	}
