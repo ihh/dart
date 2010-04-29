@@ -625,7 +625,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 
 	  // log what we're doing
 	  CTAG(6,XRATE) << "Desired annotations:"
-			<< " " << (want_ancestral_reconstruction ? CYK_MAP_reconstruction_tag : "")
+			<< (want_ancestral_reconstruction ? " Ancestral_reconstruction" : "")
+			<< (want_hidden_classes ? " Hidden_classes" : "")
 			<< (want_GC ? " Stockholm(#=GC)" : "")
 			<< (want_GFF ? " GFF" : "")
 			<< (want_wiggle ? " Wiggle" : "")
