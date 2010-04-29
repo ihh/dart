@@ -242,7 +242,7 @@ ostream& operator<< (ostream& out, const SExpr& sexpr)
   return out;
 }
 
-Regexp special_char_regexp("[ \t\r\n;\"\\]");
+Regexp special_char_regexp("[ \t\r\n;\"\\(\\)]");
 ostream& operator<< (ostream& out, const SExpr_atom& atom)
 {
   if (special_char_regexp.Match(atom.c_str()))
