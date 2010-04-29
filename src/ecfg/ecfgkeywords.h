@@ -79,6 +79,7 @@
 #define EG_GFF_TYPE    "type"
 #define EG_GFF_STRAND  "strand"
 #define EG_GFF_FRAME   "frame"
+#define EG_GFF_GROUP   "group"
 
 // wiggle output
 #define EG_WIGGLE           "wiggle"
@@ -125,6 +126,7 @@
 
 // GFF tags
 #define ECFG_GFF_default_seqname   "Alignment"
+#define ECFG_GFF_LogCYK_tag        "lgCYK"       /* log_2 of CYK score  */
 #define ECFG_GFF_LogPostProb_tag   "lgPost"      /* log_2 P(Parse Tree Uses Nonterminal | Alignment)  */
 #define ECFG_GFF_LogInsideProb_tag "lgInside"    /* log_2 P(Inside Annotation, Inside Alignment | Parse Tree Rooted At Nonterminal)  */
 

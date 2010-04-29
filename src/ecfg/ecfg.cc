@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "ecfg/ecfg.h"
 #include "ecfg/ecfgsexpr.h"
 #include "util/vector_output.h"
@@ -530,18 +532,28 @@ void ECFG_scores::annotate (Stockholm& stock, const ECFG_cell_score_map& annot) 
     }
 }
 
+// make_GFF
 void ECFG_scores::make_GFF (GFF_list& gff_list,
 			    const ECFG_cell_score_map& annot,
 			    const char* seqname,
 			    const ECFG_posterior_probability_calculator* pp_calc,
 			    const ECFG_inside_calculator* ins_calc) const
 {
-  // loop over subseq->state mappings
-  for_const_contents (ECFG_cell_score_map, annot, ss)
+  // sort (subseq,state) tuples inside-->outside
+  const ECFG_subseq_state_inside_ordering inside_order (*this);
+  vector<ECFG_subseq_state> subseq_state = map_keys (annot);
+  sort (subseq_state.begin(), subseq_state.end(), inside_order);
+  // set up a container for created IDs
+  map<sstring,sstring> id;
+  const sstring id_tag (GFF_ID_tag);
+  const sstring parent_tag (GFF_Parent_tag);
+  // loop over subseq->state mappings in outside-->inside order
+  for_const_reverse_contents (vector<ECFG_subseq_state>, subseq_state, ss)
     {
-      const Subseq_coords& subseq = ss->first.first;
-      const int state = ss->first.second;
-      const Loge ll = ss->second;
+      const Subseq_coords& subseq = ss->first;
+      const int state = ss->second;
+      const Loge cyk_ll = ((ECFG_cell_score_map&)annot)[*ss];   // cast away const, we know this is a valid key
+      const Loge ll = pp_calc ? pp_calc->post_state_ll(state,subseq) : cyk_ll;
 
       const ECFG_state_info& info = state_info[state];
 
@@ -554,8 +566,31 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 	  gff.end = subseq.end();
 	  gff.score = Nats2Bits (ll);
 
-	  map<sstring,sstring> group_key_val;
+	  // group field
+	  map<sstring,sstring> group_key_val = gff.get_key_value_map();
 
+	  // handle Parent
+	  if (group_key_val.find(parent_tag) != group_key_val.end())
+	    {
+	      const sstring& parent_val = group_key_val[parent_tag];
+	      if (id.find (parent_val) != id.end())
+		group_key_val[parent_tag] = id[parent_val];
+	    }
+
+	  // handle ID
+	  const sstring unique_id = gff_list.create_unique_id();
+	  if (group_key_val.find(id_tag) != group_key_val.end())
+	    id[group_key_val[id_tag]] = unique_id;
+
+	  group_key_val[id_tag] = unique_id;
+
+	  // record CYK score
+	  sstring cyk_val, cyk_tag;
+	  cyk_tag << ECFG_GFF_LogCYK_tag << '(' << info.name << ')';
+	  cyk_val << Nats2Bits (cyk_ll);
+	  group_key_val[cyk_tag] = cyk_val;
+
+	  // record posterior probability
 	  if (pp_calc)
 	    for (int s = 0; s < states(); ++s)
 	      {
@@ -565,6 +600,7 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 		group_key_val[pp_tag] = pp_val;
 	      }
 
+	  // record inside probability
 	  if (ins_calc)
 	    for (int s = 0; s < states(); ++s)
 	      {
@@ -1200,6 +1236,21 @@ void ECFG_simulation::add_counts_to_stockade()
   const vector<sstring> counts_lines = counts_text.split ("\n");
   for_const_contents (vector<sstring>, counts_lines, cl)
     align.add_gf_annot (sstring (EG_CHAIN_COUNTS), *cl);
+}
+
+ECFG_subseq_state_inside_ordering::ECFG_subseq_state_inside_ordering (const ECFG_scores& ecfg)
+{
+  const vector<int> emit_states = ecfg.emit_states();
+  const vector<int> nonemit_states = ecfg.nonemit_states();
+  // nonemit_states are topologically sorted; see Transition_methods::topological_sort()
+  // inside algorithm fills emit states, then null states in reverse topological order
+  int order = 0;
+  state_order[End] = order++;
+  for_const_contents (vector<int>, emit_states, s)
+    state_order[*s] = order++;
+  for_const_reverse_contents (vector<int>, nonemit_states, s)
+    state_order[*s] = order++;
+  state_order[Start] = order;
 }
 
 ECFG_counts::ECFG_counts (const ECFG_scores& ecfg) :

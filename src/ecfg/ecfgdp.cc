@@ -1232,6 +1232,9 @@ void ECFG_inside_outside_matrix::annotate_post_prob (GFF_list& gff_list, const s
   gff.end = subseq.end();
   gff.score = Nats2Bits (inside.cell (subseq_idx, state));
 
+  const sstring unique_id = gff_list.create_unique_id();
+  gff.set_value (GFF_ID_tag, unique_id.c_str());
+
   sstring score_str;
   score_str << Nats2Bits (post_state_ll (state, subseq_idx));
   gff.set_value (ECFG_GFF_LogPostProb_tag, score_str.c_str());

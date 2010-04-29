@@ -738,7 +738,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // create & run the validator
   SExpr_validator ecfg_validator
     ("Grammar->('"EG_GRAMMAR" GrammarProperty*);"
-     "GrammarProperty->Name|('"EG_WIGGLE" WiggleProperty*)|('"EG_FOLD_STRING_TAG" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
+     "GrammarProperty->Name|GFFAnnotation|('"EG_WIGGLE" WiggleProperty*)|('"EG_FOLD_STRING_TAG" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
      "Name->('"EG_NAME" Atom);"
      "WiggleProperty->WiggleComponentProperty|('"EG_WIGGLE_NAME" Atom)|('"EG_WIGGLE_COMPONENT" WiggleComponentProperty*);"
      "WiggleComponentProperty->('"EG_WIGGLE_WEIGHT" Atom)|('"EG_WIGGLE_TERM" Atom)|('"EG_WIGGLE_NONTERM" Atom);"
@@ -759,8 +759,10 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "ValuePair->Atom Atom;"
      "ParameterGroup->(ParameterValue*);"
      "Count->ParameterValue|ParameterValuePair;"
-     "NontermProperty->Name|MinimumLength|MaximumLength|SummationDirective|PrefixConstraint|SuffixConstraint|InfixConstraint;"
-     "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End);"
+     "NontermProperty->Name|MinimumLength|MaximumLength|SummationDirective|PrefixConstraint|SuffixConstraint|InfixConstraint|GFFAnnotation;"
+     "GFFAnnotation->('"EG_GFF" GFFAnnotationProperty*);"
+     "GFFAnnotationProperty->('"EG_GFF_NONTERM" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_TYPE" Atom)|('"EG_GFF_STRAND" Atom)|('"EG_GFF_FRAME" Atom)|('"EG_GFF_GROUP" Atom);"
+     "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|GFFAnnotation|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End);"
      "AnnotationProperty->AnnotationRow|AnnotationColumn|AnnotationLabel|ProbabilisticAnnotation;"
      "AnnotationRow->('"EG_TRANSFORM_ROW" Atom);"
      "AnnotationColumn->('"EG_TRANSFORM_COLUMN" Atom);"
@@ -1101,6 +1103,9 @@ void ECFG_builder::init_gff (ECFG_scores* ecfg, ECFG_state_info& info, SExpr* gf
   if (gff_sexpr->find (EG_GFF_FRAME, 1))
     gff.frame = GFF::string2frame ((*gff_sexpr) (EG_GFF_FRAME).get_atom());
 
+  if (gff_sexpr->find (EG_GFF_GROUP, 1))
+    gff.group = (*gff_sexpr) (EG_GFF_GROUP).get_atom();
+
   info.gff.push_back (gff);
 }
 
@@ -1384,6 +1389,8 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	    out << " (" << EG_GFF_STRAND << ' ' << (gff->strand > 0 ? '+' : '-') << ')';
 	  if (gff->frame != GFF_enum::NoFrame)
 	    out << " (" << EG_GFF_FRAME << ' ' << gff->frame << ')';
+	  if (gff->group.size())
+	    out << " (" << EG_GFF_GROUP << ' ' << gff->group << ')';
 	  out << ')';
 	}
       out << ")\n";

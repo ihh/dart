@@ -106,6 +106,17 @@ sstring GFF::get_value (const char* key) const
   return sstring();
 }
 
+map<sstring,sstring> GFF::get_key_value_map() const
+{
+  map<sstring,sstring> key_val;
+  const sstring GFF_group_field_split_string ((int) 1, (char) GFF_group_field_split_char);
+  const vector<sstring> group_fields = group.split (GFF_group_field_split_string.c_str());
+  for_const_contents (vector<sstring>, group_fields, kv)
+    if (key_value_regexp.Match (kv->c_str()))
+      key_val[key_value_regexp[1]] = key_value_regexp[2];
+  return key_val;
+}
+
 void GFF::set_value (const char* key, const char* val)
 {
   const sstring GFF_group_field_split_string ((int) 1, (char) GFF_group_field_split_char);

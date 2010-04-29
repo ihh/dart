@@ -644,8 +644,8 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 
 	  // for backward compatibility, issue a warning if inside-outside data unavailable to GFF
 	  if (want_GFF && !want_outside)
-	    CLOGERR << "Warning: --score, --postprob or --confidence options not specified. GFF annotations\n"
-		    << "will not contain Inside likelihoods or Inside-Outside posterior probabilities.\n";
+	    CLOGERR << "Warning: --score, --postprob or --confidence options not specified.\n"
+		    << "GFF annotations will not contain Inside likelihoods or Inside-Outside posterior probabilities.\n";
 
 	  // if needed, do CYK algorithm
 	  bool zero_likelihood = false;  // this flag becomes set if final likelihood is 0, i.e. no traceback path
@@ -759,12 +759,12 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	      if (wiggle_filename.size())
 		{
 		  ofstream wiggle_file (wiggle_filename.c_str());
-		  ecfg.make_wiggle (wiggle_file, env, *inout_mx);
+		  ecfg.make_wiggle (wiggle_file, env, *inout_mx, align_id.c_str());
 		}
 	      else
 		{
 		  sstring wiggle_string;
-		  ecfg.make_wiggle (wiggle_string, env, *inout_mx);
+		  ecfg.make_wiggle (wiggle_string, env, *inout_mx, align_id.c_str());
 		  stock->add_multiline_gf_annot (sstring(Stockholm_WIG_tag), wiggle_string);
 		}
 	    }

@@ -6,6 +6,11 @@
 #include "util/Regexp.h"
 #include "seq/biosequence.h"
 
+// special keys for group field (GFF3)
+#define GFF_ID_tag     "ID"
+#define GFF_Parent_tag "Parent"
+
+// enumerated values for strand and frame fields
 struct GFF_enum
 {
   // enumerations
@@ -13,6 +18,7 @@ struct GFF_enum
   enum Frame { FrameZero = 0, FrameOne = 1, FrameTwo = 2, NoFrame = -1 };
 };
 
+// GFF feature
 struct GFF : GFF_enum, NSE
 {
   // GFF regexp
@@ -41,6 +47,7 @@ struct GFF : GFF_enum, NSE
   // methods to munge key=value pairs in and out of the group field
   static Regexp key_value_regexp;
   sstring get_value (const char* key) const;
+  map<sstring,sstring> get_key_value_map() const;
   void set_value (const char* key, const char* val);
   void set_values (const map<sstring,sstring>& key_val);
 
@@ -65,6 +72,14 @@ struct GFF_list : list<GFF>, GFF_enum
   // file IO
   void load (const char* filename);
   void save (const char* filename) const;
+
+  // hacky way of creating a unique ID
+  sstring create_unique_id() const
+  {
+    sstring unique_id;
+    unique_id << size() + 1;
+    return unique_id;
+  }
 
   // idiosyncratic mask methods
   void acquire_mask (const Metaprob& meta, Prob min_prob, const char* seqname, const char* seq = 0, const char* source = "", const char* feature = "", bool invert = 0);

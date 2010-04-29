@@ -242,15 +242,15 @@ ostream& operator<< (ostream& out, const SExpr& sexpr)
   return out;
 }
 
-Regexp space_regexp("[ \t\r\n]");
+Regexp special_char_regexp("[ \t\r\n;\"\\]");
 ostream& operator<< (ostream& out, const SExpr_atom& atom)
 {
-  if (space_regexp.Match(atom.c_str()))
+  if (special_char_regexp.Match(atom.c_str()))
     {
       out << '"';
       for_const_contents (sstring, atom, chr)
 	{
-	  if (*chr == '"' || *chr == '\\')
+	  if (*chr == '"' || *chr == '\\' || *chr == ';')
 	    out << '\\';
 	  out << *chr;
 	}

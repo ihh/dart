@@ -361,6 +361,25 @@ struct ECFG_scores : ECFG<Score>
   sstring desc (int state) const { return state == Start ? Grammar_start_state_name : (state == End ? Grammar_end_state_name : state_info[state].name); }
 };
 
+// strict weak ordering on ECFG_subseq_state's (inside-->outside)
+struct ECFG_subseq_state_inside_ordering : Grammar_state_enum
+{
+  // data
+  map<int,int> state_order;
+  // constructor
+  ECFG_subseq_state_inside_ordering (const ECFG_scores& ecfg);
+  // sort predicate
+  bool operator() (const ECFG_subseq_state& a, const ECFG_subseq_state& b) const
+  {
+    // NB Subseq_coords ordering is inside-->outside
+    return a.first < b.first
+      ? true
+      : (b.first < a.first
+	 ? false
+	 : (((map<int,int>&)state_order)[a.second] < ((map<int,int>)state_order)[b.second]));  // cast away const for maps
+  }
+};
+
 // ECFG_counts: container for accumulating expected counts during E-step of EM
 struct ECFG_counts : ECFG<Prob>
 {
