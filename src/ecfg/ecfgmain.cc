@@ -258,36 +258,6 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
   if (seq_db_ptr == 0)
     seq_db_ptr = &seq_db;
 
-  // read tree-estimation grammar & alphabet from file or SExpr
-  bool mark_for_deletion = true;
-  if (grammar_alphabet_sexpr)
-    ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, tree_estimation_grammar_alphabet, tree_estimation_grammars);
-  else if (tree_grammar_filename.size())
-    ECFG_builder::load_xgram_alphabet_and_grammars (tree_grammar_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars);
-  else if (grammars_filename.size())
-    ECFG_builder::load_xgram_alphabet_and_grammars (grammars_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars);
-  else
-    {
-      // initialise tree grammars from preset (and do NOT mark them for later deletion)
-      ECFG_map::iterator ecfg_iter = ecfg_map.find (preset);
-      if (ecfg_iter == ecfg_map.end())
-	THROWEXPR ("Preset grammar '" << preset << "' not known (did you mean to load a grammar from a file?)");
-      tree_estimation_grammars.push_back ((*ecfg_iter).second);
-      ((Alphabet&) tree_estimation_grammar_alphabet) = tree_estimation_grammars[0]->alphabet;
-      mark_for_deletion = false;
-    }
-
-  // mark grammars for later deletion
-  if (mark_for_deletion)
-    grammars_to_delete.insert (grammars_to_delete.begin(), tree_estimation_grammars.begin(), tree_estimation_grammars.end());
-
-  // set the matrix used for tree estimation to be the first single-character matrix in any grammar in the tree grammar file
-  for (int g = 0; tree_estimation_chain == 0 && g < (int) tree_estimation_grammars.size(); ++g)
-    {
-      tree_estimation_grammar = tree_estimation_grammars[g];
-      tree_estimation_chain = tree_estimation_grammar->first_single_pseudoterminal_chain();
-    }
-
   // turn on tree estimation algorithms if it looks like the user wanted that
   if (missing_trees() && !do_neighbor_joining)
     {
@@ -308,8 +278,44 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
   const bool need_tree_estimation_chain = do_neighbor_joining || (do_branch_length_EM && avoid_ECFG_for_branch_length_EM);
   const bool convert_seq_db = do_neighbor_joining || do_branch_length_EM || attach_rows;
 
-  updated_trees = do_neighbor_joining || do_branch_length_EM || attach_rows;   // this flag can also be set later if any branch lengths are rounded up
+  // read tree-estimation grammar & alphabet from file or SExpr
+  if (need_tree_estimation_grammar)
+    {
+      bool mark_for_deletion = true;
+      if (grammar_alphabet_sexpr)
+	ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, tree_estimation_grammar_alphabet, tree_estimation_grammars);
+      else if (tree_grammar_filename.size())
+	ECFG_builder::load_xgram_alphabet_and_grammars (tree_grammar_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars);
+      else if (grammars_filename.size())
+	ECFG_builder::load_xgram_alphabet_and_grammars (grammars_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars);
+      else
+	{
+	  // initialise tree grammars from preset (and do NOT mark them for later deletion)
+	  ECFG_map::iterator ecfg_iter = ecfg_map.find (preset);
+	  if (ecfg_iter == ecfg_map.end())
+	    THROWEXPR ("Preset grammar '" << preset << "' not known (did you mean to load a grammar from a file?)");
+	  tree_estimation_grammars.push_back ((*ecfg_iter).second);
+	  ((Alphabet&) tree_estimation_grammar_alphabet) = tree_estimation_grammars[0]->alphabet;
+	  mark_for_deletion = false;
+	}
 
+      // mark grammars for later deletion
+      if (mark_for_deletion)
+	grammars_to_delete.insert (grammars_to_delete.begin(), tree_estimation_grammars.begin(), tree_estimation_grammars.end());
+
+      // set the matrix used for tree estimation to be the first single-character matrix in any grammar in the tree grammar file
+      for (int g = 0; tree_estimation_chain == 0 && g < (int) tree_estimation_grammars.size(); ++g)
+	{
+	  tree_estimation_grammar = tree_estimation_grammars[g];
+	  tree_estimation_chain = tree_estimation_grammar->first_single_pseudoterminal_chain();
+	}
+    }
+
+  // store a flag indicating whether any trees have been changed
+  // this flag can also be set later if any branch lengths are rounded up
+  updated_trees = do_neighbor_joining || do_branch_length_EM || attach_rows;
+
+  // check to see that we have everything we need
   sstring error_preamble;
   if (missing_trees())
     error_preamble << "Input alignments do not include Newick trees.\n";
