@@ -637,9 +637,9 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 			<< '\n';
 
 	  CTAG(6,XRATE) << "Selected algorithms:"
+			<< (want_CYK ? " CYK" : "")
 			<< (want_inside ? " Inside" : "")
 			<< (want_outside ? " Outside" : "")
-			<< (want_CYK ? " CYK" : "")
 			<< (want_fill_down ? " Peeling" : "")
 			<< '\n';
 
