@@ -762,7 +762,8 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "NontermProperty->Name|MinimumLength|MaximumLength|SummationDirective|PrefixConstraint|SuffixConstraint|InfixConstraint|GFFAnnotation;"
      "GFFAnnotation->('"EG_GFF" GFFAnnotationProperty*);"
      "GFFAnnotationProperty->('"EG_GFF_NONTERM" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_TYPE" Atom)|('"EG_GFF_STRAND" Atom)|('"EG_GFF_FRAME" Atom)|('"EG_GFF_GROUP" GFFAttribute*);"
-     "GFFAttribute->Atom|(Atom Atom);"
+     "GFFAttribute->Atom|(Atom Atom)|(Atom GFFAttributeValueList);"
+     "GFFAttributeValueList->(Atom*);"
      "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|GFFAnnotation|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End);"
      "AnnotationProperty->AnnotationRow|AnnotationColumn|AnnotationLabel|ProbabilisticAnnotation;"
      "AnnotationRow->('"EG_TRANSFORM_ROW" Atom);"
@@ -1114,7 +1115,17 @@ void ECFG_builder::init_gff (ECFG_scores* ecfg, ECFG_state_info& info, SExpr* gf
 	  if ((*attr)->is_atom())
 	    tag_val = (*attr)->get_atom();
 	  else if ((*attr)->has_tag() && (*attr)->has_value())
-	    tag_val << (*attr)->tag() << '=' << (*attr)->value();
+	    {
+	      sstring val;
+	      if ((*attr)->value().is_atom())
+		val = (*attr)->value().get_atom();
+	      else
+		{
+		  const vector<sstring> vals = (*attr)->value().atoms_to_strings();
+		  val = GFF::join_values (vals);
+		}
+	      tag_val << (*attr)->tag() << '=' << val;
+	    }
 	  gff.group << (gff.group.size() ? ";" : "") << tag_val;
 	}
     }
