@@ -406,14 +406,12 @@ void SExpr_list_operations::visit (SExpr& parent_sexpr)
     }
 }
 
-#ifdef GUILE_INCLUDED
 // dummy function to pass to scm_with_guile
 static void*
 dummy_register_functions (void* data)
 {
   return NULL;
 }
-#endif /* GUILE_INCLUDED */
 
 // SExpr_Scheme_evaluator
 SExpr_Scheme_evaluator::SExpr_Scheme_evaluator()
