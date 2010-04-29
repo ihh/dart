@@ -853,6 +853,15 @@ void Alignment::set_gap_chars (const sstring& gap_chars)
     char_is_gap[*gc] = 1;
 }
 
+sstring Alignment::get_gap_chars()
+{
+  sstring gc (1, (char) primary_gap_char);
+  for (unsigned char c = 0; c < (unsigned char) char_is_gap.size(); ++c)
+    if (is_gap_char(c) && c != primary_gap_char)
+      gc.push_back(c);
+  return gc;
+}
+
 Alignment_initializer::Alignment_initializer()
 {
   Alignment::set_gap_chars (sstring (DEFAULT_GAP_CHARS));

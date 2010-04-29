@@ -375,15 +375,8 @@ class Phylogeny
 // Horrible hack: if a branch length is missing from the PHYLIP file, this is represented as a branch length of -1.
 class PHYLIP_tree : public Phylogeny
 {
-  // private methods, don't look too closely
+  // private methods, don't look too closely ;)
  private:
-  // for some reason we compile a whole bunch of regular expressions with each instance. this seems pretty inefficient; these should probably be static.
-  // (although this would create its own potential issues since there's no clean Regexp/Matcher separation, but as long as we never have concurrent reads of PHYLIP format...)
-  Regexp name_regexp;
-  Regexp length_regexp;
-  Regexp common_regexp;
-  Regexp parent_regexp;
-
   // internal parser methods
   // these are pretty ugly inside
   Node read_node (istream& in, Node parent_node);       // returns index of created node; creates parents vector on the fly

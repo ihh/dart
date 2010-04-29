@@ -285,11 +285,11 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
     {
       bool mark_for_deletion = true;
       if (grammar_alphabet_sexpr)
-	ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, tree_estimation_grammar_alphabet, tree_estimation_grammars);
+	ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, tree_estimation_grammar_alphabet, tree_estimation_grammars, (Tree_alignment_database*) 0, &stock_db);
       else if (tree_grammar_filename.size())
-	ECFG_builder::load_xgram_alphabet_and_grammars (tree_grammar_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars);
+	ECFG_builder::load_xgram_alphabet_and_grammars (tree_grammar_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars, (Tree_alignment_database*) 0, &stock_db);
       else if (grammars_filename.size())
-	ECFG_builder::load_xgram_alphabet_and_grammars (grammars_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars);
+	ECFG_builder::load_xgram_alphabet_and_grammars (grammars_filename, tree_estimation_grammar_alphabet, tree_estimation_grammars, (Tree_alignment_database*) 0, &stock_db);
       else
 	{
 	  // initialise tree grammars from preset (and do NOT mark them for later deletion)
@@ -411,7 +411,7 @@ void ECFG_main::read_grammars (SExpr* grammar_alphabet_sexpr)
 {
   // get list of grammars; either by loading from file, or by using a preset
   if (grammar_alphabet_sexpr) {
-    ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, user_alphabet, grammar, &align_db, max_subseq_len, tres);
+    ECFG_builder::load_xgram_alphabet_and_grammars (*grammar_alphabet_sexpr, user_alphabet, grammar, &align_db, &stock_db, max_subseq_len, tres);
     alph = &user_alphabet;
 
     // mark grammars for later deletion
@@ -419,7 +419,7 @@ void ECFG_main::read_grammars (SExpr* grammar_alphabet_sexpr)
 
   } else if (grammars_filename.size())
     {
-      ECFG_builder::load_xgram_alphabet_and_grammars (grammars_filename, user_alphabet, grammar, &align_db, max_subseq_len, tres);
+      ECFG_builder::load_xgram_alphabet_and_grammars (grammars_filename, user_alphabet, grammar, &align_db, &stock_db, max_subseq_len, tres);
       alph = &user_alphabet;
 
       // mark grammars for later deletion

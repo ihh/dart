@@ -254,12 +254,13 @@ void Phylogeny::move_node (Node n, Node old_neighbour, Node new_neighbour, doubl
 }
 
 PHYLIP_tree::PHYLIP_tree() :
-  name_regexp ("[ \t\n]*([^ \t\n:\\(\\)]*)[ \t\n]*"),
-  length_regexp (":[ \t\n]*([-0123456789\\.\\+e]+)[ \t\n]*"),
-  common_regexp ("([^:]+)::([^:]+)"),
-  parent_regexp ("([^:]+):([0123456789]+)"),
   root (-1)
-{}
+{ }
+
+Regexp name_regexp ("[ \t\n]*([^ \t\n:\\(\\)]*)[ \t\n]*");
+Regexp length_regexp (":[ \t\n]*([-0123456789\\.\\+e]+)[ \t\n]*");
+Regexp common_regexp ("([^:]+)::([^:]+)");
+Regexp parent_regexp ("([^:]+):([0123456789]+)");
 
 Phylogeny::Node PHYLIP_tree::read_node (istream& in,
 					Node parent_node)       // returns index of created node

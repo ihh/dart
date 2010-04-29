@@ -409,7 +409,7 @@ void SExpr_list_operations::visit (SExpr& parent_sexpr)
 #ifdef GUILE_INCLUDED
 // dummy function to pass to scm_with_guile
 static void*
-register_functions (void* data)
+dummy_register_functions (void* data)
 {
   return NULL;
 }
@@ -417,15 +417,25 @@ register_functions (void* data)
 
 // SExpr_Scheme_evaluator
 SExpr_Scheme_evaluator::SExpr_Scheme_evaluator()
+  : register_functions (&dummy_register_functions),
+    data ((void*) 0),
+    initialized (false)
+{ }
+
+void SExpr_Scheme_evaluator::initialize()
 {
 #ifdef GUILE_INCLUDED
-  scm_with_guile (&register_functions, NULL);
+  scm_with_guile (register_functions, data);
   write_proc = scm_variable_ref (scm_c_lookup("write"));
 #endif /* GUILE_INCLUDED */
+  initialized = true;
 }
 
 void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
 {
+  if (!initialized)
+    THROWEXPR ("SExpr_Scheme_evaluator::expand_Scheme_expressions: guile not initialized");
+
   typedef SExpr::SExprIter SExprIter;
   list<SExprIter> erase_pos;
   for_contents (list<SExpr>, sexpr.child, c)

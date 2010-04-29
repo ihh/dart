@@ -301,8 +301,9 @@ struct Alignment : Named_rows, Stream_saver
   inline static bool is_gapspace_char (char c) { return is_gap_char(c) || c == ' '; }
   inline static bool is_gapspacenull_char (char c) { return is_gap_char(c) || c == ' ' || c == '\0'; }
 
-  // static accessor to write gap characters
+  // static accessors to read/write gap characters
   static void set_gap_chars (const sstring& gap_chars);
+  static sstring get_gap_chars();
 
   // data
   Alignment_path path;

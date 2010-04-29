@@ -90,7 +90,24 @@ void SExpr::init (Ptr begin, Ptr end, bool allow_quotes)
 
 	case EscapedInQuotes:
 	  //	  CLOGERR << "EscapedInQuotes " << *ptr << '\n';
-	  current.atom.push_back (*ptr);
+	  switch (*ptr)
+	    {
+	    case 'n':
+	      current.atom.push_back ('\n');
+	      break;
+
+	    case 'r':
+	      current.atom.push_back ('\r');
+	      break;
+
+	    case 't':
+	      current.atom.push_back ('\t');
+	      break;
+
+	    default:
+	      current.atom.push_back (*ptr);
+	      break;
+	    }
 	  state = InQuotes;
 	  break;
 
@@ -249,11 +266,28 @@ ostream& operator<< (ostream& out, const SExpr_atom& atom)
     {
       out << '"';
       for_const_contents (sstring, atom, chr)
-	{
-	  if (*chr == '"' || *chr == '\\')
+	switch (*chr)
+	  {
+	  case '\n':
+	    out << "\\n";
+	    break;
+
+	  case '\r':
+	    out << "\\r";
+	    break;
+
+	  case '\t':
+	    out << "\\t";
+	    break;
+
+	  case '"':
+	  case '\\':
 	    out << '\\';
-	  out << *chr;
-	}
+	    // fall-through...
+	  default:
+	    out << *chr;
+	    break;
+	  }
       out << '"';
     }
   else

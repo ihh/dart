@@ -47,7 +47,7 @@ int main (int argc, char* argv[])
       // load grammar
       Empty_alphabet alph;
       vector<ECFG_scores*> grammar_vec;
-      ECFG_builder::load_xgram_alphabet_and_grammars (grammar_filename, alph, grammar_vec, 0);
+      ECFG_builder::load_xgram_alphabet_and_grammars (grammar_filename, alph, grammar_vec);
       if (grammar_vec.size() != 1)
 	THROWEXPR (grammar_vec.size() << " grammars in file -- expected one");
 

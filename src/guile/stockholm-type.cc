@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include <libguile.h>
 
-#include "tree/tree_alignment.h"
+#include "guile/guile-keywords.h"
 #include "guile/stockholm-type.h"
+#include "tree/tree_alignment.h"
 
 scm_t_bits stockholm_tag;
 
@@ -125,9 +126,11 @@ static int print_stockholm (SCM stock_smob, SCM port, scm_print_state *pstate)
 {
   struct Stockholm_smob *stock = (struct Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
 
-  sstring stock_string;
+  SExpr_atom stock_string;
   stock->write_to_string(stock_string);
-  scm_puts (stock_string.c_str(), port);
+  sstring stock_quoted;
+  stock_quoted << stock_string;
+  scm_puts (stock_quoted.c_str(), port);
 
   /* non-zero means success */
   return 1;
@@ -147,11 +150,11 @@ void init_stockholm_type (void)
   scm_set_smob_print (stockholm_tag, print_stockholm);
 
   // read/write primitives
-  scm_c_define_gsubr ("stockholm-from-string", 1, 0, 0, (SCM (*)()) stockholm_from_string);
-  scm_c_define_gsubr ("stockholm-from-file", 1, 0, 0, (SCM (*)()) stockholm_from_file);
-  scm_c_define_gsubr ("stockholm-to-file", 2, 0, 0, (SCM (*)()) stockholm_to_file);
+  scm_c_define_gsubr (GUILE_STOCKHOLM_FROM_STRING, 1, 0, 0, (SCM (*)()) stockholm_from_string);
+  scm_c_define_gsubr (GUILE_STOCKHOLM_FROM_FILE, 1, 0, 0, (SCM (*)()) stockholm_from_file);
+  scm_c_define_gsubr (GUILE_STOCKHOLM_TO_FILE, 2, 0, 0, (SCM (*)()) stockholm_to_file);
   // primitives to ease migration from xrate macro format
-  scm_c_define_gsubr ("stockholm-column-count", 1, 0, 0, (SCM (*)()) stockholm_column_count);  // returns the number of columns as an integer
+  scm_c_define_gsubr (GUILE_STOCKHOLM_COLUMN_COUNT, 1, 0, 0, (SCM (*)()) stockholm_column_count);  // returns the number of columns as an integer
 
   // convert a Stockholm alignment into a Scheme data structure with the following grammar
   //    TOP => (GF GC BODY)
@@ -161,6 +164,6 @@ void init_stockholm_type (void)
   //     GC => (TAGVAL)
   //     GS => (TAGVAL)
   //     GR => (TAGVAL)
-  scm_c_define_gsubr ("stockholm-unpack", 1, 0, 0, (SCM (*)()) stockholm_unpack);  // returns a Scheme data structure very similar to the Stockholm file format: (GF GC (seq GS row GR) (seq GS row GR) ...)
+  scm_c_define_gsubr (GUILE_STOCKHOLM_UNPACK, 1, 0, 0, (SCM (*)()) stockholm_unpack);  // returns a Scheme data structure very similar to the Stockholm file format: (GF GC (seq GS row GR) (seq GS row GR) ...)
 
 }

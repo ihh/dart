@@ -92,7 +92,9 @@ struct Stockholm : Alignment, Fold_char_enum
   // update method
   void update_row_index();
   // I/O
-  void read_Stockholm (istream& in, Sequence_database& db, int max_line = 0);		// pk accept long input lines
+  // max_line_len: increase to accept long input lines
+  // gap_chars: set this to override global variables in Alignment class
+  void read_Stockholm (istream& in, Sequence_database& db, int max_line_len = 0, const char* gap_chars = 0);
   // The write_Stockholm method displays the entire alignment.
   // The write_Stockholm_NSE method trims off columns that do not contain any matches or annotations (except for wildcard annotations, i.e. ".").
   // Thus write_Stockholm_NSE effectively displays the interesting "local" part of the alignment.

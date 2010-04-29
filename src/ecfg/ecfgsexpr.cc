@@ -4,6 +4,10 @@
 #include "util/svisitor.h"
 #include "seq/pkeywords.h"
 
+#ifdef GUILE_INCLUDED
+#include "guile/grammar-primitives.h"
+#endif /* GUILE_INCLUDED */
+
 // dummy class label for hidden alphabets
 #define DUMMY_CLASS_LABEL "dummy_class_label"
 
@@ -813,7 +817,11 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
       // initialise meta
       const vector<SExpr*> all_meta_sexpr = grammar_sexpr.find_all (EG_META, 1);
       for_const_contents (vector<SExpr*>, all_meta_sexpr, meta_sexpr)
-	ecfg->meta.push_back (**meta_sexpr);
+	{
+	  SExpr::SExprIter second_child = (**meta_sexpr).child.begin();
+	  ++second_child;
+	  ecfg->meta.insert (ecfg->meta.end(), second_child, (**meta_sexpr).child.end());
+	}
 
       // initialise fold string
       SExpr* fold_string_sexpr = grammar_sexpr.find (EG_FOLD_STRING_TAG, 1);
@@ -1133,7 +1141,7 @@ void ECFG_builder::init_gff (ECFG_scores* ecfg, ECFG_state_info& info, SExpr* gf
   info.gff.push_back (gff);
 }
 
-void ECFG_builder::init_grammars (Alphabet& alph, vector<ECFG_scores*>& ecfgs, SExpr& grammars_sexpr, const Tree_alignment_database* align_db, double tres)
+void ECFG_builder::init_grammars (Alphabet& alph, vector<ECFG_scores*>& ecfgs, SExpr& grammars_sexpr, const Tree_alignment_database* align_db, const Stockholm_database* stock_db, double tres)
 {
   // expand includes
   SExpr_file_operations file_ops;
@@ -1143,7 +1151,7 @@ void ECFG_builder::init_grammars (Alphabet& alph, vector<ECFG_scores*>& ecfgs, S
   init_alphabet (alph, grammars_sexpr.find_or_die (PK_ALPHABET));
 
   // expand remaining macros
-  expand_macros (grammars_sexpr, alph, align_db);
+  expand_macros (grammars_sexpr, alph, align_db, stock_db);
 
   // init all grammars
   const vector<SExpr*> all_grammar_sexpr = grammars_sexpr.find_all (EG_GRAMMAR);
@@ -1151,7 +1159,7 @@ void ECFG_builder::init_grammars (Alphabet& alph, vector<ECFG_scores*>& ecfgs, S
     ecfgs.push_back (init_ecfg (alph, **ecfg_sexpr, tres));
 }
 
-void ECFG_builder::load_xgram_alphabet_and_grammars (const sstring& filename, Alphabet& alph, vector<ECFG_scores*>& ecfgs, const Tree_alignment_database* align_db, int max_subseq_len, double tres)
+void ECFG_builder::load_xgram_alphabet_and_grammars (const sstring& filename, Alphabet& alph, vector<ECFG_scores*>& ecfgs, const Tree_alignment_database* align_db, const Stockholm_database* stock_db, int max_subseq_len, double tres)
 {
   // open grammars file & read it
   ifstream ecfg_sexpr_file (filename.c_str());
@@ -1169,20 +1177,20 @@ void ECFG_builder::load_xgram_alphabet_and_grammars (const sstring& filename, Al
   SExpr ecfg_sexpr (ecfg_sexpr_string.begin(), ecfg_sexpr_string.end());
 
   // delegate
-  load_xgram_alphabet_and_grammars (ecfg_sexpr, alph, ecfgs, align_db, max_subseq_len, tres);
+  load_xgram_alphabet_and_grammars (ecfg_sexpr, alph, ecfgs, align_db, stock_db, max_subseq_len, tres);
 }
 
-void ECFG_builder::load_xgram_alphabet_and_grammars (SExpr& ecfg_sexpr, Alphabet& alph, vector<ECFG_scores*>& ecfgs, const Tree_alignment_database* align_db, int max_subseq_len, double tres)
+void ECFG_builder::load_xgram_alphabet_and_grammars (SExpr& ecfg_sexpr, Alphabet& alph, vector<ECFG_scores*>& ecfgs, const Tree_alignment_database* align_db, const Stockholm_database* stock_db, int max_subseq_len, double tres)
 {
   // initialise ECFGs & alphabet
-  init_grammars (alph, ecfgs, ecfg_sexpr, align_db, tres);
+  init_grammars (alph, ecfgs, ecfg_sexpr, align_db, stock_db, tres);
 
   // set infix lengths
   for_contents (vector<ECFG_scores*>, ecfgs, ecfg)
     (*ecfg)->set_infix_len (max_subseq_len);
 }
 
-void ECFG_builder::expand_macros (SExpr& grammars_sexpr, const Alphabet& alph, const Tree_alignment_database* align_db)
+void ECFG_builder::expand_macros (SExpr& grammars_sexpr, const Alphabet& alph, const Tree_alignment_database* align_db, const Stockholm_database* stock_db)
 {
   SExpr_macros macros;
 
@@ -1199,62 +1207,93 @@ void ECFG_builder::expand_macros (SExpr& grammars_sexpr, const Alphabet& alph, c
   tokens_str << alph.size();
   macros.replace[sstring (EG_TOKENS)] = tokens_str;
 
-  if (align_db)
+  const Stockholm* stock = 0;
+  const Alignment* align = 0;
+  const PHYLIP_tree* tree = 0;
+
+  if (align_db && align_db->size() > 0)
     {
-      if (align_db->size() > 0)
-	{
-	  if (align_db->size() > 1)
-	    CTAG(5,ECFG) << "Warning: more than one alignment in database. Using tree from first alignment for tree-related macros.\n";
+      if (align_db->size() > 1)
+	CTAG(5,ECFG) << "Warning: more than one alignment in database. Using tree from first alignment for tree-related macros.\n";
 
-	  const Alignment& align = align_db->tree_align[0]->align;
-	  const PHYLIP_tree& tree = align_db->tree_align[0]->tree;
-
-	  sstring nodes_str, leaves_str, branches_str, ancestors_str, columns_str;
-
-	  nodes_str << tree.nodes();
-	  leaves_str << tree.leaves();
-	  ancestors_str << tree.internals();
-	  branches_str << tree.branches();
-	  columns_str << align.columns();
-
-	  macros.replace[sstring (EG_NODES)] = nodes_str;
-	  macros.replace[sstring (EG_BRANCHES)] = branches_str;
-	  macros.replace[sstring (EG_LEAVES)] = leaves_str;
-	  macros.replace[sstring (EG_ANCESTORS)] = ancestors_str;
-	  macros.replace[sstring (EG_COLUMNS)] = columns_str;
-
-	  vector<sstring> nodes, leaves, branches, ancestors;
-	  for (int n = 0; n < tree.nodes(); ++n)
-	    if (tree.node_name[n].size())
-	      {
-		const sstring& nn = tree.node_name[n];
-
-		nodes.push_back (nn);
-		if (n != tree.root)
-		  branches.push_back (nn);
-
-		if (tree.is_leaf (n))
-		  leaves.push_back (nn);
-		else
-		  ancestors.push_back (nn);
-	      }
-
-	  macros.foreach[sstring (EG_FOREACH_NODE)] = nodes;
-	  macros.foreach[sstring (EG_FOREACH_BRANCH)] = branches;
-	  macros.foreach[sstring (EG_FOREACH_LEAF)] = leaves;
-	  macros.foreach[sstring (EG_FOREACH_ANCESTOR)] = ancestors;
-	}
-      else
-	CTAG(5,ECFG) << "Warning: since I have no alignments from which to extract trees or other data, tree- and alignment-related macros will be ignored.\n";
+      align = &align_db->tree_align[0]->align;
+      tree = &align_db->tree_align[0]->tree;
+      if (align_db->stock_db && !align_db->stock_db->align.empty())
+	stock = &align_db->stock_db->align.front();
     }
+  else if (stock_db && stock_db->size() > 0)
+    {
+      if (stock_db->size() > 1)
+	CTAG(5,ECFG) << "Warning: more than one alignment in Stockholm database. Using tree from first alignment for tree-related macros.\n";
+
+      align = stock = &stock_db->align.front();
+    }
+
+  if (align)
+    {
+      sstring columns_str;
+      columns_str << align->columns();
+      macros.replace[sstring (EG_COLUMNS)] = columns_str;
+    }
+
+  if (tree)
+    {
+      sstring nodes_str, leaves_str, branches_str, ancestors_str;
+
+      nodes_str << tree->nodes();
+      leaves_str << tree->leaves();
+      ancestors_str << tree->internals();
+      branches_str << tree->branches();
+
+      macros.replace[sstring (EG_NODES)] = nodes_str;
+      macros.replace[sstring (EG_BRANCHES)] = branches_str;
+      macros.replace[sstring (EG_LEAVES)] = leaves_str;
+      macros.replace[sstring (EG_ANCESTORS)] = ancestors_str;
+
+      vector<sstring> nodes, leaves, branches, ancestors;
+      for (int n = 0; n < tree->nodes(); ++n)
+	if (tree->node_name[n].size())
+	  {
+	    const sstring& nn = tree->node_name[n];
+
+	    nodes.push_back (nn);
+	    if (n != tree->root)
+	      branches.push_back (nn);
+
+	    if (tree->is_leaf (n))
+	      leaves.push_back (nn);
+	    else
+	      ancestors.push_back (nn);
+	  }
+
+      macros.foreach[sstring (EG_FOREACH_NODE)] = nodes;
+      macros.foreach[sstring (EG_FOREACH_BRANCH)] = branches;
+      macros.foreach[sstring (EG_FOREACH_LEAF)] = leaves;
+      macros.foreach[sstring (EG_FOREACH_ANCESTOR)] = ancestors;
+    }
+
+  if (!align && !tree)
+    CTAG(5,ECFG) << "Warning: since I have no alignments from which to extract trees or other data, tree- and alignment-related macros will be ignored.\n";
+  else if (!tree)
+    CTAG(5,ECFG) << "Warning: I could not find a tree. Tree-related macros will be ignored.\n";
 
   macros.preorder_visit (grammars_sexpr);
 
   SExpr_list_operations list_ops;
   list_ops.postorder_visit (grammars_sexpr);
 
-  SExpr_Scheme_evaluator scheme;
+#ifdef GUILE_INCLUDED
+  // If guile was included, we create an ECFG_Scheme_evaluator (from src/guile) and apply it.
+  ECFG_Scheme_evaluator scheme (stock);
+  scheme.initialize();
   scheme.expand_Scheme_expressions (grammars_sexpr);
+#else /* GUILE_INCLUDED */
+  // If guile was not included, we still create an SExpr_Scheme_evaluator (from src/util) and apply it.
+  // It won't expand any Scheme expressions, but it will issue a warning.
+  SExpr_Scheme_evaluator scheme;
+  scheme.initialize();
+  scheme.expand_Scheme_expressions (grammars_sexpr);
+#endif /* GUILE_INCLUDED */
 
   if (CTAGGING(4,ECFG ECFG_MACROS))
     CL << "Grammar S-expression following macro expansion:\n" << grammars_sexpr << '\n';

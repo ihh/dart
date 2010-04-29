@@ -40,20 +40,29 @@ void Stockholm::update_row_index()
     row_index[row_name[i]] = i;
 }
 
-void Stockholm::read_Stockholm (istream& in, Sequence_database& db, int max_line)	// increase max_line to accept long input lines
+Regexp re_stock = "^[ \t]*#[ \t]*" Stockholm_format_identifier "[ \t]*" Stockholm_version_identifier "[ \t]*$";  // format & version identifiers
+Regexp re_sep = "^[ \t]*" Stockholm_alignment_separator "[ \t]*$";  // alignment separator lines, "//"
+Regexp re_gf = "^[ \t]*" Stockholm_file_annotation "[ \t]+([^ \t]+)[ \t]+(.*)$";  // #=GF lines
+Regexp re_gc = "^[ \t]*" Stockholm_column_annotation "[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]*$";  // #=GC lines
+Regexp re_gs = "^[ \t]*" Stockholm_sequence_annotation "[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]+(.*)$";  // #=GS lines
+Regexp re_gr = "^[ \t]*" Stockholm_sequence_column_annotation "[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]*$";  // #=GR lines
+Regexp re_row = "^[ \t]*([^ \t#]+)[ \t]+([^ \t]*)[ \t]*$";  // alignment row data
+Regexp re_nonwhite = "[^ \t]";  // whitespace
+
+void Stockholm::read_Stockholm (istream& in, Sequence_database& db, int max_line, const char* gap_chars)
 {
   clear();
 
-  vector<sstring> gapped_seq;
-  Regexp re_stock = "^[ \t]*#[ \t]*" Stockholm_format_identifier "[ \t]*" Stockholm_version_identifier "[ \t]*$";  // format & version identifiers
-  Regexp re_sep = "^[ \t]*" Stockholm_alignment_separator "[ \t]*$";  // alignment separator lines, "//"
-  Regexp re_gf = "^[ \t]*" Stockholm_file_annotation "[ \t]+([^ \t]+)[ \t]+(.*)$";  // #=GF lines
-  Regexp re_gc = "^[ \t]*" Stockholm_column_annotation "[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]*$";  // #=GC lines
-  Regexp re_gs = "^[ \t]*" Stockholm_sequence_annotation "[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]+(.*)$";  // #=GS lines
-  Regexp re_gr = "^[ \t]*" Stockholm_sequence_column_annotation "[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]*$";  // #=GR lines
-  Regexp re_row = "^[ \t]*([^ \t#]+)[ \t]+([^ \t]*)[ \t]*$";  // alignment row data
-  Regexp re_nonwhite = "[^ \t]";  // whitespace
+  // save old gap chars
+  sstring old_gap_chars;
+  if (gap_chars)
+    {
+      old_gap_chars = Alignment::get_gap_chars();
+      Alignment::set_gap_chars (sstring (gap_chars));
+    }
 
+  // read
+  vector<sstring> gapped_seq;
   bool found_format_version_id = FALSE;
   while (in && !in.eof())
     {
@@ -142,6 +151,10 @@ void Stockholm::read_Stockholm (istream& in, Sequence_database& db, int max_line
   path.make_flush();
 
   CTAG(3,STOCKHOLM) << "Read Stockholm alignment: " << rows() << " rows, " << columns() << " columns\n";
+
+  // restore gap chars
+  if (gap_chars)
+    Alignment::set_gap_chars (old_gap_chars);
 }
 
 void Stockholm::write_Stockholm_NSE (ostream& out, char annotation_wildcard_char) const

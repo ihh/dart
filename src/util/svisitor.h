@@ -116,20 +116,22 @@ struct SExpr_list_operations : SExpr_visitor
 };
 
 // SExpr Scheme macros using Guile
-// TODO: make the alphabet, alignment & tree available to the Scheme code in &scheme blocks
-// (currently most of the ensuing functionality could be hackily achieved using &foreach-token, etc.)
-// To do this, we'd need to first call the following smob initializers, as per inner_main() in dart/src/guile/darts.cc:
-//   init_stockholm_type();
-//   init_newick_type();
-// We'd then need to bind the alignment and tree to appropriate smobs.
-struct SExpr_Scheme_evaluator
+class SExpr_Scheme_evaluator
 {
+protected:
   // data
+  void* (*register_functions)(void *);  // pointer to function that registers functions
+  void* data;  // data that will be passed to *register_functions
+  bool initialized;
 #ifdef GUILE_INCLUDED
   SCM write_proc;
 #endif /* GUILE_INCLUDED */
-  // constructor - initializes Guile
+public:
+  // constructor - sets register_functions and data to dummy values (override in subclasses)
   SExpr_Scheme_evaluator();
+  // initialize() - initializes Guile, sets write_proc
+  // you must call this method before expand_Scheme_expressions
+  void initialize();
   // method to expand all eval/exec blocks in an SExpr tree
   // will throw an exception if an eval/exec block is encountered & program was compiled without Guile
   void expand_Scheme_expressions (SExpr& sexpr) const;

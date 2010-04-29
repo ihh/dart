@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <libguile.h>
 
+#include "guile/guile-keywords.h"
 #include "guile/newick-type.h"
 #include "guile/stockholm-type.h"
 #include "tree/tree_alignment.h"
@@ -168,9 +169,11 @@ static int print_newick (SCM tree_smob, SCM port, scm_print_state *pstate)
 {
   struct PHYLIP_tree *tree = (struct PHYLIP_tree *) SCM_SMOB_DATA (tree_smob);
 
-  sstring tree_string;
+  SExpr_atom tree_string;
   tree->write(tree_string,0);
-  scm_puts (tree_string.c_str(), port);
+  sstring tree_quoted;
+  tree_quoted << tree_string;
+  scm_puts (tree_quoted.c_str(), port);
 
   /* non-zero means success */
   return 1;
@@ -190,14 +193,14 @@ void init_newick_type (void)
   scm_set_smob_print (newick_tag, print_newick);
 
   // read/write primitives
-  scm_c_define_gsubr ("newick-from-string", 1, 0, 0, (SCM (*)()) newick_from_string);
-  scm_c_define_gsubr ("newick-from-file", 1, 0, 0, (SCM (*)()) newick_from_file);
-  scm_c_define_gsubr ("newick-from-stockholm", 1, 0, 0, (SCM (*)()) newick_from_stockholm);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
-  scm_c_define_gsubr ("newick-to-file", 2, 0, 0, (SCM (*)()) newick_to_file);
+  scm_c_define_gsubr (GUILE_NEWICK_FROM_STRING, 1, 0, 0, (SCM (*)()) newick_from_string);
+  scm_c_define_gsubr (GUILE_NEWICK_FROM_FILE, 1, 0, 0, (SCM (*)()) newick_from_file);
+  scm_c_define_gsubr (GUILE_NEWICK_FROM_STOCKHOLM, 1, 0, 0, (SCM (*)()) newick_from_stockholm);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
+  scm_c_define_gsubr (GUILE_NEWICK_TO_FILE, 2, 0, 0, (SCM (*)()) newick_to_file);
   // primitives to ease migration from xrate macro format
-  scm_c_define_gsubr ("newick-ancestor-list", 1, 0, 0, (SCM (*)()) newick_ancestor_list);  // returns list of internal node names (including the root, even if it is a tip node)
-  scm_c_define_gsubr ("newick-leaf-list", 1, 0, 0, (SCM (*)()) newick_leaf_list);  // returns list of leaf node names (excluding the root)
-  scm_c_define_gsubr ("newick-branch-list", 1, 0, 0, (SCM (*)()) newick_branch_list);  // returns list of (parent,child,length) tuples representing branches, sorted in preorder
+  scm_c_define_gsubr (GUILE_NEWICK_ANCESTOR_LIST, 1, 0, 0, (SCM (*)()) newick_ancestor_list);  // returns list of internal node names (including the root, even if it is a tip node)
+  scm_c_define_gsubr (GUILE_NEWICK_LEAF_LIST, 1, 0, 0, (SCM (*)()) newick_leaf_list);  // returns list of leaf node names (excluding the root)
+  scm_c_define_gsubr (GUILE_NEWICK_BRANCH_LIST, 1, 0, 0, (SCM (*)()) newick_branch_list);  // returns list of (parent,child,length) tuples representing branches, sorted in preorder
   // convert a Newick tree into a Scheme data structure
-  scm_c_define_gsubr ("newick-unpack", 1, 0, 0, (SCM (*)()) newick_unpack);  // returns a tree structure very similar to the Newick file format: ((A:1,B:2)C:3,D:4)E;  --> ((("A" 1.0) ("B" 2.0) "C" 3.0) ("D" 4.0) "E" #f)
+  scm_c_define_gsubr (GUILE_NEWICK_UNPACK, 1, 0, 0, (SCM (*)()) newick_unpack);  // returns a tree structure very similar to the Newick file format: ((A:1,B:2)C:3,D:4)E;  --> ((("A" 1.0) ("B" 2.0) "C" 3.0) ("D" 4.0) "E" #f)
 }
