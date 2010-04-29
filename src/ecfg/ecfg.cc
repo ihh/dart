@@ -544,7 +544,7 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
   vector<ECFG_subseq_state> subseq_state = map_keys (annot);
   sort (subseq_state.begin(), subseq_state.end(), inside_order);
   // set up a container for created IDs
-  map<sstring,sstring> id;
+  map<sstring,GFF> id_lookup;
   const sstring id_tag (GFF_ID_tag);
   const sstring parent_tag (GFF_Parent_tag);
   // loop over subseq->state mappings in outside-->inside order
@@ -569,20 +569,21 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 	  // group field
 	  map<sstring,sstring> group_key_val = gff.get_key_value_map();
 
+	  // handle ID
+	  const sstring id_var = group_key_val[id_tag];
+	  group_key_val[id_tag] = gff_list.create_unique_id();
+
 	  // handle Parent
 	  if (group_key_val.find(parent_tag) != group_key_val.end())
 	    {
 	      const sstring& parent_val = group_key_val[parent_tag];
-	      if (id.find (parent_val) != id.end())
-		group_key_val[parent_tag] = id[parent_val];
+	      if (id_lookup.find (parent_val) != id_lookup.end())
+		{
+		  const GFF& parent_gff = id_lookup[parent_val];
+		  if (parent_gff.start <= gff.start && parent_gff.end >= gff.end)
+		    group_key_val[parent_tag] = parent_gff.get_value (GFF_ID_tag);
+		}
 	    }
-
-	  // handle ID
-	  const sstring unique_id = gff_list.create_unique_id();
-	  if (group_key_val.find(id_tag) != group_key_val.end())
-	    id[group_key_val[id_tag]] = unique_id;
-
-	  group_key_val[id_tag] = unique_id;
 
 	  // record CYK score
 	  sstring cyk_val, cyk_tag;
@@ -610,8 +611,14 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 		group_key_val[ins_tag] = ins_val;
 	      }
 
+	  // update group field
 	  gff.set_values (group_key_val);
 
+	  // add to id_lookup
+	  if (id_var.size())
+	    id_lookup[id_var] = gff;
+
+	  // add to gff_list
 	  gff_list.push_back (gff);
 	}
     }

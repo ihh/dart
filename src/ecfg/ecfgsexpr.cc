@@ -761,7 +761,8 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "Count->ParameterValue|ParameterValuePair;"
      "NontermProperty->Name|MinimumLength|MaximumLength|SummationDirective|PrefixConstraint|SuffixConstraint|InfixConstraint|GFFAnnotation;"
      "GFFAnnotation->('"EG_GFF" GFFAnnotationProperty*);"
-     "GFFAnnotationProperty->('"EG_GFF_NONTERM" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_TYPE" Atom)|('"EG_GFF_STRAND" Atom)|('"EG_GFF_FRAME" Atom)|('"EG_GFF_GROUP" Atom);"
+     "GFFAnnotationProperty->('"EG_GFF_NONTERM" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_TYPE" Atom)|('"EG_GFF_STRAND" Atom)|('"EG_GFF_FRAME" Atom)|('"EG_GFF_GROUP" GFFAttribute*);"
+     "GFFAttribute->Atom|(Atom Atom);"
      "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|GFFAnnotation|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End);"
      "AnnotationProperty->AnnotationRow|AnnotationColumn|AnnotationLabel|ProbabilisticAnnotation;"
      "AnnotationRow->('"EG_TRANSFORM_ROW" Atom);"
@@ -1103,8 +1104,20 @@ void ECFG_builder::init_gff (ECFG_scores* ecfg, ECFG_state_info& info, SExpr* gf
   if (gff_sexpr->find (EG_GFF_FRAME, 1))
     gff.frame = GFF::string2frame ((*gff_sexpr) (EG_GFF_FRAME).get_atom());
 
-  if (gff_sexpr->find (EG_GFF_GROUP, 1))
-    gff.group = (*gff_sexpr) (EG_GFF_GROUP).get_atom();
+  SExpr* group_sexpr = gff_sexpr->find (EG_GFF_GROUP, 1);
+  if (group_sexpr)
+    {
+      const vector<SExpr*> group_attrs = group_sexpr->values();
+      for_const_contents (vector<SExpr*>, group_attrs, attr)
+	{
+	  sstring tag_val;
+	  if ((*attr)->is_atom())
+	    tag_val = (*attr)->get_atom();
+	  else if ((*attr)->has_tag() && (*attr)->has_value())
+	    tag_val << (*attr)->tag() << '=' << (*attr)->value();
+	  gff.group << (gff.group.size() ? ";" : "") << tag_val;
+	}
+    }
 
   info.gff.push_back (gff);
 }
@@ -1390,7 +1403,7 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 	  if (gff->frame != GFF_enum::NoFrame)
 	    out << " (" << EG_GFF_FRAME << ' ' << gff->frame << ')';
 	  if (gff->group.size())
-	    out << " (" << EG_GFF_GROUP << ' ' << gff->group << ')';
+	    out << " (" << EG_GFF_GROUP << ' ' << SExpr_atom(gff->group) << ')';
 	  out << ')';
 	}
       out << ")\n";
