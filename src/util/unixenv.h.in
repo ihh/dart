@@ -10,7 +10,7 @@ struct Dart_Unix
   static const char* get_DARTDIR()
   {
     const char* dartdir_env = getenv(DARTDIR_ENV_VAR);
-    return dartdir_env ? dartdir_env : "@abs_top_builddir@";
+    return dartdir_env ? dartdir_env : "@abs_top_srcdir@";
   }
 };
 
