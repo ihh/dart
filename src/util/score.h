@@ -54,8 +54,8 @@ typedef double Log2;    // a Log2 is a log-probability in base 2
 #define Score2Bits(S) Score_fns::score2bits(S)
 #define Bits2Score(B) Score_fns::bits2score(B)
 
-#define Score2FScore(S) ((FScore) S)
-#define FScore2Score(F) ((Score) round(F))
+#define Score2FScore(S) Score_fns::score2fscore(S)
+#define FScore2Score(F) Score_fns::fscore2score(F)
 
 #define Prob2FScore(P) Score_fns::prob2fscore(P)
 #define FScore2Prob(S) Score_fns::fscore2prob(S)
@@ -194,6 +194,9 @@ public:
   static inline Log2  score2bits (const Score score) { return ((double) score) / ((double) DartScore2BitsRatio); }
   static inline Score bits2score (const Log2 bits) { return (Score) round (bits * ((double) DartScore2BitsRatio)); }
 
+  static inline FScore score2fscore (const Score score) { return (FScore) score; }
+  static inline Score  fscore2score (const FScore score) { return (Score) round (score); }
+
   static inline FScore prob2fscore (const Prob p)
   { return p >= InfinityProb ? InfinityScore : (p <= ZeroProb ? -InfinityScore : (FScore) (DartScore2NatsRatio * log(p))); }
   static inline Prob   fscore2prob (const FScore sc)  // exp(...) calls in this function were formerly DartScore2ProbTiny
@@ -204,8 +207,8 @@ public:
 	return sc >= DartScoreHuge ? InfinityProb : exp ((double) sc / DartScore2NatsRatio);
     }
 
-  static inline Log2  fscore2bits (const FScore score) { return (score) / (DartScore2BitsRatio); }
-  static inline Score bits2fscore (const Log2 bits) { return (FScore) (bits * ((double) DartScore2BitsRatio)); }
+  static inline Log2   fscore2bits (const FScore score) { return (score) / (DartScore2BitsRatio); }
+  static inline FScore bits2fscore (const Log2 bits) { return (FScore) (bits * ((double) DartScore2BitsRatio)); }
 
   static inline FScore loglike2fscore (const Loge loglike)
     {
