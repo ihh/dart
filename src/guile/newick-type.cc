@@ -6,6 +6,7 @@
 #include "guile/stockholm-type.h"
 #include "tree/tree_alignment.h"
 
+// Smob tag
 scm_t_bits newick_tag;
 
 SCM make_newick_smob (const PHYLIP_tree& tree)

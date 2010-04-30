@@ -5,7 +5,6 @@
 #include "seq/stockholm.h"
 
 // guile functions
-extern scm_t_bits stockholm_tag;
 void init_stockholm_type (void);
 SCM make_stockholm_smob (const Stockholm& stock);
 

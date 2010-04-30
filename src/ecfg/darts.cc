@@ -19,6 +19,7 @@ static void inner_main (void *closure, int argc, char **argv)
 
 int main (int argc, char **argv)
 {
+  SExpr_Scheme_evaluator::mark_guile_initialized();  // hack to avoid initializing guile twice
 #ifdef GUILE_INCLUDED
   scm_boot_guile (argc, argv, inner_main, 0);
 #endif /* GUILE_INCLUDED */

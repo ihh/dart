@@ -414,18 +414,26 @@ dummy_register_functions (void* data)
 }
 
 // SExpr_Scheme_evaluator
+bool SExpr_Scheme_evaluator::initialized = false;
 SExpr_Scheme_evaluator::SExpr_Scheme_evaluator()
   : register_functions (&dummy_register_functions),
-    data ((void*) 0),
-    initialized (false)
+    data ((void*) 0)
 { }
 
 void SExpr_Scheme_evaluator::initialize()
 {
 #ifdef GUILE_INCLUDED
-  scm_with_guile (register_functions, data);
+  if (!initialized)
+    scm_with_guile (register_functions, data);
   write_proc = scm_variable_ref (scm_c_lookup("write"));
 #endif /* GUILE_INCLUDED */
+  initialized = true;
+}
+
+void SExpr_Scheme_evaluator::mark_guile_initialized()
+{
+  if (initialized)
+    THROWEXPR("In SExpr_Scheme_evaluator::mark_guile_initialized(): guile already initialized");
   initialized = true;
 }
 

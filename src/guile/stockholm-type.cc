@@ -5,6 +5,7 @@
 #include "guile/stockholm-type.h"
 #include "tree/tree_alignment.h"
 
+// Smob tag
 scm_t_bits stockholm_tag;
 
 SCM make_stockholm_smob (const Stockholm& stock)

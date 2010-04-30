@@ -5,7 +5,6 @@
 #include "tree/phylogeny.h"
 
 // guile functions
-extern scm_t_bits newick_tag;
 void init_newick_type (void);
 SCM make_newick_smob (const PHYLIP_tree& tree);
 

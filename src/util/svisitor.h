@@ -122,7 +122,7 @@ protected:
   // data
   void* (*register_functions)(void *);  // pointer to function that registers functions
   void* data;  // data that will be passed to *register_functions
-  bool initialized;
+  static bool initialized;
 #ifdef GUILE_INCLUDED
   SCM write_proc;
 #endif /* GUILE_INCLUDED */
@@ -132,6 +132,8 @@ public:
   // initialize() - initializes Guile, sets write_proc
   // you must call this method before expand_Scheme_expressions
   void initialize();
+  // mark_guile_initialized() - call this if you are intializing guile elsewhere and don't want to do it here
+  static void mark_guile_initialized();
   // method to expand all eval/exec blocks in an SExpr tree
   // will throw an exception if an eval/exec block is encountered & program was compiled without Guile
   void expand_Scheme_expressions (SExpr& sexpr) const;
