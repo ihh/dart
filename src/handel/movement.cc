@@ -957,7 +957,7 @@ void Handel_movement::dump_score (ostream& out, const char* tag, Score sc)
 void Handel_movement::dump_raw_loglike (ostream& out, const char* tag, Loge ll)
 {
   out << '(' << tag << ' ' <<
-    peeled_composition.score_sexpr (ll)
+    peeled_composition.ll_sexpr (ll)
       << ")\n";
   out.flush();
 }

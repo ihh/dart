@@ -31,7 +31,7 @@ struct PVar
   //   var_idx --> '[0]', '[1]' etc
   //          or --> '[A]', '[C]' etc if (e.g.) (*group_suffix)[group_idx] == { "A", "C", "G", "T" }
 
-  void show (ostream& o, const vector<vector<sstring> >* group_suffix = 0, bool no_group_prefix = false) const;
+  void show (ostream& o, const vector<vector<sstring> >* group_suffix = 0, bool no_group_prefix = false, bool quote_special_chars = true) const;
 };
 
 // PGroup has a group index and a size parameter, and can generate PVar's using the [] operator

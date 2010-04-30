@@ -839,8 +839,8 @@ void Transducer_SExpr_file::show_defs (ostream& out)
       for_const_contents (set<PVar>, defined_pvars, pvar)
 	{
 	  out << " (";
-	  pvar->show (out, &pscores.group_suffix, true);
-	  out << ' ' << score_sexpr (pscores[*pvar]) << ")\n";
+	  pvar->show (out, &pscores.group_suffix, true, false);
+	  out << ' ' << fscore_sexpr (pscores[*pvar]) << ")\n";
 	}
       out << ")\n";
     }
@@ -1574,7 +1574,7 @@ void Transducer_SExpr_file::show_prof (const Score_profile& prof_sc, ostream& ou
 	      {
 		if (n_sym++)
 		  out << ' ';
-		out << '(' << alphabet[ss->first] << ' ' << score_sexpr(ss->second) << ')';
+		out << '(' << alphabet[ss->first] << ' ' << int_score_sexpr(ss->second) << ')';
 	      }
 	  out << ')';
 	}
@@ -1591,7 +1591,7 @@ void Transducer_SExpr_file::show_ssm (const Symbol_score_map& ssm, ostream& out)
       out << '(';
       for_const_contents (Symbol_score_map, ssm, ss)
 	if (ss->second > -InfinityScore)
-	  out << '(' << alphabet[ss->first] << ' ' << score_sexpr(ss->second) << ')';
+	  out << '(' << alphabet[ss->first] << ' ' << int_score_sexpr(ss->second) << ')';
       out << ')';
     }
 }
@@ -1639,12 +1639,17 @@ vector<int> Transducer_SExpr_file::observed_nodes()
   return obs;
 }
 
-sstring Transducer_SExpr_file::score_sexpr (Score sc)
+sstring Transducer_SExpr_file::int_score_sexpr (Score sc)
 {
   return PFunc_builder::score_sexpr (sc, true);
 }
 
-sstring Transducer_SExpr_file::score_sexpr (Loge ll)
+sstring Transducer_SExpr_file::fscore_sexpr (FScore sc)
+{
+  return PFunc_builder::score_sexpr (sc, true);
+}
+
+sstring Transducer_SExpr_file::ll_sexpr (Loge ll)
 {
   sstring s;
   if (ll <= -InfinityLoge)

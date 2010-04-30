@@ -224,8 +224,9 @@ struct Transducer_SExpr_file : TSpaceEnum, Transducer_state_type_enum, Grammar_s
   void show_clique (int n_clique, bool constrained, ostream& out, bool show_composite_paths = false);
 
   // output methods for bit scores
-  sstring score_sexpr (Score sc);
-  sstring score_sexpr (Loge ll);
+  sstring fscore_sexpr (FScore sc);
+  sstring int_score_sexpr (Score sc);
+  sstring ll_sexpr (Loge ll);
 
   // output method for alignment paths (for move-dependent banding)
   void show_alignment_path (const Alignment_path& align_path, ostream& out, int base_indent = 0);

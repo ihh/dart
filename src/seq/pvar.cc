@@ -1,9 +1,9 @@
 #include "seq/pvar.h"
 #include "util/dexception.h"
 
-void PVar::show (ostream& o, const vector<vector<sstring> >* group_suffix, bool no_group_prefix) const
+void PVar::show (ostream& o, const vector<vector<sstring> >* group_suffix, bool no_group_prefix, bool quote_special_chars) const
 {
-  SExpr_atom text;
+  sstring text;
   if (no_group_prefix)
     text << (*group_suffix)[group_idx][var_idx];
   else
@@ -16,7 +16,13 @@ void PVar::show (ostream& o, const vector<vector<sstring> >* group_suffix, bool 
       else
 	text << '[' << var_idx << ']';
     }
-  o << text;
+  if (quote_special_chars)
+    {
+      const SExpr_atom quoted_text (text);
+      o << quoted_text;
+    }
+  else
+    o << text;
 }
 
 Kronecker_score boolean_delta_no  (2, Boolean_group::No_index);
