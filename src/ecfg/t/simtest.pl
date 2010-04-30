@@ -223,7 +223,8 @@ sub save_seed {
     my $param_hash = $gram->param_hash;
     my $param_defaults = $gram->grammar->seed;
     while (my ($param, $sexpr) = each %$param_hash) {
-	$sexpr->value ($param_defaults->find($param)->value);
+	my $seed_value = $param_defaults->find($param)->value;
+	$sexpr->value ($seed_value);
     }
     local *SEED;
     open SEED, ">$seedFile";

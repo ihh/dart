@@ -511,15 +511,18 @@ void ECFG_main::train_grammars()
       ofstream train_file (train.c_str());
       for (int n = 0; n < (int) grammar.size(); ++n)
 	{
-	  // add training meta-info
-	  sstring training_meta;
-	  training_meta << TRAINING_INFO
-			<< " (" << TRAINING_TIME << ' ' << ((unsigned long) time ((time_t*) 0))
-			<< ") (" << TRAINING_BITS << ' ' << Nats2Bits (trainer[n]->best_loglike)
-			<< ") (" << ALIGN_FILENAME << ' ' << training_alignment_filename
-			<< ')';
-	  SExpr training_meta_sexpr (training_meta.c_str());
-	  grammar[n]->transient_meta.push_back (training_meta_sexpr);
+	  // add training meta-info, if we have it
+	  if (trainer[n])
+	    {
+	      sstring training_meta;
+	      training_meta << TRAINING_INFO
+			    << " (" << TRAINING_TIME << ' ' << ((unsigned long) time ((time_t*) 0))
+			    << ") (" << TRAINING_BITS << ' ' << Nats2Bits (trainer[n]->best_loglike)
+			    << ") (" << ALIGN_FILENAME << ' ' << training_alignment_filename
+			    << ')';
+	      SExpr training_meta_sexpr (training_meta.c_str());
+	      grammar[n]->transient_meta.push_back (training_meta_sexpr);
+	    }
 	  // save
 	  ECFG_builder::ecfg2stream (train_file, *alph, *grammar[n], stock_db.size() ? &trainer[n]->counts : (ECFG_counts*) 0);
 	}
