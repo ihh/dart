@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #ifdef GUILE_INCLUDED
 #include <libguile.h>
 #include "guile/stockholm-type.h"
@@ -20,6 +22,6 @@ int main (int argc, char **argv)
 #ifdef GUILE_INCLUDED
   scm_boot_guile (argc, argv, inner_main, 0);
 #endif /* GUILE_INCLUDED */
-  cout << "Guile unavailable - try installing guile and rebuilding\n";
+  printf ("Guile unavailable - try installing guile and rebuilding\n");
   return 0; /* only reached if GUILE_INCLUDED is not defined */
 }
