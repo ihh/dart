@@ -5,7 +5,7 @@
 #include "seq/pkeywords.h"
 
 #ifdef GUILE_INCLUDED
-#include "guile/grammar-primitives.h"
+#include "ecfg/guile-ecfg.h"
 #endif /* GUILE_INCLUDED */
 
 // dummy class label for hidden alphabets
@@ -1282,18 +1282,9 @@ void ECFG_builder::expand_macros (SExpr& grammars_sexpr, const Alphabet& alph, c
   SExpr_list_operations list_ops;
   list_ops.postorder_visit (grammars_sexpr);
 
-#ifdef GUILE_INCLUDED
-  // If guile was included, we create an ECFG_Scheme_evaluator (from src/guile) and apply it.
   ECFG_Scheme_evaluator scheme (stock);
   scheme.initialize();
   scheme.expand_Scheme_expressions (grammars_sexpr);
-#else /* GUILE_INCLUDED */
-  // If guile was not included, we still create an SExpr_Scheme_evaluator (from src/util) and apply it.
-  // It won't expand any Scheme expressions, but it will issue a warning.
-  SExpr_Scheme_evaluator scheme;
-  scheme.initialize();
-  scheme.expand_Scheme_expressions (grammars_sexpr);
-#endif /* GUILE_INCLUDED */
 
   if (CTAGGING(4,ECFG ECFG_MACROS))
     CL << "Grammar S-expression following macro expansion:\n" << grammars_sexpr << '\n';

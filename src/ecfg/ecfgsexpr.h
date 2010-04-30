@@ -2,11 +2,11 @@
 #define ECFG_SEXPR
 
 #include "util/sexpr.h"
+#include "seq/psexpr.h"
 #include "ecfg/ecfg.h"
 #include "ecfg/ecfgdp.h"
 #include "ecfg/ecfgkeywords.h"
-
-#include "seq/psexpr.h"
+#include "ecfg/guile-ecfg.h"
 
 // class to build an ECFG (ECFG_scores) from an S-expression (SExpr)
 struct ECFG_builder : ECFG_enum, PFunc_builder
@@ -111,6 +111,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
 
   static void print_state (ostream& out, int state, int wordlen, const Alphabet& alph, const vector<sstring>& class_alph);
 };
+
 
 #endif /* ECFG_SEXPR */
 

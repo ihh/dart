@@ -1,16 +1,21 @@
 #include <stdlib.h>
-#include <libguile.h>
 
 #include "seq/stockholm.h"
 #include "tree/tree_alignment.h"
 #include "util/sexpr.h"
-#include "ecfg/ecfgmain.h"
-#include "ecfg/ecfgsexpr.h"
 
+#ifdef GUILE_INCLUDED
+#include <libguile.h>
 #include "guile/guile-keywords.h"
 #include "guile/stockholm-type.h"
-#include "guile/xrate-primitives.h"
+#include "guile/newick-type.h"
+#endif /* GUILE_INCLUDED */
 
+#include "ecfg/ecfgmain.h"
+#include "ecfg/ecfgsexpr.h"
+#include "ecfg/guile-ecfg.h"
+
+#ifdef GUILE_INCLUDED
 static void get_alphgram_sexpr (SCM alphabet_and_grammar_scm,
 			       SExpr*& top_level_sexpr,
 			       SExpr*& alphabet_and_grammar_sxpr)
@@ -18,7 +23,6 @@ static void get_alphgram_sexpr (SCM alphabet_and_grammar_scm,
   top_level_sexpr = scm_to_new_sexpr (alphabet_and_grammar_scm);
   alphabet_and_grammar_sxpr = &(*top_level_sexpr)[0];
 }
-
 
 static SCM xrate_estimate_tree (SCM stock_smob, SCM alphabet_and_grammar)
 {
@@ -184,4 +188,33 @@ void init_xrate_primitives (void)
   scm_c_define_gsubr (GUILE_XRATE_ESTIMATE_TREE, 2, 0, 0, (SCM (*)()) xrate_estimate_tree);
   scm_c_define_gsubr (GUILE_XRATE_ANNOTATE_ALIGNMENT, 2, 0, 0, (SCM (*)()) xrate_annotate_alignment);
   scm_c_define_gsubr (GUILE_XRATE_TRAIN_GRAMMAR, 2, 0, 0, (SCM (*)()) xrate_train_grammar);
+}
+#endif /* GUILE_INCLUDED */
+
+
+// ECFG_Scheme_evaluator
+#ifdef GUILE_INCLUDED
+static void*
+register_grammar_functions (void* data)
+{
+  ECFG_Scheme_evaluator& evaluator = *((ECFG_Scheme_evaluator*) data);
+
+  init_stockholm_type();
+  init_newick_type();
+  init_xrate_primitives();
+
+  if (evaluator.stock)
+    scm_c_define (GUILE_ALIGNMENT, make_stockholm_smob (*evaluator.stock));
+
+  return NULL;
+}
+#endif /* GUILE_INCLUDED */
+
+ECFG_Scheme_evaluator::ECFG_Scheme_evaluator (const Stockholm* stock)
+  : stock(stock)
+{
+#ifdef GUILE_INCLUDED
+  register_functions = &register_grammar_functions;
+  data = (void*) this;
+#endif /* GUILE_INCLUDED */
 }
