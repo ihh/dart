@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "seq/pfunc.h"
+#include "seq/pkeywords.h"
 
 bool PFunc::is_null() const
 {
@@ -264,7 +265,7 @@ void PFunc::show (ostream& o, const vector<vector<sstring> >* group_suffix, bool
 	  break;
 
 	case INERT_PVAR:
-	  text << "(# ";
+	  text << '(' << PK_CONST << ' ';
 	  pvar[stack_idx.cp_idx[i]].show (text, group_suffix, no_group_prefix);
 	  text << ')';
 	  break;
