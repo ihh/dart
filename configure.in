@@ -92,7 +92,7 @@ AC_FUNC_MALLOC
 AC_FUNC_STRFTIME
 AC_CHECK_FUNCS([dup2 floor memmove pow regcomp sqrt strchr strcspn strrchr strspn strstr])
 
-# create the makefiles
+# create the makefiles and other files
 AC_CONFIG_FILES([Makefile
                  src/make.defs
                  src/make.common
@@ -115,5 +115,6 @@ AC_CONFIG_FILES([Makefile
                  src/telegraph/Makefile
                  src/tkf/Makefile
                  src/tree/Makefile
-                 src/util/Makefile])
+                 src/util/Makefile
+		 src/util/unixenv.h])
 AC_OUTPUT

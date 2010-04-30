@@ -106,7 +106,7 @@ dpsw:
 utils:
 	cd $(SRCDIR)/seq; $(MAKE) -k $(RELEASE) dep wordcount cmpalign cmpfold aligncluster
 	cd $(SRCDIR)/stemloc; $(MAKE) -k $(RELEASE) dep gc2gr-ss
-	cd $(SRCDIR)/tree; $(MAKE) -k $(RELEASE) dep bsupp drawpstree eztree reroot getinsertions
+	cd $(SRCDIR)/tree; $(MAKE) -k $(RELEASE) dep drawpstree eztree reroot getinsertions
 	@echo All utilities built
 
 # Bill Bruno's weighbor (distributed with DART for historical reasons)

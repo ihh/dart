@@ -7,7 +7,7 @@
 
 struct Dart_Unix
 {
-  static char* get_DARTDIR() { return getenv (DARTDIR_ENV_VAR); }
+  static char* get_DARTDIR() { return getenv(DARTDIR_ENV_VAR) || "@top_builddir@"; }
 };
 
 #endif /* DART_UNIX_ENVIRONMENT_INCLUDED */
