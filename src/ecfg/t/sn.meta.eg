@@ -6,7 +6,7 @@
  (param-tol .06)
  (n-align 10)
  (min-inc .001)
- (forgive 0)
+ (forgive 2)  ;; convergence of (k,~k) is very slow and initially goes in the wrong direction. also there is a blip where the EM likelihood dips. not sure why this is (precision?) but setting "--forgive 2" gives it a fair chance. not very satisfactory... IH 4/30/2010
 
  ;; Probability and rate parameters
 
