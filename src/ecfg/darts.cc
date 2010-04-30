@@ -2,7 +2,7 @@
 #include <libguile.h>
 #include "guile/stockholm-type.h"
 #include "guile/newick-type.h"
-#include "guile/xrate-primitives.h"
+#include "ecfg/guile-ecfg.h"
 #endif /* GUILE_INCLUDED */
 
 #ifdef GUILE_INCLUDED
