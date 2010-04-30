@@ -257,8 +257,8 @@ void HMMoC_adapter::dump_hmmoc_model (ostream& out, const char* cpp_filename_pre
 	out << "<code type=\"coordinate\" output=\"" << peeled_seq_name[n] << "\" value=\"" << n << "\"/>\n\t";
       out << "</banding>";
 
-      char * dartPath;
-      dartPath = Dart_Unix::get_DARTDIR(); //hacky way to get get path to dart/src... there's gotta be a better way that doesn't involve env vars
+      const char* dartPath;
+      dartPath = Dart_Unix::get_DARTDIR();
       out << "<code id=\"includeBandingHeader\" where=\"includes\">\n\t";
       out << "#include \"" << dartPath << "/src/handel/hmmoc_banding.h\"\n";
       out << "</code>\n";
