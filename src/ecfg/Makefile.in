@@ -1,7 +1,10 @@
 # Requires GNU Make
 
+INTERPRETER = darts
+TESTSCRIPT  = t/test.scm
+
 TESTS      = 
-TARGETS    = $(TESTS) xrate xfold xprot xgram simgram paircfg_xfold testsexpr
+TARGETS    = $(TESTS) $(INTERPRETER) xrate xfold xprot xgram simgram paircfg_xfold testsexpr
 DIRNAME    = ecfg
 
 DEPS       = @GUILE_DEPS@ amap telegraph scfg hmm hsm irrev tree seq util newmat randlib
@@ -10,3 +13,7 @@ CCDIR      = $(shell pwd)
 SRCDIR     = $(CCDIR)/..
 
 include $(SRCDIR)/make.common
+
+# Load the test script and drop into a read-evaluate-print loop
+testdarts: $(INTERPRETER)
+	$(BINDIR)/$(INTERPRETER) -l $(TESTSCRIPT)
