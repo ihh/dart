@@ -2,8 +2,8 @@
 # This file is included by make.common, which is included by all source directory Makefiles.
 # It is also included by the top-level Makefile.
 
-# Executables required by build process:
-#
+# Executables required by build process
+# TODO: set these in configure.in
 MAKE   = make
 AR     = ar
 TEST   = test
@@ -14,14 +14,13 @@ CC     = gcc
 
 # autoconf expansions for guile
 GUILE_INCLUDED = @GUILE_INCLUDED@
-GUILE_CFLAGS   = @GUILE_CFLAGS@ @GUILE_CDEFS@
+GUILE_CFLAGS   = @GUILE_CFLAGS@
 GUILE_LDFLAGS  = @GUILE_LDFLAGS@
 
 # autoconf expansions for libhmsbeagle
 BEAGLE_INCLUDED = @BEAGLE_INCLUDED@
-BEAGLE_CFLAGS   = @BEAGLE_CFLAGS@ @BEAGLE_CDEFS@ @BEAGLE_ARCH@
+BEAGLE_CFLAGS   = @BEAGLE_CFLAGS@ @BEAGLE_ARCH@
 BEAGLE_LDFLAGS  = @BEAGLE_LIBS@ @BEAGLE_ARCH@
-
 
 # OS X (gcc 4.0.1, XCodeTools 2.2) requires that we use "g++" to compile C++.
 #  (see biowiki.org/XcodeToolsUnwindResumeBug)

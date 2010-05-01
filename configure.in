@@ -2,13 +2,15 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
+AC_INIT(dart, 0.2, dart-bugs@postbox.biowiki.org)
 AC_CONFIG_HEADER([src/config.h])
 
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_LN_S
+
+AC_DEFINE_UNQUOTED([CPLUSPLUS_COMPILER],["$CXX"],[C++ compiler])
 
 # Checks for libraries.
 
@@ -28,7 +30,6 @@ AC_ARG_WITH([guile],
 GUILE_FLAGS
 if test "x$with_guile" == "xno"
 then
-	GUILE_CDEFS=""
 	GUILE_DEPS=""
 	GUILE_CFLAGS=""
 	GUILE_LDFLAGS=""
@@ -42,7 +43,7 @@ AC_DEFUN([BEAGLE_NO],
 
 AC_DEFUN([BEAGLE_YES],
  [    AC_SUBST(BEAGLE_INCLUDED,[1])
-      AC_SUBST(BEAGLE_CDEFS,[-DBEAGLE_INCLUDED])
+      AC_DEFINE([BEAGLE_INCLUDED], [], [libhmsbeagle is available.])
       # CUDA will only work with i386 on OS X
       case `uname -a` in
       *Darwin*)
@@ -62,12 +63,26 @@ PKG_CHECK_MODULES([BEAGLE], [hmsbeagle-1.0], [BEAGLE_YES], [BEAGLE_NO])
 if test "x$with_beagle" == "xno"
 then
 	BEAGLE_ARCH=""
-	BEAGLE_CDEFS=""
 	BEAGLE_CFLAGS=""
 	BEAGLE_LIBS=""
 	BEAGLE_INCLUDED=0
 fi
 
+# Check for HMMOC
+
+AC_PATH_PROGS([HMMOC_EXEC],
+	[hmmoc hmmoc/bin/hmmoc hmmoc-1.3/bin/hmmoc],
+	 [no],
+	  [$PATH$PATH_SEPARATOR/nfs$PATH_SEPARATOR/nfs/src$PATH_SEPARATOR/usr/local$PATH_SEPARATOR/opt/local$PATH_SEPARATOR/usr$PATH_SEPARATOR$HOME$PATH_SEPARATOR/opt/share$PATH_SEPARATOR/usr/share])
+
+if test "x$HMMOC_EXEC" != "xno"
+then
+	HMMOC_BIN=`dirname $HMMOC_EXEC`
+	HMMOC_ROOT=`dirname $HMMOC_BIN`
+else
+	HMMOC_ROOT="/usr/local/hmmoc"
+fi
+AC_DEFINE_UNQUOTED([HMMOC_ROOT_DIR],["$HMMOC_ROOT"],[Path to root directory of Gerton Lunter's hmmoc.])
 
 # Checks for header files.
 AC_HEADER_STDC

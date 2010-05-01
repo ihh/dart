@@ -4,13 +4,14 @@
 #include <stdlib.h>
 
 #define DARTDIR_ENV_VAR "DARTDIR"
+#define DARTDIR_DEFAULT "@abs_top_srcdir@"
 
 struct Dart_Unix
 {
   static const char* get_DARTDIR()
   {
     const char* dartdir_env = getenv(DARTDIR_ENV_VAR);
-    return dartdir_env ? dartdir_env : "@abs_top_srcdir@";
+    return dartdir_env ? dartdir_env : DARTDIR_DEFAULT;
   }
 };
 

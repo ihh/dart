@@ -57,11 +57,11 @@
 #define HMMOC_VITERBI_PROB    "viterbiProb"
 
 // static initializers
-#define HMMOC_TMP_DIRECTORY "/tmp"
-sstring HMMoC_adapter::root_directory = "/usr/local/hmmoc";
-sstring HMMoC_adapter::tmp_directory = HMMOC_TMP_DIRECTORY ;
-sstring HMMoC_adapter::cache_filename = "";   // formerly:  HMMOC_TMP_DIRECTORY "/" HMMOC_CPP_FILENAME_PREFIX ".cache" ;
-sstring HMMoC_adapter::gcc_exec = "/usr/bin/g++";
+#define HMMOC_TMP_DIR "/tmp"
+sstring HMMoC_adapter::root_directory = HMMOC_ROOT_DIR ;   // set in ../config.h by configure script
+sstring HMMoC_adapter::tmp_directory = HMMOC_TMP_DIR ;
+sstring HMMoC_adapter::cache_filename = "";   // formerly:  HMMOC_TMP_DIR "/" HMMOC_CPP_FILENAME_PREFIX ".cache" ;
+sstring HMMoC_adapter::gcc_exec = CPLUSPLUS_COMPILER ;   // set in ../config.h by configure script
 sstring HMMoC_adapter::gcc_args = "-O3 -ffast-math -finline-limit=1000 -lstdc++";
 bool HMMoC_adapter::leave_debris = false;
 int HMMoC_adapter::two_d_banding = 0;

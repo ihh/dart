@@ -1,5 +1,14 @@
 /* src/config.h.in.  Generated from configure.in by autoheader.  */
 
+/* libhmsbeagle is available. */
+#undef BEAGLE_INCLUDED
+
+/* C++ compiler */
+#undef CPLUSPLUS_COMPILER
+
+/* Guile is available. */
+#undef GUILE_INCLUDED
+
 /* Define to 1 if you have the `dup2' function. */
 #undef HAVE_DUP2
 
@@ -100,6 +109,9 @@
 
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL
+
+/* Path to root directory of Gerton Lunter's hmmoc. */
+#undef HMMOC_ROOT_DIR
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
