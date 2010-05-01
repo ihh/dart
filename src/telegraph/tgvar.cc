@@ -141,7 +141,7 @@ void Telegraph_PScores_adaptor::write (ostream& out) const
       const int group_size = pscores.pgroup_size(*g);
       for (int v = 0; v < group_size; ++v)
 	{
-	  const Score sc = pscores.group[*g][v];
+	  const Score sc = FScore2Score (pscores.group[*g][v]);
 	  const int div = abs(sc) / DartScore2BitsRatio;
 	  const int mod = abs(sc) % DartScore2BitsRatio;
 	  out << telegraph_varname(*g,v) << " => ";

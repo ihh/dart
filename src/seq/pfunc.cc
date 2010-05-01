@@ -100,14 +100,14 @@ void PFunc::Stack_index::eval_node_sc (const PScores& var_sc)
       switch (f.opcode[i])
 	{
 	case CONST:
-	  node_sc[i] = f.const_sc[cp_idx[i]];
+	  node_sc[i] = FScore2Score (f.const_sc[cp_idx[i]]);
 	  break;
 	case POW:
 	  node_sc[i] = (Score) (FScore2Bits (f.const_sc[cp_idx[i]]) * (double) node_sc[l_operand_idx[i]]);
 	  break;
 	case PVAR:
 	case INERT_PVAR:
-	  node_sc[i] = var_sc [(f.pvar[cp_idx[i]])];
+	  node_sc[i] = FScore2Score (var_sc [(f.pvar[cp_idx[i]])]);
 	  break;
 	case ADD:
 	  node_sc[i] = ScorePSum (node_sc[l_operand_idx[i]], node_sc[r_operand_idx[i]]);
@@ -181,7 +181,7 @@ void PFunc::inc_var_counts (PCounts& var_counts, const PScores& var_sc, Prob fun
   for_const_contents (set<PVar>, pvars, pvar)
     {
       const Prob dlogf_dlogp = eval_dlogf_dlogp (var_sc, *pvar);
-      const Prob p = Score2Prob (var_sc[*pvar]);
+      const Prob p = FScore2Prob (var_sc[*pvar]);
       const Prob df_dp = dlogf_dlogp * f / p;
 
       var_counts [(*pvar)] += dlogf_dlogp * func_count;

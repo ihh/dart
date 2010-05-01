@@ -181,7 +181,7 @@ struct CM_emit_single : CM_node
 
     Dirichlet_mixture single_dm (mat.group_size, 1);
     for (int c = 0; c < mat.group_size; ++c)
-      single_dm.alpha[0][0][c] = mul * Score2Prob (ps[single_emit[c]]);
+      single_dm.alpha[0][0][c] = mul * FScore2Prob (ps[single_emit[c]]);
     prior.assign (mat, single_dm);
     prior.assign (ins, single_dm);
   }
@@ -317,9 +317,9 @@ struct CM_emit_pair : CM_node
     Dirichlet_mixture pair_dm (mat.group_size, 1);
     Dirichlet_mixture single_dm (insl.group_size, 1);
     for (int c = 0; c < insl.group_size; ++c)
-      single_dm.alpha[0][0][c] = mul * Score2Prob (ps[single_emit[c]]);
+      single_dm.alpha[0][0][c] = mul * FScore2Prob (ps[single_emit[c]]);
     for (int c = 0; c < mat.group_size; ++c)
-      pair_dm.alpha[0][0][c] = mul * Score2Prob (ps[pair_emit[c]]);
+      pair_dm.alpha[0][0][c] = mul * FScore2Prob (ps[pair_emit[c]]);
     prior.assign (mat, pair_dm);
     prior.assign (insl, single_dm);
     prior.assign (insr, single_dm);

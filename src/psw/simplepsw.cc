@@ -152,17 +152,17 @@ void Simple_PSW_pscores::update_params (Simple_PSW_params& params) const
 {
   const PScores& sc (*this);
 
-  params.null_extend = Score2Prob (sc[null_extend.y]);
-  params.flank_open = Score2Prob (sc[flank_open.y]);
-  params.gap_open = Score2Prob (sc[gap_open.y]);
-  params.gap_extend = Score2Prob (sc[gap_extend.y]);
-  params.align_extend = Score2Prob (sc[align_extend.y]);
+  params.null_extend = FScore2Prob (sc[null_extend.y]);
+  params.flank_open = FScore2Prob (sc[flank_open.y]);
+  params.gap_open = FScore2Prob (sc[gap_open.y]);
+  params.gap_extend = FScore2Prob (sc[gap_extend.y]);
+  params.align_extend = FScore2Prob (sc[align_extend.y]);
 
   for (int c = 0; c < params.alphabet.size(); ++c)
     {
-      params.null_emit[c] = Score2Prob (sc[null_emit[c]]);
+      params.null_emit[c] = FScore2Prob (sc[null_emit[c]]);
       for (int d = 0; d < params.alphabet.size(); ++d)
-	params.submat(c,d) = Score2Prob (sc[submat[c][d]]);
+	params.submat(c,d) = FScore2Prob (sc[submat[c][d]]);
     }
 }
 

@@ -364,7 +364,7 @@ PGroup PFunc_builder::init_pgroup (PScores& pscores, SymPVar& sym2pvar, SExpr& p
     {
       suffix.push_back (child_iter->tag());
       const sstring dbl_string = child_iter->value().get_atom();
-      Score sc;
+      FScore sc;
       if (dbl_string == sstring (PK_INFINITE))
 	{
 	  if (!use_bitscores)
