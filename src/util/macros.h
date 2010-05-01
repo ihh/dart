@@ -10,7 +10,7 @@
 using namespace std;
 
 // DART version
-#define DART_VERSION_STRING "0.2"
+#define DART_VERSION_STRING PACKAGE_VERSION   /* set by configure script */
 
 // TRUE and FALSE
 #define TRUE 1
