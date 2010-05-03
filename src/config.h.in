@@ -1,12 +1,12 @@
 /* src/config.h.in.  Generated from configure.in by autoheader.  */
 
-/* libhmsbeagle is available. */
+/* Define to 1 if libhmsbeagle is available. */
 #undef BEAGLE_INCLUDED
 
 /* C++ compiler */
 #undef CPLUSPLUS_COMPILER
 
-/* Guile is available. */
+/* Define to 1 if Guile is available. */
 #undef GUILE_INCLUDED
 
 /* Define to 1 if you have the `dup2' function. */

@@ -36,14 +36,21 @@ then
 	GUILE_INCLUDED=0
 fi
 
+AC_DEFINE_UNQUOTED([GUILE_INCLUDED], [$GUILE_INCLUDED], [Define to 1 if Guile is available.])
+
 # Check for the Beagle phylogenetic likelihood library.
 
 AC_DEFUN([BEAGLE_NO],
- [    AC_SUBST(BEAGLE_INCLUDED,[0])  ])
+ [
+      AC_SUBST(BEAGLE_INCLUDED,[0])
+      BEAGLE_INCLUDED=0
+      with_beagle=no
+ ])
 
 AC_DEFUN([BEAGLE_YES],
  [    AC_SUBST(BEAGLE_INCLUDED,[1])
-      AC_DEFINE([BEAGLE_INCLUDED], [], [libhmsbeagle is available.])
+      BEAGLE_INCLUDED=1
+      with_beagle=yes
       # CUDA will only work with i386 on OS X
       case `uname -a` in
       *Darwin*)
@@ -58,14 +65,15 @@ AC_ARG_WITH([beagle],
             [with_beagle=yes],
             [with_beagle=no])
           
-PKG_CHECK_MODULES([BEAGLE], [hmsbeagle-1.0], [BEAGLE_YES], [BEAGLE_NO])
-
 if test "x$with_beagle" == "xno"
 then
 	BEAGLE_ARCH=""
 	BEAGLE_CFLAGS=""
 	BEAGLE_LIBS=""
 	BEAGLE_INCLUDED=0
+else
+	PKG_CHECK_MODULES([BEAGLE], [hmsbeagle-1.0], [BEAGLE_YES], [BEAGLE_NO])
+	AC_DEFINE_UNQUOTED([BEAGLE_INCLUDED], [$BEAGLE_INCLUDED], [Define to 1 if libhmsbeagle is available.])
 fi
 
 # Check for HMMOC
