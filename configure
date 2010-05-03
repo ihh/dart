@@ -3388,9 +3388,6 @@ fi
 
       GUILE_INCLUDED=1
 
-
-$as_echo "#define GUILE_INCLUDED /**/" >>confdefs.h
-
       GUILE_DEPS=guile
 
     fi
