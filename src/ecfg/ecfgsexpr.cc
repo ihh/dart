@@ -4,7 +4,7 @@
 #include "util/svisitor.h"
 #include "seq/pkeywords.h"
 
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 #include "ecfg/guile-ecfg.h"
 #endif /* GUILE_INCLUDED */
 

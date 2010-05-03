@@ -31,6 +31,7 @@ struct ECFG_main
   bool report_confidence;
   bool report_postprob;
   bool report_hidden_classes;
+  double min_postprob;
   int max_subseq_len;
   sstring grammars_filename;
   sstring tree_grammar_filename;

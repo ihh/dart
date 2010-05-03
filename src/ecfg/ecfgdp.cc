@@ -3,7 +3,7 @@
 #include "util/vector_output.h"
 #include "ecfg/ecfgsexpr.h"
 
-#ifdef BEAGLE_INCLUDED
+#if defined(BEAGLE_INCLUDED) && BEAGLE_INCLUDED
 #include "libhmsbeagle/beagle.h"
 #endif /* BEAGLE_INCLUDED */
 
@@ -438,7 +438,7 @@ void ECFG_EM_matrix::use_precomputed_phyloemit (Emit_loglike_matrix& phyloemit)
 
 void ECFG_EM_matrix::compute_phylo_likelihoods_with_beagle()
 {
-#ifdef BEAGLE_INCLUDED
+#if defined(BEAGLE_INCLUDED) && BEAGLE_INCLUDED
 
   // set up the outputs & inputs
   const int subseqs = env.subseqs();
@@ -1202,7 +1202,7 @@ void ECFG_inside_outside_matrix::annotate (Stockholm& stock, GFF_list& gff_list,
   stock.set_gc_annot (logpostprob_tag, ppbycol);
 }
 
-void ECFG_inside_outside_matrix::annotate_all_post_state_ll (GFF_list& gff_list, const sstring& seqname, const ECFG_cell_score_map& annot, const sstring& annot_tag) const
+void ECFG_inside_outside_matrix::annotate_all_post_state_ll (GFF_list& gff_list, const sstring& seqname, const ECFG_cell_score_map& annot, const sstring& annot_tag, double min_postprob) const
 {
   for (int subseq_idx = 0; subseq_idx < inside.env.subseqs(); ++subseq_idx)
     {
@@ -1212,17 +1212,23 @@ void ECFG_inside_outside_matrix::annotate_all_post_state_ll (GFF_list& gff_list,
 	  {
 	    ECFG_cell_score_map::const_iterator annot_state_iter = annot.find (ECFG_subseq_state (subseq, *s));
 	    const bool annot_found = annot_state_iter != annot.end();
-
-	    annotate_post_prob (gff_list, seqname, *s, subseq);
-	    if (annot_found)
-	      gff_list.back().set_value (annot_tag.c_str(), "1");
+	    const Prob pp = Nats2Prob (post_state_ll (*s, subseq_idx));
+	    if (pp >= min_postprob || annot_found)
+	      {
+		map<sstring,sstring> extra;
+		if (annot_found)
+		  extra[annot_tag] = sstring("1");
+		annotate_post_prob (gff_list, seqname, *s, subseq, &extra);
+	      }
 	  }
     }
 }
 
-void ECFG_inside_outside_matrix::annotate_post_prob (GFF_list& gff_list, const sstring& seqname, int state, const Subseq_coords& subseq) const
+void ECFG_inside_outside_matrix::annotate_post_prob (GFF_list& gff_list, const sstring& seqname, int state, const Subseq_coords& subseq, const map<sstring,sstring>* extra_annotations) const
 {
   const int subseq_idx = inside.env.find_subseq_idx (subseq.start, subseq.len);
+  const Log2 inout_lg = Nats2Bits (post_state_ll (state, subseq_idx));
+  const Log2 inside_lg = Nats2Bits (inside.cell (subseq_idx, state));
 
   GFF gff;
   gff.seqname = seqname.size() ? seqname : inside.stock.get_name();
@@ -1230,14 +1236,25 @@ void ECFG_inside_outside_matrix::annotate_post_prob (GFF_list& gff_list, const s
   gff.feature = inside.ecfg.state_info[state].name;
   gff.start = subseq.start + 1;
   gff.end = subseq.end();
-  gff.score = Nats2Bits (inside.cell (subseq_idx, state));
+  gff.score = inout_lg;
 
   const sstring unique_id = gff_list.create_unique_id();
   gff.set_value (GFF_ID_tag, unique_id.c_str());
 
-  sstring score_str;
-  score_str << Nats2Bits (post_state_ll (state, subseq_idx));
-  gff.set_value (ECFG_GFF_LogPostProb_tag, score_str.c_str());
+  sstring inout_tag, inout_score_str;
+  inout_score_str << inout_lg;
+  gff.set_value (ECFG_GFF_LogPostProb_tag, inout_score_str.c_str());
+
+  sstring inside_tag, inside_score_str;
+  inside_score_str << inside_lg;
+  gff.set_value (ECFG_GFF_LogInsideProb_tag, inside_score_str.c_str());
+
+  if (extra_annotations)
+    {
+      typedef map<sstring,sstring> AnnotMap;
+      for_const_contents (AnnotMap, *extra_annotations, tv)
+	gff.set_value (tv->first.c_str(), tv->second.c_str());
+    }
 
   gff_list.push_back (gff);
 }

@@ -73,7 +73,6 @@ AC_DEFUN([GUILE_PROGS],
       AC_PATH_PROG(GUILE_TOOLS,guile-tools)
       AC_SUBST(GUILE_TOOLS)
       AC_SUBST(GUILE_INCLUDED,[1])
-      AC_DEFINE([GUILE_INCLUDED], [], [Guile is available.])
       AC_SUBST(GUILE_DEPS,[guile])
     fi
   fi

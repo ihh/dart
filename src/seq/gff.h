@@ -1,7 +1,7 @@
 #ifndef GFF_INCLUDED
 #define GFF_INCLUDED
 
-#include <list>
+#include <deque>
 #include "util/sstring.h"
 #include "util/Regexp.h"
 #include "seq/biosequence.h"
@@ -71,7 +71,7 @@ struct GFF : GFF_enum, NSE
   friend istream& operator>> (istream& ins, GFF& gff);
 };
 
-struct GFF_list : list<GFF>, GFF_enum
+struct GFF_list : deque<GFF>, GFF_enum
 {
   // basic IO
   friend ostream& operator<< (ostream& out, const GFF_list& gff_list);

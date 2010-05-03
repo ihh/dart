@@ -590,7 +590,9 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 
 	  // record CYK score
 	  sstring cyk_val, cyk_tag;
-	  cyk_tag << ECFG_GFF_LogCYK_tag << '(' << info.name << ')';
+	  cyk_tag << ECFG_GFF_LogCYK_tag;
+	  if (record_probs_of_all_states)
+	    cyk_tag << '(' << info.name << ')';
 	  cyk_val << Nats2Bits (cyk_ll);
 	  group_key_val[cyk_tag] = cyk_val;
 
@@ -600,7 +602,9 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 	      if (s == state || record_probs_of_all_states)
 		{
 		  sstring pp_val, pp_tag;
-		  pp_tag << ECFG_GFF_LogPostProb_tag << '(' << state_info[s].name << ')';
+		  pp_tag << ECFG_GFF_LogPostProb_tag;
+		  if (record_probs_of_all_states)
+		    pp_tag << '(' << state_info[s].name << ')';
 		  pp_val << Nats2Bits (pp_calc->post_state_ll (s, subseq));
 		  group_key_val[pp_tag] = pp_val;
 		}
@@ -611,7 +615,9 @@ void ECFG_scores::make_GFF (GFF_list& gff_list,
 	      if (s == state || record_probs_of_all_states)
 		{
 		  sstring ins_val, ins_tag;
-		  ins_tag << ECFG_GFF_LogInsideProb_tag << '(' << state_info[s].name << ')';
+		  ins_tag << ECFG_GFF_LogInsideProb_tag;
+		  if (record_probs_of_all_states)
+		    ins_tag << '(' << state_info[s].name << ')';
 		  ins_val << Nats2Bits (ins_calc->state_inside_ll (s, subseq));
 		  group_key_val[ins_tag] = ins_val;
 		}

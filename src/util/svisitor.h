@@ -4,7 +4,7 @@
 #include "util/sexpr.h"
 #include <map>
 
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 #include <libguile.h>
 #endif /* GUILE_INCLUDED */
 
@@ -123,7 +123,7 @@ protected:
   void* (*register_functions)(void *);  // pointer to function that registers functions
   void* data;  // data that will be passed to *register_functions
   static bool initialized;
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
   SCM write_proc;
 #endif /* GUILE_INCLUDED */
 public:

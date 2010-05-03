@@ -422,7 +422,7 @@ SExpr_Scheme_evaluator::SExpr_Scheme_evaluator()
 
 void SExpr_Scheme_evaluator::initialize()
 {
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
   if (!initialized)
     scm_with_guile (register_functions, data);
   write_proc = scm_variable_ref (scm_c_lookup("write"));
@@ -484,7 +484,7 @@ SExpr SExpr_Scheme_evaluator::evaluate (SExpr& sexpr) const
     THROWEXPR("SExpr_Scheme_evaluator::evaluate called on an atom");
   if (sexpr.is_empty_list())
     THROWEXPR("SExpr_Scheme_evaluator::evaluate called on an empty list");
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
   sstring result_string;
   // iterate over all but the first child
   SExpr::SExprIter iter = sexpr.child.begin();

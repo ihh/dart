@@ -4,7 +4,7 @@
 #include "tree/tree_alignment.h"
 #include "util/sexpr.h"
 
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 #include <libguile.h>
 #include "guile/guile-keywords.h"
 #include "guile/stockholm-type.h"
@@ -15,7 +15,7 @@
 #include "ecfg/ecfgsexpr.h"
 #include "ecfg/guile-ecfg.h"
 
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 static void get_alphgram_sexpr (SCM alphabet_and_grammar_scm,
 			       SExpr*& top_level_sexpr,
 			       SExpr*& alphabet_and_grammar_sxpr)
@@ -193,7 +193,7 @@ void init_xrate_primitives (void)
 
 
 // ECFG_Scheme_evaluator
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 static void*
 register_grammar_functions (void* data)
 {
@@ -213,7 +213,7 @@ register_grammar_functions (void* data)
 ECFG_Scheme_evaluator::ECFG_Scheme_evaluator (const Stockholm* stock)
   : stock(stock)
 {
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
   register_functions = &register_grammar_functions;
   data = (void*) this;
 #endif /* GUILE_INCLUDED */

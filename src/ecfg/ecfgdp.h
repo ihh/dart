@@ -217,8 +217,8 @@ struct ECFG_inside_outside_matrix : Grammar_state_enum, ECFG_posterior_probabili
 
   // Annotation methods
   void annotate (Stockholm& stock, GFF_list& gff_list, const sstring& seqname, const ECFG_cell_score_map& annot, const sstring& logpostprob_tag) const;
-  void annotate_all_post_state_ll (GFF_list& gff_list, const sstring& seqname, const ECFG_cell_score_map& annot, const sstring& annot_tag) const;
-  void annotate_post_prob (GFF_list& gff_list, const sstring& seqname, int state, const Subseq_coords& subseq) const;
+  void annotate_all_post_state_ll (GFF_list& gff_list, const sstring& seqname, const ECFG_cell_score_map& annot, const sstring& annot_tag, double min_postprob = 0.) const;
+  void annotate_post_prob (GFF_list& gff_list, const sstring& seqname, int state, const Subseq_coords& subseq, const map<sstring,sstring>* extra_annotations = 0) const;
   void annotate_hidden_classes (Stockholm& stock, const ECFG_cell_score_map& annot);
 };
 

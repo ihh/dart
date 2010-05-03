@@ -5,17 +5,17 @@
 #include "seq/stockholm.h"
 #include "ecfg/ecfg.h"
 
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 #include "guile/guile-defs.h"
 #endif /* GUILE_INCLUDED */
 
 // ECFG
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 SCM ecfg_to_scm (const ECFG_scores& ecfg, const ECFG_counts* counts = 0);
 #endif /* GUILE_INCLUDED */
 
 // xrate functions
-#ifdef GUILE_INCLUDED
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 void init_xrate_primitives (void);
 #endif /* GUILE_INCLUDED */
 

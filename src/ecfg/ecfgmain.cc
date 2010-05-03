@@ -17,7 +17,7 @@
 #define LOGPOSTPROB_TAG_PREFIX "PP"
 
 // GFF tags for posterior probabilities
-#define CYK_STATE_LABEL "CYK"  /* indicates that GFF postprob line is part of CYK trace */
+#define CYK_STATE_LABEL "inCYKParse"  /* indicates that GFF postprob line is part of CYK trace */
 
 // tags for training meta-information in grammar
 #define TRAINING_INFO  "training-info"
@@ -152,7 +152,8 @@ void ECFG_main::init_opts (const char* desc)
   opts.add ("s -score", report_sumscore = false, "report Inside log-likelihood, corresponding to a sum over all parse trees");
   opts.add ("c -confidence", report_confidence = false, "report Inside-Outside posterior log-probabilities of nodes in CYK parse tree");
   opts.add ("pp -postprob", report_postprob = false, "report Inside-Outside posterior log-probabilities of all possible parse tree nodes");
-  opts.add ("hc -hidden-classes", report_hidden_classes = false, "impute ML hidden classes at each site (for substitution models with hidden classes)");
+  opts.add ("mpp -min-postprob", min_postprob = .001, "minimum posterior probability to report for --postprob option");
+  opts.add ("hc -hidden-classes", report_hidden_classes = false, "impute ML hidden classes at each site & each taxon (for substitution models with hidden classes)");
 
   opts.newline();
   opts.print_title ("Annotation output");
@@ -163,7 +164,7 @@ void ECFG_main::init_opts (const char* desc)
   opts.print_title ("Acceleration of annotation DP algorithms (experimental)");
 
   opts.add ("fp -fast-prune", use_fast_prune = false, "attempt pruning algorithm in probability-space, rather than log-space (caveat: prone to underflow)");
-#ifdef BEAGLE_INCLUDED
+#if defined(BEAGLE_INCLUDED) && BEAGLE_INCLUDED
   opts.add ("bgl -beagle", use_beagle = false, "use Beagle GPU library to do pruning");
 #else /* BEAGLE_INCLUDED */
   opts.add ("bgl -beagle", use_beagle = false);   // if Beagle not compiled, then allow this option, but don't advertise it (using it will cause a warning)
@@ -702,24 +703,32 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 		    {
 		      if (report_postprob)
 			{
+			  CTAG(6,XRATE) << "Annotating posterior probabilities for all subsequences/states\n";
 			  sstring pp_tag;
 			  pp_tag << LOGPOSTPROB_TAG_PREFIX << '_' << ecfg_name;
 			  sstring trace_tag (CYK_STATE_LABEL);
-			  inout_mx->annotate_all_post_state_ll (gff_list, align_id, cyk_trace, trace_tag);
+			  inout_mx->annotate_all_post_state_ll (gff_list, align_id, cyk_trace, trace_tag, min_postprob);
 			}
 
 		      if (report_confidence)
 			{
+			  CTAG(6,XRATE) << "Annotating posterior probabilities for CYK parse\n";
 			  sstring pp_tag;
 			  pp_tag << CONFIDENCE_TAG_PREFIX << '_' << ecfg_name;
 			  inout_mx->annotate (*stock, gff_list, align_id, cyk_trace, pp_tag);
 			}
 
 		      if (want_hidden_classes)
-			inout_mx->annotate_hidden_classes (*stock, cyk_trace);
+			{
+			  CTAG(6,XRATE) << "Annotating hidden class labels for CYK parse\n";
+			  inout_mx->annotate_hidden_classes (*stock, cyk_trace);
+			}
 
 		      if (want_ancestral_reconstruction)
-			inout_mx->inside.reconstruct_MAP (*stock, cyk_trace, CYK_MAP_reconstruction_tag, ancrec_CYK_MAP, ancrec_postprob);
+			{
+			  CTAG(6,XRATE) << "Annotating ancestral reconstruction for CYK parse\n";
+			  inout_mx->inside.reconstruct_MAP (*stock, cyk_trace, CYK_MAP_reconstruction_tag, ancrec_CYK_MAP, ancrec_postprob);
+			}
 		    }
 		}
 
