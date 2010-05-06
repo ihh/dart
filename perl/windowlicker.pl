@@ -332,7 +332,7 @@ if (defined $wig_file) {
     open WIG_FILE, ">$wig_file" or die "Couldn't open '$wig_file': $!\n";
     select((select(WIG_FILE), $| = 1)[0]);  # autoflush
     while (my ($track, $data) = each %wiggleTrack) {
-	print WIG_FILE map ("$_\n", $track, "fixedStep chrom=$gffRefSeq start=0 step=1", map (ref($_) ? mean($_) : $_, @$data));
+	print WIG_FILE map ("$_\n", $track, "fixedStep chrom=$gffRefSeq start=0 step=1", @$data);
     }
     close WIG_FILE or die "Couldn't close '$wig_file': $!\n";
 }
@@ -357,13 +357,13 @@ sub escapeAttr {
     return $string;
 }
 
-# mean of a list
-sub mean {
-    my ($listRef) = @_;
-    return undef unless @$listRef > 0;
-    my $total = 0;
-    for my $x (@$listRef) { $total += $x }
-    return $total / @$listRef;
+# min of a list
+sub min {
+    my @x = @_;
+    return undef unless @x;
+    my $min = pop @x;
+    for my $x (@x) { $min = $x if $x < $min }
+    return $min;
 }
 
 # run a set of Stockholm alignments (windows) through an instance of xrate
@@ -543,11 +543,11 @@ sub run_chunk {
 				    # ignore fixedStep lines
 				} else {
 				    if (defined $currentWigTrack->[$pos]) {
-					# store overlapping values for later averaging
-					unless (ref $currentWigTrack->[$pos]) {
-					    $currentWigTrack->[$pos] = [$currentWigTrack->[$pos]];
+					# in case of overlapping values, pick the one furthest from the edge of a window
+					my $distanceFromEdge = min ($pos - ($winStart - 1), ($winEnd - 1) - $pos);
+					if ($distanceFromEdge > $overlap / 2) {
+					    $currentWigTrack->[$pos] = $wig + 0;
 					}
-					push @{$currentWigTrack->[$pos]}, $wig + 0;
 				    } else {
 					$currentWigTrack->[$pos] = $wig + 0;
 				    }
