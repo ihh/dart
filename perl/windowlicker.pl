@@ -14,6 +14,8 @@ use Stockholm::Database;
 # constants
 my $DARTDIR = 'DARTDIR';  # name of DART's environment variable; windowlicker will look for xrate in $ENV{$DARTDIR}/bin
 my $windowLickerTag = "WL";  # Stockholm '#=GF' tag for windowlicker info
+my $ID = "ID";  # '#=GC ID' line
+my $originalID = "ORIGINAL_ID";  # '#=GC ORIGINAL_ID' line
 
 # regular expressions to filter out of the xrate stderr stream
 # be careful to escape regexp special characters
@@ -55,7 +57,7 @@ my $verbose = 0;
 
 my $chunkSize = 100;
 
-my ($gff_file, $gffRefSeq);
+my ($gff_file, $gffRefSeq, $wig_file);
 my $filename;
 
 # guess path to xrate
@@ -80,11 +82,12 @@ $usage .= "      -c <n>  number of windows to run per xrate process (default is 
 $usage .= "        -cat  don't pipe through xrate, just cat windowed alignments to stdout\n";
 $usage .= "      -terse  don't print sequence data, just Stockholm metadata\n";
 $usage .= "          -v  turn on verbose (log more stuff to stderr, default is off)\n";
-$usage .= " -gff <file>  copy Stockholm metadata to separate file, as GFF\n";
+$usage .= " -gff <file>  copy GFF annotations to separate file, with Stockholm metadata\n";
 $usage .= "  -gr <name>  reference sequence in 1st column of GFF file (default is input filename)\n";
+$usage .= " -wig <file>  copy Wiggle annotations to separate file\n";
 $usage .= "\n";
 $usage .= "Use '-' for alignment filename to accept alignments on standard input\n";
-$usage .= " (this is optional, but necessary if you want to specify arguments to xrate)\n";
+$usage .= " (this can be omitted, unless you also want to specify arguments to xrate)\n";
 $usage .= "\n";
 
 # parse command-line opts
@@ -121,6 +124,8 @@ while (@ARGV) {
 	    defined ($gff_file = shift) or die $usage;
 	} elsif ($arg eq '-gr') {
 	    defined ($gffRefSeq = shift) or die $usage;
+	} elsif ($arg eq '-wig') {
+	    defined ($wig_file = shift) or die $usage;
 	} elsif ($arg eq '-cat') {
 	    $cat = 1;
 	} elsif ($arg eq '-v') {
@@ -159,15 +164,37 @@ die "Empty alignment\n" unless $stock->columns;
 $end = $stock->columns unless defined $end;
 die "Nonsense argument: end ($end) > alignment length (", $stock->columns, ")\n" if $end > $stock->columns;
 
+# window statistics
 $windowSize = $end + 1 - $start if $oneShot;
 
 $delta = int ($windowSize / 2) unless defined $delta;
 die "Nonsense arguments: delta ($delta) > window size ($windowSize)\n" if $delta > $windowSize;
 
+my $overlap = $windowSize - $delta;
+
+# reference sequence
 my $refSeq;
 if (defined $refSeqName) {
     die "Reference sequence '$refSeqName' not found\n" unless exists $stock->seqdata->{$refSeqName};
     $refSeq = $stock->seqdata->{$refSeqName};
+}
+
+# GFF (and WIG) reference sequence
+unless (defined $gffRefSeq) {
+    if (defined $refSeqName) {
+	# use reference sequence name, if defined
+	$gffRefSeq = $refSeqName;
+
+    } elsif (defined $stock->get_gf ($ID)) {
+	# use original '#=GF ID' as ref seq name, if there was one
+	$gffRefSeq = $stock->get_gf ($ID);
+
+    } else {
+	# use input file name as ref seq name
+	# (if input is stdin, replace the '-' because it looks
+	# confusing in a GFF file)
+	$gffRefSeq = ($filename eq '-') ? 'stdin' : $filename;
+    }
 }
 
 # translate window strand from command-line syntax ("f" or "r", etc.) into "+" or "-" for Stockholm.pm
@@ -178,13 +205,16 @@ die "Don't understand '$strand' as a strand direction\n" unless grep ($strand eq
 # autoflush on
 $| = 1;
 
-# open #=GF,#=GC GFF file
+# open GFF file for annotations and #=GF,#=GC metadata
 local *GFF_FILE;
 if (defined $gff_file) {
     open GFF_FILE, ">$gff_file" or die "Couldn't open '$gff_file': $!\n";
     select((select(GFF_FILE), $| = 1)[0]);  # autoflush
     print GFF_FILE "##gff-version   3\n";
 }
+
+# create structure to hold Wiggle annotations
+my %wiggleTrack;
 
 # globals that get used directly by subs
 my ($windowsAttempted, $windowsDone) = (0, 0);
@@ -262,12 +292,12 @@ for (my $winStart = $start; !$inLastWin; $winStart += $delta) {
 
 	# save window name/identifier as a '#=GF ID' annotation,
 	# moving the original annotation (if there was one) to '#=GF ORIGINAL_ID'
-	if (defined $subalign->get_gf ('ID')) {
-	    $subalign->add_gf ('ORIGINAL_ID', $subalign->get_gf ('ID'));
-	    $subalign->set_gf ('ID', $windowName);
+	if (defined $subalign->get_gf ($ID)) {
+	    $subalign->add_gf ($originalID, $subalign->get_gf ($ID));
+	    $subalign->set_gf ($ID, $windowName);
 	}
 	else {
-	    $subalign->add_gf ('ID', $windowName);
+	    $subalign->add_gf ($ID, $windowName);
 	}
 
 	# add windowlicker tag
@@ -296,6 +326,18 @@ if (defined $gff_file) {
     close GFF_FILE or die "Couldn't close '$gff_file': $!\n";
 }
 
+# write Wiggle file
+if (defined $wig_file) {
+    local *WIG_FILE;
+    open WIG_FILE, ">$wig_file" or die "Couldn't open '$wig_file': $!\n";
+    select((select(WIG_FILE), $| = 1)[0]);  # autoflush
+    while (my ($track, $data) = each %wiggleTrack) {
+	print WIG_FILE map ("$_\n", $track, "fixedStep chrom=$gffRefSeq start=0 step=1", map (ref($_) ? mean($_) : $_, @$data));
+    }
+    close WIG_FILE or die "Couldn't close '$wig_file': $!\n";
+}
+
+# finish
 unless ($cat) {
     warn "attempted $windowsAttempted windows on xrate, successfully ran $windowsDone windows\n";
 }
@@ -313,6 +355,15 @@ sub escapeAttr {
     my ($string) = @_ or die "Invalid use of escapeAttr(string) sub!";
     $string =~ s/([,=;])/uc sprintf("%%%02x",ord($1))/eg;
     return $string;
+}
+
+# mean of a list
+sub mean {
+    my ($listRef) = @_;
+    return undef unless @$listRef > 0;
+    my $total = 0;
+    for my $x (@$listRef) { $total += $x }
+    return $total / @$listRef;
 }
 
 # run a set of Stockholm alignments (windows) through an instance of xrate
@@ -415,7 +466,7 @@ sub run_chunk {
 	my $winIn = $stockDbIn->[$i];
 	my $winOut = $stockDbOut->[$i];
 	my $winStrand = $stockDbStrands[$i];
-	my $windowName = $winIn->get_gf ('ID');
+	my $windowName = $winIn->get_gf ($ID);
 	$windowName =~ /^$windowNamePrefix(\d+)-(\d+)$/ or die 'This should not occur!';
 	my ($winStart, $winEnd) = ($1, $2);
 
@@ -425,24 +476,11 @@ sub run_chunk {
 		# attributes for window metadata GFF line
 		my @tag_value = ("ID=" . escapeAttr ($windowName) . ";Note=window metadata");
 
-		unless (defined $gffRefSeq) {
-		    if (defined $winIn->get_gf ('ORIGINAL_ID')) {
-			# use original '#=GF ID' as ref seq name, if there was one
-			$gffRefSeq = $winIn->get_gf ('ORIGINAL_ID');
-
-		    } else {
-			# use input file name as ref seq name
-			# (if input is stdin, replace the '-' because it looks
-			# confusing in a GFF file)
-			$gffRefSeq = ($filename eq '-') ? 'stdin' : $filename;
-		    }
-		}
-
 		# add new #=GF tags
 		my @gff;
 		for my $gf_tag (sort keys %{$winOut->gf}) {
-		    # handle GFF tags separately; correct the start & end coords and point seqname to the main alignment
 		    if ($gf_tag eq "GFF") {
+			# handle GFF tags separately; correct the start & end coords and point seqname to the main alignment
 			my %old_val = map (($_ => 1), @{$winIn->gf_($gf_tag)});
 			my @new_val = @{$winOut->gf_($gf_tag)};
 			for my $gff (@new_val) {
@@ -456,6 +494,34 @@ sub run_chunk {
 						 $newAttributes :
 						 "$gff_field[8];$newAttributes");
 				push @gff, join ("\t", @gff_field) . "\n";
+			    }
+			}
+
+		    } elsif ($gf_tag eq "WIG") {
+			# handle WIG tags separately: correct the start points
+			# makes some strong
+			my ($currentWigTrack, $pos);
+			for my $wig (@{$winOut->gf_($gf_tag)}) {
+			    if ($wig =~ /^track\b/) {
+				$wig =~ s/\b(name=\S+)\b/$1$winStrand/;
+				$wiggleTrack{$wig} = [] unless exists $wiggleTrack{$wig};
+				$currentWigTrack = $wiggleTrack{$wig};
+				$pos = $winStrand eq '+' ? ($winStart-1) : ($winEnd-1);
+			    } elsif (defined $currentWigTrack) {
+				if ($wig =~ /^fixedStep\b/) {
+				    # ignore fixedStep lines
+				} else {
+				    if (defined $currentWigTrack->[$pos]) {
+					# store overlapping values for later averaging
+					unless (ref $currentWigTrack->[$pos]) {
+					    $currentWigTrack->[$pos] = [$currentWigTrack->[$pos]];
+					}
+					push @{$currentWigTrack->[$pos]}, $wig + 0;
+				    } else {
+					$currentWigTrack->[$pos] = $wig + 0;
+				    }
+				    $pos += $winStrand eq '+' ? 1 : -1;
+				}
 			    }
 			}
 

@@ -73,8 +73,9 @@ then
 	BEAGLE_INCLUDED=0
 else
 	PKG_CHECK_MODULES([BEAGLE], [hmsbeagle-1.0], [BEAGLE_YES], [BEAGLE_NO])
-	AC_DEFINE_UNQUOTED([BEAGLE_INCLUDED], [$BEAGLE_INCLUDED], [Define to 1 if libhmsbeagle is available.])
 fi
+
+AC_DEFINE_UNQUOTED([BEAGLE_INCLUDED], [$BEAGLE_INCLUDED], [Define to 1 if libhmsbeagle is available.])
 
 # Check for HMMOC
 

@@ -44,7 +44,7 @@ Creates an empty Stockholm::Database object.
 sub new {
     my ($class) = @_;
     my $self = [];
-    bless ($self, ref($class) ? $class : ref($class));
+    bless ($self, ref($class) ? ref($class) : $class);
     return $self;
 }
 
