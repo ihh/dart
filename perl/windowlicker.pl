@@ -83,8 +83,8 @@ $usage .= "        -cat  don't pipe through xrate, just cat windowed alignments 
 $usage .= "      -terse  don't print sequence data, just Stockholm metadata\n";
 $usage .= "          -v  turn on verbose (log more stuff to stderr, default is off)\n";
 $usage .= " -gff <file>  copy GFF annotations to separate file, with Stockholm metadata\n";
-$usage .= "  -gr <name>  reference sequence in 1st column of GFF file (default is input filename)\n";
 $usage .= " -wig <file>  copy Wiggle annotations to separate file\n";
+$usage .= "  -gr <name>  seqname for GFF/WIG (default is input filename, or '-r' param)\n";
 $usage .= "\n";
 $usage .= "Use '-' for alignment filename to accept alignments on standard input\n";
 $usage .= " (this can be omitted, unless you also want to specify arguments to xrate)\n";
@@ -472,6 +472,7 @@ sub run_chunk {
 
 	# if xrate output parsed OK, add coords to alignment & print
 	if (defined $winOut->columns) {
+	    # GFF output
 	    if (defined $gff_file) {
 		# attributes for window metadata GFF line
 		my @tag_value = ("ID=" . escapeAttr ($windowName) . ";Note=window metadata");
@@ -497,35 +498,7 @@ sub run_chunk {
 			    }
 			}
 
-		    } elsif ($gf_tag eq "WIG") {
-			# handle WIG tags separately: correct the start points
-			# makes some strong assumptions about xrate wiggle output, valid as of 5/5/2010 (e.g. it's always "fixedStep start=0 step=1")
-			my ($currentWigTrack, $pos);
-			for my $wig (@{$winOut->gf_($gf_tag)}) {
-			    if ($wig =~ /^track\b/) {
-				$wig =~ s/\b(name=\S+)\b/$1$winStrand/;
-				$wiggleTrack{$wig} = [] unless exists $wiggleTrack{$wig};
-				$currentWigTrack = $wiggleTrack{$wig};
-				$pos = $winStrand eq '+' ? ($winStart-1) : ($winEnd-1);
-			    } elsif (defined $currentWigTrack) {
-				if ($wig =~ /^fixedStep\b/) {
-				    # ignore fixedStep lines
-				} else {
-				    if (defined $currentWigTrack->[$pos]) {
-					# store overlapping values for later averaging
-					unless (ref $currentWigTrack->[$pos]) {
-					    $currentWigTrack->[$pos] = [$currentWigTrack->[$pos]];
-					}
-					push @{$currentWigTrack->[$pos]}, $wig + 0;
-				    } else {
-					$currentWigTrack->[$pos] = $wig + 0;
-				    }
-				    $pos += $winStrand eq '+' ? 1 : -1;
-				}
-			    }
-			}
-
-		    } else {
+		    } elsif ($gf_tag ne "WIG") {  # discard Wiggle data, we will handle it separately
 			my $old_val = join "", @{$winIn->gf_($gf_tag)};
 			my $new_val = join "", @{$winOut->gf_($gf_tag)};
 			if ($new_val ne $old_val) {
@@ -549,6 +522,41 @@ sub run_chunk {
 
 		print GFF_FILE @gff;
 		print GFF_FILE join ("\t", $gffRefSeq, $progname, $metadataType, $winStart, $winEnd, '.', $winStrand, '.', join (";", @tag_value)), "\n";
+	    }
+
+	    # Wiggle output
+	    if (defined $wig_file) {
+		for my $gf_tag (sort keys %{$winOut->gf}) {
+		    if ($gf_tag eq "WIG") {
+			# handle WIG tags: correct the start points
+			# makes some strong assumptions about xrate wiggle output, valid as of 5/5/2010 (e.g. it's always "fixedStep start=0 step=1")
+			my ($currentWigTrack, $currentWigTrackLine, $pos);
+			for my $wig (@{$winOut->gf_($gf_tag)}) {
+			    if ($wig =~ /^track\b/) {
+				$currentWigTrackLine = $wig;
+				$currentWigTrackLine =~ s/\b(name=\S+)\b/$1$winStrand/;
+				$wiggleTrack{$currentWigTrackLine} = [] unless exists $wiggleTrack{$currentWigTrackLine};
+				$currentWigTrack = $wiggleTrack{$currentWigTrackLine};
+				$pos = $winStrand eq '+' ? ($winStart-1) : ($winEnd-1);
+			    } elsif (defined $currentWigTrack) {
+				if ($wig =~ /^fixedStep\b/) {
+				    # ignore fixedStep lines
+				} else {
+				    if (defined $currentWigTrack->[$pos]) {
+					# store overlapping values for later averaging
+					unless (ref $currentWigTrack->[$pos]) {
+					    $currentWigTrack->[$pos] = [$currentWigTrack->[$pos]];
+					}
+					push @{$currentWigTrack->[$pos]}, $wig + 0;
+				    } else {
+					$currentWigTrack->[$pos] = $wig + 0;
+				    }
+				    $pos += $winStrand eq '+' ? 1 : -1;
+				}
+			    }
+			}
+		    }
+		}
 	    }
 
 	    print $winOut->to_string ('NOSEQDATA' => $terse);
