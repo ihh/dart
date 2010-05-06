@@ -76,7 +76,7 @@ $usage .= "      -w <n>  Window size (default is $windowSize)\n";
 $usage .= "      -d <n>  \"Delta\" = step size (default is half of window size)\n";
 $usage .= "  -dir <dir>  strand: 'f' or 'r', or 'fr' for both (default is '$strand')\n";
 $usage .= "   -r <name>  reference sequence in input alignment\n";
-$usage .= "      -slice  drop all alignment columns that are gapped in the reference sequence\n";
+$usage .= "      -slice  drop alignment columns that are gapped in the reference sequence\n";
 $usage .= "      -g <n>  maximum gap fraction in reference sequence (default is $maxGapFraction)\n";
 $usage .= "      -b <n>  minimum bits per dinucleotide of reference sequence (default is $minEntropy)\n";
 $usage .= "          -o  One-shot mode: overrides -w, sets window size = end + 1 - start\n";
