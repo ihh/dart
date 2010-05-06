@@ -283,7 +283,7 @@ sub columns {
 
 =head2 sequences
 
-    my $cols = $stock->sequences()
+    my $rows = $stock->sequences()
 
 Returns the number of sequences (i.e. rows) in this alignment.
 

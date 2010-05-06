@@ -8,6 +8,9 @@ use IPC::Open3;
 use IO::Select;
 use Symbol;
 
+use FindBin qw($Bin);
+use lib $Bin;
+
 use Stockholm;
 use Stockholm::Database;
 
@@ -47,6 +50,7 @@ my $refSeqName;
 my $refSeqArgs = "";
 my $maxGapFraction = .8;
 my $minEntropy = 2;
+my $slice = 0;
 
 my $strand = 'f';
 my $oneShot = 0;
@@ -61,9 +65,7 @@ my ($gff_file, $gffRefSeq, $wig_file);
 my $filename;
 
 # guess path to xrate
-my $xrate = "";
-$xrate = $ENV{$DARTDIR}.'/bin/' if defined $ENV{$DARTDIR};
-$xrate .= "xrate";
+my $xrate = ( defined($ENV{$DARTDIR}) ? $ENV{$DARTDIR} : "$Bin/.." ).'/bin/xrate' ;
 
 # usage text
 my $usage;
@@ -74,6 +76,7 @@ $usage .= "      -w <n>  Window size (default is $windowSize)\n";
 $usage .= "      -d <n>  \"Delta\" = step size (default is half of window size)\n";
 $usage .= "  -dir <dir>  strand: 'f' or 'r', or 'fr' for both (default is '$strand')\n";
 $usage .= "   -r <name>  reference sequence in input alignment\n";
+$usage .= "      -slice  drop all alignment columns that are gapped in the reference sequence\n";
 $usage .= "      -g <n>  maximum gap fraction in reference sequence (default is $maxGapFraction)\n";
 $usage .= "      -b <n>  minimum bits per dinucleotide of reference sequence (default is $minEntropy)\n";
 $usage .= "          -o  One-shot mode: overrides -w, sets window size = end + 1 - start\n";
@@ -110,6 +113,8 @@ while (@ARGV) {
 	    defined ($chunkSize = shift) or die $usage;
 	} elsif ($arg eq '-r') {
 	    defined ($refSeqName = shift) or die $usage;
+	} elsif ($arg eq '-slice') {
+	    $slice = 1;
 	} elsif ($arg eq '-g') {
 	    defined ($maxGapFraction = shift) or die $usage;
 	    $refSeqArgs .= "$arg $maxGapFraction ";
@@ -158,7 +163,22 @@ my $stockdb = Stockholm::Database->from_file ($filename, $verbose);
 die "No alignments in input\n" if @$stockdb < 1;
 die "Can't process more than one input alignment\n" if @$stockdb > 1;
 my $stock = $stockdb->[0];
-die "Empty alignment\n" unless $stock->columns;
+die "Empty alignment\n" unless $stock->columns && $stock->sequences;
+
+# slice alignment, if requested
+if ($slice) {
+    if (!defined $refSeqName) {
+	$refSeqName = $stock->seqname->[0];
+	warn "No reference sequence supplied; using first row of alignment ($refSeqName)\n";
+    }
+    my $refSeq = $stock->seqdata->{$refSeqName};
+    if (defined $refSeq) {  # don't bother throwing an error here if $refSeq not defined. We will catch it later
+	my $gapCharRe = Stockholm::gapCharsRegexp();
+	my @gappy_cols = grep (substr ($refSeq, $_, 1) =~ /[$gapCharRe]/, 0..$stock->columns-1);
+	$stock->drop_columns (@gappy_cols);
+	warn "Dropped ", @gappy_cols+0, " columns that were gapped in ", $refSeqName, "\n" if $verbose;
+    }
+}
 
 # post-process command line args, in light of alignment
 $end = $stock->columns unless defined $end;
@@ -170,9 +190,9 @@ $windowSize = $end + 1 - $start if $oneShot;
 $delta = int ($windowSize / 2) unless defined $delta;
 die "Nonsense arguments: delta ($delta) > window size ($windowSize)\n" if $delta > $windowSize;
 
-my $overlap = $windowSize - $delta;
+my $overlap = $windowSize - $delta;  # overlap at each edge of window (so total overlap per window is 2* this)
 
-# reference sequence
+# reference sequence (post-slice)
 my $refSeq;
 if (defined $refSeqName) {
     die "Reference sequence '$refSeqName' not found\n" unless exists $stock->seqdata->{$refSeqName};
