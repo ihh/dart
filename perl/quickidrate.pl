@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 my $usage = "\nUsage: $0 <total length> <number of sequences> [gap frequency file]\n\nEstimates insertion and deletion rates.\nExpects three-column input format, one line per pairwise alignment:\n\nColumn #1 is the 'substitution distance' between the two sequences\nColumn #1 is the total number of match columns in the alignment\nColumn #3 is the number of match columns which are directly followed by match columns\n\n";
 

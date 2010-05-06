@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 my $usage = "Usage: $0 [-tcs|-sps] [<Stockholm file(s)...>]\n\n";
 $usage .= "Finds the \"consensus\" of a set of Stockholm-format multiple alignments,\n";

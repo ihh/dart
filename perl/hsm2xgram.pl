@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 # Convert old-school HSM files (input to tkfemit) into xgram-format files
 my $alphName = "ALPHABET";

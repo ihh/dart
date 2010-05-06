@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 # evolsayer: simulator for TKF Structure Tree
 # Ian Holmes, 2008-12-08

@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/env perl
 
 #INPUT: stockholm file name , three letter abbreviation for the schoring scheme , binning similiarity cutoff, ouput filename for consensus files
 

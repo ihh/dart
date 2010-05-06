@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/env perl -w
 
 $usage = "$0: TRee ALignment Picture PlottER\n";
 

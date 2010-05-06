@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 my $usage = "\nUsage: $0 <number of mixture components> [file]\n\nUses EM to estimate ML fit of mixture-geometric to empirical nonzero-length distribution\nExpects one- or two-column input format: LENGTH [FREQUENCY]\n";
 

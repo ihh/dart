@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 my $hsm2xgram = "hsm2xgram.pl";
 my $xgram2hsm = "xgram2hsm.pl";

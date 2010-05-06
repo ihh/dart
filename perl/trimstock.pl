@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 my $usage = "Usage: $0 <minscore> <Stockholm alignments...>";
 my $s = shift;

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 use CGI qw/:standard/;
 use Digest::MD5 qw(md5_base64);

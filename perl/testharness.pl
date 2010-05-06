@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 
 # Usage: $0 [...tests in dart/bin dir...] -fullpath [-cd 'testdir'] [...tests with fully qualified pathnames...]
 
