@@ -499,7 +499,7 @@ sub run_chunk {
 
 		    } elsif ($gf_tag eq "WIG") {
 			# handle WIG tags separately: correct the start points
-			# makes some strong
+			# makes some strong assumptions about xrate wiggle output, valid as of 5/5/2010 (e.g. it's always "fixedStep start=0 step=1")
 			my ($currentWigTrack, $pos);
 			for my $wig (@{$winOut->gf_($gf_tag)}) {
 			    if ($wig =~ /^track\b/) {
