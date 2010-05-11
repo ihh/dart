@@ -277,7 +277,7 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
     }
 
   // figure out what we need to do
-  const bool need_tree_estimation_grammar = do_neighbor_joining || do_branch_length_EM;
+  const bool need_tree_estimation_grammar = do_neighbor_joining || do_branch_length_EM || attach_rows;
   const bool need_tree_estimation_chain = do_neighbor_joining || (do_branch_length_EM && avoid_ECFG_for_branch_length_EM);
   const bool convert_seq_db = do_neighbor_joining || do_branch_length_EM || attach_rows;
 
