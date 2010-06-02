@@ -4,7 +4,7 @@ INTERPRETER = darts
 TESTSCRIPT  = t/test.scm
 
 TESTS      = 
-TARGETS    = $(TESTS) $(INTERPRETER) xrate simgram paircfg_xfold testsexpr
+TARGETS    = $(TESTS) $(INTERPRETER) xrate simgram paircfg_xfold testsexpr testchain
 DIRNAME    = ecfg
 
 DEPS       = @GUILE_DEPS@ amap telegraph scfg hmm hsm irrev tree seq util newmat randlib

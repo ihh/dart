@@ -3,7 +3,7 @@
 int main (int argc, char** argv)
 {
   // initialise the options parser
-  INIT_OPTS_LIST (opts, argc, argv, 1, "[options] <EG file>",
+  INIT_OPTS_LIST (opts, argc, argv, 1, "[options] <S-expr file>",
 		  "test ECFG S-expression parser\n");
 
   // parse the command line & do stuff
