@@ -1,4 +1,8 @@
 #include "ecfg/ecfgsexpr.h"
+#include "util/unixenv.h"
+
+// path to default chain file, from dart root
+#define DEFAULT_CHAIN_FILE "data/handalign/prot1.hsm"
 
 // wrapper for Alphabet::char2int
 int char2int (const Alphabet& alphabet, const sstring& s, const char* desc)
@@ -21,12 +25,16 @@ int char2int (const Alphabet& alphabet, const sstring& s, const char* desc)
 int main (int argc, char** argv)
 {
   // initialise the options parser
-  INIT_OPTS_LIST (opts, argc, argv, 1, "[options] <chain file>",
+  INIT_OPTS_LIST (opts, argc, argv, 0, "[options]",
 		  "read a substitution matrix and exponentiate it\n");
 
-  sstring src_char, dest_char;
+  sstring default_chain_filename;
+  default_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE;
+
+  sstring chain_filename, src_char, dest_char;
   double time;
 
+  opts.add ("c -chain-filename", chain_filename = default_chain_filename, "chain file");
   opts.add ("s -source-state", src_char = "a", "source state character");
   opts.add ("d -dest-state", dest_char = "a", "destination state character");
   opts.add ("t -time", time = 1., "rate matrix multiplier");
@@ -47,11 +55,8 @@ int main (int argc, char** argv)
   // do stuff
   try
     {
-      // get filename
-      const string ecfg_sexpr_filename = opts.args[0];
-
-      // read file, get SExpr
-      SExpr_file ecfg_sexpr_file (ecfg_sexpr_filename.c_str());
+      // read chain file, get SExpr
+      SExpr_file ecfg_sexpr_file (chain_filename.c_str());
       SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
 
       // init alphabet, rate matrix
@@ -66,11 +71,17 @@ int main (int argc, char** argv)
       // exponentiate matrix
       const array2d<double> cond_submat = rate_matrix.create_conditional_substitution_matrix (time);
 
+      // get equilibrium distribution
+      const vector<double> eqm_prob = rate_matrix.create_prior();
+
       // extract required element
       const double result = cond_submat (src_state, dest_state);
 
       // print alphabet tokens, in order
       cout << "Alphabet symbols: " << alphabet.tokens() << '\n';
+
+      // print equilibrium distribution
+      cout << "Equilibrium distribution: " << eqm_prob << '\n';
 
       // print required element
       cout << "exp(R*" << time << ")_{" << src_char << ',' << dest_char << "} = " << result << '\n';
