@@ -120,7 +120,7 @@ test: $(TARGETS) $(LIBTARGET) $(EXECTESTS)
 # The 'test FILE1 -nt FILE2' construct (for testing if FILE1 is newer than FILE2) works for GNU test (e.g. Linux or Macs), but not e.g. OSF1.
 # This is acceptable, as we pretty much rely on a GNU setup on development machines. For clean builds, the test should not be invoked.
 #
-$(TARGETS): $(OBJDIR) $(PREREQS)
+$(TARGETS): $(BINDIR) $(OBJDIR) $(PREREQS)
 	$(LN) -f $(SRCFILES) $(OBJDIR)
 	$(TEST) -e $(BINDIR)/$@ && $(LN) -f $(BINDIR)/$@ $(OBJDIR)/$@.tmp || eval
 	( cat Makefile; \
@@ -132,7 +132,7 @@ $(TARGETS): $(OBJDIR) $(PREREQS)
 
 # The library rule - same as the executables rule (above), but creates a library containing every object file.
 #
-$(LIBTARGET): $(OBJDIR) $(PREREQS)
+$(LIBTARGET): $(LIBDIR) $(OBJDIR) $(PREREQS)
 	$(LN) -f $(SRCFILES) $(OBJDIR)
 	$(TEST) -e $(LIBDIR)/$@ && $(LN) -f $(LIBDIR)/$@ $(OBJDIR)/$@.tmp || eval
 	( cat Makefile; \
@@ -164,7 +164,7 @@ clean: $(OBJDIR)
 cleanlib:
 	$(RM) -f $(LIBDIR)/$(LIBPREFIX)$(LIBDART)*$(LIBSUFFIX)
 
-# rules to make object directories
+# rules to make binary, library, object & test directories
 
 $(OBJDIR):
 	$(TEST) -d $(OBJROOTDIR) || mkdir $(OBJROOTDIR)
@@ -173,6 +173,12 @@ $(OBJDIR):
 
 $(TESTOBJDIR): $(OBJDIR)
 	$(TEST) -d $(TESTOBJDIR) || mkdir $(TESTOBJDIR)
+
+$(LIBDIR):
+	$(TEST) -d $(LIBDIR) || mkdir $(LIBDIR)
+
+$(BINDIR):
+	$(TEST) -d $(BINDIR) || mkdir $(BINDIR)
 
 # emacs tags
 
