@@ -141,5 +141,6 @@ AC_CONFIG_FILES([Makefile
                  src/tkf/Makefile
                  src/tree/Makefile
                  src/util/Makefile
+				 src/protpal/Makefile	
 		 src/util/unixenv.h])
 AC_OUTPUT
