@@ -88,6 +88,10 @@ evoldoer:
 indiegram:
 	cd $(SRCDIR)/indiegram; $(MAKE) -k $(RELEASE) workaround dep indiegram
 
+# protpal: approximate statistical alignment with sequence profiles
+protpal:
+	cd $(SRCDIR)/protpal; $(MAKE) -k $(RELEASE)  dep protpal
+
 
 # simgram: generate simulated sample alignments from xrate grammars
 simgram:
