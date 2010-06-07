@@ -1,11 +1,12 @@
 #include<iostream>
-#include "utils.h"
 #include <ctype.h>
 #include<set>
 #include<map>
 #include<vector>
 #include<string>
-#include "exactMatch.h"
+
+#include "protpal/exactMatch.h"
+#include "protpal/utils.h"
 
 using namespace std;
 

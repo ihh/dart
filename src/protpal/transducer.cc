@@ -298,7 +298,8 @@ double BranchTrans::get_match_weight(state b, int incoming_character, int outgoi
 
 
 // affine gap branch transducer
-BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix)
+BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, 
+						 double ins_open_rate, double del_open_rate, double gap_extend)
 {
   branch_length = branch_length_in;
   name = "Branch";
@@ -360,11 +361,10 @@ BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_E
   out.push_back(wait); out.push_back(insert);  outgoing[insert] = out; // insert -> I|W
   
 
-  // Transition weights are determined by the insertion/deletion rates (set here) and the branch_length (on input)
-  double ins_open_rate = .1;
-  double ins_extend = .8;  
-  double del_open_rate = .1;
-  double del_extend = .8;  
+  // Transition weights are determined by the insertion/deletion rates and the branch_length (set on input)
+
+  double ins_extend = gap_extend;
+  double del_extend = gap_extend;
   double wait2end = 1; // This is a forced transition...should have weight 1.
 
   // Probability/weight of an insertion 

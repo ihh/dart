@@ -1,11 +1,12 @@
+#ifndef EXACTMATCH_H
+#define EXACTMATCH_H
 #include<iostream>
-#include "utils.h"
 #include<set>
 #include<map>
 #include<vector>
 #include<string>
-#ifndef EXACTMATCH_H
-#define EXACTMATCH_H
+
+#include "protpal/utils.h"
 
 using namespace std;
 

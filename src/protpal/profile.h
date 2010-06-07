@@ -1,13 +1,15 @@
+#ifndef PROFILE_H
+#define PROFILE_H
 #include<iostream>
 #include<set>
 #include<map>
 #include<vector>
 #include<queue>
-#include "utils.h"
-#include "Q.h"
-#include "exactMatch.h"
-#ifndef PROFILE_H
-#define PROFILE_H
+
+#include "protpal/utils.h"
+#include "protpal/Q.h"
+#include "protpal/exactMatch.h"
+
 
 using namespace std;
 
@@ -149,7 +151,7 @@ class Profile
   void fill_DP(int);
   bfloat forward_prob; 
   // sample set of paths from DP matrix, storing info on their transitions, transition weights, etc
-  void sample_DP(int, int, bool);
+  void sample_DP(int, int, bool, bool);
   void cache_state(M_id m, M_id mPrime, bfloat weight);
   void cache_path(vector<M_id>); 
 
@@ -178,6 +180,8 @@ class Profile
   vector<node> subtreeNodes; 
   // vector mapping tree nodes to common names
   vector<string> node_names; 
+  // leaf nodes below this node (at present this is all leaf nodes...possibly exists ways to get this w/phylogeny class)
+  vector<Node> leaves; 
 
   // state-type-phylogeny. stores the state type for each state and node in the tree              
   map< vector<int>, map<node, string> > state_type_phylogeny;
@@ -233,7 +237,7 @@ class Profile
   bool is_in_envelope(state left_state, state right_state); 
 
   void path2alignment(vector<M_id> &);
-  void show_alignment(vector<M_id> &);
+  void show_alignment(vector<M_id> &, bool);
   void show_state(M_id);
 
 

@@ -1,11 +1,13 @@
+#ifndef TRANSDUCER_H
+#define TRANSDUCER_H
 #include<iostream>
 #include<map>
 #include<vector>
 #include<math.h>
-#include "utils.h"
+
+#include "protpal/utils.h"
 #include "ecfg/ecfgsexpr.h" // for array2d, alphabet classes
-#ifndef TRANSDUCER_H
-#define TRANSDUCER_H
+
 
 
 // Transducer class for *single* transducers.  
@@ -126,7 +128,7 @@ class BranchTrans : public Transducer
  public:
   float branch_length;
   // constructor.  Again, does everything for us for a basic setup/parameterization
-  BranchTrans(double, Alphabet&, Irrev_EM_matrix&);
+  BranchTrans(double, Alphabet&, Irrev_EM_matrix&, double, double, double);
   BranchTrans(double, bool);  
   BranchTrans(void);  
   array2d<double> conditional_sub_matrix;

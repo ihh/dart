@@ -4,9 +4,10 @@
 #include<iostream>
 #include<string>
 #include<map>
-#include "utils.h"
-#include "profile.h"
-#include "phylogeny.h"
+
+#include "protpal/utils.h"
+#include "protpal/profile.h"
+#include "tree/phylogeny.h"
 #include "ecfg/ecfgsexpr.h"
 
 class Reconstruction
@@ -48,7 +49,13 @@ class Reconstruction
   bool show_alignments; 
   int loggingLevel;
   int envelope_distance; 
+  bool leaves_only; 
   
+  //model parameters
+  double ins_rate;
+  double del_rate;   
+  double gap_extend; 
+
  private:
   // Help message
   void display_opts(void);

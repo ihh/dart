@@ -5,8 +5,9 @@
 #include <queue>
 #include <algorithm>
 #include <math.h>
-#include "utils.h"
-#include "profile.h"
+
+#include "protpal/utils.h"
+#include "protpal/profile.h"
 using namespace std;
 
 // Mini-class M_id methods
@@ -1084,7 +1085,7 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
 
 }
 // Top-level public methods
-void Profile::sample_DP(int num_paths, int logging, bool showAlignments)
+void Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool leaves_only)
 {
   // sample num_paths alignments from the DP matrix, showing the alignments according to 
   // showAlignments.  If showing alignments, they are printed in stockholm format, with
@@ -1498,7 +1499,7 @@ void Profile::sample_DP(int num_paths, int logging, bool showAlignments)
 	  std::cerr<<"\nError: an alignment's posterior probability was calculated as greater than 1.  This is not reasonable, and represents a calculation error. \n";
 	  std::cout<<"#Sampled alignment, bit-score: "<< -log(pathWeight)/log(2)<<":\n";	  
 	  std::cout<<  "       posterior probability: "<< pathWeight/forward_prob<<":\n";
-	  show_alignment(pi); 
+	  show_alignment(pi, false); 
 	  std::cerr<<"\n";
 	  exit(1); 
 	}
@@ -1507,7 +1508,7 @@ void Profile::sample_DP(int num_paths, int logging, bool showAlignments)
 	{
 	  std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
 	  std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
-	  show_alignment(pi); 
+	  show_alignment(pi, leaves_only); 
 	  std::cerr<<"\n";
 	}
 
@@ -1745,7 +1746,7 @@ void Profile::sum_paths_to(M_id mPrime)
 	  pi.push_back(mPrime);
 	  std::cerr<<"The state summed to, emissionweight: "<< emissionWeight<<"\n";
 	  mPrime.display(Q);
-	  show_alignment(pi); 
+	  show_alignment(pi, false); 
 	}
 	
   if(logging) std::cerr<<"Emission weight for this state: "<<emissionWeight<<endl;
@@ -2737,7 +2738,7 @@ void Profile::show_state(M_id m)
   // by show_state_phylo, which doesn't require the input to be a state, just a map from nodes->strings
   vector<M_id> pi; 
   pi.push_back(m); 
-  show_alignment(pi);
+  show_alignment(pi, false);
 }
 
 
@@ -2760,7 +2761,7 @@ void show_state_phylo(map<node, string> &stp)
 }
 
 
-void Profile::show_alignment(vector<M_id> &pi)
+void Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
 {
   // Visualize a path through a DP matrix as a multiple sequence alignment.  All null states that 
   // were summed over in previous iterations are shown according to bool showNulls (I'm not
@@ -2877,7 +2878,11 @@ void Profile::show_alignment(vector<M_id> &pi)
 	}
 
   for (nodeState = subAlignment.begin(); nodeState!= subAlignment.end(); nodeState++)	  
-	std::cout<< node_names[nodeState->first] << rep(maxNameLength-node_names[nodeState->first].size()+4, " ")<<nodeState->second<<endl;
+	{
+	  if (leaves_only && (!in(nodeState->first, leaves)))
+		continue;
+	  std::cout<< node_names[nodeState->first] << rep(maxNameLength-node_names[nodeState->first].size()+4, " ")<<nodeState->second<<endl;
+	}
 }
 
 
