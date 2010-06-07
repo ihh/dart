@@ -1,13 +1,14 @@
 #include<iostream>
 #include<math.h>
-#include "phylogeny.h"
-#include "profile.h"
-#include "reconstruction.h"
-#include "exactMatch.h"
-#include "transducer.h"
-#include "Q.h"
-#include "utils.h"
+
+#include "protpal/profile.h"
+#include "protpal/reconstruction.h"
+#include "protpal/exactMatch.h"
+#include "protpal/transducer.h"
+#include "protpal/Q.h"
+#include "protpal/utils.h"
 #include "ecfg/ecfgsexpr.h"
+#include "tree/phylogeny.h"
 
 // Main reconstruction program. 
 
@@ -88,8 +89,13 @@ int main(int argc, char* argv[])
 	  // Thetwo branch transducers must be re-created at each iteration so that the branch lengths
 	  // and the resulting parameters are correct.  Thus, Q's transitions must be re-built.  
 	  // Finally, marginalize Q's null states (e.g. IMDD)
-	  BranchTrans B_l(branchLengths[0], alphabet, rate_matrix); B_l.name ="Left branch";
-	  BranchTrans B_r(branchLengths[1], alphabet, rate_matrix); B_r.name ="right branch";
+	  BranchTrans B_l(branchLengths[0], alphabet, rate_matrix, 
+					  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend);
+	  B_l.name ="Left branch";
+
+	  BranchTrans B_r(branchLengths[1], alphabet, rate_matrix,
+					  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend);
+	  B_r.name ="Right branch";
 	  
 	  QTransducer Q(R, //singlet
 					B_l, //left-branch
@@ -108,11 +114,12 @@ int main(int argc, char* argv[])
 
 	  // Somewhat clunky: allow the profile to see the node-name mapping that the reconstruction.tree object
 	  // holds, for multiple alignment display.  
+	  profile.leaves = leaves; 
 	  profile.node_names = node_names; 
 	  profile.envelope_distance = reconstruction.envelope_distance; 
 
-// 	  del reconstruction.profiles[children[0]];
-// 	  del reconstruction.profiles[children[1]]; 
+	  reconstruction.profiles.erase( children[0] );
+	  reconstruction.profiles.erase( children[1] ); 
 
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging
 	  if(reconstruction.loggingLevel>=1)
@@ -131,7 +138,8 @@ int main(int argc, char* argv[])
 		  profile.sample_DP(
 							reconstruction.num_sampled_paths, // number of paths
 							reconstruction.loggingLevel, // debugging log messages ?
-							reconstruction.show_alignments // show sampled alignments ?
+							reconstruction.show_alignments, // show sampled alignments ?
+							reconstruction.leaves_only
 							); 
 		  if(reconstruction.loggingLevel>=1)
 			std::cerr<<"done.\n";
@@ -157,7 +165,8 @@ int main(int argc, char* argv[])
 		  profile.sample_DP(
 							1, // sample only the viterbi path
 							0, // debugging log messages
-							true // show the final alignment
+							true, // show the final alignment
+							reconstruction.leaves_only // show only the leaf alignment
 							); 
 		}
 	}

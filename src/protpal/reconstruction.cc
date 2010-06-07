@@ -2,13 +2,15 @@
 #include<string>
 #include<fstream>
 #include<sstream>
-#include "utils.h"
-#include "profile.h"
-#include "reconstruction.h"
-#include "phylogeny.h"
+
+#include "protpal/utils.h"
+#include "protpal/profile.h"
+#include "protpal/reconstruction.h"
+#include "tree/phylogeny.h"
 #include "util/piper.h"
 #include "ecfg/ecfgsexpr.h"
 #include "util/unixenv.h"
+
 #define DEFAULT_CHAIN_FILE "data/handalign/prot1.hsm"
 
 using namespace std; 
@@ -19,6 +21,13 @@ Reconstruction::Reconstruction(void)
   //  options["-fa"] = "<filename> (Unaligned) sequences in fasta file format\n";
 
   options["-t"] = "<string> Tree in newick file format\n";
+
+  options["-i"] = "<float> Insert rate (default .02) \n";
+  ins_rate = .019; 
+  options["-d"] = "<float> Delete rate (default .02)\n";    
+  del_rate = .02; 
+  options["-g"] = "<float> Gap-extend probability (default .4) \n";
+  gap_extend = .912; 
 
   options["-n"] = "<int> Number of paths to sample in traceback (default 10) \n";
   num_sampled_paths = 10;
@@ -32,7 +41,10 @@ Reconstruction::Reconstruction(void)
   num_sampled_paths = 10; 
 
   options["-sa"] = "<bool> Show sampled alignments for internal nodes (default false) \n";
-  show_alignments = false; 
+  show_alignments = false;
+
+  options["-l"] = "<bool> Show only leaves when displaying alignments (default false) \n";
+  leaves_only = false; 
  
   options["-log"] = 
 	"<int> Show log messages of varying levels of verbosity. (default = level 1 )"
@@ -97,6 +109,44 @@ void Reconstruction::get_cmd_args(int argc, char* argv[])
 			  exit(0); 
 			}
 		}
+
+	  else if (string(argv[i]) == "-i") 
+		{		
+		  const char* ins = argv[i+1]; 
+		  ins_rate = atof(ins);
+		  if (ins_rate < 0.0)
+			{
+			  std::cerr<<"ERROR: Insert rate must be greater than 0\n";
+			  display_opts(); 
+			  exit(0); 
+			}
+		}
+
+	  else if (string(argv[i]) == "-d") 
+		{		
+		  const char* del = argv[i+1]; 
+		  del_rate = atof(del);
+		  if (del_rate < 0.0 )
+			{
+			  std::cerr<<"ERROR: delete rate must be greater than 0\n";
+			  display_opts(); 
+			  exit(0); 
+			}
+		}
+
+	  else if (string(argv[i]) == "-g") 
+		{		
+		  const char* gap = argv[i+1]; 
+		  gap_extend = atof(gap);
+		  if (gap_extend < 0.0 || gap_extend >1)
+			{
+			  std::cerr<<"ERROR: Gap extend probability must be within 0 and 1\n";
+			  display_opts(); 
+			  exit(0); 
+			}
+		}
+
+
 	  else if (string(argv[i]) == "-e") 
 		{		
 		  const char* envDist = argv[i+1]; 
@@ -116,8 +166,17 @@ void Reconstruction::get_cmd_args(int argc, char* argv[])
 		  else
 			show_alignments = false; 
 		}
+	  else if (string(argv[i]) == "-l") 
+		{
+		  if (i==argc-1) leaves_only = true; 
+		  else if (string(argv[i+1]) == "true" || string(argv[i+1]) == "TRUE" || string(argv[i+1]) == "1")
+			leaves_only = true;
+		  else
+			leaves_only = false; 
+		}
+			  
 	  else if(string(argv[i]) == "-g")
-		  rate_matrix_filename = argv[i+1]; 
+		rate_matrix_filename = argv[i+1]; 
 	}
   if(!have_sequences)
 	{
