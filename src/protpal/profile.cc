@@ -1557,11 +1557,11 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 
 	  if (sampled_transition_weight[transitionPair] > 1.0)
 		{
-		  sampled_transition_weight[transitionPair] = 1.0;
+		  sampled_transition_weight[transitionPair] = 0.99999999; //for now..
 
 		  std::cerr<<"Warning: transition weight was cached as greater than one\nSome info:\n";
-		  std::cerr<<"Source state:\n\t"; m.display(Q);
-		  std::cerr<<"Destination state:\n\t"; mPrime.display(Q); 		  
+// 		  std::cerr<<"Source state:\n\t"; m.display(Q);
+// 		  std::cerr<<"Destination state:\n\t"; mPrime.display(Q); 		  
 		  std::cerr<<"Sampling weight: "<<weight<<endl; 
 		  std::cerr<<"DP cell for source state: "<<get_DP_cell(m)<<endl; 
 		  if(is_external(mPrime))
