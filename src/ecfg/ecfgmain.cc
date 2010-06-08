@@ -631,7 +631,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 	  const bool want_wiggle = (annotate || wiggle_filename.size() > 0) && ecfg.has_wiggle();
 
 	  // decide whether we need CYK, Inside, Outside, peeling
-	  const bool want_CYK = report_maxscore || want_GC || want_GFF;
+	  const bool want_CYK = report_maxscore || want_GC || want_GFF || want_ancestral_reconstruction;
 	  const bool want_outside = report_postprob || report_confidence || want_wiggle || want_hidden_classes || want_ancestral_reconstruction;
 	  const bool want_inside = report_sumscore || want_outside;
 	  const bool want_fill_down = want_hidden_classes || want_ancestral_reconstruction;
