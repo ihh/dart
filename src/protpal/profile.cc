@@ -124,7 +124,7 @@ void AbsorbingTransducer::test_transitions(void)
   bool foundSuper = false; 
   for (stateIter = outgoing.begin(); stateIter!=outgoing.end(); stateIter++)
 	{
-	  if (stateIter->second>1.0)
+	  if (stateIter->second>1.001)
 		{
 		  std::cerr<<"Error: State "<<stateIter->first<< " is super-normalized in its transitions\n";
 		  std::cerr<<"Value: "<< stateIter->second<<endl; 
@@ -635,7 +635,7 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 					{
 					  std::cerr<<"New transition added, value: "<<toAdd<<endl; 
 					}
-				  if (toAdd>1.0)
+				  if (toAdd>1.001)
 					{
 					  std::cerr<<"Error: cached transition weight is greater than 1, after summing over null states\n";
 					  exit(1);
@@ -688,7 +688,7 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 					  std::cerr<<"Internal emission weight: "<< sampled_profile->get_internal_cascade_weight(*ePrime);
 					  exit(1);
 					}
-				  else if(toAdd >1.0)
+				  else if(toAdd >1.001)
 					{
 					  std::cerr<<"Error: Stored transition weight is greater than 1.\n";
 					  exit(1);
@@ -1494,7 +1494,7 @@ void Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool le
 
   // Store the null states' accounted characters:
   cache_path(pi); 
-  if(pathWeight/forward_prob > 1.0)
+  if(pathWeight/forward_prob > 1.001)
 	{
 	  std::cerr<<"\nError: an alignment's posterior probability was calculated as greater than 1.  This is not reasonable, and represents a calculation error. \n";
 	  std::cout<<"#Sampled alignment, bit-score: "<< -log(pathWeight)/log(2)<<":\n";	  
@@ -1559,23 +1559,23 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 		{
 		  sampled_transition_weight[transitionPair] = 0.99999999; //for now..
 
-		  std::cerr<<"Warning: transition weight was cached as greater than one\nSome info:\n";
+// 		  std::cerr<<"Warning: transition weight was cached as greater than one\nSome info:\n";
 // 		  std::cerr<<"Source state:\n\t"; m.display(Q);
 // 		  std::cerr<<"Destination state:\n\t"; mPrime.display(Q); 		  
-		  std::cerr<<"Sampling weight: "<<weight<<endl; 
-		  std::cerr<<"DP cell for source state: "<<get_DP_cell(m)<<endl; 
-		  if(is_external(mPrime))
-			{
-			  std::cerr<<"External state,\n";
-			  std::cerr<<"Emission weight for destination state: "<<compute_emission_weight(mPrime)<<endl; 
-			  std::cerr<<"R's transition weight: "<<Q.get_R_transition_weight(m.q_state, mPrime.q_state)<<endl;
+// 		  std::cerr<<"Sampling weight: "<<weight<<endl; 
+// 		  std::cerr<<"DP cell for source state: "<<get_DP_cell(m)<<endl; 
+// 		  if(is_external(mPrime))
+// 			{
+// 			  std::cerr<<"External state,\n";
+// 			  std::cerr<<"Emission weight for destination state: "<<compute_emission_weight(mPrime)<<endl; 
+// 			  std::cerr<<"R's transition weight: "<<Q.get_R_transition_weight(m.q_state, mPrime.q_state)<<endl;
 			  
-			}
-		  else 
-			{
-			  std::cerr<<"External state,\n";
-			  std::cerr<<"Emission weight for destination state: "<<compute_emission_weight(mPrime)<<endl; 
-			}
+// 			}
+// 		  else 
+// 			{
+// 			  std::cerr<<"External state,\n";
+// 			  std::cerr<<"Emission weight for destination state: "<<compute_emission_weight(mPrime)<<endl; 
+// 			}
 		}
 	}
 }
@@ -2408,7 +2408,7 @@ bfloat Profile::get_external_cascade_weight(M_id e, int charIndex)
 	  std::cerr<<Q.get_state_name(e.q_state)<<endl;
 	  exit(1);
 	}
-  if (out>1.0)
+  if (out>1.001)
 	std::cerr<<"Warning: absorb weight is greater than one, not reasonable\n";
   else 
 	return out; 
