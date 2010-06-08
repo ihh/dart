@@ -1557,6 +1557,8 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 
 	  if (sampled_transition_weight[transitionPair] > 1.0)
 		{
+		  sampled_transition_weight[transitionPair] = 1.0;
+
 		  std::cerr<<"Warning: transition weight was cached as greater than one\nSome info:\n";
 		  std::cerr<<"Source state:\n\t"; m.display(Q);
 		  std::cerr<<"Destination state:\n\t"; mPrime.display(Q); 		  
@@ -1574,7 +1576,6 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 			  std::cerr<<"External state,\n";
 			  std::cerr<<"Emission weight for destination state: "<<compute_emission_weight(mPrime)<<endl; 
 			}
-		  exit(0);
 		}
 	}
 }
@@ -2790,7 +2791,7 @@ void Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
 		  if (! is_flush(state_type_phylogeny[m.toVector()])) 
 			{
 			  std::cerr<<"STP is not flush!\n";
-			  exit(0);
+			  exit(1);
 			}
 		  for (nodeState = state_type_phylogeny[m.toVector()].begin(); 
 			   nodeState != state_type_phylogeny[m.toVector()].end(); nodeState++)
