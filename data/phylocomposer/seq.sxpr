@@ -6,8 +6,7 @@
  (sequence (A G G C C C A))
  (transducer TKF91_ROOT)
  (branch (transducer TKF91_BRANCH) (bit-profile (A G C ((C 1) (G 1)) A)))
- (branch (transducer TKF91_BRANCH) (profile (((A .5)(C .5)) ((G .1)) C C A)))
- )
+ (branch (transducer TKF91_BRANCH) (profile (((A .5)(C .5)) ((G .1)) C C A))))
 
 
 (bit-value ((Qz A G) 1)  ;; this label, Qz, isn't actually used anywhere; it's just assigned a value here to test the warning message
@@ -66,8 +65,7 @@
  (transition (from I) (to I) (label kappa))
  (transition (from I) (to W) (label ~kappa))
 
- (transition (from W) (to E))
-)
+ (transition (from W) (to E)))
 
 (transducer
 
@@ -95,5 +93,4 @@
  (transition (from D) (to W) (label ~gamma))
 
  (transition (from I) (to I) (label beta))
- (transition (from I) (to W) (label ~beta))
-)
+ (transition (from I) (to W) (label ~beta)))

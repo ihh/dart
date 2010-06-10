@@ -12,27 +12,20 @@
 		   M E))  ;; so should end & start states
 	 (branch (transducer TKF91_BRANCH) (to $L1)
 		 (state (S M M M M M M M E))
-		 (sequence (A G G C C C A))
-		 )
+		 (sequence (A G G C C C A)))
 	 (branch (transducer TKF91_BRANCH) (to $L2)
 		 (state (M M M M M M M))
-		 (sequence (A G G T C C G))
-		 )
-	 )
+		 (sequence (A G G T C C G))))
 
  (branch (transducer TKF91_BRANCH) (from $ROOT) (to $R)
 ;; We leave the following branch unspecified, as we want to sample it.
 ;; 	 (state (S M M M I M M M M E))
 	 (branch (transducer TKF91_BRANCH) (to $R1)
 		 (state (M M M M M M M M))
-		 (sequence (A G G G C C C A))
-		 )
+		 (sequence (A G G G C C C A)))
 	 (branch (transducer TKF91_BRANCH) (to $R2)
 		 (state (M M M D I M M M M))
-		 (sequence (A G G A T C C G))
-		 )
-	 )
-)
+		 (sequence (A G G A T C C G)))))
 
 
 (token (A C G T))
@@ -52,8 +45,7 @@
  (transition (from I) (to I) (label kappa))
  (transition (from I) (to W) (label ~kappa))
 
- (transition (from W) (to E))
-)
+ (transition (from W) (to E)))
 
 (transducer
 
@@ -81,8 +73,7 @@
  (transition (from D) (to W) (label ~gamma))
 
  (transition (from I) (to I) (label beta))
- (transition (from I) (to W) (label ~beta))
-)
+ (transition (from I) (to W) (label ~beta)))
 
 
 (bit-value (beta 2)
