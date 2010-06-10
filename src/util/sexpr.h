@@ -51,12 +51,13 @@ struct SExpr
   inline bool is_empty_list() const;
   inline bool is_atom() const;
 
+  inline bool has_tag();  // true if there are exactly two children and the first child is an atom
+  inline bool has_value();  // true if there are exactly two children
+
   // tag() returns the atom of the first child, or an error if that doesn't exist
-  inline bool has_tag();
   SExpr_atom& tag();
 
   // value() returns the second child, or an error if there aren't exactly two children
-  inline bool has_value();
   SExpr& value();
 
   // values() returns all children but the first, or an error if there are no children
