@@ -44,12 +44,18 @@ class Reconstruction
   // default naming of internal nodes.  (not yet implemented)
   vector<string> get_node_names(void);
   
+  // simulation
+  bool simulate; 
+  void make_sexpr_file(Alphabet, Irrev_EM_matrix);
+  string show_branch(node); 
+
   // Reconstruction algorithm parameters
   int num_sampled_paths;
   bool show_alignments; 
   int loggingLevel;
   int envelope_distance; 
   bool leaves_only; 
+
   
   //model parameters
   double ins_rate;

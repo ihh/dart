@@ -163,7 +163,7 @@ SingletTrans::SingletTrans(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix)
   vector<state> out;
   out.push_back(1);out.push_back(2) ;outgoing[0] = out;  // start -> (insert|wait)
   out.clear(); 
-  out.push_back(2); outgoing[1] = out; // insert -> wait
+  out.push_back(2);out.push_back(1); outgoing[1] = out; // insert -> wait|insert
   out.clear(); 
   out.push_back(3); outgoing[2] = out; // wait -> end
 
