@@ -26,6 +26,7 @@ int main(int argc, char* argv[])
   
   // Initialize options / arguments from cmd line.  Tree, input sequences, etc. 
   reconstruction.get_cmd_args(argc, argv);
+
   //get_node_names assigns reasonable names to internal nodes (e.g. all descendent leaves, joined by "_"
   //  node_names = reconstruction.get_node_names(); 
   for (int i=0; i< reconstruction.tree.node_name.size(); i++)
@@ -45,7 +46,13 @@ int main(int argc, char* argv[])
   SingletTrans R(alphabet, rate_matrix);
   SplittingTrans Upsilon;
 
-
+  // If creating a simulation file was requested, do this instead of reconstruction
+  if (reconstruction.simulate)
+	{
+	  reconstruction.make_sexpr_file(alphabet, rate_matrix); 
+	  exit(0); 
+	}
+  
   //  Initialize the exact-match transducers at leaf nodes
   vector<Node> leaves = reconstruction.tree.leaf_vector(); 
   for (int i=0; i<leaves.size(); i++)
