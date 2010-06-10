@@ -20,6 +20,8 @@ int main(int argc, char* argv[])
   vector<double> branchLengths;   
   vector<string> node_names;
   string alphabet_string; 
+  double verySmall = 0.00001; //proxy for zero-length branches
+  double branch_length; 
 
   // create main reconstruction object
   Reconstruction reconstruction;
@@ -89,7 +91,13 @@ int main(int argc, char* argv[])
 	  for_rooted_children(reconstruction.tree, treeNode, child)
 		{
 		  children.push_back(*child); 
-		  branchLengths.push_back( reconstruction.tree.branch_length(treeNode ,*child));
+		  branch_length = max(verySmall, reconstruction.tree.branch_length(treeNode ,*child));
+		  if (branch_length != reconstruction.tree.branch_length(treeNode ,*child))
+		    {
+		      std::cerr<<"Warning: branch length "<< reconstruction.tree.branch_length(treeNode ,*child);
+		      std::cerr<<" rounded up to "<< branch_length<<endl; 
+		    }
+		  branchLengths.push_back(branch_length); 
 		}
 
 	  // Instantiate the Q transducer object and its prerequisites.  
