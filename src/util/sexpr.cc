@@ -307,25 +307,28 @@ vector<SExpr_atom> SExpr_atom::from_vector (const vector<sstring>& s)
 SExpr_atom& SExpr::tag()
 {
   if (is_atom())
-    THROWEXPR ("In SExpr (" << *this << "):\nAttempt to find name of atom");
+    THROWEXPR ("In SExpr (" << *this << "):\nAn atom was encountered where I expected to find a (tag value) pair");
   if (is_empty_list())
-    THROWEXPR ("In SExpr (" << *this << "):\nAttempt to find name of empty list");
+    THROWEXPR ("In SExpr (" << *this << "):\nAn empty list was encountered where I expected to find a (tag value) pair");
   if (!(*this)[0].is_atom())
-    THROWEXPR ("In SExpr (" << *this << "):\nAttempt to call tag() method, which requires that first child is an atom");
+    THROWEXPR ("In SExpr (" << *this << "):\nAn atom was encountered where I expected to find the tag of a (tag value) pair");
   return (*this)[0].atom;
 }
 
 SExpr& SExpr::value()
 {
+  if (is_atom())
+    THROWEXPR ("In SExpr (" << *this << "):\nAn atom was encountered where I expected to find a (tag value) pair");
+  if (is_empty_list())
+    THROWEXPR ("In SExpr (" << *this << "):\nAn empty list was encountered where I expected to find a (tag value) pair");
   if (!has_value())
-    THROWEXPR ("In SExpr (" << *this << "):\nMissing or multiple values");
+    THROWEXPR ("In SExpr (" << *this << "):\nA list of more than two elements was encountered where I expected to find a (tag value) pair");
   return (*this)[1];
 }
 
 vector<SExpr*> SExpr::values()
 {
-  if (!has_tag())
-    THROWEXPR ("In SExpr: Missing tag");
+  tag();  // as a validation step perform the same tests, and generate the same error messages on failure, as if we had tried to access the tag
 
   vector<SExpr*> vals;
   for (SExpr::SExprIter child_iter = ++child.begin();
@@ -355,7 +358,7 @@ SExpr& SExpr::find_or_die (const sstring& child_tag, int offset)
 {
   SExpr* sexpr = find (child_tag, offset);
   if (!sexpr)
-    THROWEXPR ("In (" << *this << "):\nCouldn't find tag (" << child_tag << ")");
+    THROWEXPR ("In (" << *this << "):\nI was looking for a (tag value) pair where the tag was '" << child_tag << "', but I couldn't find it");
   return *sexpr;
 }
 
@@ -412,20 +415,20 @@ vector<SExpr*> SExpr::find_all (const char* child_tag, int offset)
 const SExpr_atom& SExpr::get_atom() const
 {
   if (!is_atom())
-    THROWEXPR ("In SExpr (" << *this << "):\nSExpr is not an atom");
+    THROWEXPR ("In SExpr (" << *this << "):\nI was expecting this to be an atomic expression, but it's a list");
   return atom;
 }
 
 vector<sstring> SExpr::atoms_to_strings (int offset)
 {
   if (is_atom())
-    THROWEXPR ("In SExpr (" << *this << "):\nSExpr is not a list");
+    THROWEXPR ("In SExpr (" << *this << "):\nI was expecting this to be a list expression, but it's an atom");
   vector<sstring> strings;
   for_contents (list<SExpr>, child, c)
     if (--offset < 0)
       {
 	if (!c->is_atom())
-	  THROWEXPR ("In SExpr (" << *this << "):\nSExpr (" << *c << ") is not an atom");
+	  THROWEXPR ("In SExpr (" << *this << "):\nI was expecting (" << *c << ") to be an atom, but it's a list");
 	strings.push_back (c->atom);
       }
   return strings;
@@ -438,7 +441,7 @@ SExpr& SExpr::operator[] (int n_child)
   for (i = child.begin(); i != child.end() && n_child > 0; --n_child, ++i)
     { }
   if (i == child.end())
-    THROWEXPR ("In SExpr (" << *this << "):\nChild [" << for_err << "] not found");
+    THROWEXPR ("In SExpr (" << *this << "):\nI was expecting this to be a list with at least " << (for_err+1) << " child"<<(for_err==0?"":"ren") << " but I can't find the child at index #" << for_err);
   return *i;
 }
 
@@ -446,11 +449,11 @@ SExpr& SExpr::operator() (const sstring& child_tag, int offset)
 {
   SExpr* c = find (child_tag, offset);
   if (!c)
-    THROWEXPR ("In SExpr (" << *this << "):\nChild with tag (" << child_tag << ") not found");
+    THROWEXPR ("In SExpr (" << *this << "):\nI was looking for a (tag value) pair where the tag is " << child_tag << " but I can't find it");
   if (c->child.size() < 2)
-    THROWEXPR ("In SExpr (" << *this << "):\nChild with tag (" << child_tag << ") has no value");
+    THROWEXPR ("In SExpr (" << *this << "):\nI was looking for a (tag value) pair where the tag is " << child_tag << " but all I found was a (" << child_tag << ") with no value");
   if (c->child.size() > 2)
-    CLOGERR << "WARNING -- in SExpr (" << *this << "):\nWARNING -- child with tag (" << child_tag << ") has multiple values; I'm just looking at the first value\n";
+    CLOGERR << "WARNING -- in SExpr (" << *this << "):\nWARNING -- I was looking for a (tag value) pair where the tag was '" << child_tag << "' but instead I found a list with multiple values (tag value1 value2...) so I'm just looking at value1\n";
   return c->value();
 }
 
@@ -495,7 +498,7 @@ void SExpr_file::read_text_from_file (const char* filename)
 {
   ifstream in (filename);
   if (!in)
-    THROWEXPR ("SExpr_file: file '" << filename << "' not found");
+    THROWEXPR ("SExpr_file: input file '" << filename << "' not found");
   read_text_from_stream (in);
 }
 
