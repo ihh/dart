@@ -49,7 +49,8 @@ int main(int argc, char* argv[])
   // If creating a simulation file was requested, do this instead of reconstruction
   if (reconstruction.simulate)
 	{
-	  reconstruction.make_sexpr_file(alphabet, rate_matrix); 
+	  reconstruction.simulate_alignment(alphabet, rate_matrix); 
+	  //reconstruction.make_sexpr_file(alphabet, rate_matrix); 
 	  exit(0); 
 	}
   

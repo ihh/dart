@@ -7,6 +7,7 @@
 
 #include "protpal/utils.h"
 #include "protpal/profile.h"
+#include "protpal/transducer.h"
 #include "tree/phylogeny.h"
 #include "ecfg/ecfgsexpr.h"
 
@@ -48,7 +49,13 @@ class Reconstruction
   bool simulate; 
   void make_sexpr_file(Alphabet, Irrev_EM_matrix);
   string show_branch(node); 
-
+  void simulate_alignment(Alphabet, Irrev_EM_matrix);
+  
+  //simulation utility functions
+  string sample_pairwise(string, BranchTrans); 
+  string sample_root(SingletTrans); 
+  
+  
   // Reconstruction algorithm parameters
   int num_sampled_paths;
   bool show_alignments; 
