@@ -50,6 +50,7 @@ class Reconstruction
   void make_sexpr_file(Alphabet, Irrev_EM_matrix);
   string show_branch(node); 
   void simulate_alignment(Alphabet, Irrev_EM_matrix);
+  int rootLength; 
   
   //simulation utility functions
   string sample_pairwise(string, BranchTrans); 
