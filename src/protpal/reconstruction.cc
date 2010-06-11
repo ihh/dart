@@ -573,11 +573,18 @@ string Reconstruction::sample_pairwise(string parentSeq, BranchTrans branch)
 	  for (sIter = outgoing.begin(); sIter != outgoing.end(); sIter++)
 		outgoingWeights.push_back( branch.get_transition_weight(s, *sIter) );
 
+	  
+	  // This added bit is due to a slight quirk in the transducer structure that's used.  
+	  // For soomewhat tricky reasons, there can only be one wait state with a  wait-end transitions
+	  // Thus the other wait states can never reach the end state/terminate so we must manually add such a 
+	  // transition here.  This comes up with the affine gap transducer (which is default), since it has two
+	  // wait states, but only one has a wait -> end transition. 
+	
 	  if (inIdx == parentSeq.size() && branch.get_state_type(s) == "W")
 		if ( !in( endState, outgoing) )
 		  {
 			outgoing.push_back(endState); 
-			outgoingWeights.push_back(1); 
+			outgoingWeights.push_back(1.0); 
 		  }
 	  
 	  
