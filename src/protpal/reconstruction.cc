@@ -34,6 +34,9 @@ Reconstruction::Reconstruction(void)
   options["-g"] = "<float> Gap-extend probability (default .4) \n";
   gap_extend = .912; 
 
+  options["-r"] = "<int> Root sequence length in simulation.  Default is to sample direclty from singlet transducer.  \n";
+  rootLength = -1; 
+
   options["-n"] = "<int> Number of paths to sample in traceback (default 10) \n";
   num_sampled_paths = 10;
 
@@ -114,6 +117,12 @@ void Reconstruction::get_cmd_args(int argc, char* argv[])
 			  exit(0); 
 			}
 		}
+	  else if (string(argv[i]) == "-r") 
+		{		
+		  const char* rL = argv[i+1]; 
+		  rootLength = atoi(rL);
+		}
+
 
 	  else if (string(argv[i]) == "-i") 
 		{		
@@ -462,15 +471,15 @@ void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_
   string parentSeq, childName;
 
   SingletTrans R(alphabet, rate_matrix);
+  //write the tree in stockolm style
+  std::cout<<"#=GF NH\t";
+  tree.write(std::cout, 0); 
 
   for_nodes_pre (tree, tree.root, -1, bi)
     {
-
       const Phylogeny::Branch& b = *bi;
       node treeNode = b.second;
-
 	  //std::cout<<"visiting node:" << treeNode<<endl; 
-
 	  if (treeNode == tree.root)
 		{
 		  sequences[treeNode] = sample_root(R); 
@@ -499,6 +508,18 @@ string Reconstruction::sample_root(SingletTrans R)
   vector<state> outgoing; 
   vector<double> outgoingWeights; 
   int sampled; 
+
+  if (rootLength != -1)
+	{
+	  for (s=0; s<R.states.size(); s++)
+		if (R.get_state_type(s) == "I")
+		  outgoingWeights = R.get_emission_distribution(s);
+
+	  for (int sampled=0; sampled< rootLength; sampled++)
+		childSeq += R.alphabet[ sample(outgoingWeights) ];
+	  return childSeq; 
+	}
+		  
 
   while (s != R.states.size()-1) // not the end state
 	{
