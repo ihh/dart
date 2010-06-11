@@ -107,6 +107,17 @@ double Transducer::get_transition_weight(state m, state mPrime)
 	}
 }
 
+vector<double> Transducer::get_emission_distribution(state b)
+{
+  if (get_state_type(b) == "I")
+	return emission_weight_matrix[b];
+  else
+	{
+	  std::cerr<<"Can't get emission distribution of non-emit state!\n";
+	  exit(1);
+	}
+}
+
 double Transducer::get_emission_weight(state b, int charIndex)
 {
   string insert = "I";

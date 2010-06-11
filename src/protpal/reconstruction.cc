@@ -23,7 +23,8 @@ Reconstruction::Reconstruction(void)
 
   options["-t"] = "<string> Tree in newick file format\n";
   
-  options["-s"] = "<bool> Rather than aligning, create an sexpr file to pipe to phylcomposer.  Use protpal -s -t <tree> | phylocomposer --simulate | phylcomposter -al <alignment_file> to create a simulated alignment for the tree of interest\n";
+  //  options["-s"] = "<bool> Rather than aligning, create an sexpr file to pipe to phylcomposer.  Use protpal -s -t <tree> | phylocomposer --simulate | phylcomposter -al <alignment_file> to create a simulated alignment for the tree of interest\n";
+  options["-s"] = "<bool> Rather than aligning, simulate a set of (unaligned) sequences according to the models (e.g. transducers, rate matrix, tree) specified. \n";
   simulate = false; 
 
   options["-i"] = "<float> Insert rate (default .02) \n";
@@ -454,3 +455,126 @@ string Reconstruction::show_branch(node startNode)
   out += "\t);; end branch " + string(tree.node_name[startNode].c_str()) +  " \n\n";
   return out; 
 }
+
+void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_matrix)
+{
+  map<node, string> sequences; 
+  string parentSeq, childName;
+
+  SingletTrans R(alphabet, rate_matrix);
+
+  for_nodes_pre (tree, tree.root, -1, bi)
+    {
+
+      const Phylogeny::Branch& b = *bi;
+      node treeNode = b.second;
+
+	  //std::cout<<"visiting node:" << treeNode<<endl; 
+
+	  if (treeNode == tree.root)
+		{
+		  sequences[treeNode] = sample_root(R); 
+		  std::cout<< childName << tree.node_name[treeNode] << "   " << sequences[treeNode] <<endl; 
+			}
+	  else
+		{
+		  // construct a branch transducer with the appropriate branch length.
+		  BranchTrans branch(tree.branch_length(b.first, b.second), alphabet, rate_matrix, ins_rate, del_rate, gap_extend); 
+
+		  parentSeq = sequences[b.first]; 
+		  childName = string( tree.node_name[b.second].c_str() ); 	  
+		  
+		  sequences[treeNode] = sample_pairwise(parentSeq, branch);
+		  std::cout<< childName << "    " << sequences[treeNode] << endl; 
+		}
+	}
+}
+
+string Reconstruction::sample_root(SingletTrans R)
+{
+  state s = 0;  // 0 is the start state
+  string sType;
+  vector<state>::iterator sIter; 
+  string childSeq; 
+  vector<state> outgoing; 
+  vector<double> outgoingWeights; 
+  int sampled; 
+
+  while (s != R.states.size()-1) // not the end state
+	{
+	  outgoing = R.get_outgoing(s); 
+	  outgoingWeights.clear();
+	  for (sIter = outgoing.begin(); sIter != outgoing.end(); sIter++)
+		outgoingWeights.push_back( R.get_transition_weight(s, *sIter) );
+	  //The new state is sampled
+	  sampled = sample(outgoingWeights)	  ;
+	  s = outgoing[sampled]; 
+	  sType = R.get_state_type(s); 
+	  
+	  if  (sType == "I")
+		{
+		  outgoingWeights = R.get_emission_distribution(s);
+		  childSeq += R.alphabet[ sample(outgoingWeights) ];
+		}
+	}
+  return childSeq;
+}
+  
+string Reconstruction::sample_pairwise(string parentSeq, BranchTrans branch)
+{
+  state s = 0;  // 0 is the start state
+  string sType;
+  vector<state>::iterator sIter; 
+  string childSeq; 
+  vector<state> outgoing, possible; 
+  vector<double> outgoingWeights; 
+  int inIdx = 0, incomingCharacter; 
+
+  while (s != branch.states.size()-1) // not the end state
+	{
+	  outgoing.clear();
+	  possible = branch.get_outgoing(s); 
+	  for (sIter=possible.begin(); sIter!=possible.end(); sIter++)
+		{
+		  if (inIdx != parentSeq.size())
+			{
+			  //we can only transition to end state if we've used up all the input characters
+			  if (branch.get_state_type(*sIter) != "E") 
+				outgoing.push_back(*sIter);
+			}
+		  else
+			//Similarly, after the input characters have been exhausted, we can't go to match or delete
+			if (branch.get_state_type(*sIter) != "M" && (branch.get_state_type(*sIter) != "D") ) 
+			  outgoing.push_back(*sIter);
+		}
+	  
+	  outgoingWeights.clear(); 
+	  for (sIter = outgoing.begin(); sIter != outgoing.end(); sIter++)
+		outgoingWeights.push_back( branch.get_transition_weight(s, *sIter) );
+	  
+	  //The new state is sampled
+	  s = outgoing[sample(outgoingWeights)]; 
+	  sType = branch.get_state_type(s); 
+	  //std::cout<<"new state: "<<s<<"  type:"<<branch.get_state_type(s)<<endl; 
+	  
+	  if  (sType == "I")
+		{
+		  outgoingWeights = branch.get_emission_distribution(s);
+			childSeq += branch.alphabet[ sample(outgoingWeights)  ];
+		}
+
+	  else if (sType == "M") 
+		{
+		  incomingCharacter = index(stringAt(parentSeq, inIdx), branch.alphabet); 
+		  outgoingWeights.clear(); 
+		  for (int charIdx=0; charIdx < branch.alphabet_size; charIdx++)
+			outgoingWeights.push_back(branch.get_match_weight(s, incomingCharacter, charIdx) );
+		  childSeq += branch.alphabet[sample(outgoingWeights)];
+		  inIdx++; 
+		}
+	  else if ( sType == "D")
+		inIdx++;
+	}
+  return childSeq;
+}
+

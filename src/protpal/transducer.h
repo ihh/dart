@@ -39,6 +39,7 @@ class Transducer
   // Access distribution over inserted characters.  Check that r is an insert state, and int is within the 
   // alphabet bounds.
   double get_emission_weight(state r, int charIndex);
+  vector<double> get_emission_distribution(state r);
 
   // Access transition weights.  
   double get_transition_weight(state m, state mPrime);
