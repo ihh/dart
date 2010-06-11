@@ -543,7 +543,7 @@ string Reconstruction::sample_root(SingletTrans R)
   
 string Reconstruction::sample_pairwise(string parentSeq, BranchTrans branch)
 {
-  state s = 0;  // 0 is the start state
+  state s = 0, sNew, endState = branch.states.size()-1;  // 0 is the start state
   string sType;
   vector<state>::iterator sIter; 
   string childSeq; 
@@ -551,7 +551,7 @@ string Reconstruction::sample_pairwise(string parentSeq, BranchTrans branch)
   vector<double> outgoingWeights; 
   int inIdx = 0, incomingCharacter; 
 
-  while (s != branch.states.size()-1) // not the end state
+  while (s != endState) // not the end state
 	{
 	  outgoing.clear();
 	  possible = branch.get_outgoing(s); 
@@ -572,16 +572,38 @@ string Reconstruction::sample_pairwise(string parentSeq, BranchTrans branch)
 	  outgoingWeights.clear(); 
 	  for (sIter = outgoing.begin(); sIter != outgoing.end(); sIter++)
 		outgoingWeights.push_back( branch.get_transition_weight(s, *sIter) );
+
+	  if (inIdx == parentSeq.size() && branch.get_state_type(s) == "W")
+		if ( !in( endState, outgoing) )
+		  {
+			outgoing.push_back(endState); 
+			outgoingWeights.push_back(1); 
+		  }
+	  
 	  
 	  //The new state is sampled
-	  s = outgoing[sample(outgoingWeights)]; 
+	  sNew = outgoing[sample(outgoingWeights)]; 
+	  if (branch.get_state_type(s) == "W" && branch.get_state_type(sNew) == "W")
+		{
+		  std::cerr<<"Wait-wait transition, problem!\n Outgoing size, states, possible: "<<outgoing.size() << " , ";
+		  std::cerr<<"outgoing states"; displayVector(outgoing);
+		  std::cerr<<"\n";
+		  std::cerr<<"outgoingWeights: "; displayVector(outgoingWeights);
+		  std::cerr<<"\n";
+		  std::cerr<<"possible states"; displayVector(possible);
+		  exit(1); 
+		}
+
+
+	  s = sNew; 
 	  sType = branch.get_state_type(s); 
-	  //std::cout<<"new state: "<<s<<"  type:"<<branch.get_state_type(s)<<endl; 
+	  if (loggingLevel >=2)
+		std::cerr<<"Pairwise: new state: "<<s<<"  type: "<<branch.get_state_type(s)<<endl; 
 	  
 	  if  (sType == "I")
 		{
 		  outgoingWeights = branch.get_emission_distribution(s);
-			childSeq += branch.alphabet[ sample(outgoingWeights)  ];
+		  childSeq += branch.alphabet[ sample(outgoingWeights)  ];
 		}
 
 	  else if (sType == "M") 
