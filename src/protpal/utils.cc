@@ -5,6 +5,8 @@
 #include<map>
 #include<list>
 #include<queue>
+#include<ctime>
+
 #include "utils.h"
 #include "ecfg/ecfgsexpr.h"
 

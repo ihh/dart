@@ -1,5 +1,6 @@
 #include<iostream>
 #include<math.h>
+#include<ctime>
 
 #include "protpal/profile.h"
 #include "protpal/reconstruction.h"
@@ -14,6 +15,7 @@
 
 int main(int argc, char* argv[])
 {
+  srand((unsigned)time(0));
   // A few utility variables
   node treeNode; 
   vector<Node> children;
