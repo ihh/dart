@@ -15,6 +15,7 @@
 
 int main(int argc, char* argv[])
 {
+  //seed rand on the clock time
   srand((unsigned)time(0));
   // A few utility variables
   node treeNode; 
@@ -59,6 +60,8 @@ int main(int argc, char* argv[])
 	}
   
   //  Initialize the exact-match transducers at leaf nodes
+  if(reconstruction.loggingLevel>=1)
+	std::cerr<<"\n";
   vector<Node> leaves = reconstruction.tree.leaf_vector(); 
   for (int i=0; i<leaves.size(); i++)
 	{
@@ -135,14 +138,18 @@ int main(int argc, char* argv[])
 	  profile.leaves = leaves; 
 	  profile.node_names = node_names; 
 	  profile.envelope_distance = reconstruction.envelope_distance; 
+	  profile.max_sampled_externals = reconstruction.max_sampled_externals; 
 
-	  reconstruction.profiles.erase( children[0] );
-	  reconstruction.profiles.erase( children[1] ); 
+	  reconstruction.profiles[children[0]];
+	  reconstruction.profiles[children[1]];
+	  //	  reconstruction.profiles.erase( children[0] );
+	  //	  reconstruction.profiles.erase( children[1] ); 
 
-	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging
+	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
 		std::cerr<<"\tFilling dynamic programming matrix..."; 
 	  profile.fill_DP(reconstruction.loggingLevel);
+
 	  if(reconstruction.loggingLevel>=1)
 		std::cerr<<"done. Sum-over-alignments likelihood: "<<-log(profile.forward_prob)/log(2)<<" bits\n"; 
 
@@ -157,15 +164,20 @@ int main(int argc, char* argv[])
 							reconstruction.num_sampled_paths, // number of paths
 							reconstruction.loggingLevel, // debugging log messages ?
 							reconstruction.show_alignments, // show sampled alignments ?
-							reconstruction.leaves_only
+							reconstruction.leaves_only // only show leaves
 							); 
+
+		  profile.clear_DP();
 		  if(reconstruction.loggingLevel>=1)
-			std::cerr<<"done.\n";
+			{
+			  std::cerr<<"done.  ";
+			  std::cerr<<"\n\tResulting DAG has "<< profile.num_sampled_externals<< " absorbing states." << endl; 
+			}
 		  
 		  // Transform the (null-in, null-out) transducer into an absorbing transducer:
 		  // Remove R-states, modify transition probabilities, sum over null states, index remaining delete states
 		  if(reconstruction.loggingLevel>=1)
-			std::cerr<<"\tTransforming sampled profile into an absorbing transducer...";
+			std::cerr<<"\tTransforming sampled profile DAG into an absorbing transducer...";
 		  AbsorbingTransducer absorbTrans(&profile);
 		  absorbTrans.test_transitions(); 
 		  reconstruction.profiles[treeNode] = absorbTrans; 

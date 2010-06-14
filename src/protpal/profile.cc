@@ -327,6 +327,7 @@ AbsorbingTransducer::AbsorbingTransducer(ExactMatch *EM_in)
   transition_weight[transitionPair] = 1; 
 }
 
+
 bool Profile::is_external(M_id m)
 {
   // query whether an M_n state is external - that is, the 'R' transducer is emitting a character 
@@ -1072,7 +1073,7 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
   subtreeNodes.push_back(treeNode); 
 
   envelope_distance = 200; //hard-coded envelope distance
-  
+  num_sampled_externals = 0; 
 
   // This is a bit awkward...owing to the quirk that M_ids store types as integers
   // rather than strings.  If I store all types now as variables it gets a bit less confusing.
@@ -1105,7 +1106,6 @@ void Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool le
   // these variables are the 'from' and 'to' M_n states, and the M_n start state, which tells us when we're finished
   M_id m, mPrime, bigStart;
 
-
   // Set start state here
   bigStart.q_state = Q.composite_start_state;
   bigStart.left_state = left_profile.start_state;
@@ -1117,6 +1117,16 @@ void Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool le
 	{
 	  if (pathIdx == 0) viterbi = true;  //eventually make this an option, rather than a hack
 	  else viterbi=false;
+
+	  if (num_sampled_externals > max_sampled_externals)
+		{
+		  if (logging >=1 )
+			{
+			  std::cerr<<"(sampling truncated after caching " << num_sampled_externals << " states via ";
+			  std::cerr<< pathIdx << " paths)...";
+			}
+		  break;
+		}
 
 	  pathWeight = 1.0; 
 	  // initialize pi with the M_n end state:
@@ -1520,12 +1530,19 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
   // m and the transition m -> mPrime
   
   // m is the new state
-  if (index(m, sampled_states) == -1 ) sampled_states.push_back(m);
+  if (index(m, sampled_states) == -1 ) 
+	{
+	  sampled_states.push_back(m);
+	  if ( is_external(m) )
+		  num_sampled_externals += 1; 
+	}
   if (index(mPrime, sampled_outgoing[m.toVector()]) == -1) 
     { sampled_outgoing[m.toVector()].push_back(mPrime); }
   if (index(m, sampled_incoming[mPrime.toVector()]) == -1) 
     { sampled_incoming[mPrime.toVector()].push_back(m);   }
   
+
+
   if (leaf_coords.count(m.toVector())<1)
 	{
 	  if ( m.left_state  == left_profile.end_state || m.left_state  == left_profile.pre_end_state)
@@ -1947,6 +1964,10 @@ void Profile::sum_paths_to(M_id mPrime)
 }
   
 
+void Profile::clear_DP(void)
+{
+  Z.clear(); 
+}
 
 void Profile::fill_DP(int logging)
 {

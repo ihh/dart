@@ -59,6 +59,7 @@ class Reconstruction
   
   // Reconstruction algorithm parameters
   int num_sampled_paths;
+  int max_sampled_externals; 
   bool show_alignments; 
   int loggingLevel;
   int envelope_distance; 
