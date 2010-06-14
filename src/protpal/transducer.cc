@@ -135,7 +135,7 @@ double Transducer::get_emission_weight(state b, int charIndex)
 	}
   else
 	{
-	  return(emission_weight_matrix.at(b)[charIndex]);	  
+	  return(emission_weight_matrix[b][charIndex]);	  
 	}
 }
 
@@ -609,7 +609,7 @@ BranchTrans::BranchTrans(double branch_length_in, bool linear)
   string omega; 
   for (int i=0; i<alphabet_size; i++)	
 	{
-	  omega = alphabet.at(i);
+	  omega = alphabet[i];
 	  nullDistVector.push_back(nullDist[omega]);
 	}
   // The states of type I are the only states which have an emission distribution
