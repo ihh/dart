@@ -199,7 +199,7 @@ double QTransducer::get_transition_weight(state q, state qPrime)
 	{
 	  vector<state> transitionPair; 
 	  transitionPair.push_back(q);transitionPair.push_back(qPrime);
-	  return transition_weight.at(transitionPair);
+	  return transition_weight[transitionPair];
 	}
   
 }
@@ -265,7 +265,7 @@ double QTransducer::get_emission_weight(state q, int left_emit, int right_emit)
   else
 	{  
 
-	  return emission_weight.at(emission_tuple);
+	  return emission_weight[emission_tuple];
 	}
 }
 
@@ -405,7 +405,7 @@ void QTransducer::show_all_transitions(void)
 		  std::cout<<"The state "<<get_state_name(q)<<" has no outgoing transitions.  Possibly problematic...\n";
 		  continue;
 		}
-	  for (vector<int>::iterator qPrime = outgoing.at(q).begin(); qPrime != outgoing.at(q).end(); qPrime++)
+	  for (vector<int>::iterator qPrime = outgoing[q].begin(); qPrime != outgoing[q].end(); qPrime++)
 		{
 		  std::cout<<"  There is a transition to state: " <<get_state_name(*qPrime)<<", weight: "<<-log(get_transition_weight(q,*qPrime))/log(2)<<" bits"<<endl;
 		}

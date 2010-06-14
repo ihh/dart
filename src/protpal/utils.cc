@@ -220,7 +220,7 @@ void displayVector(vector<int> in)
 {
   for (int i=0; i<in.size(); i++)
 	{
-	  std::cerr<<in.at(i)<<"  ";
+	  std::cerr<<in[i]<<"  ";
 	}
   //  std::cerr<<"\n";
 }
@@ -230,7 +230,7 @@ void displayVector(vector<string> in)
 {
   for (int i=0; i<in.size(); i++)
 	{
-	  std::cerr<<in.at(i)<<"  ";
+	  std::cerr<<in[i]<<"  ";
 	}
   std::cerr<<"\n";
 }
@@ -239,7 +239,7 @@ void displayVector(vector<double> in)
 {
   for (int i=0; i<in.size(); i++)
 	{
-	  std::cerr<<in.at(i)<<"  ";
+	  std::cerr<<in[i]<<"  ";
 	}
   std::cerr<<"\n";
 }
@@ -248,7 +248,7 @@ void displayVector(vector<bfloat> in)
 {
   for (int i=0; i<in.size(); i++)
 	{
-	  std::cerr<<in.at(i)<<"  ";
+	  std::cerr<<in[i]<<"  ";
 	}
   std::cerr<<"\n";
 }
@@ -257,9 +257,9 @@ void displayVector(vector <vector <double> > in)
 {
   for (int i=0; i<in.size(); i++)
 	{
-	  for (int j=0; j<in.at(i).size(); j++)
+	  for (int j=0; j<in[i].size(); j++)
 		{
-		  std::cerr<<in.at(i).at(j)<<"  ";
+		  std::cerr<<in[i][j]<<"  ";
 		}
 	  std::cerr<<"\n";
 	}
@@ -268,9 +268,9 @@ void displayVector(vector <vector <int> > in)
 {
   for (int i=0; i<in.size(); i++)
 	{
-	  for (int j=0; j<in.at(i).size(); j++)
+	  for (int j=0; j<in[i].size(); j++)
 		{
-		  std::cerr<<in.at(i).at(j)<<"  ";
+		  std::cerr<<in[i][j]<<"  ";
 		}
 	  std::cerr<<"\n";
 	}

@@ -312,7 +312,7 @@ AbsorbingTransducer::AbsorbingTransducer(ExactMatch *EM_in)
   pair<state, state> transitionPair; 
   for (int i=0; i<num_delete_states; i++)
 	{
-	  for (vector<state>::iterator j=incoming.at(i).begin(); j!=incoming.at(i).end(); j++)
+	  for (vector<state>::iterator j=incoming[i].begin(); j!=incoming[i].end(); j++)
 		{
 		  transitionPair.first = *j; transitionPair.second = i; 
 		  transition_weight[transitionPair] = 1; 
@@ -812,7 +812,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 		  parent.display(sampled_profile->Q);
 		  exit(1);
 		}
-      children = sampled_externals_outgoing.at(parent.toVector());
+      children = sampled_externals_outgoing[parent.toVector()];
       for (child = children.begin(); child != children.end(); child++)
 		{
 		  transitionPair.first = parent.toVector();
@@ -863,7 +863,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 		  exit(1);
 		}
 
-      children = sampled_externals_outgoing.at(source.toVector());
+      children = sampled_externals_outgoing[source.toVector()];
       for (child = children.begin(); child!=children.end(); child++)
 		{
 		  // if in (*child, sampled_profile->sampled_states[sampled_pre_end_state])
@@ -936,13 +936,13 @@ bfloat AbsorbingTransducer::get_absorb_weight(state e, int charIndex)
 		  std::cerr<<"Error: the state "<<e<<" appears OK, but have no entry in the emission matrix.\n";
 		  exit(1);
 		}
-	  else if (charIndex >= absorption_weight.at(e).size())
+	  else if (charIndex >= absorption_weight[e].size())
 		{
-		  std::cerr<<" The character index "<< charIndex<<" appears too big for the state "<<e<<" which has emission vector of size: "<< absorption_weight.at(e).size()<<endl;
+		  std::cerr<<" The character index "<< charIndex<<" appears too big for the state "<<e<<" which has emission vector of size: "<< absorption_weight[e].size()<<endl;
 		  exit(1);
 		}
 
-	  else return absorption_weight.at(e).at(charIndex);
+	  else return absorption_weight[e][charIndex];
 	}
   else
 	{
@@ -977,10 +977,10 @@ bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
 	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" source state: "<<ePrime<<endl;
 	  exit(1);
 	}
-  else if(index(e, incoming.at(ePrime)) == -1 )
+  else if(index(e, incoming[ePrime]) == -1 )
 	{
 	  std::cerr<<"Error: state "<<ePrime<<" does not have "<<e<< " as one of its incoming state transitions\n";
-	  std::cerr<<"States incoming to "<<ePrime<<" are: "; displayVector(incoming.at(ePrime));
+	  std::cerr<<"States incoming to "<<ePrime<<" are: "; displayVector(incoming[ePrime]);
 	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" source state: "<<ePrime<<endl;
 	  exit(1);
 	}

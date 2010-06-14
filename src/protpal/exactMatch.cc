@@ -57,7 +57,7 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
 		{
 		  for (int charIndex = 0; charIndex < alphabet_size; charIndex++)
 			{
-			  if (sequence.at(i) == alphabet[charIndex] ) absorb[i].push_back(1);//delta.push_back(1);
+			  if (sequence[i] == alphabet[charIndex] ) absorb[i].push_back(1);//delta.push_back(1);
 			  else absorb[i].push_back(0);//delta.push_back(0);
 			}
 		  //absorb[i]  = delta;
@@ -91,16 +91,16 @@ void ExactMatch::test(void)
 	  else if(s>-1 && s<num_delete_states) 
 		{
 		  std::cerr<<s<<" is a delete state\n";
-		  std::cerr<<"\t Incoming transitions: "; displayVector(incoming.at(s));
-		  std::cerr<<"\t Absorption profile: "; displayVector(absorb.at(s));
-		  std::cerr<<"\t sum of absorptions: " << sum(absorb.at(s)) << endl;
+		  std::cerr<<"\t Incoming transitions: "; displayVector(incoming[s]);
+		  std::cerr<<"\t Absorption profile: "; displayVector(absorb[s]);
+		  std::cerr<<"\t sum of absorptions: " << sum(absorb[s]) << endl;
 		  
 		  
 		}
 	  else
 		{
 		  std::cerr<<s<<" is an ending state\n";
-		  std::cerr<<"\t Incoming transitions: "; displayVector(incoming.at(s));
+		  std::cerr<<"\t Incoming transitions: "; displayVector(incoming[s]);
 		}
 	}
 }
