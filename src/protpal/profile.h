@@ -150,12 +150,16 @@ class Profile
   // Initiate and fill forward-like DP matrix
   void fill_DP(int);
   bfloat forward_prob; 
+
+  void clear_DP(void); 
   // sample set of paths from DP matrix, storing info on their transitions, transition weights, etc
   void sample_DP(int, int, bool, bool);
   void cache_state(M_id m, M_id mPrime, bfloat weight);
   void cache_path(vector<M_id>); 
 
   vector<M_id> sampled_states;
+  int num_sampled_externals; 
+  int max_sampled_externals; 
   map< vector<int>, vector<M_id> > sampled_incoming;
   map< vector<int>, vector<M_id> > sampled_outgoing;  
   map< pair< vector<int>, vector<int> >, bfloat> sampled_transition_weight; 

@@ -40,6 +40,9 @@ Reconstruction::Reconstruction(void)
   options["-n"] = "<int> Number of paths to sample in traceback (default 10) \n";
   num_sampled_paths = 10;
 
+  options["-m"] = "<int> Number of delete states allowed in DAG  (default 500) \n";
+  max_sampled_externals = 500;
+
   options["-e"] = "<int> Maximum allowed distance between aligned leaf characters (default 100)\n";
   envelope_distance = 100; 
 
@@ -113,6 +116,17 @@ void Reconstruction::get_cmd_args(int argc, char* argv[])
 		  if (num_sampled_paths == 0)
 			{
 			  std::cerr<<"ERROR: You must sample at least one path at each iteration\n";
+			  display_opts(); 
+			  exit(0); 
+			}
+		}
+	  else if (string(argv[i]) == "-m") 
+		{		
+		  const char* numExt = argv[i+1]; 
+		  max_sampled_externals = atoi(numExt);
+		  if (max_sampled_externals <= 0)
+			{
+			  std::cerr<<"ERROR: You must allow least one external state in the DAG \n";
 			  display_opts(); 
 			  exit(0); 
 			}
