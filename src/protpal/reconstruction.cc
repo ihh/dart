@@ -31,8 +31,8 @@ Reconstruction::Reconstruction(void)
   ins_rate = .019; 
   options["-d"] = "<float> Delete rate (default .02)\n";    
   del_rate = .02; 
-  options["-g"] = "<float> Gap-extend probability (default .4) \n";
-  gap_extend = .912; 
+  options["-ge"] = "<float> Gap-extend probability (default .4) \n";
+  gap_extend = .4; 
 
   options["-r"] = "<int> Root sequence length in simulation.  Default is to sample direclty from singlet transducer.  \n";
   rootLength = -1; 
@@ -49,7 +49,6 @@ Reconstruction::Reconstruction(void)
   options["-g"] = "<grammar file> DART format chain file to be used for match states absorb/emit likelihoods.  Default is data/handalign/prot1.hsm ";
   rate_matrix_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE; 
   
-  num_sampled_paths = 10; 
 
   options["-sa"] = "<bool> Show sampled alignments for internal nodes (default false) \n";
   show_alignments = false;
@@ -162,7 +161,7 @@ void Reconstruction::get_cmd_args(int argc, char* argv[])
 			}
 		}
 
-	  else if (string(argv[i]) == "-g") 
+	  else if (string(argv[i]) == "-ge") 
 		{		
 		  const char* gap = argv[i+1]; 
 		  gap_extend = atof(gap);
