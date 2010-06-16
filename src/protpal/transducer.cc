@@ -1,7 +1,9 @@
 #include<iostream>
-#include "transducer.h"
-#include "ecfg/ecfgsexpr.h" // for array2d class
 #include<math.h>
+
+#include "protpal/transducer.h"
+#include "ecfg/ecfgsexpr.h" // for array2d class
+#include "util/sstring.h"
 
 //General transducer operations
 string Transducer::get_state_name(state m)
@@ -149,7 +151,11 @@ SingletTrans::SingletTrans(void)
 SingletTrans::SingletTrans(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix)
 {
   name = "Singlet";
-  alphabet = string(alphabet_in.nondegenerate_chars());  
+  
+  vector<sstring> toks = alphabet_in.tokens(); 
+  for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
+	alphabet.push_back(string(a->c_str()));
+
   alphabet_size = alphabet.size();
   
 /*  states:  */
@@ -314,7 +320,11 @@ BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_E
 {
   branch_length = branch_length_in;
   name = "Branch";
-  alphabet = string(alphabet_in.nondegenerate_chars());
+
+  vector<sstring> toks = alphabet_in.tokens(); 
+  for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
+	alphabet.push_back(string(a->c_str()));
+
   alphabet_size = alphabet.size();
   
   conditional_sub_matrix = rate_matrix.create_conditional_substitution_matrix(branch_length); 
@@ -472,7 +482,7 @@ BranchTrans::BranchTrans(double branch_length_in, bool linear)
   branch_length = branch_length_in;
   name = "Branch";
   
-  alphabet ="arndcqeghilkmfpstwyv";
+  alphabet.push_back("arndcqeghilkmfpstwyv"); //dummy thing
   alphabet_size = alphabet.size();
   
   // Initialize state names

@@ -22,7 +22,6 @@ int main(int argc, char* argv[])
   vector<Node> children;
   vector<double> branchLengths;   
   vector<string> node_names;
-  string alphabet_string; 
   double verySmall = 0.00001; //proxy for zero-length branches
   double branch_length; 
 
@@ -44,7 +43,6 @@ int main(int argc, char* argv[])
   Irrev_EM_matrix rate_matrix(1,1);
   Alphabet alphabet ("uninitialized", 1);
   ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
-  alphabet_string = string(alphabet.nondegenerate_chars());
   
   // These  transducers remain the same throughout the traversal, so we can initialize them
   // once and for all and leave them.  
@@ -55,7 +53,7 @@ int main(int argc, char* argv[])
   if (reconstruction.simulate)
 	{
 	  reconstruction.simulate_alignment(alphabet, rate_matrix); 
-	  //reconstruction.make_sexpr_file(alphabet, rate_matrix); 
+	  //reconstruction.make_sexpr_file(alphabet, rate_matrix);  - old memory-hungry phylocomposer way
 	  exit(0); 
 	}
   

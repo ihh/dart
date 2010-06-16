@@ -28,7 +28,8 @@ class Reconstruction
   map<string, string> sequences; 
 
   // not (yet) using Ian's fancy Alphabet class
-  string alphabet; 
+  // at least this is not a string any more, but a vector of strings, allowing latent-variable models.
+  vector<string> alphabet; 
 
   // the rate matrix is from DART - imported on top-level
   sstring rate_matrix_filename;   

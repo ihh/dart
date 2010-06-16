@@ -7,6 +7,7 @@
 
 #include "protpal/exactMatch.h"
 #include "protpal/utils.h"
+#include "util/sstring.h"
 
 using namespace std;
 
@@ -14,13 +15,25 @@ using namespace std;
 ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in)
 {
   treeNode = treeNode_in; 
-
-  alphabet = string(alphabet_in.nondegenerate_chars());
+  vector<string> single_alphabet;  
+  vector<sstring> toks = alphabet_in.tokens(); 
+  for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
+	alphabet.push_back(string(a->c_str()));
   
+  bool hidden = false; 
+  if (alphabet[0].size() > 1)
+	{
+	  std::cerr<<"Using hidden-state alphabet\n";
+	  hidden = true; 
+	  for (vector<string>::iterator a=alphabet.begin(); a!=alphabet.end(); a++)
+		single_alphabet.push_back(stringAt(*a,0));
+	}
+  else
+	single_alphabet = alphabet; // ugh, fix this soon, using DART's alphabet machinery
+
   alphabet_size = alphabet.size();
   float aSize = alphabet_size;
 
-  // NB sequence is assumed in lower-case
   num_delete_states = sequence.length();
   start_state = -1; 
   pre_end_state = num_delete_states;
@@ -52,20 +65,31 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
 	  
 	  // eventually this ought to be able to handle degenerate characters...for now any non-alphabet symbol
 	  // assigned equal weight across the alphabet in the absorb map. 
-	  vector<double> delta; 	  
-	  if (index(stringAt(sequence,i), alphabet) != -1)
+	  // We CAN now handle hidden alphabets, albiet in a primitive sort of way - if the alphabet is seen to have
+	  // more than 1 character per token, the 2nd character is assumed to be the 'label' and the first is what matches to 
+	  // the sequence
+	  vector<double> delta; 
+  	  if (index(stringAt(sequence,i), single_alphabet) != -1)
 		{
 		  for (int charIndex = 0; charIndex < alphabet_size; charIndex++)
 			{
-			  if (sequence[i] == alphabet[charIndex] ) absorb[i].push_back(1);//delta.push_back(1);
-			  else absorb[i].push_back(0);//delta.push_back(0);
+			  if (hidden)
+				{
+				  if (sequence[i] == alphabet[charIndex][0]) absorb[i].push_back(1.0);
+				  else absorb[i].push_back(0.0);
+				}
+
+			  else
+				{
+				  if (stringAt(sequence,i) == alphabet[charIndex] ) absorb[i].push_back(1.0);
+				  else absorb[i].push_back(0.0);
+				}
 			}
-		  //absorb[i]  = delta;
 		}
 	  else
 		{
 		  std::cerr<<"Warning: the character "<<sequence[i]<<" is not in alphabet.  Setting weight for all characters equal\n";
-		  for (string::const_iterator omega = alphabet.begin(); omega != alphabet.end(); omega++)
+		  for (int charIndex = 0; charIndex!=alphabet_size; charIndex++)
 			{
 			  delta.push_back(1/aSize);
 			}

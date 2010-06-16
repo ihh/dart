@@ -47,8 +47,10 @@ string rep(int num, string in);
 string stringAt(string in, int index);
 
 int index(string query, string in );
+int index(string query, vector<string> in );
 int index(int query, vector<int> in );
 int index(float query, vector<float> in );
+
 
 bool in(string query, string in );
 bool in(int query, vector<int> in );

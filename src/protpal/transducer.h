@@ -48,7 +48,7 @@ class Transducer
   bool has_transition(state m, state mPrime);
 
   // Character alphabet
-  string alphabet;
+  vector<string> alphabet;
   int alphabet_size;  
   
   //testing

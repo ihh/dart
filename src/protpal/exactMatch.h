@@ -20,7 +20,7 @@ class ExactMatch
   node treeNode; 
 
   //alphabet
-  string alphabet;
+  vector<string> alphabet;
   int alphabet_size;
 
   // Number of indexed del states.  Here there are just sequence.length() delete states, start, end, and Wait.  

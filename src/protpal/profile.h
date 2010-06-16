@@ -32,7 +32,7 @@ class AbsorbingTransducer
   node treeNode; 
   vector<node> subtreeNodes; 
   string name;
-  string alphabet;
+  vector<string> alphabet;
   int alphabet_size;   
 
   // Number of delete states.  If in SNF, there will be num_delete_states + 3 states in the transducer
@@ -175,7 +175,7 @@ class Profile
   
   // after sampling, the profile is ready to be handed over the AbsorbingTransducer constructor to be
   // turned into a new absorbing child profile.  the following data is public for this purpose
-  string alphabet; 
+  vector<string> alphabet; 
   int alphabet_size;
 
   // Coordinate/tree information

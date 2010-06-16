@@ -4,6 +4,7 @@
 #include "transducer.h"
 #include "algebras.h"
 #include "ecfg/ecfgsexpr.h"
+#include "util/sstring.h"
 
 QTransducer::QTransducer(void)
 {
@@ -21,7 +22,9 @@ QTransducer::QTransducer(SingletTrans R_in, BranchTrans B_l_in, BranchTrans B_r_
   if (logging) std::cerr<<"In QTransducer constructor, about to assign objects...\n";
 
   // Set a few basic variables
-  alphabet =  string(alphabet_in.nondegenerate_chars());
+  vector<sstring> toks = alphabet_in.tokens(); 
+  for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
+	alphabet.push_back(string(a->c_str()));
   
   alphabet_size = alphabet.size();
   name = "QTransducer";

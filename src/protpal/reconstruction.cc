@@ -11,6 +11,7 @@
 #include "util/piper.h"
 #include "ecfg/ecfgsexpr.h"
 #include "util/unixenv.h"
+#include "util/sstring.h"
 
 #define DEFAULT_CHAIN_FILE "data/handalign/prot1.hsm"
 
@@ -307,9 +308,9 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
   
   std::cout << ";; phylocomposer file for simulating branch-length dependent transducers\n";
   std::cout << "(token ("  ; 
-  string tokens = string(alphabet.nondegenerate_chars());
+  vector<sstring> tokens = alphabet.tokens(); 
   unsigned int alph_size = tokens.size();
-  string::iterator tok, tok2; 
+  vector<sstring>::iterator tok, tok2; 
   unsigned int tokIdx, tokIdx2; 
   vector<state>::iterator state1, state2; 
   vector<state> outgoing; 
