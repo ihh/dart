@@ -24,7 +24,7 @@ class QTransducer
   void change_branch_lengths(float left_branch_length, float right_branch_length);
 
   // Character alphabet
-  string alphabet;
+  vector<string> alphabet;
   int alphabet_size;
   
   //Name

@@ -179,6 +179,20 @@ int index(string query, string in )
   return(-1);
 }
 
+
+int index(string query, vector<string> in )
+{
+  string subStr;
+  for (int i=0; i<in.size(); i++)
+	{
+	  subStr = in[i];
+	  if (subStr == query) return(i);		   
+	}
+  return(-1);
+}
+
+
+
 int index(int query, vector<int> in )
 {
   for (int i=0; i<in.size(); i++)

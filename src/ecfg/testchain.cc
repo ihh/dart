@@ -64,27 +64,31 @@ int main (int argc, char** argv)
       Irrev_EM_matrix rate_matrix (1, 1);  // dummy init of rate_matrix (from irrev/irrev_em_matrix.h)
       ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
 
-      // convert alphabet symbols to state indices
-      const int src_state = char2int (alphabet, src_char, "Source");
-      const int dest_state = char2int (alphabet, dest_char, "Destination");
-
-      // exponentiate matrix
-      const array2d<double> cond_submat = rate_matrix.create_conditional_substitution_matrix (time);
-
-      // get equilibrium distribution
-      const vector<double> eqm_prob = rate_matrix.create_prior();
-
-      // extract required element
-      const double result = cond_submat (src_state, dest_state);
-
-      // print alphabet tokens, in order
+//       // print alphabet tokens, in order
       cout << "Alphabet symbols: " << alphabet.tokens() << '\n';
+
+
+//       // get equilibrium distribution
+       const vector<double> eqm_prob = rate_matrix.create_prior();
 
       // print equilibrium distribution
       cout << "Equilibrium distribution: " << eqm_prob << '\n';
 
+      // convert alphabet symbols to state indices
+	  const int src_state = 0;
+	  const int dest_state = 1;
+
+	  //       // exponentiate matrix
+	  const array2d<double> cond_submat = rate_matrix.create_conditional_substitution_matrix (time);
+	  
+	  
+	  
+	  //       // extract required element
+	  const double result = cond_submat (src_state, dest_state);
+	  
+	  cout << result<<endl;
       // print required element
-      cout << "exp(R*" << time << ")_{" << src_char << ',' << dest_char << "} = " << result << '\n';
+	  //      cout << "exp(R*" << time << ")_{" << src_char << ',' << dest_char << "} = " << result << '\n';
     }
   catch (const Dart_exception& e)
     {
