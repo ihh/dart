@@ -49,11 +49,11 @@ int main(int argc, char* argv[])
   SingletTrans R(alphabet, rate_matrix);
   SplittingTrans Upsilon;
 
-  // If creating a simulation file was requested, do this instead of reconstruction
+  // If running a simulation was requested, do this instead of reconstruction
   if (reconstruction.simulate)
 	{
 	  reconstruction.simulate_alignment(alphabet, rate_matrix); 
-	  //reconstruction.make_sexpr_file(alphabet, rate_matrix);  - old memory-hungry phylocomposer way
+	  //reconstruction.make_sexpr_file(alphabet, rate_matrix);  - old memory-hungry phylocomposer way, basically obsolete
 	  exit(0); 
 	}
   
@@ -67,10 +67,10 @@ int main(int argc, char* argv[])
 	  if(reconstruction.loggingLevel>=1)
 		std::cerr<<"Making exact-match transducer for: "<<reconstruction.tree.node_name[treeNode]<<endl;
 	  ExactMatch leaf(
-					  reconstruction.sequences[reconstruction.tree.node_name[treeNode]], // sequence
-					  leaves[i], //tree index
-					  alphabet // sequence alphabet
-					  );
+			  reconstruction.sequences[reconstruction.tree.node_name[treeNode]], // sequence
+			  leaves[i], //tree index
+			  alphabet // sequence alphabet
+			  );
 	  // Then, make an absorbing transducer from this, and place it in the profiles map.  
 	  AbsorbingTransducer leafAbsorb(&leaf); 
 	  reconstruction.profiles[treeNode] = leafAbsorb; 	  
@@ -105,8 +105,8 @@ int main(int argc, char* argv[])
 		}
 
 	  // Instantiate the Q transducer object and its prerequisites.  
-	  // Thetwo branch transducers must be re-created at each iteration so that the branch lengths
-	  // and the resulting parameters are correct.  Thus, Q's transitions must be re-built.  
+	  // The two branch transducers must be re-created at each iteration so that the branch lengths
+	  // and the depending parameters are correct.  Thus, Q's transitions must be re-built.  
 	  // Finally, marginalize Q's null states (e.g. IMDD)
 	  BranchTrans B_l(branchLengths[0], alphabet, rate_matrix, 
 					  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend);
@@ -138,10 +138,9 @@ int main(int argc, char* argv[])
 	  profile.envelope_distance = reconstruction.envelope_distance; 
 	  profile.max_sampled_externals = reconstruction.max_sampled_externals; 
 
-	  reconstruction.profiles[children[0]];
-	  reconstruction.profiles[children[1]];
-	  //	  reconstruction.profiles.erase( children[0] );
-	  //	  reconstruction.profiles.erase( children[1] ); 
+	  // These ought to be deleted somehow:
+	  //	  reconstruction.profiles[children[0]];
+	  //	  reconstruction.profiles[children[1]];
 
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
@@ -165,6 +164,7 @@ int main(int argc, char* argv[])
 							reconstruction.leaves_only // only show leaves
 							); 
 
+		  // clear the DP matrix - this really only clears the associativity, not the actual objects therein
 		  profile.clear_DP();
 		  if(reconstruction.loggingLevel>=1)
 			{
@@ -191,11 +191,11 @@ int main(int argc, char* argv[])
 		  std::cout<<"#=GF NH\t";
 		  reconstruction.tree.write(std::cout, 0); 
 		  profile.sample_DP(
-							1, // sample only the viterbi path
-							0, // debugging log messages
-							true, // show the final alignment
-							reconstruction.leaves_only // show only the leaf alignment
-							); 
+				    1, // sample only the viterbi path
+				    0, // debugging log messages
+				    true, // show the final alignment
+				    reconstruction.leaves_only // show only the leaf alignment
+				    ); 
 		}
 	}
   return(0);
