@@ -1966,7 +1966,8 @@ void Profile::sum_paths_to(M_id mPrime)
 
 void Profile::clear_DP(void)
 {
-  Z.clear(); 
+  map< vector<int>, bfloat> Z_tmp;
+  Z.swap(Z_tmp); 
 }
 
 void Profile::fill_DP(int logging)
