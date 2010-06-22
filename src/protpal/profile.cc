@@ -1742,8 +1742,11 @@ void Profile::cache_path(vector<M_id> path)
 void Profile::sum_paths_to(M_id mPrime)
 {
   // The core DP function - sum over paths into the composite state mPrime.  
+  #ifdef DART_DEBUG
   if (get_DP_cell(mPrime) != 0.0){
-	std::cerr<<"Asked to fill cell which already has entry!\n"; exit(1);}
+	std::cerr<<"Asked to fill cell which already has entry!\n"; exit(1);
+  }
+  #endif
 
   // This function fills the cell at mPrime in Z
   bool logging = false, testing = false;
@@ -1770,7 +1773,10 @@ void Profile::sum_paths_to(M_id mPrime)
 	}
 	
   if(logging) std::cerr<<"Emission weight for this state: "<<emissionWeight<<endl;
+  #ifdef DART_DEBUG
   if (emissionWeight < small) { std::cerr<<"Warning: very small emission weight for state: \n";mPrime.display(Q);}
+  #endif
+
   Z[mPrime.toVector()] = 0;
 
   if (Q.has_transition(Q.composite_start_state, mPrime.q_state) &&  \
@@ -1853,33 +1859,27 @@ void Profile::sum_paths_to(M_id mPrime)
 			  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 				{
 				  m.q_state = *q;
-				  toAdd = 
-					get_DP_cell(m)*
+				  toAdd = get_DP_cell(m); 
+				  if (toAdd > 0.0)
+				    {
+				      toAdd *=
 					Q.get_transition_weight(*q, mPrime.q_state)*
 					left_profile.get_transition_weight(*e_l, mPrime.left_state)*
 					right_profile.get_transition_weight(*e_r, mPrime.right_state)*
 					emissionWeight;
-				  
+				      add_to_DP_cell(mPrime, toAdd); 
+				    }
 				  // for test
 				  if (testing)
 					{
 					  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
 					  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 					}
-// 				  if (mPrime.left_state == left_profile.pre_end_state && 
-// 					  mPrime.right_state == right_profile.pre_end_state)
-// 					{
-// 					  std::cerr<<"Q transition into pre-end state: "<< Q.get_transition_weight(*q, mPrime.q_state)<<endl; 
-// 					  std::cerr<<"left transition into pre-end state: "<<left_profile.get_transition_weight(*e_l, mPrime.left_state)<<endl;
-// 					  std::cerr<<"right transition into pre-end state: "<<right_profile.get_transition_weight(*e_r, mPrime.right_state)<<endl; 					  
-// 					  std::cerr<<"emission weight was: "<< emissionWeight<<endl; 
-// 					  std::cerr<<"logging transition pair as: "<< transition_weight_test[transitionPair]<<endl; 
-// 					}
-
+				  
 				  if (logging) std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
-				   add_to_DP_cell(mPrime, toAdd); 
+				   
+				    }
 				}
-			}
 		}
 	}
   //  if (mPrime.left_state !=0  && mPrime.left_state != left_profile.start_state)
@@ -1900,13 +1900,15 @@ void Profile::sum_paths_to(M_id mPrime)
 			{
 			  m.q_state = *q;
 
-			  toAdd = 
-				get_DP_cell(m)*
-				Q.get_transition_weight(*q, mPrime.q_state)*
+			  toAdd = get_DP_cell(m); 
+			  if (toAdd > 0.0)
+			    {
+			      toAdd *= Q.get_transition_weight(*q, mPrime.q_state)*
 				left_profile.get_transition_weight(*e_l, mPrime.left_state)*
 				emissionWeight;
 			  // right profile transition weight is implicitely 1 here 
-
+			      add_to_DP_cell(mPrime, toAdd); 
+			    }
 			  // for test
 			  if (testing)
 				{
@@ -1915,7 +1917,7 @@ void Profile::sum_paths_to(M_id mPrime)
 				}
 
 			  if (logging) std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
-			  add_to_DP_cell(mPrime, toAdd); 
+			  
 			}
 		}
 	}
@@ -1939,13 +1941,15 @@ void Profile::sum_paths_to(M_id mPrime)
 			{
 			  m.q_state = *q;
 			  m.left_type = get_profile_type(*q, "left");
-			  toAdd = 
-				get_DP_cell(m)*
-				Q.get_transition_weight(*q, mPrime.q_state)*
+			  toAdd = get_DP_cell(m); 
+			  if (toAdd >0.0)
+			    {
+			      toAdd *= Q.get_transition_weight(*q, mPrime.q_state)*
 				right_profile.get_transition_weight(*e_r, mPrime.right_state)*
 				emissionWeight;
 			  // left profile transition weight is implicitely 1 here 
-
+			      add_to_DP_cell(mPrime, toAdd); 
+			    }
 			  //for test
 			  if(testing)
 				{
@@ -1959,7 +1963,7 @@ void Profile::sum_paths_to(M_id mPrime)
 				  std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
 				}
 		  
-			  add_to_DP_cell(mPrime, toAdd); 
+			  
 			}
 		}
 	}
@@ -1983,6 +1987,9 @@ void Profile::fill_DP(int logging)
   state el_Prime, er_Prime;
   bool testing = false; 
   
+  tmpEmitTuple.resize(3);
+  tmpEmitVals.resize(alphabet_size);
+
   // initialize Z at start state M_id
   mPrime.q_state = Q.composite_start_state;
   mPrime.left_state = left_profile.start_state;
@@ -2286,33 +2293,51 @@ bfloat Profile::compute_emission_weight(M_id m)
   // A somewhat hairy function, though luckily the relevant defs are in 2.3.2  of transducer.tex
 
   // left, right, character indices, respectively
-  int char1, char2; 
+  unsigned int char1, char2; 
   // NB we use '-1' as a proxy for the null character in the non-match states below. 
 
   bfloat weight = 0.0;
   string qClass = Q.get_state_class(m.q_state);
   // q is a match state
-  if ( qClass == "match")
+  if ( qClass == "match" ) 
+    {
+      for (char1 =0; char1 < alphabet_size; char1++)
+	tmpEmitVals[char1] = 0.0;
+      tmpEmitTuple[0] = m.q_state; 
+      for (char1 = 0; char1 < alphabet_size; char1++)
 	{
-	  for (char1 = 0; char1 < alphabet_size; char1++)
-		{
-		  for (char2 = 0; char2 < alphabet_size; char2++)		
-			{
-// 			  std::cerr<<"The components of the match weight: (q, left, right)  for characters ";
-// 			  std::cerr<<alphabet[char1]<<" "<<alphabet[char2]<<":"; 
-// 			  std::cerr<<Q.get_emission_weight(m.q_state, char1, char2)<<" ";
-// 			  std::cerr<<left_profile.get_absorb_weight(m.left_state, char1)<<" ";
-// 			  std::cerr<<right_profile.get_absorb_weight(m.right_state, char2)<<" "<<endl;
-			  
-			  weight += \
-				Q.get_emission_weight(m.q_state, char1, char2)* \
-				left_profile.get_absorb_weight(m.left_state, char1)*	\
-				right_profile.get_absorb_weight(m.right_state, char2);
-			}
-		}
-	  return weight;
+	  tmpEmitTuple[1] = char1; 
+	  for (char2 = 0; char2 < alphabet_size; char2++)
+	    {
+	      tmpEmitTuple[2] = char2; 
+	      tmpEmitVals[char2] += Q.emission_weight[tmpEmitTuple]*left_profile.get_absorb_weight(m.left_state, char1);
+	    }
 	}
+      for (char1 = 0; char1 < alphabet_size; char1++)
+	weight += right_profile.get_absorb_weight(m.right_state, char1)*tmpEmitVals[char1];
+      return weight;
+    }
+	  
+      
 
+
+  //older, slow way:
+
+//   if ( qClass == "match")
+// 	{
+// 	  for (char1 = 0; char1 < alphabet_size; char1++)
+// 	    {
+// 	      for (char2 = 0; char2 < alphabet_size; char2++)		
+// 		{
+// 		  weight +=
+// 		    Q.get_emission_weight(m.q_state, char1, char2)*
+// 		    left_profile.get_absorb_weight(m.left_state, char1)*
+// 		    right_profile.get_absorb_weight(m.right_state, char2);
+// 		}
+// 	    }
+// 	  return weight;
+// 	}
+  
   // if q is left-emit
   if ( qClass == "left_ins" || qClass == "right_del")
 	{

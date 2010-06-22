@@ -99,6 +99,11 @@ class QTransducer
 
   // adjust these weights for null states
   void marginalizeNullStates(void);
+
+  // The map emission_weight holds these...the vector<int> is state, omega_left, omega_right
+  // One of the omegas can be -1, meaning 'no character' (e.g. omega_left = -1 in a left_del state)
+  map< vector<int>, double> emission_weight;
+  
  private:  
   
   // Component transducers R, B_l, B_r, Upsilon
@@ -152,9 +157,6 @@ class QTransducer
 
   // compute/store weights of  emissions of Q
   void cache_emission_weights(void);  
-  // The map emission_weight holds these...the vector<int> is state, omega_left, omega_right
-  // One of the omegas can be -1, meaning 'no character' (e.g. omega_left = -1 in a left_del state)
-  map< vector<int>, double> emission_weight;
   
   
   // State assignments (indices) for each states in Q.   The inner vector is always 4 items long.  

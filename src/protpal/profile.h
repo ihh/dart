@@ -236,6 +236,8 @@ class Profile
   // compute/access the emission cascade weight from state m
   
   double get_emission_weight(M_id m);
+  vector<bfloat> tmpEmitVals; 
+  vector<int> tmpEmitTuple; 
   
   // Utility functions
   bool is_in_envelope(state left_state, state right_state); 
