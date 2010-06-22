@@ -1063,6 +1063,8 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
 	{
 	  alphabet = Q.alphabet; 
 	  alphabet_size = Q.alphabet_size; 
+	  for(int i=0; i<alphabet_size; i++)
+	    alphabet_ints.push_back(i); 
 	}
   treeNode = node_in;   
   vector<node>::iterator n; 
@@ -2301,20 +2303,20 @@ bfloat Profile::compute_emission_weight(M_id m)
   // q is a match state
   if ( qClass == "match" ) 
     {
-      for (char1 =0; char1 < alphabet_size; char1++)
-	tmpEmitVals[char1] = 0.0;
+      for (alphIter=alphabet_ints.begin(); alphIter!=alphabet_ints.end(); alphIter++)
+	tmpEmitVals[*alphIter] = 0.0;
       tmpEmitTuple[0] = m.q_state; 
-      for (char1 = 0; char1 < alphabet_size; char1++)
+      for (alphIter=alphabet_ints.begin(); alphIter!=alphabet_ints.end(); alphIter++)
 	{
-	  tmpEmitTuple[1] = char1; 
-	  for (char2 = 0; char2 < alphabet_size; char2++)
+	  tmpEmitTuple[1] = *alphIter; 
+	  for (alphIter2=alphabet_ints.begin(); alphIter2!=alphabet_ints.end(); alphIter2++)
 	    {
-	      tmpEmitTuple[2] = char2; 
-	      tmpEmitVals[char2] += Q.emission_weight[tmpEmitTuple]*left_profile.get_absorb_weight(m.left_state, char1);
+	      tmpEmitTuple[2] = *alphIter2; 
+	      tmpEmitVals[*alphIter2] += Q.emission_weight[tmpEmitTuple]*left_profile.get_absorb_weight(m.left_state, *alphIter);
 	    }
 	}
-      for (char1 = 0; char1 < alphabet_size; char1++)
-	weight += right_profile.get_absorb_weight(m.right_state, char1)*tmpEmitVals[char1];
+      for (alphIter=alphabet_ints.begin(); alphIter!=alphabet_ints.end(); alphIter++)
+	weight += right_profile.get_absorb_weight(m.right_state, *alphIter)*tmpEmitVals[*alphIter];
       return weight;
     }
 	  
@@ -2341,11 +2343,11 @@ bfloat Profile::compute_emission_weight(M_id m)
   // if q is left-emit
   if ( qClass == "left_ins" || qClass == "right_del")
 	{
-	  for (char1 = 0; char1 < alphabet_size; char1++)
+	  for (alphIter=alphabet_ints.begin(); alphIter!=alphabet_ints.end(); alphIter++)
 		{
 		  weight += \
-			Q.get_emission_weight(m.q_state, char1, -1)* \
-			left_profile.get_absorb_weight(m.left_state, char1);
+			Q.get_emission_weight(m.q_state, *alphIter, -1)* \
+			left_profile.get_absorb_weight(m.left_state, *alphIter);
 		}
 	  return weight;
 	}
@@ -2353,12 +2355,12 @@ bfloat Profile::compute_emission_weight(M_id m)
   // if q is right-emit
   if ( qClass == "right_ins" || qClass == "left_del")
 	{
-	  for (char2 = 0; char2 < alphabet_size; char2++)
-		{
-		  weight += \
-			Q.get_emission_weight(m.q_state, -1, char2)* \
-			right_profile.get_absorb_weight(m.right_state, char2);
-		}
+	  for (alphIter=alphabet_ints.begin(); alphIter!=alphabet_ints.end(); alphIter++)
+	    {
+	      weight +=						  
+		Q.get_emission_weight(m.q_state, -1, *alphIter)*   
+		right_profile.get_absorb_weight(m.right_state, *alphIter);
+	    }
 	  return weight;
 	}
   return 1.0; 
@@ -2466,17 +2468,19 @@ bfloat Profile::get_external_cascade_weight(M_id e, int charIndex)
 //Utility functions
 void Profile::add_to_DP_cell(M_id m , bfloat toAdd)
 {
+  tmpMidVec = m.toVector(); 
   // Add the value toAdd to the DP cell for state m
-  if (Z.count(m.toVector()) <1) Z[m.toVector()] = toAdd; 
-  else Z[m.toVector()] += toAdd; 
+  if (Z.count(tmpMidVec) <1) Z[tmpMidVec] = toAdd; 
+  else Z[tmpMidVec] += toAdd; 
 }
 
 
 bfloat Profile::get_DP_cell(M_id m)
 {
+  tmpMidVec = m.toVector(); 
   // Access the value of DP cell for state m.  If this is nonexistant, return 0.  
-  if (Z.count(m.toVector()) <1) return 0; 
-  else return Z[m.toVector()];
+  if (Z.count(tmpMidVec) <1) return 0; 
+  else return Z[tmpMidVec];
 } 
 
 bool Profile::is_in_envelope(state left_state, state right_state)
