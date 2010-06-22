@@ -177,7 +177,10 @@ class Profile
   // turned into a new absorbing child profile.  the following data is public for this purpose
   vector<string> alphabet; 
   int alphabet_size;
-
+  vector<int> alphabet_ints; 
+  vector<int>::iterator alphIter; 
+  vector<int>::iterator alphIter2; 
+  
   // Coordinate/tree information
   // The node on the tree where this profile lives
   node treeNode;   
@@ -238,6 +241,7 @@ class Profile
   double get_emission_weight(M_id m);
   vector<bfloat> tmpEmitVals; 
   vector<int> tmpEmitTuple; 
+  vector<int> tmpMidVec;
   
   // Utility functions
   bool is_in_envelope(state left_state, state right_state); 
