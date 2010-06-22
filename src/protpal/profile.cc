@@ -922,7 +922,9 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 
 bfloat AbsorbingTransducer::get_absorb_weight(state e, int charIndex)
 {
-  // Accessor function for absorption weight.  Checks that the state exists and is an absorbing state, etc
+  // Accessor function for absorption weight.  
+  // Safety checks that the state exists and is an absorbing state, etc
+  #ifdef DART_DEBUG
   if (! isDelState(e))
 	{
 	  std::cerr<<"Error: the state "  << e << " is not a delete state\n";
@@ -941,8 +943,6 @@ bfloat AbsorbingTransducer::get_absorb_weight(state e, int charIndex)
 		  std::cerr<<" The character index "<< charIndex<<" appears too big for the state "<<e<<" which has emission vector of size: "<< absorption_weight[e].size()<<endl;
 		  exit(1);
 		}
-
-	  else return absorption_weight[e][charIndex];
 	}
   else
 	{
@@ -950,6 +950,8 @@ bfloat AbsorbingTransducer::get_absorb_weight(state e, int charIndex)
 	  std::cerr<<"The offending call was: get_absorb_weight in transducer: "<<name<<" state: "<<e<<" character index: "<<charIndex<<endl;
 	  exit(1);
 	}
+  #endif
+  return absorption_weight[e][charIndex];
 }
 
 bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)

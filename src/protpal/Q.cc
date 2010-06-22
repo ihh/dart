@@ -111,12 +111,15 @@ vector<state> QTransducer::get_right_emit_states(void)
 vector<state> QTransducer::get_incoming_match_states(state qPrime)
 {
   vector<state> out;
+  //safety
+  #ifdef DART_DEBUG
   if (incoming.count(qPrime) <1)
 	{
 	  std::cerr<<"State " <<qPrime<< " has no incoming transitions!\n";
 	  std::cerr<<"The offending call was: get_incoming_match_states, in transducer: "<<name<<" state: "<<qPrime<<" named: "<<get_state_name(qPrime)<<endl;
 	}
-  else 
+  #endif
+  if  (1)
 	{
 	  for (int i=0; i<incoming[qPrime].size(); i++)
 		{
@@ -127,12 +130,15 @@ vector<state> QTransducer::get_incoming_match_states(state qPrime)
 }
 vector<state> QTransducer::get_incoming(state qPrime)
 {
+  //safety
+  #ifdef DART_DEBUG
   if (incoming.count(qPrime) <1)
 	{
 	  std::cerr<<"State " <<qPrime<< " has no incoming transitions!\n";
 	  std::cerr<<"The offending call was: get_incoming_match_states, in transducer: "<<name<<" state: "<<qPrime<<" named: "<<get_state_name(qPrime)<<endl;
 	}
-  else return incoming[qPrime];
+  #endif
+  return incoming[qPrime];
 
 }
 			
@@ -141,35 +147,36 @@ vector<state> QTransducer::get_incoming(state qPrime)
 vector<state> QTransducer::get_incoming_left_emit_states(state qPrime)
 {
   vector<state> out;
+  //safety
+  #ifdef DART_DEBUG
   if (incoming.count(qPrime) <1)
 	{
 	  std::cerr<<"State " <<qPrime<< " has no incoming transitions!\n";
 	  std::cerr<<"The offending call was: get_incoming_left_emit_states, in transducer: "<<name<<" state: "<<qPrime<<" named: "<<get_state_name(qPrime)<<endl;
 	}
-  else 
-	{
-	  for (int i=0; i<incoming[qPrime].size(); i++)
-		{
-		  if (state_class[incoming[qPrime][i]] == left_ins || state_class[incoming[qPrime][i]] == right_del ) out.push_back(incoming[qPrime][i]);
-		}
-	}
+  #endif
+  for (int i=0; i<incoming[qPrime].size(); i++)
+    {
+      if (state_class[incoming[qPrime][i]] == left_ins || state_class[incoming[qPrime][i]] == right_del ) out.push_back(incoming[qPrime][i]);
+    }
   return out;
 }
+
 vector<state> QTransducer::get_incoming_right_emit_states(state qPrime)
 {
   vector<state> out;
+  //safety
+  #ifdef DART_DEBUG
   if (incoming.count(qPrime) <1)
 	{
 	  std::cerr<<"State " <<qPrime<< " has no incoming transitions!\n";
 	  std::cerr<<"The offending call was:get_incoming_right_emit_states in transducer:  "<<name<<" state: "<<qPrime<<" named: "<<get_state_name(qPrime)<<endl;
 	}
-  else 
-	{
-	  for (int i=0; i<incoming[qPrime].size(); i++)
-		{
-		  if (state_class[incoming[qPrime][i]] == left_del || state_class[incoming[qPrime][i]] == right_ins ) out.push_back(incoming[qPrime][i]);
-		}
-	}
+  #endif
+  for (int i=0; i<incoming[qPrime].size(); i++)
+    {
+      if (state_class[incoming[qPrime][i]] == left_del || state_class[incoming[qPrime][i]] == right_ins ) out.push_back(incoming[qPrime][i]);
+    }
   return out;
 }
 double QTransducer::get_R_transition_weight(state q, state qPrime)
@@ -180,6 +187,8 @@ double QTransducer::get_R_transition_weight(state q, state qPrime)
 double QTransducer::get_transition_weight(state q, state qPrime)
 {
   // check state existence, connectivity, then lookup in transition_weight map
+  //safety
+  #ifdef DART_DEBUG
   if (q >= num_states || qPrime >= num_states)
 	{
 	  std::cerr<<"One of the states " <<q<<" "<<qPrime<< " is not valid.\n";
@@ -198,13 +207,10 @@ double QTransducer::get_transition_weight(state q, state qPrime)
 	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" source state: "<<q<<" named: "<<get_state_name(q)<<" Destination: "<<qPrime<<" named: "<<get_state_name(qPrime)<<endl;
 	  exit(1);
 	}
-  else 
-	{
-	  vector<state> transitionPair; 
-	  transitionPair.push_back(q);transitionPair.push_back(qPrime);
-	  return transition_weight[transitionPair];
-	}
-  
+  #endif
+  vector<state> transitionPair; 
+  transitionPair.push_back(q);transitionPair.push_back(qPrime);
+  return transition_weight[transitionPair];  
 }
 
 bool QTransducer::has_transition(state q, state qPrime)
@@ -251,8 +257,10 @@ double QTransducer::right_match_weight(state q, int absorb, int emit)
 double QTransducer::get_emission_weight(state q, int left_emit, int right_emit)
 {
   // Check state existence, character validity, then lookup in emission_weight matrix
+  //safety
   vector<int> emission_tuple;
   emission_tuple.push_back(q);  emission_tuple.push_back(left_emit);  emission_tuple.push_back(right_emit);
+  #ifdef DART_DEBUG
   if (q >= num_states)
 	{
 	  std::cerr<<"The state " <<q<<" "<<q<< " is not valid.\n";
@@ -265,11 +273,8 @@ double QTransducer::get_emission_weight(state q, int left_emit, int right_emit)
 	  std::cerr<<"The offending call was: get_emission_weight in transducer: "<<name<<" state: "<<q<<" named: "<<get_state_name(q)<<" left-symbol index: "<<left_emit<<" right-symbol index "<<right_emit<<endl;
 	  exit(1);
 	}
-  else
-	{  
-
-	  return emission_weight[emission_tuple];
-	}
+  #endif
+  return emission_weight[emission_tuple];
 }
 
 
