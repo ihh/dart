@@ -55,6 +55,9 @@ Stemloc: comparative RNA structure-finder using accelerated
 evoldoer: pairwise RNA alignment using an evolutionary model
           (formerly "tkfstalign")
 
+protpal: approximate phylogenetic alignment using sequence profiles
+         
+
 
 Also included are various bioinformatics tools, tests and algorithms.
 
@@ -130,6 +133,9 @@ TKFST models indels of whole substructures as well as point
 (base) substitutions & indels and covariant (basepair)
 substitutions & indels.
 	
+
+** protpal
+Program for approximate statistical alignment and reconstruction.  Uses progressive alignment with sequence profiles. 
 
 
 REFERENCES
