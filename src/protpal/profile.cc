@@ -1753,7 +1753,7 @@ void Profile::sum_paths_to(M_id mPrime)
   // This function fills the cell at mPrime in Z
   bool logging = false, testing = false;
   bool fromStart = 0;
-  bfloat toAdd;
+  bfloat toAdd, finalSum = 0.0;
   bfloat small = pow(.1,100);
   vector<state> left_incoming;
   vector<state> right_incoming;   
@@ -1833,7 +1833,7 @@ void Profile::sum_paths_to(M_id mPrime)
   if (fromStart)
 	{
 	  if (logging) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
-	  add_to_DP_cell(mPrime, toAdd); 
+	  finalSum +=toAdd; 
 	}
 
 
@@ -1869,7 +1869,7 @@ void Profile::sum_paths_to(M_id mPrime)
 					left_profile.get_transition_weight(*e_l, mPrime.left_state)*
 					right_profile.get_transition_weight(*e_r, mPrime.right_state)*
 					emissionWeight;
-				      add_to_DP_cell(mPrime, toAdd); 
+				      finalSum += toAdd; 
 				    }
 				  // for test
 				  if (testing)
@@ -1909,7 +1909,7 @@ void Profile::sum_paths_to(M_id mPrime)
 				left_profile.get_transition_weight(*e_l, mPrime.left_state)*
 				emissionWeight;
 			  // right profile transition weight is implicitely 1 here 
-			      add_to_DP_cell(mPrime, toAdd); 
+			      finalSum += toAdd; 
 			    }
 			  // for test
 			  if (testing)
@@ -1950,7 +1950,7 @@ void Profile::sum_paths_to(M_id mPrime)
 				right_profile.get_transition_weight(*e_r, mPrime.right_state)*
 				emissionWeight;
 			  // left profile transition weight is implicitely 1 here 
-			      add_to_DP_cell(mPrime, toAdd); 
+			      finalSum +=toAdd; 
 			    }
 			  //for test
 			  if(testing)
@@ -1969,6 +1969,8 @@ void Profile::sum_paths_to(M_id mPrime)
 			}
 		}
 	}
+  if (finalSum > 0.0)
+    add_to_DP_cell(mPrime, finalSum);
 }
   
 
