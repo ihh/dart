@@ -2285,6 +2285,15 @@ void Profile::fill_DP(int logging)
 	  mPrime.display(Q);
 	}
   forward_prob = get_DP_cell(mPrime);
+  bool isReal = false;
+  if (forward_prob>0.0)
+    isReal = true; 
+  if (!isReal)
+    {
+      std::cerr<<"Error: sum-over-alignments likelihood is zero: "<<forward_prob<<"  This is not good.  Check your input alignment and tree for irregularities\n";
+      exit(1);
+    }
+	
   if(logging>=2) std::cerr<<"forward-bits: "<<-log(get_DP_cell(mPrime))/log(2.0)<<endl;
   
 }
