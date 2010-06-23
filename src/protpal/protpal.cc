@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
   vector<Node> children;
   vector<double> branchLengths;   
   vector<string> node_names;
-  double verySmall = 0.00001; //proxy for zero-length branches
+  double verySmall = 0.001; //proxy for zero-length branches
   double branch_length; 
 
   // create main reconstruction object
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
 		  branch_length = max(verySmall, reconstruction.tree.branch_length(treeNode ,*child));
 		  if (branch_length != reconstruction.tree.branch_length(treeNode ,*child))
 		    {
-		      std::cerr<<"Warning: branch length "<< reconstruction.tree.branch_length(treeNode ,*child);
+		      std::cerr<<"NB: branch length "<< reconstruction.tree.branch_length(treeNode ,*child);
 		      std::cerr<<" rounded up to "<< branch_length<<endl; 
 		    }
 		  branchLengths.push_back(branch_length); 
