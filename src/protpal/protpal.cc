@@ -15,8 +15,6 @@
 
 int main(int argc, char* argv[])
 {
-  //seed rand on the clock time
-  srand((unsigned)time(0));
   // A few utility variables
   node treeNode; 
   vector<Node> children;
@@ -30,6 +28,11 @@ int main(int argc, char* argv[])
   
   // Initialize options / arguments from cmd line.  Tree, input sequences, etc. 
   reconstruction.get_cmd_args(argc, argv);
+
+
+  //seed rand on the clock time
+  if (reconstruction.clock_seed)
+    srand((unsigned)time(0));
 
   //get_node_names assigns reasonable names to internal nodes (e.g. all descendent leaves, joined by "_"
   //  node_names = reconstruction.get_node_names(); 
@@ -87,8 +90,8 @@ int main(int argc, char* argv[])
 	{
 	  const Phylogeny::Branch& b = *bi;
 	  treeNode = b.second; 
-	  if(reconstruction.tree.is_leaf(treeNode)) continue; 
-	  if(reconstruction.loggingLevel>=1)
+	  if (reconstruction.tree.is_leaf(treeNode)) continue; 
+	  if (reconstruction.loggingLevel>=1)
 		std::cerr<<"\nBuilding sequence profile for: "<<reconstruction.tree.node_name[treeNode]<<endl; 
 	  children.clear(); 
 	  branchLengths.clear(); 

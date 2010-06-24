@@ -2290,7 +2290,8 @@ void Profile::fill_DP(int logging)
     isReal = true; 
   if (!isReal)
     {
-      std::cerr<<"Error: sum-over-alignments likelihood is zero: "<<forward_prob<<"  This is not good.  Check your input alignment and tree for irregularities\n";
+      std::cerr<<"Error: sum-over-alignments likelihood is zero: "<< forward_prob <<"  This is not good.  Check your input alignment and tree for irregularities\n";
+      std::cerr<<"If there are no such irregularities, consider submitting a bug report, see www.biowiki.org/ProtPal for details.\n";
       exit(1);
     }
 	
@@ -2331,9 +2332,6 @@ bfloat Profile::compute_emission_weight(M_id m)
       return weight;
     }
 	  
-      
-
-
   //older, slow way:
 
 //   if ( qClass == "match")

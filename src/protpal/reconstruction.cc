@@ -28,26 +28,28 @@ Reconstruction::Reconstruction(void)
   options["-s"] = "<bool> Rather than aligning, simulate a set of (unaligned) sequences according to the models (e.g. transducers, rate matrix, tree) specified. \n";
   simulate = false; 
 
-  options["-i"] = "<float> Insert rate (default .02) \n";
-  ins_rate = .019; 
-  options["-d"] = "<float> Delete rate (default .02)\n";    
-  del_rate = .02; 
-  options["-ge"] = "<float> Gap-extend probability (default .4) \n";
-  gap_extend = .4; 
+  options["-c"] = "<bool>  Seed random number generator on system clock time (Default True) \n";
+  clock_seed = true; 
+  options["-i"] = "<float> Insert rate (default .0025) \n";
+  ins_rate = .0025; 
+  options["-d"] = "<float> Delete rate (default .0025)\n";    
+  del_rate = .0025; 
+  options["-ge"] = "<float> Gap-extend probability (default .9) \n";
+  gap_extend = .9; 
 
   options["-r"] = "<int> Root sequence length in simulation.  Default is to sample direclty from singlet transducer.  \n";
   rootLength = -1; 
 
-  options["-n"] = "<int> Number of paths to sample in traceback (default 10) \n";
-  num_sampled_paths = 10;
+  options["-n"] = "<int> Number of paths to sample in traceback (default 100) \n";
+  num_sampled_paths = 100;
 
-  options["-m"] = "<int> Number of delete states allowed in DAG  (default 500) \n";
-  max_sampled_externals = 500;
+  options["-m"] = "<int> Number of delete states allowed in DAG  (default 1000) \n";
+  max_sampled_externals = 1000;
 
-  options["-e"] = "<int> Maximum allowed distance between aligned leaf characters (default 100)\n";
-  envelope_distance = 100; 
+  options["-e"] = "<int> Maximum allowed distance between aligned leaf characters (default 300)\n";
+  envelope_distance = 300; 
 
-  options["-g"] = "<grammar file> DART format chain file to be used for match states absorb/emit likelihoods.  Default is data/handalign/prot1.hsm ";
+  options["-g"] = "<grammar file> DART format chain file to be used for match states absorb/emit likelihoods.  Default is $DARTDIR/data/handalign/prot1.hsm ";
   rate_matrix_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE; 
   
 
@@ -194,6 +196,15 @@ void Reconstruction::get_cmd_args(int argc, char* argv[])
 		  else
 			show_alignments = false; 
 		}
+	  else if (string(argv[i]) == "-c") 
+		{
+		  if (i==argc-1) clock_seed = true; 
+		  else if (string(argv[i+1]) == "true" || string(argv[i+1]) == "TRUE" || string(argv[i+1]) == "1")
+			clock_seed = true;
+		  else
+			clock_seed = false; 
+		}
+
 	  else if (string(argv[i]) == "-l") 
 		{
 		  if (i==argc-1) leaves_only = true; 
