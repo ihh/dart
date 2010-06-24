@@ -66,6 +66,8 @@ class Reconstruction
   int envelope_distance; 
   bool leaves_only; 
 
+  bool clock_seed; 
+
   
   //model parameters
   double ins_rate;
