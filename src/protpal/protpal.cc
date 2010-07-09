@@ -191,9 +191,6 @@ int main(int argc, char* argv[])
 	  // When reaching the root: 
 	  else
 		{
-		  if(reconstruction.loggingLevel>=1)
-			std::cerr<<"\tDisplaying Viterbi alignment\n\n"; 
-
 		  string alignString = profile.sample_DP(
 						  1, // sample only the viterbi path
 						  0, // debugging log messages
@@ -224,13 +221,21 @@ int main(int argc, char* argv[])
 		      SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); 
 		      SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
 		      
+		      if (reconstruction.loggingLevel >=1) 
+			std::cerr<< "\tReconstruction ancestral characters conditional on ML indel history..."; 
 		      Stockholm annotated = ecfg.run_alignment_annotation(stk, grammar_ecfg_sexpr); 
+		      if (reconstruction.loggingLevel >=1) 
+			{
+			  std::cerr<<"Done.\n";
+			  std::cerr<<"\tDisplaying Viterbi alignment\n\n"; 
+			}
 		      if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
 			annotated.write_Stockholm(std::cout);
 		      else
 			{
 			  Phonebook::iterator seq; 
 			  int nameSize, maxNameLength = 0; 
+			  sstring sequence; 
 			  std::cout<<treeStream.str(); 
 			  for (seq = annotated.row_index.begin(); seq!=annotated.row_index.end(); seq++)
 			    {
@@ -238,7 +243,16 @@ int main(int argc, char* argv[])
 			      maxNameLength = max( maxNameLength, nameSize );
 			    }
 			  for (seq = annotated.row_index.begin(); seq!=annotated.row_index.end(); seq++)
-			    std::cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << annotated.get_row_as_string(seq->second)<<endl; 
+			    {
+			      if ( reconstruction.tree.is_leaf(index(seq->first, reconstruction.tree.node_name) ) )
+				sequence =  annotated.get_row_as_string(seq->second); 
+			      else 
+				sequence = annotated.gr_annot[seq->first]["ancrec_CYK_MAP"];
+			      if (reconstruction.fasta_output)
+				std::cout<< ">" << seq->first << "\n" << sequence << endl; 
+			      else
+				std::cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << sequence << endl; 
+			    }
 			}
 		    }
 		}

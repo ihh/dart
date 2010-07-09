@@ -434,7 +434,7 @@ void AbsorbingTransducer::identify_states(Profile *sampled_profile)
 {
   vector<M_id>::iterator m; 
   // This type-system is stupid, and a consequence of M_id's storing ints rather than strings
-  // to denote the component types.  I'll rewrite this soon, I hope. 
+  // to denote the component types.  I'll this this soon, I hope. 
   int profile_start = -1;
   int profile_wait = 0;
   int profile_delete = 1;
@@ -1117,7 +1117,7 @@ string Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool 
   bigStart.right_state = right_profile.start_state;
   bigStart.right_type = -1;
   bigStart.left_type = -1;
-
+  if (num_paths == 1) viterbi=true; 
   for (int pathIdx = 0; pathIdx < num_paths; pathIdx++)
 	{
 	  if (pathIdx == 0) viterbi = true;  //eventually make this an option, rather than a hack
@@ -1518,12 +1518,12 @@ string Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool 
 	  std::cerr<<"\n";
 	  exit(1); 
 	}
-
-  if (showAlignments) 
+  alignString = show_alignment(pi, leaves_only); 
+  if (showAlignments && !viterbi) 
 	{
 	  std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
 	  std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
-	  alignString = show_alignment(pi, leaves_only); 
+	  std::cout<<alignString; 
 	  std::cerr<<"\n";
 	}
 

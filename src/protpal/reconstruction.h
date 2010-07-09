@@ -74,6 +74,7 @@ class Reconstruction
   bool ancrec_postprob; 
   double min_ancrec_postprob; 
   bool xrate_output; 
+  bool fasta_output; 
   bool clock_seed; 
 
   
