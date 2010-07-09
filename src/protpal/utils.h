@@ -7,6 +7,7 @@
 
 #include "algebras.h"
 #include "ecfg/ecfgsexpr.h"
+#include "seq/biosequence.h"
 
 using namespace std;
 
@@ -16,16 +17,14 @@ class dart_rate_matrix: public Irrev_EM_matrix
   dart_rate_matrix(void);
 };
 
-
-
 typedef int state;
 typedef int node;
-// oops, Ian and I differ in capitalization.  I'll fix this soon.  
+// oops, DART and I differ in capitalization.  I'll fix this soon (maybe). 
 typedef int Node; 
 
 char* stockholm_tree(const char*);
-map<string, string> parse_stockholm(const char* );
-map<string, string> parse_fasta(const char* );
+map<string, string> parse_stockholm(const char*, Alphabet );
+map<string, string> parse_fasta(const char*, Alphabet );
 vector<string> split(string,string); 
 
 map<node, bool> merge(map<node, bool>  *map1, map<node, bool>  *map2); 

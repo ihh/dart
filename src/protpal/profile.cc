@@ -1090,7 +1090,7 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
 
 }
 // Top-level public methods
-void Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool leaves_only)
+string Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool leaves_only)
 {
   // sample num_paths alignments from the DP matrix, showing the alignments according to 
   // showAlignments.  If showing alignments, they are printed in stockholm format, with
@@ -1109,6 +1109,7 @@ void Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool le
   pair<vector<int>, vector<int> > transitionPair; 
   // these variables are the 'from' and 'to' M_n states, and the M_n start state, which tells us when we're finished
   M_id m, mPrime, bigStart;
+  string alignString; 
 
   // Set start state here
   bigStart.q_state = Q.composite_start_state;
@@ -1522,11 +1523,12 @@ void Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool le
 	{
 	  std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
 	  std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
-	  show_alignment(pi, leaves_only); 
+	  alignString = show_alignment(pi, leaves_only); 
 	  std::cerr<<"\n";
 	}
 
 	}	
+  return alignString; 
 }
 void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 {
@@ -2824,13 +2826,14 @@ void show_state_phylo(map<node, string> &stp)
 }
 
 
-void Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
+string Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
 {
   // Visualize a path through a DP matrix as a multiple sequence alignment.  All null states that 
   // were summed over in previous iterations are shown according to bool showNulls (I'm not
   // sure why we'd ever set this to false, but possibly if the root ancestor was the ONLY
   // sequence of interest, we'd like to trim out the extra alignment info).  
   bool logging = false, showNulls=true,foundJ; 
+  string out; 
   int i,j; 
   M_id m,n; 
   map<node, string>::iterator nodeState;
@@ -2944,8 +2947,9 @@ void Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
 	{
 	  if (leaves_only && (!in(nodeState->first, leaves)))
 		continue;
-	  std::cout<< node_names[nodeState->first] << rep(maxNameLength-node_names[nodeState->first].size()+4, " ")<<nodeState->second<<endl;
+	  out +=node_names[nodeState->first] + rep(maxNameLength-node_names[nodeState->first].size()+4, " ") + nodeState->second + "\n"; 
 	}
+  return out; 
 }
 
 

@@ -9,6 +9,9 @@
 
 #include "utils.h"
 #include "ecfg/ecfgsexpr.h"
+#include "seq/biosequence.h"
+
+#include "util/macros.h"
 
 using namespace std;
 
@@ -290,7 +293,7 @@ void displayVector(vector <vector <int> > in)
 	}
 }
 
-map<string, string> parse_stockholm(const char* fileName)
+map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
 {
   map<string, string> sequences; 
   string line;
@@ -314,7 +317,7 @@ map<string, string> parse_stockholm(const char* fileName)
     }
   else 
     {
-      std::cerr << "Error: Unable to open file: "<<fileName;
+      std::cerr << "Error: Unable to open file: "<<fileName<<endl;
     }
   return sequences; 
 }
@@ -344,30 +347,15 @@ vector<string> split(string in, string splitChar)
 
 
 
-map<string, string> parse_fasta(const char* fileName)
+map<string, string> parse_fasta(const char* sequenceFileName, Alphabet alphabet)
 {
   map<string, string> sequences;
+  ifstream sequenceFileStream(sequenceFileName); 
+  Sequence_database seq_db;  // create the object
+  seq_db.read_FASTA (sequenceFileStream);  // read from file
+  seq_db.seqs2dsqs (alphabet);   // parse the sequences into tokens using the Alphabet class that you read in with the substitution model
+  for_const_contents (list<Named_profile>, seq_db, prof) 
+    sequences[prof->name] = (prof->seq); 
   return sequences; 
 }
-/*
-  string current; 
-  // Parse fasta file
-  if (seqFile.is_open())
-	{
-	  while (! seqFile.eof() )
-		{
-		  getline(seqFile,line);
-		  if (stringAt(0,line) == "#" || split(line," ").size()<2) continue;
-		  else
-			{
-			  sequences[split(line," ")[0]] = split(line," ")[1];
-			}
-		}
-	  seqFile.close();
-	}
-  else 
-	{
-	  std::cerr << "Error: Unable to open file: "<<fileName;
-	}
-}
-*/
+

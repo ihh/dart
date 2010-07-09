@@ -153,7 +153,7 @@ class Profile
 
   void clear_DP(void); 
   // sample set of paths from DP matrix, storing info on their transitions, transition weights, etc
-  void sample_DP(int, int, bool, bool);
+  string sample_DP(int, int, bool, bool);
   void cache_state(M_id m, M_id mPrime, bfloat weight);
   void cache_path(vector<M_id>); 
 
@@ -247,7 +247,7 @@ class Profile
   bool is_in_envelope(state left_state, state right_state); 
 
   void path2alignment(vector<M_id> &);
-  void show_alignment(vector<M_id> &, bool);
+  string show_alignment(vector<M_id> &, bool);
   void show_state(M_id);
 
 

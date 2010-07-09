@@ -23,7 +23,7 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
   bool hidden = false; 
   if (alphabet[0].size() > 1)
 	{
-	  std::cerr<<"Using hidden-state alphabet\n";
+	  //std::cerr<<"Using hidden-state alphabet\n";
 	  hidden = true; 
 	  for (vector<string>::iterator a=alphabet.begin(); a!=alphabet.end(); a++)
 		single_alphabet.push_back(stringAt(*a,0));

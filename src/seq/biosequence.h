@@ -37,7 +37,7 @@ public:
   int  null_score (const vector<int>& null_model) const;
   int  stuttered_null_score (const vector<int>& null_model, const int stutter_sc) const;
   void count_symbol_frequencies (vector<double>& composition) const;
-  // the "context" methods construct a Digitized_biosequence where every site
+  // the "context" methods a Digitized_biosequence where every site
   // encodes the last 'context_order' residues of the parent sequence
   // ...a hacky way of doing higher-order Markov chains. probably best to ignore these methods.
   Digitized_biosequence make_context_dsq (int alphabet_size, int context_order) const;

@@ -10,11 +10,13 @@
 #include "protpal/utils.h"
 #include "ecfg/ecfgsexpr.h"
 #include "tree/phylogeny.h"
+#include "ecfg/ecfgmain.h"
 
 // Main reconstruction program. 
 
 int main(int argc, char* argv[])
 {
+
   // A few utility variables
   node treeNode; 
   vector<Node> children;
@@ -24,28 +26,29 @@ int main(int argc, char* argv[])
   double branch_length; 
 
   // create main reconstruction object
-  Reconstruction reconstruction;
+  Reconstruction reconstruction(argc, argv);
   
-  // Initialize options / arguments from cmd line.  Tree, input sequences, etc. 
-  reconstruction.get_cmd_args(argc, argv);
-
-
   //seed rand on the clock time
   if (reconstruction.clock_seed)
     srand((unsigned)time(0));
 
   //get_node_names assigns reasonable names to internal nodes (e.g. all descendent leaves, joined by "_"
   //  node_names = reconstruction.get_node_names(); 
-  for (int i=0; i< reconstruction.tree.node_name.size(); i++)
+  for (unsigned int i=0; i< reconstruction.tree.node_name.size(); i++)
 	node_names.push_back(string(reconstruction.tree.node_name[i]));
 
-  // Initialize the DART-style rate matrix. 
 
+  // Initialize the DART-style rate matrix.
   SExpr_file ecfg_sexpr_file (reconstruction.rate_matrix_filename.c_str());
   SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
   Irrev_EM_matrix rate_matrix(1,1);
   Alphabet alphabet ("uninitialized", 1);
   ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
+  
+  // We need the alphabet to parse sequences via DART's machinery...that's why this is out here away from other
+  // data parsing stuff. 
+  reconstruction.parse_sequences(alphabet);
+
   
   // These  transducers remain the same throughout the traversal, so we can initialize them
   // once and for all and leave them.  
@@ -56,7 +59,6 @@ int main(int argc, char* argv[])
   if (reconstruction.simulate)
 	{
 	  reconstruction.simulate_alignment(alphabet, rate_matrix); 
-	  //reconstruction.make_sexpr_file(alphabet, rate_matrix);  - old memory-hungry phylocomposer way, basically obsolete
 	  exit(0); 
 	}
   
@@ -64,7 +66,7 @@ int main(int argc, char* argv[])
   if(reconstruction.loggingLevel>=1)
 	std::cerr<<"\n";
   vector<Node> leaves = reconstruction.tree.leaf_vector(); 
-  for (int i=0; i<leaves.size(); i++)
+  for (unsigned int i=0; i<leaves.size(); i++)
 	{
 	  treeNode = leaves[i]; 
 	  if(reconstruction.loggingLevel>=1)
@@ -191,14 +193,54 @@ int main(int argc, char* argv[])
 		{
 		  if(reconstruction.loggingLevel>=1)
 			std::cerr<<"\tDisplaying Viterbi alignment\n\n"; 
-		  std::cout<<"#=GF NH\t";
-		  reconstruction.tree.write(std::cout, 0); 
-		  profile.sample_DP(
-				    1, // sample only the viterbi path
-				    0, // debugging log messages
-				    true, // show the final alignment
-				    reconstruction.leaves_only // show only the leaf alignment
-				    ); 
+
+		  string alignString = profile.sample_DP(
+						  1, // sample only the viterbi path
+						  0, // debugging log messages
+						  true, // show the final alignment
+						  reconstruction.leaves_only // show only the leaf alignment
+						  ); 
+		  // There is now way that this is the easiest way to do this, but oh well:
+		  stringstream treeStream; 
+		  reconstruction.tree.write_Stockholm(treeStream);
+		  alignString = treeStream.str() + alignString; 
+		  Sequence_database db; 
+		  istringstream stockStream(alignString);
+
+		  Stockholm stk(1,1);
+		  stk.read_Stockholm(stockStream,db); 
+		  if (reconstruction.leaves_only)
+		    stk.write_Stockholm(std::cout);
+		  else
+		    {
+		      ECFG_main ecfg; 
+		      ecfg.ancrec_CYK_MAP = true; 
+		      if (reconstruction.ancrec_postprob)
+			{
+			  ecfg.ancrec_postprob=true;
+			  ecfg.min_ancrec_postprob = reconstruction.min_ancrec_postprob; 
+			}
+		      
+		      SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); 
+		      SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
+		      
+		      Stockholm annotated = ecfg.run_alignment_annotation(stk, grammar_ecfg_sexpr); 
+		      if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
+			annotated.write_Stockholm(std::cout);
+		      else
+			{
+			  Phonebook::iterator seq; 
+			  int nameSize, maxNameLength = 0; 
+			  std::cout<<treeStream.str(); 
+			  for (seq = annotated.row_index.begin(); seq!=annotated.row_index.end(); seq++)
+			    {
+			      nameSize = seq->first.size();
+			      maxNameLength = max( maxNameLength, nameSize );
+			    }
+			  for (seq = annotated.row_index.begin(); seq!=annotated.row_index.end(); seq++)
+			    std::cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << annotated.get_row_as_string(seq->second)<<endl; 
+			}
+		    }
 		}
 	}
   return(0);
