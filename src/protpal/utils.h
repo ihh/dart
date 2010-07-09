@@ -8,7 +8,7 @@
 #include "algebras.h"
 #include "ecfg/ecfgsexpr.h"
 #include "seq/biosequence.h"
-
+#include "util/sstring.h"
 using namespace std;
 
 class dart_rate_matrix: public Irrev_EM_matrix
@@ -47,6 +47,7 @@ string stringAt(string in, int index);
 
 int index(string query, string in );
 int index(string query, vector<string> in );
+int index(sstring query, vector<sstring> in );
 int index(int query, vector<int> in );
 int index(float query, vector<float> in );
 

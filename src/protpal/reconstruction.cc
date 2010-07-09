@@ -47,8 +47,8 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t option.", false);
   opts.add("fa -fasta-file", fastaFileName="None", "Unaligned FASTA sequence file",false );
   opts.add("t -tree-string", treeString="None", "Tree string in newick format, within double quotes", false);
-  opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called");
-
+  opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called).  Default is a compact Stockholm form. ");
+  opts.add("fo -fasta-output", fasta_output=false, "Display final alignment in FASTA format");
 
   opts.newline(); 
   opts.print_title("Reconstruction options");
