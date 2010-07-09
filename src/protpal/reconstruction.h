@@ -14,14 +14,14 @@
 class Reconstruction
 {
  public:
-  // Constructor  - not much happens here.
-  Reconstruction(void);
+  // Constructor  - options are parsed from cmd line
+  Reconstruction(int argc, char* argv[]);
 
   // store the possible cmd line options, and brief descriptions
   map<string, string> options; 
 
-  // Set command line options, get data (sequences, tree) pointed to, etc. 
-  void get_cmd_args(int argc, char* argv[]);
+  // Get sequences
+  void parse_sequences(Alphabet); 
   
   // Each leaf node is assigned a sequence. Possibly delete these after making ExactMatch transducers for each
   // leaf.  Hmm, maybe I should have used pointers instead. 
@@ -31,11 +31,17 @@ class Reconstruction
   // at least this is not a string any more, but a vector of strings, allowing latent-variable models.
   vector<string> alphabet; 
 
-  // the rate matrix is from DART - imported on top-level
+  // rate matrix and sequence import
   sstring rate_matrix_filename;   
+  sstring grammar_filename;   
+  sstring stkFileName;
+  sstring fastaFileName;
+  
+  string sequenceFileType; 
 
   // the phylogenetic tree, stored as a PHYLYP_tree object.  This is a fairly hairy object, with most of its code
   // living in phylogeny.*
+  sstring treeString;
   PHYLIP_tree tree; 
 
   // Each tree node will at some point contain a sequence profile.  The profile at a node  is constructed via its
@@ -65,7 +71,9 @@ class Reconstruction
   int loggingLevel;
   int envelope_distance; 
   bool leaves_only; 
-
+  bool ancrec_postprob; 
+  double min_ancrec_postprob; 
+  bool xrate_output; 
   bool clock_seed; 
 
   

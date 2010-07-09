@@ -12,250 +12,110 @@
 #include "ecfg/ecfgsexpr.h"
 #include "util/unixenv.h"
 #include "util/sstring.h"
+#include "util/opts_list.h"
 
-#define DEFAULT_CHAIN_FILE "data/handalign/prot1.hsm"
+#define DEFAULT_CHAIN_FILE "data/handalign/prot3.hsm"
+#define DEFAULT_GRAMMAR_FILE "grammars/prot3.eg"
 
 using namespace std; 
-Reconstruction::Reconstruction(void)
+
+Reconstruction::Reconstruction(int argc, char* argv[])
 {
-  options["-stk"] = "<filename> (Unaligned) sequences in Stockholm file format.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t option. \n";
-
-  //  options["-fa"] = "<filename> (Unaligned) sequences in fasta file format\n";
-
-  options["-t"] = "<string> Tree in newick file format\n";
-  
-  //  options["-s"] = "<bool> Rather than aligning, create an sexpr file to pipe to phylcomposer.  Use protpal -s -t <tree> | phylocomposer --simulate | phylcomposter -al <alignment_file> to create a simulated alignment for the tree of interest\n";
-  options["-s"] = "<bool> Rather than aligning, simulate a set of (unaligned) sequences according to the models (e.g. transducers, rate matrix, tree) specified. \n";
-  simulate = false; 
-
-  options["-c"] = "<bool>  Seed random number generator on system clock time (Default True) \n";
-  clock_seed = true; 
-  options["-i"] = "<float> Insert rate (default .0025) \n";
-  ins_rate = .0025; 
-  options["-d"] = "<float> Delete rate (default .0025)\n";    
-  del_rate = .0025; 
-  options["-ge"] = "<float> Gap-extend probability (default .9) \n";
-  gap_extend = .9; 
-
-  options["-r"] = "<int> Root sequence length in simulation.  Default is to sample direclty from singlet transducer.  \n";
-  rootLength = -1; 
-
-  options["-n"] = "<int> Number of paths to sample in traceback (default 100) \n";
-  num_sampled_paths = 100;
-
-  options["-m"] = "<int> Number of delete states allowed in DAG  (default 1000) \n";
-  max_sampled_externals = 1000;
-
-  options["-e"] = "<int> Maximum allowed distance between aligned leaf characters (default 300)\n";
-  envelope_distance = 300; 
-
-  options["-g"] = "<grammar file> DART format chain file to be used for match states absorb/emit likelihoods.  Default is $DARTDIR/data/handalign/prot1.hsm ";
-  rate_matrix_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE; 
-  
-
-  options["-sa"] = "<bool> Show sampled alignments for internal nodes (default false) \n";
-  show_alignments = false;
-
-  options["-l"] = "<bool> Show only leaves when displaying alignments (default false) \n";
-  leaves_only = false; 
- 
-  options["-log"] = 
-	"<int> Show log messages of varying levels of verbosity. (default = level 1 )"
-"\n\n\tLevel  0 : Show no log messages.  The alignment is sent to standard out."
-  "\n\tLevel  1 : Top-level logging related to profile creating/sampling, etc.  This is default"
-  "\n\tLevel  2 : Detailed logging including DP, traceback, etc (dense)"    
-  "\n\tLevel  3 : Very detailed logging including transducer composition algorithms. (dense)\n";
-  
-  loggingLevel = 1;  
+  INIT_OPTS_LIST (opts, argc, argv, 0, "[options]",
+		  "Align and reconstruct ancestral sequences\n");
+  sstring default_chain_filename, default_grammar_filename;
+  default_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE;
+  default_grammar_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_GRAMMAR_FILE;
 
   have_tree=false; 
   have_sequences=false; 
+  bool rndtime = true; 
 
+  opts.program_name = "ProtPal";
+  opts.short_description = "Progressive alignment and reconstruction of proteins";
+  opts.syntax = "-<format> [SEQUENCE FILE] [OPTIONS] > [RECONSTRUCTION FILE]";
+  opts.expect_args = -1; 
+
+  opts.add("l log-level", loggingLevel=1, "<int> Show log messages of varying levels of verbosity. (default = level 1 )");
+  opts.print("\tLevel  0 : Show no log messages.  The alignment is sent to standard out.\n");
+  opts.print("\tLevel  1 : Top-level logging related to profile creating/sampling, etc.  This is default\n");
+  opts.print("\tLevel  2 : Detailed logging including DP, traceback, etc (dense)\n");
+  opts.print("\tLevel  3 : Very detailed logging including transducer composition algorithms. (dense)\n");
+
+  opts.newline(); 
+  opts.print_title("Input/output options");
+  opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t option.", false);
+  opts.add("fa -fasta-file", fastaFileName="None", "Unaligned FASTA sequence file",false );
+  opts.add("t -tree-string", treeString="None", "Tree string in newick format, within double quotes", false);
+  opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called");
+
+
+  opts.newline(); 
+  opts.print_title("Reconstruction options");
+
+  opts.add("g -grammar-file", grammar_filename = default_grammar_filename, "<grammar filename> DART format grammar to be used for final character reconstruction");
+  opts.add("a -leaves-only", leaves_only = false, "Show only leaves when displaying alignments, e.g. don't to ancestral reconstruction: 'alignment' mode (default false) ");
+  opts.add("arpp -ancrec-postprob", ancrec_postprob = false,"report posterior probabilities of alternate reconstructions");
+  opts.add("marp -min-ancrec-prob", min_ancrec_postprob =0.01,   "minimum probability to report for --ancrec-postprob option");
+
+  opts.newline(); 
+  opts.print_title("Simulation Options"); 
+
+  opts.add("s -simulate", simulate=false,"simulate a set of (unaligned) sequences according to the models (e.g. transducers, rate matrix, tree) specified.");
+  opts.add("sa -show-alignments", show_alignments=false, "show intermediate sampled alignments  ");
+  opts.add("rl -root-length", rootLength=-1, "<int> Root sequence length in simulation.  Default is to sample direclty from singlet transducer's insert distribution.", false);
+
+  opts.newline();
+  opts.print_title("Model parameters");
+
+  opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "<rate matrix file> DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
+  opts.add("i -insert-rate", ins_rate=0.0025,"Insertion rate ");
+  opts.add("d -delete-rate", del_rate=0.0025,"Deletion rate ");
+  opts.add("x -gap-extend", gap_extend=0.9, "Gap extend probability");
+  opts.add("n -num-samples", num_sampled_paths=100, "Number of paths to sample in traceback");
+  opts.add("m -max-DAG-size", max_sampled_externals=1000, "Max number (approximately) of delete states allowed in DAG");
+  opts.add("e -max-distance", envelope_distance=300, "Maximum allowed distance between aligned leaf characters");
+
+  opts.parse_or_die(); 
+  clock_seed = rndtime; 
+  string error=""; bool all_reqd_args=true; 
+
+  // Make sure we have the essential data - sequences and a tree
+  // First, make sure we have sequence data from somewhere
+  if(stkFileName == "None" && fastaFileName =="None" && !simulate)
+	{
+	  error += "\tNo sequence file could be imported.  Use -stk or -fa  to specify a sequence file\n";
+	  all_reqd_args = false; 
+	}
+  // Next, see if we have a tree, first trying to get it from a #=GF NH stockholm line
+  if (stkFileName != "None")
+    get_stockholm_tree(stkFileName.c_str());
+  if (treeString == "None")
+	{
+	  error += "\tNo tree string could be imported.  Use -t  to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
+	  all_reqd_args = false; 
+	}
+  else
+    loadTreeString(treeString.c_str());
+  if(!all_reqd_args)
+    {
+      std::cout<<"Not all required arguments were supplied:\n"<<error<<endl;  
+      std::cout<<opts.short_help(); 
+      exit(1);
+    }
 }
 
 
-void Reconstruction::get_cmd_args(int argc, char* argv[])
+void Reconstruction::parse_sequences(Alphabet alphabet)
 {
-  string error = ""; 
-  bool all_reqd_args = true; 
-  for (int i = 0; i < argc; i++) 
-	{ 
-	  if (string(argv[i]) == "-log")
-		{
-		  const char* logChar = argv[i+1]; 
-		  loggingLevel = atoi(logChar);
-		  if( loggingLevel>=1)
-			std::cout<<"Logging level set as "<< loggingLevel<<endl; 
-		}
-	}
-  for (int i = 0; i < argc; i++) 
-	{ 
-	  if(loggingLevel>=2) std::cout<<"Examining argument: "<<argv[i]<<endl; 
-	  if (string(argv[i]) == "-stk") 
-		{
-		  const char* sequenceFileName = argv[i + 1];
-		  sequences = parse_stockholm(sequenceFileName); 
-		  have_sequences = true; 
-		  get_stockholm_tree(sequenceFileName); 
-		}
-	  else if (string(argv[i]) == "-fa") 
-		{
-		  const char* sequenceFileName = argv[i + 1];
-		  sequences = parse_fasta(sequenceFileName); 
-		  have_sequences = true; 
-		}
-	  else if (string(argv[i]) == "-t") 
-		{
-		  if(loggingLevel >= 2) std::cout<<"loading tree string:"<<argv[i+1]<<endl;; 
-		  loadTreeString(argv[i+1]); 
-		  have_tree = true; 
-		  if(loggingLevel >= 2) std::cout<<"Tree loaded successfully\n";
-		}
-	  else if (string(argv[i]) == "-n") 
-		{		
-		  const char* numPaths = argv[i+1]; 
-		  num_sampled_paths = atoi(numPaths);
-		  if (num_sampled_paths == 0)
-			{
-			  std::cerr<<"ERROR: You must sample at least one path at each iteration\n";
-			  display_opts(); 
-			  exit(0); 
-			}
-		}
-	  else if (string(argv[i]) == "-m") 
-		{		
-		  const char* numExt = argv[i+1]; 
-		  max_sampled_externals = atoi(numExt);
-		  if (max_sampled_externals <= 0)
-			{
-			  std::cerr<<"ERROR: You must allow least one external state in the DAG \n";
-			  display_opts(); 
-			  exit(0); 
-			}
-		}
-	  else if (string(argv[i]) == "-r") 
-		{		
-		  const char* rL = argv[i+1]; 
-		  rootLength = atoi(rL);
-		}
-
-
-	  else if (string(argv[i]) == "-i") 
-		{		
-		  const char* ins = argv[i+1]; 
-		  ins_rate = atof(ins);
-		  if (ins_rate < 0.0)
-			{
-			  std::cerr<<"ERROR: Insert rate must be greater than 0\n";
-			  display_opts(); 
-			  exit(0); 
-			}
-		}
-
-	  else if (string(argv[i]) == "-d") 
-		{		
-		  const char* del = argv[i+1]; 
-		  del_rate = atof(del);
-		  if (del_rate < 0.0 )
-			{
-			  std::cerr<<"ERROR: delete rate must be greater than 0\n";
-			  display_opts(); 
-			  exit(0); 
-			}
-		}
-
-	  else if (string(argv[i]) == "-ge") 
-		{		
-		  const char* gap = argv[i+1]; 
-		  gap_extend = atof(gap);
-		  if (gap_extend < 0.0 || gap_extend >1)
-			{
-			  std::cerr<<"ERROR: Gap extend probability must be within 0 and 1\n";
-			  display_opts(); 
-			  exit(0); 
-			}
-		}
-
-
-	  else if (string(argv[i]) == "-e") 
-		{		
-		  const char* envDist = argv[i+1]; 
-		  envelope_distance = atoi(envDist);
-		}
-
-	  else if (string(argv[i]) == "-h") 
-		{
-		  display_opts(); 
-		  exit(0);
-		}
-	  else if (string(argv[i]) == "-sa") 
-		{
-		  if (i==argc-1) show_alignments = true; 
-		  else if (string(argv[i+1]) == "true" || string(argv[i+1]) == "TRUE" || string(argv[i+1]) == "1")
-			show_alignments = true;
-		  else
-			show_alignments = false; 
-		}
-	  else if (string(argv[i]) == "-c") 
-		{
-		  if (i==argc-1) clock_seed = true; 
-		  else if (string(argv[i+1]) == "true" || string(argv[i+1]) == "TRUE" || string(argv[i+1]) == "1")
-			clock_seed = true;
-		  else
-			clock_seed = false; 
-		}
-
-	  else if (string(argv[i]) == "-l") 
-		{
-		  if (i==argc-1) leaves_only = true; 
-		  else if (string(argv[i+1]) == "true" || string(argv[i+1]) == "TRUE" || string(argv[i+1]) == "1")
-			leaves_only = true;
-		  else
-			leaves_only = false; 
-		}
-	  else if (string(argv[i]) == "-s") 
-		{
-		  if (i==argc-1) simulate = true; 
-		  else if (string(argv[i+1]) == "true" || string(argv[i+1]) == "TRUE" || string(argv[i+1]) == "1")
-			simulate = true;
-		  else
-			simulate = false; 
-		}
-			  
-	  else if(string(argv[i]) == "-g")
-		rate_matrix_filename = argv[i+1]; 
-	}
-  if(!have_sequences && !simulate)
-	{
-	  error+= "ERROR: No sequence file could be imported.  Use -stk to specify a sequence file\n";
-	  all_reqd_args =false; 
-	}
-  if (!have_tree)
-	{
-	  error+= "ERROR: No tree string could be imported.  Use -t  to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
-	  all_reqd_args =false; 
-	}
-  
-  
-  if(! all_reqd_args){std::cerr<<"Error: not all required arguments were supplied:\n"<<error<<endl;  display_opts(); exit(0); }
-	  
+  // stockholm or fasta? (maybe add more later)
+  if (stkFileName != "None")
+    sequences = parse_stockholm(stkFileName.c_str(), alphabet); 
+  else if (fastaFileName != "None")
+    sequences = parse_fasta(fastaFileName.c_str(), alphabet); 
 }
 
-void Reconstruction::display_opts(void)
-{
-  map<string, string>::iterator opt_iter;
-  std::cout<<"\nProtPal - Progressive alignment and reconstruction of proteins\n";
-  std::cout<<"\nUsage: \nprotpal [OPTIONS] > reconstruction.stk\n";
-  std::cout<<"\n\n";
-  std::cout<<"Command line options:\n\n";
-
-  for (opt_iter = options.begin(); opt_iter != options.end(); opt_iter++)
-	{
-	  std::cout<<opt_iter->first<<"\t"<<opt_iter->second<<endl;
-	}
-  std::cout<<"-h\tDisplay help message\n\n";
-}
-
+  
 void Reconstruction::loadTreeString(const char* in)
 {
   if (loggingLevel>=2) std::cerr<<"Loading tree string: "<<in<<endl; 
@@ -294,6 +154,7 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
 				tree_tmp += splitLine[i]; 
 
 			  tree_string = tree_tmp.c_str(); 
+			  treeString = tree_string; // Silly I know. 
 			  loadTreeString(tree_string); 
 			  have_tree = true; 
             }
