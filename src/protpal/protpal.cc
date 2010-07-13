@@ -11,12 +11,13 @@
 #include "ecfg/ecfgsexpr.h"
 #include "tree/phylogeny.h"
 #include "ecfg/ecfgmain.h"
+#include "seq/alignment.h"
+#include "seq/biosequence.h"
 
 // Main reconstruction program. 
 
 int main(int argc, char* argv[])
 {
-
   // A few utility variables
   node treeNode; 
   vector<Node> children;
@@ -28,13 +29,10 @@ int main(int argc, char* argv[])
   // create main reconstruction object
   Reconstruction reconstruction(argc, argv);
   
-  //seed rand on the clock time
-  if (reconstruction.clock_seed)
-    srand((unsigned)time(0));
+  srand((unsigned)time(0));
 
-  //get_node_names assigns reasonable names to internal nodes (e.g. all descendent leaves, joined by "_"
-  //  node_names = reconstruction.get_node_names(); 
-  for (unsigned int i=0; i< reconstruction.tree.node_name.size(); i++)
+  // clunky, sorry
+  for (unsigned int i=0; i< reconstruction.tree.nodes(); i++)
 	node_names.push_back(string(reconstruction.tree.node_name[i]));
 
 
@@ -61,8 +59,10 @@ int main(int argc, char* argv[])
 	  reconstruction.simulate_alignment(alphabet, rate_matrix); 
 	  exit(0); 
 	}
+
   
-  //  Initialize the exact-match transducers at leaf nodes
+  // Otherwise, let the ancestral reconstruction begin!  
+  //  Initialize the exact-match transducers at leaf nodes - can be thought of as a trivial reconstruction
   if(reconstruction.loggingLevel>=1)
 	std::cerr<<"\n";
   vector<Node> leaves = reconstruction.tree.leaf_vector(); 
@@ -113,14 +113,14 @@ int main(int argc, char* argv[])
 	  // The two branch transducers must be re-created at each iteration so that the branch lengths
 	  // and the depending parameters are correct.  Thus, Q's transitions must be re-built.  
 	  // Finally, marginalize Q's null states (e.g. IMDD)
-	  BranchTrans B_l(branchLengths[0], alphabet, rate_matrix, 
-					  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend);
-	  B_l.name ="Left branch";
-
-	  BranchTrans B_r(branchLengths[1], alphabet, rate_matrix,
-					  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend);
-	  B_r.name ="Right branch";
 	  
+	  BranchTrans B_l(branchLengths[0], alphabet, rate_matrix, 
+			    reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend);
+	  B_l.name ="Left branch";
+	  BranchTrans B_r(branchLengths[1], alphabet, rate_matrix,
+			    reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend);
+	  B_r.name ="Right branch";
+
 	  QTransducer Q(R, //singlet
 					B_l, //left-branch
 					B_r, // right-branch
@@ -128,7 +128,6 @@ int main(int argc, char* argv[])
 					alphabet //sequence alphabet
 					);
 	  Q.marginalizeNullStates();
-
 	  // Create the new profile at node "treeNode", using the profiles at the children of treeNode:
 	  Profile profile(treeNode, // node on the tree where this profile sits
 					  reconstruction.profiles[children[0]], // left absorbing transducer
@@ -142,10 +141,6 @@ int main(int argc, char* argv[])
 	  profile.node_names = node_names; 
 	  profile.envelope_distance = reconstruction.envelope_distance; 
 	  profile.max_sampled_externals = reconstruction.max_sampled_externals; 
-
-	  // These ought to be deleted somehow:
-	  //	  reconstruction.profiles[children[0]];
-	  //	  reconstruction.profiles[children[1]];
 
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
@@ -190,24 +185,28 @@ int main(int argc, char* argv[])
 	  
 	  // When reaching the root: 
 	  else
-		{
-		  string alignString = profile.sample_DP(
-						  1, // sample only the viterbi path
-						  0, // debugging log messages
-						  true, // show the final alignment
-						  reconstruction.leaves_only // show only the leaf alignment
-						  ); 
-		  // There is now way that this is the easiest way to do this, but oh well:
-		  stringstream treeStream; 
-		  reconstruction.tree.write_Stockholm(treeStream);
-		  alignString = treeStream.str() + alignString; 
-		  Sequence_database db; 
-		  istringstream stockStream(alignString);
+	    {
+	      string alignString = profile.sample_DP(
+						     1, // sample only the viterbi path
+						     0, // debugging log messages
+						     true, // show the final alignment
+						     reconstruction.leaves_only // show only the leaf alignment
+						     ); 
+	      // There is no way that this is the easiest way to do this, but oh well:
+	      stringstream treeStream; 
+	      reconstruction.tree.write_Stockholm(treeStream);
+	      alignString = treeStream.str() + alignString; 
+	      Sequence_database db; 
+	      istringstream stockStream(alignString);
+	      
+	      Stockholm stk(1,1);
+	      stk.read_Stockholm(stockStream,db); 
+	      // if requested, show what was inserted/deleted on each branch  (written to file)
+	      if (reconstruction.indel_filename != "None")
+		reconstruction.show_indels(stk);
 
-		  Stockholm stk(1,1);
-		  stk.read_Stockholm(stockStream,db); 
-		  if (reconstruction.leaves_only)
-		    stk.write_Stockholm(std::cout);
+	      if (reconstruction.leaves_only)
+		stk.write_Stockholm(std::cout);
 		  else
 		    {
 		      ECFG_main ecfg; 

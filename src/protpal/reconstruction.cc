@@ -13,6 +13,9 @@
 #include "util/unixenv.h"
 #include "util/sstring.h"
 #include "util/opts_list.h"
+#include "seq/alignment.h"
+#include "seq/biosequence.h"
+
 
 #define DEFAULT_CHAIN_FILE "data/handalign/prot3.hsm"
 #define DEFAULT_GRAMMAR_FILE "grammars/prot3.eg"
@@ -46,7 +49,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.print_title("Input/output options");
   opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t option.", false);
   opts.add("fa -fasta-file", fastaFileName="None", "Unaligned FASTA sequence file",false );
-  opts.add("t -tree-string", treeString="None", "Tree string in newick format, within double quotes", false);
+  opts.add("t -tree-string", treeString="None", "Tree string in newick format, within double quotes. ", false);
   opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called).  Default is a compact Stockholm form. ");
   opts.add("fo -fasta-output", fasta_output=false, "Display final alignment in FASTA format");
 
@@ -55,13 +58,14 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.add("g -grammar-file", grammar_filename = default_grammar_filename, "<grammar filename> DART format grammar to be used for final character reconstruction");
   opts.add("a -leaves-only", leaves_only = false, "Show only leaves when displaying alignments, e.g. don't to ancestral reconstruction: 'alignment' mode (default false) ");
+  opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences for each branch, written to specified file.");
   opts.add("arpp -ancrec-postprob", ancrec_postprob = false,"report posterior probabilities of alternate reconstructions");
   opts.add("marp -min-ancrec-prob", min_ancrec_postprob =0.01,   "minimum probability to report for --ancrec-postprob option");
 
   opts.newline(); 
   opts.print_title("Simulation Options"); 
 
-  opts.add("s -simulate", simulate=false,"simulate a set of (unaligned) sequences according to the models (e.g. transducers, rate matrix, tree) specified.");
+  opts.add("s -simulate", simulate=false,"simulate a full (ancestors + leaves) set of aligned sequences according to the models (e.g. transducers, rate matrix, tree) specified.");
   opts.add("sa -show-alignments", show_alignments=false, "show intermediate sampled alignments  ");
   opts.add("rl -root-length", rootLength=-1, "<int> Root sequence length in simulation.  Default is to sample direclty from singlet transducer's insert distribution.", false);
 
@@ -77,7 +81,6 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("e -max-distance", envelope_distance=300, "Maximum allowed distance between aligned leaf characters");
 
   opts.parse_or_die(); 
-  clock_seed = rndtime; 
   string error=""; bool all_reqd_args=true; 
 
   // Make sure we have the essential data - sequences and a tree
@@ -103,6 +106,12 @@ Reconstruction::Reconstruction(int argc, char* argv[])
       std::cout<<opts.short_help(); 
       exit(1);
     }
+  // Otherwise, do some preliminary stuff
+  //seed rand on the clock time          
+  if (rndtime)
+    srand((unsigned)time(0));
+  // Name internal nodes of the tree, if not already named
+  set_node_names(); 
 }
 
 
@@ -126,10 +135,20 @@ void Reconstruction::loadTreeString(const char* in)
   tree = in_tree; 
 }
 
-// vector<string> Reconstruction::get_node_names(void)
-// {
-//   //not yet implemented...
-// }  
+void Reconstruction::set_node_names(void)
+{
+  for (int node=0; node<tree.nodes(); node++)
+    {
+      if (tree.node_name[node].size() == 0)
+	{
+	  if (loggingLevel >= 2)
+	    std::cerr<<"Naming node "<< node << endl; 
+	  stringstream out;
+	  out << "Node_"<<node;
+	  tree.node_name[node] = sstring(out.str()); 
+	}
+    }
+}
 
 
 void Reconstruction::get_stockholm_tree(const char* fileName)
@@ -353,44 +372,65 @@ string Reconstruction::show_branch(node startNode)
 
 void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_matrix)
 {
-  map<node, string> sequences; 
-  string parentSeq, childName;
+  map<node, Digitized_biosequence> sequences; 
+  Digitized_biosequence parentSeq; 
+  string childName;
+  Node childNode, parentNode; 
+
+  Decomposition decomp; 
 
   SingletTrans R(alphabet, rate_matrix);
   //write the tree in stockolm style
   std::cout<<"#=GF NH\t";
   tree.write(std::cout, 0); 
-
+  
+  // First, simulate the sequences via a set of pairwise alignments on the tree.  decomp is filled in the calls to sample_pairwise
   for_nodes_pre (tree, tree.root, -1, bi)
     {
       const Phylogeny::Branch& b = *bi;
       node treeNode = b.second;
-	  //std::cout<<"visiting node:" << treeNode<<endl; 
-	  if (treeNode == tree.root)
-		{
-		  sequences[treeNode] = sample_root(R); 
-		  std::cout<< childName << tree.node_name[treeNode] << "   " << sequences[treeNode] <<endl; 
-			}
-	  else
-		{
-		  // construct a branch transducer with the appropriate branch length.
-		  BranchTrans branch(tree.branch_length(b.first, b.second), alphabet, rate_matrix, ins_rate, del_rate, gap_extend); 
-
-		  parentSeq = sequences[b.first]; 
-		  childName = string( tree.node_name[b.second].c_str() ); 	  
-		  
-		  sequences[treeNode] = sample_pairwise(parentSeq, branch);
-		  std::cout<< childName << "    " << sequences[treeNode] << endl; 
-		}
+      if (loggingLevel >= 2)
+	std::cout<<"visiting node:" << treeNode<<endl; 
+      if (treeNode == tree.root)
+	sequences[treeNode] = sample_root(R); 
+      else
+	{
+	  // construct a branch transducer using the appropriate branch length.
+	  BranchTrans branch(tree.branch_length(b.first, b.second), alphabet, rate_matrix, ins_rate, del_rate, gap_extend); 
+	  parentSeq = sequences[b.first]; 
+	  childName = string( tree.node_name[b.second].c_str() ); 	  
+	  sequences[treeNode] = sample_pairwise(parentSeq, branch, b.first, b.second, decomp);
 	}
+    }
+  
+  // Stitch together the pairwise alignments via the alignment class.  This is fairly trivial since we've added pairwise paths to 
+  // decomp as we made them
+  Alignment_path multiple; 
+  multiple.compose(decomp, false); 
+
+  Alignment align(multiple); 
+  align.row_name = tree.node_name; 
+  
+  Score_profile dummySP; 
+  vector<Score_profile> seqs(tree.nodes()); 
+  // Sequence data is stored in Alignment.prof, a vector of pointer to Score_profile
+  Biosequence s; 
+  for (Node node  = 0; node < tree.nodes(); node++)
+    {
+      dummySP = alphabet.dsq2score(sequences[node], dummySP);
+      seqs[node] = dummySP;
+      align.prof[node] = &(seqs[node]);
+    }
+  // Display the resulting alignment
+  align.write_MUL(std::cout, alphabet);  
 }
 
-string Reconstruction::sample_root(SingletTrans R)
+Digitized_biosequence Reconstruction::sample_root(SingletTrans R)
 {
   state s = 0;  // 0 is the start state
   string sType;
   vector<state>::iterator sIter; 
-  string childSeq; 
+  Digitized_biosequence childSeq;  // it's called childseq even though it's the root sequence which has no parents.  
   vector<state> outgoing; 
   vector<double> outgoingWeights; 
   int sampled; 
@@ -402,115 +442,151 @@ string Reconstruction::sample_root(SingletTrans R)
 		  outgoingWeights = R.get_emission_distribution(s);
 
 	  for (int sampled=0; sampled< rootLength; sampled++)
-		childSeq += R.alphabet[ sample(outgoingWeights) ];
+	    childSeq.push_back(sample(outgoingWeights));
 	  return childSeq; 
 	}
 		  
 
   while (s != R.states.size()-1) // not the end state
+    {
+      outgoing = R.get_outgoing(s); 
+      outgoingWeights.clear();
+      for (sIter = outgoing.begin(); sIter != outgoing.end(); sIter++)
+	outgoingWeights.push_back( R.get_transition_weight(s, *sIter) );
+      //The new state is sampled
+      sampled = sample(outgoingWeights)	  ;
+      s = outgoing[sampled]; 
+      sType = R.get_state_type(s); 
+      
+      if  (sType == "I")
 	{
-	  outgoing = R.get_outgoing(s); 
-	  outgoingWeights.clear();
-	  for (sIter = outgoing.begin(); sIter != outgoing.end(); sIter++)
-		outgoingWeights.push_back( R.get_transition_weight(s, *sIter) );
-	  //The new state is sampled
-	  sampled = sample(outgoingWeights)	  ;
-	  s = outgoing[sampled]; 
-	  sType = R.get_state_type(s); 
-	  
-	  if  (sType == "I")
-		{
-		  outgoingWeights = R.get_emission_distribution(s);
-		  childSeq += R.alphabet[ sample(outgoingWeights) ];
-		}
+	  outgoingWeights = R.get_emission_distribution(s);
+	  childSeq.push_back(sample(outgoingWeights));
 	}
+    }
   return childSeq;
 }
   
-string Reconstruction::sample_pairwise(string parentSeq, BranchTrans branch)
+Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence parentSeq, BranchTrans branch, Node parent, Node child, Decomposition& decomp )
 {
   state s = 0, sNew, endState = branch.states.size()-1;  // 0 is the start state
   string sType;
   vector<state>::iterator sIter; 
-  string childSeq; 
+  Digitized_biosequence childSeq; 
   vector<state> outgoing, possible; 
   vector<double> outgoingWeights; 
   int inIdx = 0, incomingCharacter; 
 
+  Row_pair row_pair; 
+  row_pair.first = parent; row_pair.second = child; 
+  Row row0, row1;
+  
   while (s != endState) // not the end state
+    {
+      outgoing.clear();
+      possible = branch.get_outgoing(s); 
+      for (sIter=possible.begin(); sIter!=possible.end(); sIter++)
 	{
-	  outgoing.clear();
-	  possible = branch.get_outgoing(s); 
-	  for (sIter=possible.begin(); sIter!=possible.end(); sIter++)
-		{
-		  if (inIdx != parentSeq.size())
-			{
-			  //we can only transition to end state if we've used up all the input characters
-			  if (branch.get_state_type(*sIter) != "E") 
-				outgoing.push_back(*sIter);
-			}
-		  else
-			//Similarly, after the input characters have been exhausted, we can't go to match or delete
-			if (branch.get_state_type(*sIter) != "M" && (branch.get_state_type(*sIter) != "D") ) 
-			  outgoing.push_back(*sIter);
-		}
-	  
-	  outgoingWeights.clear(); 
-	  for (sIter = outgoing.begin(); sIter != outgoing.end(); sIter++)
-		outgoingWeights.push_back( branch.get_transition_weight(s, *sIter) );
-
-	  
-	  // This added bit is due to a slight quirk in the transducer structure that's used.  
-	  // For soomewhat tricky reasons, there can only be one wait state with a  wait-end transitions
-	  // Thus the other wait states can never reach the end state/terminate so we must manually add such a 
-	  // transition here.  This comes up with the affine gap transducer (which is default), since it has two
-	  // wait states, but only one has a wait -> end transition. 
-	
-	  if (inIdx == parentSeq.size() && branch.get_state_type(s) == "W")
-		if ( !in( endState, outgoing) )
-		  {
-			outgoing.push_back(endState); 
-			outgoingWeights.push_back(1.0); 
-		  }
-	  
-	  
-	  //The new state is sampled
-	  sNew = outgoing[sample(outgoingWeights)]; 
-	  if (branch.get_state_type(s) == "W" && branch.get_state_type(sNew) == "W")
-		{
-		  std::cerr<<"Wait-wait transition, problem!\n Outgoing size, states, possible: "<<outgoing.size() << " , ";
-		  std::cerr<<"outgoing states"; displayVector(outgoing);
-		  std::cerr<<"\n";
-		  std::cerr<<"outgoingWeights: "; displayVector(outgoingWeights);
-		  std::cerr<<"\n";
-		  std::cerr<<"possible states"; displayVector(possible);
-		  exit(1); 
-		}
-
-
-	  s = sNew; 
-	  sType = branch.get_state_type(s); 
-	  if (loggingLevel >=2)
-		std::cerr<<"Pairwise: new state: "<<s<<"  type: "<<branch.get_state_type(s)<<endl; 
-	  
-	  if  (sType == "I")
-		{
-		  outgoingWeights = branch.get_emission_distribution(s);
-		  childSeq += branch.alphabet[ sample(outgoingWeights)  ];
-		}
-
-	  else if (sType == "M") 
-		{
-		  incomingCharacter = index(stringAt(parentSeq, inIdx), branch.alphabet); 
-		  outgoingWeights.clear(); 
-		  for (int charIdx=0; charIdx < branch.alphabet_size; charIdx++)
-			outgoingWeights.push_back(branch.get_match_weight(s, incomingCharacter, charIdx) );
-		  childSeq += branch.alphabet[sample(outgoingWeights)];
-		  inIdx++; 
-		}
-	  else if ( sType == "D")
-		inIdx++;
+	  if (inIdx != parentSeq.size())
+	    {
+	      //we can only transition to end state if we've used up all the input characters
+	      if (branch.get_state_type(*sIter) != "E") 
+		outgoing.push_back(*sIter);
+	    }
+	  else
+	    //Similarly, after the input characters have been exhausted, we can't go to match or delete
+	    if (branch.get_state_type(*sIter) != "M" && (branch.get_state_type(*sIter) != "D") ) 
+	      outgoing.push_back(*sIter);
 	}
+      
+      outgoingWeights.clear(); 
+      for (sIter = outgoing.begin(); sIter != outgoing.end(); sIter++)
+	outgoingWeights.push_back( branch.get_transition_weight(s, *sIter) );
+      
+      
+      // This added bit is due to a slight quirk in the transducer structure that's used.  
+      // For soomewhat tricky reasons, there can only be one wait state with a  wait-end transitions
+      // Thus the other wait states can never reach the end state/terminate so we must manually add such a 
+      // transition here.  This comes up with the affine gap transducer (which is default), since it has two
+      // wait states, but only one has a wait -> end transition. 
+      
+      if (inIdx == parentSeq.size() && branch.get_state_type(s) == "W")
+	if ( !in( endState, outgoing) )
+	  {
+	    outgoing.push_back(endState); 
+	    outgoingWeights.push_back(1.0); 
+	  }
+      
+      
+      //The new state is sampled
+      sNew = outgoing[sample(outgoingWeights)]; 
+      if (branch.get_state_type(s) == "W" && branch.get_state_type(sNew) == "W") // this is no good...
+	{
+	  std::cerr<<"Wait-wait transition, problem!\n Outgoing size, states, possible: "<<outgoing.size() << " , ";
+	  std::cerr<<"outgoing states"; displayVector(outgoing);
+	  std::cerr<<"\n";
+	  std::cerr<<"outgoingWeights: "; displayVector(outgoingWeights);
+	  std::cerr<<"\n";
+	  std::cerr<<"possible states"; displayVector(possible);
+	  exit(1); 
+	}
+      
+      s = sNew; 
+      sType = branch.get_state_type(s); 
+      if (loggingLevel >=2)
+	std::cerr<<"Pairwise: new state: "<<s<<"  type: "<<branch.get_state_type(s)<<endl; 
+      
+      if  (sType == "I")
+	{
+	  outgoingWeights = branch.get_emission_distribution(s);
+	  childSeq.push_back(sample(outgoingWeights)); 
+	  row0.push_back(false); 
+	  row1.push_back(true); 
+	}
+      
+      else if (sType == "M") 
+	{
+	  incomingCharacter = parentSeq[inIdx];
+	  outgoingWeights.clear(); 
+	  for (int charIdx=0; charIdx < branch.alphabet_size; charIdx++)
+	    outgoingWeights.push_back(branch.get_match_weight(s, incomingCharacter, charIdx) );
+	  childSeq.push_back(sample(outgoingWeights));
+	  inIdx++; 
+	  row0.push_back(true); 
+	  row1.push_back(true); 
+	}
+      else if ( sType == "D")
+	{
+	  row0.push_back(true);  
+	  row1.push_back(false); 
+	  inIdx++;
+	}
+            
+    }
+
+  Alignment_path pairAlign(0,0);
+  pairAlign.insert_rows(0,row0);
+  pairAlign.insert_rows(1,row1); 
+  decomp[row_pair] = pairAlign; 
   return childSeq;
 }
 
+void Reconstruction::show_indels(Stockholm stock)
+{
+  ofstream myfile;
+  myfile.open (indel_filename.c_str());
+  myfile << "Logging indel information is not yet implemented.\n";
+  myfile.close();
+  node parent, child; 
+  
+  vector<Row_pair> row_pairs; 
+  
+  for_nodes_post (tree, tree.root, -1, bi)
+    {
+      const Phylogeny::Branch& b = *bi;
+      row_pairs.push_back(b); 
+      if (b.second == tree.root) continue;
+      std::cout<<"Adding to pairs: " << tree.node_name[b.first] << " and " <<tree.node_name[b.second]<<endl; 
+    }
+  Decomposition decomp = stock.path.decompose(row_pairs); 
+}
