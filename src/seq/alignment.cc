@@ -937,13 +937,13 @@ void Alignment::write_MUL (ostream& out, const Alphabet& alphabet, const sstring
       {
 	out.width (max_name_width + 1);
 	out << row_name[row];
-	
 	int pos = 0;
 	for (int col = 0; col < path.columns(); col++)
-	  out << (path(row,col) ? (prof[row] ? alphabet.score2char((*prof[row])[pos++]) : wildcard_char) : gap_char());
+	  {
+	    out << (path(row,col) ? (prof[row] ? alphabet.score2char((*prof[row])[pos++]) : wildcard_char) : gap_char());
+	  }
 	out << '\n';
       }
-  
   restore_flags (out);
 }
 

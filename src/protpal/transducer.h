@@ -11,7 +11,7 @@
 
 
 // Transducer class for *single* transducers.  
-// There are 3 basic types of single transducers that we use (listed here with their states (actually state *types*, but for now these are equivalent))
+// There are 3 basic types of single transducers that we use (listed here with their states (actually state *types*, only in the linear gap transduer are these equivalent))
 // 1. Singlet: Start - Insert - End 
 // 2. Splitting: Start  - Wait - Match - End
 // 3. Branch : Start - wait - insert - match - delete - end
@@ -130,6 +130,8 @@ class BranchTrans : public Transducer
   float branch_length;
   // constructor.  Again, does everything for us for a basic setup/parameterization
   BranchTrans(double, Alphabet&, Irrev_EM_matrix&, double, double, double);
+  BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, double ins_open_rate, double del_open_rate, double gap_extend,
+	      double gap_extend2, double mixPrior, string name ); // mixture of affines
   BranchTrans(double, bool);  
   BranchTrans(void);  
   array2d<double> conditional_sub_matrix;

@@ -10,6 +10,8 @@
 #include "protpal/transducer.h"
 #include "tree/phylogeny.h"
 #include "ecfg/ecfgsexpr.h"
+#include "seq/biosequence.h"
+#include "seq/alignment.h"
 
 class Reconstruction
 {
@@ -36,6 +38,7 @@ class Reconstruction
   sstring grammar_filename;   
   sstring stkFileName;
   sstring fastaFileName;
+  sstring indel_filename; 
   
   string sequenceFileType; 
 
@@ -49,8 +52,8 @@ class Reconstruction
   map<node, AbsorbingTransducer> profiles; 
 
 
-  // default naming of internal nodes.  (not yet implemented)
-  vector<string> get_node_names(void);
+  // default naming of internal nodes.
+  void set_node_names(void);
   
   // simulation
   bool simulate; 
@@ -60,9 +63,11 @@ class Reconstruction
   int rootLength; 
   
   //simulation utility functions
-  string sample_pairwise(string, BranchTrans); 
-  string sample_root(SingletTrans); 
+  Digitized_biosequence sample_pairwise(Digitized_biosequence, BranchTrans, Node, Node, Decomposition&); 
+  Digitized_biosequence sample_root(SingletTrans); 
   
+  // show indel'd events
+  void show_indels(Stockholm); 
   
   // Reconstruction algorithm parameters
   int num_sampled_paths;

@@ -21,6 +21,9 @@ typedef int state;
 typedef int node;
 // oops, DART and I differ in capitalization.  I'll fix this soon (maybe). 
 typedef int Node; 
+typedef vector<bool>  Row;
+typedef pair<int,int> Row_pair;
+typedef map<Row_pair,Alignment_path> Decomposition;
 
 char* stockholm_tree(const char*);
 map<string, string> parse_stockholm(const char*, Alphabet );
