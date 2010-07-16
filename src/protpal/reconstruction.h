@@ -38,7 +38,8 @@ class Reconstruction
   sstring grammar_filename;   
   sstring stkFileName;
   sstring fastaFileName;
-  sstring indel_filename; 
+  sstring indel_filename;   
+  sstring treeFileName; 
   
   string sequenceFileType; 
 
@@ -81,6 +82,7 @@ class Reconstruction
   bool xrate_output; 
   bool fasta_output; 
   bool clock_seed; 
+  bool estimate_params; 
 
   
   //model parameters
@@ -97,6 +99,7 @@ class Reconstruction
   bool have_sequences;   
   
   void load_rate_matrix(const string);
+  void get_tree_from_file(const char*);
   void loadTreeString(const char*);
   void get_stockholm_tree(const char*);  
 };
