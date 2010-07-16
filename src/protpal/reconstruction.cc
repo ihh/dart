@@ -50,6 +50,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t option.", false);
   opts.add("fa -fasta-file", fastaFileName="None", "Unaligned FASTA sequence file",false );
   opts.add("t -tree-string", treeString="None", "Tree string in newick format, within double quotes. ", false);
+  opts.add("tf -tree-file", treeFileName="None", "File containing tree string in newick format.", false);
   opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called).  Default is a compact Stockholm form. ");
   opts.add("fo -fasta-output", fasta_output=false, "Display final alignment in FASTA format");
 
@@ -61,6 +62,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences for each branch, written to specified file.");
   opts.add("arpp -ancrec-postprob", ancrec_postprob = false,"report posterior probabilities of alternate reconstructions");
   opts.add("marp -min-ancrec-prob", min_ancrec_postprob =0.01,   "minimum probability to report for --ancrec-postprob option");
+  opts.add("ep -estimate-params", estimate_params =false,   "Use EM algorithm to estimate branch transducer's model parameters");
 
   opts.newline(); 
   opts.print_title("Simulation Options"); 
@@ -93,16 +95,21 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   // Next, see if we have a tree, first trying to get it from a #=GF NH stockholm line
   if (stkFileName != "None")
     get_stockholm_tree(stkFileName.c_str());
-  if (treeString == "None")
+  if (treeString == "None" && treeFileName == "None")
 	{
-	  error += "\tNo tree string could be imported.  Use -t  to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
+	  error += "\tNo tree string was specified.  Use -t  or -tf <to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
 	  all_reqd_args = false; 
 	}
   else
-    loadTreeString(treeString.c_str());
+    {
+      if (treeString != "None")
+	loadTreeString(treeString.c_str());
+      else if (treeFileName != "None")
+	get_tree_from_file(treeFileName.c_str());
+    }
   if(!all_reqd_args)
     {
-      std::cout<<"Not all required arguments were supplied:\n"<<error<<endl;  
+      std::cout<<"\nNot all required arguments were supplied:\n"<<error<<endl;  
       std::cout<<opts.short_help(); 
       exit(1);
     }
@@ -150,6 +157,28 @@ void Reconstruction::set_node_names(void)
     }
 }
 
+
+void Reconstruction::get_tree_from_file(const char* fileName)
+{
+  string line;
+  ifstream treeFile(fileName);
+  string tree_tmp = ""; 
+  const char* tree_string; 
+
+  if (treeFile.is_open())
+    {
+      while (! treeFile.eof() )
+        {
+	  getline(treeFile,line);
+	  if (index(";", line) != -1)
+	    {
+	      const char* tree = line.c_str(); 
+	      loadTreeString(tree); 
+	    }
+	}
+    }
+
+}
 
 void Reconstruction::get_stockholm_tree(const char* fileName)
 {

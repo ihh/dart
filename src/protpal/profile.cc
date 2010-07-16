@@ -1743,7 +1743,7 @@ void Profile::cache_path(vector<M_id> path)
 	
   
 
-void Profile::sum_paths_to(M_id mPrime)
+void Profile::sum_paths_to(M_id mPrime, bool inLog)
 {
   // The core DP function - sum over paths into the composite state mPrime.  
   #ifdef DART_DEBUG
@@ -1757,6 +1757,7 @@ void Profile::sum_paths_to(M_id mPrime)
   bool fromStart = 0;
   bfloat toAdd, finalSum = 0.0;
   bfloat small = pow(.1,100);
+  vector<int> mPrimeVec = mPrime.toVector(); 
   vector<state> left_incoming;
   vector<state> right_incoming;   
   vector<state> q_incoming; 
@@ -1834,8 +1835,21 @@ void Profile::sum_paths_to(M_id mPrime)
 
   if (fromStart)
 	{
-	  if (logging) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
-	  finalSum +=toAdd; 
+	  // inLog
+	  if (toAdd > 0.0) 
+	    {
+	      if (inLog)
+		{
+		  M_id start_state;
+		  start_state.q_state = Q.composite_start_state; 
+		  m.left_state = left_profile.start_state; 
+		  m.right_state = right_profile.start_state; 
+		  incoming[mPrimeVec].push_back(start_state);
+		}
+
+	      if (logging) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
+	      finalSum +=toAdd; 
+	    }
 	}
 
 
@@ -1872,6 +1886,9 @@ void Profile::sum_paths_to(M_id mPrime)
 					right_profile.get_transition_weight(*e_r, mPrime.right_state)*
 					emissionWeight;
 				      finalSum += toAdd; 
+				      // inLog
+				      if (inLog)
+					incoming[mPrimeVec].push_back(m);
 				    }
 				  // for test
 				  if (testing)
@@ -1903,7 +1920,6 @@ void Profile::sum_paths_to(M_id mPrime)
 		  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 			{
 			  m.q_state = *q;
-
 			  toAdd = get_DP_cell(m); 
 			  if (toAdd > 0.0)
 			    {
@@ -1912,6 +1928,9 @@ void Profile::sum_paths_to(M_id mPrime)
 				emissionWeight;
 			  // right profile transition weight is implicitely 1 here 
 			      finalSum += toAdd; 
+			      // inLog
+			      if (inLog)
+				incoming[mPrimeVec].push_back(m);
 			    }
 			  // for test
 			  if (testing)
@@ -1953,6 +1972,9 @@ void Profile::sum_paths_to(M_id mPrime)
 				emissionWeight;
 			  // left profile transition weight is implicitely 1 here 
 			      finalSum +=toAdd; 
+			      // inLog
+			      if (inLog)
+				incoming[mPrimeVec].push_back(m);
 			    }
 			  //for test
 			  if(testing)
@@ -1982,7 +2004,7 @@ void Profile::clear_DP(void)
   Z_tmp.swap(Z); 
 }
 
-void Profile::fill_DP(int logging)
+void Profile::fill_DP(int logging, bool inLog)
 {
   // top -level DP function - traverse over all states in M_n (in the proper order) and call
   // up sum_paths_to for each of them. 
@@ -2031,7 +2053,7 @@ void Profile::fill_DP(int logging)
 			  std::cerr<<"\nThe following state is being filled:\n";
 			  mPrime.display(Q);
 			}
-		  sum_paths_to(mPrime);
+		  sum_paths_to(mPrime, inLog);
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2064,7 +2086,7 @@ void Profile::fill_DP(int logging)
 					  std::cerr<<"\nThe following state is being filled:\n";
 					  mPrime.display(Q);
 					}
-				  sum_paths_to(mPrime);
+				  sum_paths_to(mPrime, inLog);
 				  if (logging>=2) 
 					{
 					  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2085,7 +2107,7 @@ void Profile::fill_DP(int logging)
 					  std::cerr<<"\nThe following state is being filled:\n";
 					  mPrime.display(Q);
 					}
-				  sum_paths_to(mPrime);
+				  sum_paths_to(mPrime, inLog);
 				  if (logging>=2) 
 					{
 					  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2114,7 +2136,7 @@ void Profile::fill_DP(int logging)
 					  std::cerr<<"\nThe following state is being filled:\n";
 					  mPrime.display(Q);
 					}
-				  sum_paths_to(mPrime);
+				  sum_paths_to(mPrime, inLog);
 				  if (logging>=2) 
 					{
 					  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2139,7 +2161,7 @@ void Profile::fill_DP(int logging)
 						  std::cerr<<"\nThe following state is being filled:\n";
 						  mPrime.display(Q);
 						}
-					  sum_paths_to(mPrime);
+					  sum_paths_to(mPrime, inLog);
 					}
 
 				  if (logging>=2) 
@@ -2177,7 +2199,7 @@ void Profile::fill_DP(int logging)
 			  std::cerr<<"\nThe following state is being filled:\n";
 			  mPrime.display(Q);
 			}
-		  sum_paths_to(mPrime);
+		  sum_paths_to(mPrime, inLog);
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -2212,7 +2234,7 @@ void Profile::fill_DP(int logging)
 			  std::cerr<<"\nThe following state is being filled:\n";
 			  mPrime.display(Q);
 			}
-		  sum_paths_to(mPrime);
+		  sum_paths_to(mPrime, inLog);
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -2237,7 +2259,7 @@ void Profile::fill_DP(int logging)
 		  std::cerr<<"\nThe following state is being filled:\n";
 		  mPrime.display(Q);
 		}
-	  sum_paths_to(mPrime);
+	  sum_paths_to(mPrime, inLog);
 	  if (logging>=2) 
 		{
 		  std::cerr<<"\tForward value of wait/pre-end state: "<< get_DP_cell(mPrime)<<endl;
@@ -2280,7 +2302,14 @@ void Profile::fill_DP(int logging)
 	  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
 	  transition_weight_test[transitionPair] = toAdd/get_DP_cell(m); 
 	}
-  add_to_DP_cell(mPrime, toAdd); 
+  if (toAdd > 0.0)
+    {
+      add_to_DP_cell(mPrime, toAdd); 
+      // inLog
+      if (inLog)
+	incoming[mPrime.toVector()].push_back(m);
+    }
+
   if(logging>=2)
 	{
 	  std::cerr<<"\nThe following state has been filled:\n";

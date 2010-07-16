@@ -148,7 +148,8 @@ class Profile
   Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer right_in, QTransducer Q_in);
 
   // Initiate and fill forward-like DP matrix
-  void fill_DP(int);
+  void fill_DP(int, bool inLog=false);
+  map< vector<int>, vector<M_id> > incoming; // this is filled only if the backward algorithm is requested
   bfloat forward_prob; 
 
   void clear_DP(void); 
@@ -227,7 +228,7 @@ class Profile
   void add_to_DP_cell(M_id, bfloat); 
 
   // sum over all paths to the M_id cell in the forward matrix
-  void sum_paths_to(M_id);
+  void sum_paths_to(M_id, bool);
 
   //Access functions
   // compute/access the transition weight from state M_id m  to M_id mPrime
