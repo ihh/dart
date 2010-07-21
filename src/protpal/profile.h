@@ -41,7 +41,9 @@ class AbsorbingTransducer
   // Keep track of these directly.  Assume integers in 0 <= i <  num_states  are delete states.  
   state start_state, pre_end_state, end_state; 
   //vector<state> pre_end_states;
-
+  // Index to M-id map
+  map<state, M_id> state2mid; 
+  
   // accessor for incoming states
   vector<state> get_incoming(state);
   
@@ -51,6 +53,7 @@ class AbsorbingTransducer
   //displaying states, transitions, absorption weights
   void display(bool states, bool transitions, bool absorptions);
   void showDOT(Profile *sampled_profile);
+  map<vector<int>, int> mid2int;                                                                                                                                    
 
 
   // Transition/absorbing accessor functions
@@ -62,6 +65,7 @@ class AbsorbingTransducer
 
   // between stores alignment columns in between said external states
   map<pair <state, state>, map< node, string> > between;
+  map<pair <state, state>, vector<M_id> > summed_nulls;
   
   // leaf coordinates.  Each state maps to a pair holding the smallest and largest leaf coordinate accounted
   // for by this state.                                                                                 
@@ -69,6 +73,8 @@ class AbsorbingTransducer
 
   //testing
   void test_transitions(void);
+
+
 
  private:
   // Constructor uses the following private functions to transform profile -> absorbing :
@@ -132,8 +138,8 @@ class M_id
 
 int index(M_id query, vector<M_id> in );
 bool contains(M_id child, queue<M_id> stateQueue);
+bool contains(M_id child, deque<M_id> stateQueue);
 bool in(M_id query, vector<M_id> in);
-
 
 // ***** The 'immature' profile class (e.g. M_n) *****
 class Profile
@@ -150,13 +156,20 @@ class Profile
   // Initiate and fill forward-like DP matrix
   void fill_DP(int, bool inLog=false);
   map< vector<int>, vector<M_id> > incoming; // this is filled only if the backward algorithm is requested
-  bfloat forward_prob; 
+  map< vector<int>, vector<M_id> > outgoing; // this is filled only if the backward algorithm is requested
+  map< pair<vector<int>, vector<int> >, bfloat > transition_weight; // this is filled only if the backward algorithm is requested
+  
+  bfloat forward_prob; // This is always  stored, for postprob calculations
+
+  // Backward-like DP matrix methods
+  void fill_backward_DP(int logging); 
 
   void clear_DP(void); 
   // sample set of paths from DP matrix, storing info on their transitions, transition weights, etc
   string sample_DP(int, int, bool, bool);
   void cache_state(M_id m, M_id mPrime, bfloat weight);
   void cache_path(vector<M_id>); 
+  void store_summed_nulls(vector<M_id>); 
 
   vector<M_id> sampled_states;
   int num_sampled_externals; 
@@ -169,10 +182,12 @@ class Profile
   bfloat get_external_cascade_weight(M_id m, int charIndex);  
   bfloat compute_emission_weight(M_id m);
 
+  bool is_start(M_id);
   bool is_external(M_id);
   bool is_right_int(M_id); 
   bool is_left_int(M_id);
   bool is_pre_end(M_id);     
+  bool is_end(M_id);
   
   // after sampling, the profile is ready to be handed over the AbsorbingTransducer constructor to be
   // turned into a new absorbing child profile.  the following data is public for this purpose
@@ -197,6 +212,7 @@ class Profile
   
   // between stores alignment columns in between said external states
   map< pair< vector<int>, vector<int> >, map<node, string> > between;
+  map< pair< vector<int>, vector<int> >, vector<M_id> > summed_nulls;
   
   
   // leaf coordinates.  Each state maps to a pair holding the smallest and largest leaf coordinate accounted 
@@ -210,7 +226,7 @@ class Profile
   QTransducer Q;
   int get_profile_type(state, string); 
  private:
-  
+  deque<M_id> backward_states;
 
   // Q is now public...
   // Left and right (mature) profile objects
@@ -221,11 +237,16 @@ class Profile
   // the actual DP matrix.  Maps states in profile (as M_id ) to double
   //  map<M_id, double> Z; //eventually a 'bigger' number class?
   map< vector<int>, bfloat> Z; //fix this up soon!
+  map< vector<int>, bfloat> backward_matrix; 
+
   //accessor function, returns 0 if no matching entry
   bfloat get_DP_cell(M_id); 
+  bfloat get_backward_DP_cell(M_id); 
+
   
   // Add to a DP cell - first checks if the cell exists. 
   void add_to_DP_cell(M_id, bfloat); 
+  void add_to_backward_DP(M_id, bfloat); 
 
   // sum over all paths to the M_id cell in the forward matrix
   void sum_paths_to(M_id, bool);

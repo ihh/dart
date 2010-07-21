@@ -144,11 +144,17 @@ int main(int argc, char* argv[])
 
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
-		std::cerr<<"\tFilling dynamic programming matrix..."; 
+		std::cerr<<"\tFilling forward dynamic programming matrix..."; 
 	  profile.fill_DP(reconstruction.loggingLevel, reconstruction.estimate_params);
+	  if (reconstruction.estimate_params)
+	    {	  
+	      if(reconstruction.loggingLevel>=1)
+		std::cerr<<"Done.\n\tFilling backward dynamic programming matrix..."; 
+	      profile.fill_backward_DP(reconstruction.loggingLevel); 
+	    }
 
 	  if(reconstruction.loggingLevel>=1)
-		std::cerr<<"done. Sum-over-alignments likelihood: "<<-log(profile.forward_prob)/log(2)<<" bits\n"; 
+		std::cerr<<"done.\n\t\tSubalignment likelihood: "<<-log(profile.forward_prob)/log(2)<<" bits\n"; 
 
 	  // For non-root nodes:
 	  if (treeNode != reconstruction.tree.root) 

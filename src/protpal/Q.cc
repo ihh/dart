@@ -68,6 +68,14 @@ QTransducer::QTransducer(SingletTrans R_in, BranchTrans B_l_in, BranchTrans B_r_
 
 // ***** PUBLIC MEMBER FUNCTIONS *****
 
+vector<state> QTransducer::get_components(state q)
+{
+  if (q > num_states || q<0)
+    std::cerr<<"Error: components of non-existent state queried\n";
+  else 
+    return assignments[q]; 
+}
+
 vector<state> QTransducer::get_state_indices(state q)
 {
   //TODO
