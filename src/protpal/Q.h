@@ -103,6 +103,8 @@ class QTransducer
   // The map emission_weight holds these...the vector<int> is state, omega_left, omega_right
   // One of the omegas can be -1, meaning 'no character' (e.g. omega_left = -1 in a left_del state)
   map< vector<int>, double> emission_weight;
+
+  vector<state> get_components(state); 
   
  private:  
   
@@ -159,7 +161,7 @@ class QTransducer
   void cache_emission_weights(void);  
   
   
-  // State assignments (indices) for each states in Q.   The inner vector is always 4 items long.  
+  // State assignment s (indices) for each states in Q.   The inner vector is always 4 items long.  
   vector< vector<state> > assignments; 
 
   // The composite state types of Q.  Hard-coded here, though I think this is true for any Q (?)

@@ -82,6 +82,16 @@ bool contains(M_id child, queue<M_id> stateQueue)
 	}
   return 0;
 }
+bool contains(M_id child, deque<M_id> stateQueue)
+{
+  //Query whether or not a queue of states contains a given state.  Not super efficient.  
+  while (!stateQueue.empty())
+    {
+      if (child == stateQueue.front()) return 1; 
+      else stateQueue.pop_front();
+    }
+  return 0;
+}
 	  
 
 // ***** Absorbing transducer (E_n) methods  ******
@@ -327,6 +337,16 @@ AbsorbingTransducer::AbsorbingTransducer(ExactMatch *EM_in)
   transition_weight[transitionPair] = 1; 
 }
 
+
+bool Profile::is_start(M_id m)
+{
+  return (m.q_state == Q.composite_start_state);
+}
+
+bool Profile::is_end(M_id m)
+{
+  return (m.q_state == Q.composite_end_state);
+}
 
 bool Profile::is_external(M_id m)
 {
@@ -737,7 +757,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   vector<M_id>::iterator child,dad;
   vector<int>::iterator i; 
   M_id parent, source;
-  map<vector<int>, int> mid2int;
+  //  map<vector<int>, int> mid2int;
   pair< vector<int> , vector<int> > transitionPair;
   bool logging = false, allParentsVisited;
 
@@ -769,6 +789,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 
       state_counter++;
       mid2int[parent.toVector()] = state_counter;
+      state2mid[state_counter] = parent; 
 
 
 	  if(logging) { std::cerr<<"\nThe following state was indexed as "<< state_counter <<":\n\t"; parent.display(sampled_profile->Q);}
@@ -828,6 +849,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   pre_end_state = state_counter;
   parent = sampled_profile->sampled_states[sampled_pre_end_state];
   mid2int[parent.toVector()] = pre_end_state; 
+  state2mid[pre_end_state] = parent; 
   state_type_phylogeny[state_counter] = sampled_profile->merge_STP(parent); 
   if (num_delete_states != pre_end_state)
 	{
@@ -843,6 +865,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   // give the end state an index
   state_counter++;
   mid2int[sampled_profile->sampled_states[sampled_end_state].toVector()] = state_counter;
+  state2mid[state_counter] = sampled_profile->sampled_states[sampled_end_state];
   end_state = state_counter; 
 
   // Now that all state indices are known (and we can map M_id -> index), 
@@ -1509,6 +1532,7 @@ string Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool 
 
   // Store the null states' accounted characters:
   cache_path(pi); 
+  store_summed_nulls(pi); 
   if(pathWeight/forward_prob > 1.001)
 	{
 	  std::cerr<<"\nError: an alignment's posterior probability was calculated as greater than 1.  This is not reasonable, and represents a calculation error. \n";
@@ -1602,6 +1626,34 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 		}
 	}
 }
+
+void Profile::store_summed_nulls(vector<M_id> path)
+{
+  M_id m; 
+  int i; 
+  pair<vector<int>, vector<int> > externalPair; 
+  vector<M_id> nulls; 
+  // the path is reverse (e.g. start state is at the end), so the indexing is reversed...
+  for (i=path.size()-1; i>-1; i--)
+    {
+      m = path[i];
+      if (is_start(m) || is_external(m) || is_pre_end(m) || is_end(m) )
+	{
+	  if (nulls.empty())
+	    externalPair.first = m.toVector(); 
+	  else
+	    {
+	      externalPair.second = m.toVector(); 
+	      summed_nulls[externalPair] = nulls; 
+	      nulls.clear(); 
+	    }
+	}
+      else
+	nulls.push_back(m);
+    }
+}
+     
+      
 
 void Profile::cache_path(vector<M_id> path)
 {
@@ -1842,9 +1894,15 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 		{
 		  M_id start_state;
 		  start_state.q_state = Q.composite_start_state; 
-		  m.left_state = left_profile.start_state; 
-		  m.right_state = right_profile.start_state; 
+		  start_state.left_state = left_profile.start_state; 
+		  start_state.right_state = right_profile.start_state; 
+		  start_state.left_type = -1;
+		  start_state.right_type = -1; 
+
 		  incoming[mPrimeVec].push_back(start_state);
+		  outgoing[start_state.toVector()].push_back(mPrime); 
+		  transitionPair.first = start_state.toVector(); transitionPair.second = mPrimeVec; 
+		  transition_weight[transitionPair] = toAdd / emissionWeight; 
 		}
 
 	      if (logging) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
@@ -1887,8 +1945,13 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 					emissionWeight;
 				      finalSum += toAdd; 
 				      // inLog
-				      if (inLog)
-					incoming[mPrimeVec].push_back(m);
+				      if (inLog && toAdd >0.0)
+					{
+					  incoming[mPrimeVec].push_back(m);
+					  outgoing[m.toVector()].push_back(mPrime); 
+					  transitionPair.first = m.toVector(); transitionPair.second = mPrimeVec; 
+					  transition_weight[transitionPair] = toAdd /  ( get_DP_cell(m) * emissionWeight); 
+					}
 				    }
 				  // for test
 				  if (testing)
@@ -1929,8 +1992,13 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 			  // right profile transition weight is implicitely 1 here 
 			      finalSum += toAdd; 
 			      // inLog
-			      if (inLog)
-				incoming[mPrimeVec].push_back(m);
+			      if (inLog && toAdd > 0.0)
+				{
+				  incoming[mPrimeVec].push_back(m);
+				  outgoing[m.toVector()].push_back(mPrime); 
+				  transitionPair.first = m.toVector(); transitionPair.second = mPrimeVec; 
+				  transition_weight[transitionPair] = toAdd /  ( get_DP_cell(m) * emissionWeight); 
+				}
 			    }
 			  // for test
 			  if (testing)
@@ -1970,11 +2038,16 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 			      toAdd *= Q.get_transition_weight(*q, mPrime.q_state)*
 				right_profile.get_transition_weight(*e_r, mPrime.right_state)*
 				emissionWeight;
-			  // left profile transition weight is implicitely 1 here 
+			      // left profile transition weight is implicitely 1 here 
 			      finalSum +=toAdd; 
 			      // inLog
-			      if (inLog)
-				incoming[mPrimeVec].push_back(m);
+			      if (inLog && toAdd > 0.0)
+				{
+				  incoming[mPrimeVec].push_back(m);
+				  outgoing[m.toVector()].push_back(mPrime); 
+				  transitionPair.first = m.toVector(); transitionPair.second = mPrimeVec; 
+				  transition_weight[transitionPair] = toAdd /  ( get_DP_cell(m) * emissionWeight); 
+				}
 			    }
 			  //for test
 			  if(testing)
@@ -2003,6 +2076,73 @@ void Profile::clear_DP(void)
   map< vector<int>, bfloat> Z_tmp;
   Z_tmp.swap(Z); 
 }
+void Profile::fill_backward_DP(int logging)
+{
+  bool debug = false; 
+  M_id m, mPrime; 
+  vector<M_id>::iterator m_iter; 
+  bfloat toAdd; 
+  pair<vector<int>, vector<int> > transitionPair; 
+  
+  // Initialize recursion w/ end state 
+  m.q_state = Q.composite_end_state; 
+  m.left_state = left_profile.end_state; 
+  m.right_state = right_profile.end_state; 
+  m.left_type = 3; 
+  m.right_type = 3; 
+  add_to_backward_DP(m, 1.0);
+
+  while (!backward_states.empty())
+    {
+      toAdd = 0.0;
+      m = backward_states.back(); 
+      backward_states.pop_back(); 
+      if ( m.q_state == Q.composite_end_state)
+	continue; 
+
+      if (debug)
+	{
+	  std::cout<<"Size of state queue: " << backward_states.size()<<endl ;
+	  std::cout<<"Current state:";
+	  m.display(Q); 
+	}
+      
+      for (m_iter = outgoing[m.toVector()].begin(); m_iter != outgoing[m.toVector()].end(); m_iter++)
+	{
+	  transitionPair.first = m.toVector(); transitionPair.second = m_iter->toVector(); 
+	  if (get_backward_DP_cell(*m_iter) > 0.0 && transition_weight.count(transitionPair) > 0)
+	    {
+	      toAdd += compute_emission_weight(m) * get_backward_DP_cell(*m_iter) * transition_weight[transitionPair]; 
+	      if (!toAdd > 0.0)
+		{
+		  std::cerr<< "Taking the product of: "<< compute_emission_weight(m) << " " << get_backward_DP_cell(*m_iter) << " " << transition_weight[transitionPair] <<endl; 
+		  std::cerr<<"their product: " << toAdd <<endl; 
+		  m.display(Q); 	      
+		  m_iter->display(Q); 
+		  exit(1);
+		}
+	    }
+	}
+      if(toAdd >0.0)
+	add_to_backward_DP(m, toAdd);
+      if (debug)
+	std::cout<<"The current state has DP bits:  " << -log(get_backward_DP_cell(m))/log(2) << endl; 
+    }
+
+  m.q_state = Q.composite_start_state; 
+  m.left_state = left_profile.start_state; 
+  m.right_state = right_profile.start_state; 
+  m.left_type = -1; 
+  m.right_type = -1; 
+  if ( abs(-log(get_backward_DP_cell(m))/log(2) - -log(forward_prob)/log(2)) > .01)
+    {
+      std::cerr<< "The forward and backward recursions have arrived at sum-over-alignment bit scores: \n";
+      std::cerr<<"\tBackward value of start state: " << -log(get_backward_DP_cell(m))/log(2) <<endl; 
+      std::cerr<<"\tForward value of end state: " << -log(forward_prob)/log(2) <<endl; 
+      std::cerr<<" This is problem, exiting...\n";
+      exit(1); 
+    }
+}
 
 void Profile::fill_DP(int logging, bool inLog)
 {
@@ -2030,6 +2170,8 @@ void Profile::fill_DP(int logging, bool inLog)
 	  mPrime.display(Q);
 	}
   add_to_DP_cell(mPrime, 1);  
+  // bLog
+  backward_states.push_back(mPrime); 
   if (logging>=2) 
 	{
 	  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2054,6 +2196,8 @@ void Profile::fill_DP(int logging, bool inLog)
 			  mPrime.display(Q);
 			}
 		  sum_paths_to(mPrime, inLog);
+		  // bLog
+		  backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2087,6 +2231,8 @@ void Profile::fill_DP(int logging, bool inLog)
 					  mPrime.display(Q);
 					}
 				  sum_paths_to(mPrime, inLog);
+				  // bLog
+				  backward_states.push_back(mPrime); 
 				  if (logging>=2) 
 					{
 					  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2108,6 +2254,8 @@ void Profile::fill_DP(int logging, bool inLog)
 					  mPrime.display(Q);
 					}
 				  sum_paths_to(mPrime, inLog);
+				  // bLog
+				  backward_states.push_back(mPrime); 
 				  if (logging>=2) 
 					{
 					  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2137,6 +2285,8 @@ void Profile::fill_DP(int logging, bool inLog)
 					  mPrime.display(Q);
 					}
 				  sum_paths_to(mPrime, inLog);
+				  // bLog
+				  backward_states.push_back(mPrime); 
 				  if (logging>=2) 
 					{
 					  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2162,6 +2312,8 @@ void Profile::fill_DP(int logging, bool inLog)
 						  mPrime.display(Q);
 						}
 					  sum_paths_to(mPrime, inLog);
+					  // bLog
+					  backward_states.push_back(mPrime); 
 					}
 
 				  if (logging>=2) 
@@ -2200,6 +2352,8 @@ void Profile::fill_DP(int logging, bool inLog)
 			  mPrime.display(Q);
 			}
 		  sum_paths_to(mPrime, inLog);
+		  // bLog
+		  backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -2235,6 +2389,8 @@ void Profile::fill_DP(int logging, bool inLog)
 			  mPrime.display(Q);
 			}
 		  sum_paths_to(mPrime, inLog);
+		  // bLog
+		  backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -2260,6 +2416,8 @@ void Profile::fill_DP(int logging, bool inLog)
 		  mPrime.display(Q);
 		}
 	  sum_paths_to(mPrime, inLog);
+	  // bLog
+	  backward_states.push_back(mPrime); 
 	  if (logging>=2) 
 		{
 		  std::cerr<<"\tForward value of wait/pre-end state: "<< get_DP_cell(mPrime)<<endl;
@@ -2275,7 +2433,9 @@ void Profile::fill_DP(int logging, bool inLog)
   mPrime.left_type = 3; 
   
   Z[mPrime.toVector()] = 0;
-
+  // bLog
+  backward_states.push_back(mPrime); 
+  
   // Fill the end state cell
   // for left_pre_end in left_profile.pre_end_states:
     // for right_pre_end in right_profile.pre_end_states:
@@ -2296,18 +2456,30 @@ void Profile::fill_DP(int logging, bool inLog)
 	  toAdd += get_DP_cell(m) * Q.get_transition_weight(*qPrime, Q.composite_end_state);
 	} 
   
-  //for test
-  if(testing)
-	{
-	  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
-	  transition_weight_test[transitionPair] = toAdd/get_DP_cell(m); 
-	}
   if (toAdd > 0.0)
     {
       add_to_DP_cell(mPrime, toAdd); 
       // inLog
       if (inLog)
-	incoming[mPrime.toVector()].push_back(m);
+	{
+	  incoming[mPrime.toVector()].push_back(m);
+	  outgoing[m.toVector()].push_back(mPrime); 
+	  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
+	  transition_weight[transitionPair] = toAdd /  get_DP_cell(m) ;
+	  if (! transition_weight[transitionPair] > 0 || transition_weight[transitionPair] > 1.0)
+	    {
+	      std::cerr<<"Faulty transition weight stored: " << transition_weight[transitionPair] << endl; 
+	      m.display(Q);
+	      mPrime.display(Q);
+	    }
+// 	  else
+// 	    {
+// 	      std::cerr<<"Correct transition weight stored: " << transition_weight[transitionPair] << endl; 
+// 	      m.display(Q); 
+// 	      mPrime.display(Q); 
+// 	    }
+	  
+	}
     }
 
   if(logging>=2)
@@ -2505,7 +2677,7 @@ bfloat Profile::get_external_cascade_weight(M_id e, int charIndex)
 	return out; 
 }
 
-//Utility functions
+//Utility functions for DP containers - forward is the 'unnamed', and the backward is so explicitely named
 void Profile::add_to_DP_cell(M_id m , bfloat toAdd)
 {
   tmpMidVec = m.toVector(); 
@@ -2513,6 +2685,22 @@ void Profile::add_to_DP_cell(M_id m , bfloat toAdd)
   if (Z.count(tmpMidVec) <1) Z[tmpMidVec] = toAdd; 
   else Z[tmpMidVec] += toAdd; 
 }
+void Profile::add_to_backward_DP(M_id m , bfloat toAdd)
+{
+  tmpMidVec = m.toVector(); 
+  // Add the value toAdd to the DP cell for state m
+  if (backward_matrix.count(tmpMidVec) <1) backward_matrix[tmpMidVec] = toAdd; 
+  else backward_matrix[tmpMidVec] += toAdd; 
+}
+
+bfloat Profile::get_backward_DP_cell(M_id m)
+{
+  tmpMidVec = m.toVector(); 
+  // Access the value of DP cell for state m.  If this is nonexistant, return 0.  
+  if (backward_matrix.count(tmpMidVec) <1) return 0; 
+  else return backward_matrix[tmpMidVec];
+} 
+
 
 
 bfloat Profile::get_DP_cell(M_id m)
