@@ -63,7 +63,7 @@ void CompositePath::explode(void)
       // Now insert each of these vectors of null states into the main path
       // This is done by making a new path from scratch, and plunking on the relevant elements,
       // and eventually exchanging the main path with it.
-      newPath.clear(;
+      newPath.clear();
       for (pathIdx = path.size(); pathIdx < path.size(); pathIdx++)
 	{
 	  newPath.push_back(path[pathIdx]);
