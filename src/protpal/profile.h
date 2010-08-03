@@ -225,10 +225,11 @@ class Profile
   // Qtransducer object
   QTransducer Q;
   int get_profile_type(state, string); 
- private:
-  deque<M_id> backward_states;
 
-  // Q is now public...
+  // Ordering of states
+  deque<M_id> backward_states;
+ private:
+
   // Left and right (mature) profile objects
   AbsorbingTransducer left_profile;
   AbsorbingTransducer right_profile;

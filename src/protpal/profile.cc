@@ -2092,11 +2092,10 @@ void Profile::fill_backward_DP(int logging)
   m.right_type = 3; 
   add_to_backward_DP(m, 1.0);
 
-  while (!backward_states.empty())
+  for (int backward_idx = backward_states.size()-1; backward_idx>=0; backward_idx--)
     {
       toAdd = 0.0;
-      m = backward_states.back(); 
-      backward_states.pop_back(); 
+      m = backward_states[backward_idx]; 
       if ( m.q_state == Q.composite_end_state)
 	continue; 
 
@@ -2134,7 +2133,7 @@ void Profile::fill_backward_DP(int logging)
   m.right_state = right_profile.start_state; 
   m.left_type = -1; 
   m.right_type = -1; 
-  if ( abs(-log(get_backward_DP_cell(m))/log(2) - -log(forward_prob)/log(2)) > .01)
+  if ( abs(-log(get_backward_DP_cell(m))/log(2) - -log(forward_prob)/log(2)) > 0.0001)
     {
       std::cerr<< "The forward and backward recursions have arrived at sum-over-alignment bit scores: \n";
       std::cerr<<"\tBackward value of start state: " << -log(get_backward_DP_cell(m))/log(2) <<endl; 

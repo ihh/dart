@@ -4,7 +4,7 @@ INTERPRETER = darts
 TESTSCRIPT  = t/test.scm
 
 TESTS      = 
-TARGETS    = $(TESTS) protpal CompositePath
+TARGETS    = $(TESTS) protpal
 DIRNAME    = protpal
 
 DEPS       =  ecfg scfg hmm hsm irrev tree seq util newmat randlib
