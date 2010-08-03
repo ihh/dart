@@ -95,7 +95,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   // Next, see if we have a tree, first trying to get it from a #=GF NH stockholm line
   if (stkFileName != "None")
     get_stockholm_tree(stkFileName.c_str());
-  if (treeString == "None" && treeFileName == "None")
+  if (treeString == "None" && treeFileName == "None" && !have_tree )
 	{
 	  error += "\tNo tree string was specified.  Use -t  or -tf <to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
 	  all_reqd_args = false; 
@@ -464,18 +464,22 @@ Digitized_biosequence Reconstruction::sample_root(SingletTrans R)
   vector<double> outgoingWeights; 
   int sampled; 
 
-  if (rootLength != -1)
+  // The root sequence's length is specified on the cmd line - more control in simulation
+  // NB this assumes there is only one Insert state in the root transducer...not always the case.  
+  // In the future we could instead alter the while loop below, to increment a counter each time an insert state
+  // is reached, and terminate whenever the specified root length is reached.  
+  if (rootLength != -1) 
 	{
 	  for (s=0; s<R.states.size(); s++)
 		if (R.get_state_type(s) == "I")
 		  outgoingWeights = R.get_emission_distribution(s);
-
 	  for (int sampled=0; sampled< rootLength; sampled++)
 	    childSeq.push_back(sample(outgoingWeights));
 	  return childSeq; 
 	}
 		  
 
+  // Otherwise, sample directly from the root transducer.  
   while (s != R.states.size()-1) // not the end state
     {
       outgoing = R.get_outgoing(s); 
@@ -487,6 +491,7 @@ Digitized_biosequence Reconstruction::sample_root(SingletTrans R)
       s = outgoing[sampled]; 
       sType = R.get_state_type(s); 
       
+      // If we're at an insert state, sample another state
       if  (sType == "I")
 	{
 	  outgoingWeights = R.get_emission_distribution(s);
@@ -549,7 +554,7 @@ Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence pare
       
       //The new state is sampled
       sNew = outgoing[sample(outgoingWeights)]; 
-      if (branch.get_state_type(s) == "W" && branch.get_state_type(sNew) == "W") // this is no good...
+      if (branch.get_state_type(s) == "W" && branch.get_state_type(sNew) == "W") // this is no good...there are no real W->W transitions!
 	{
 	  std::cerr<<"Wait-wait transition, problem!\n Outgoing size, states, possible: "<<outgoing.size() << " , ";
 	  std::cerr<<"outgoing states"; displayVector(outgoing);
@@ -565,7 +570,7 @@ Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence pare
       if (loggingLevel >=2)
 	std::cerr<<"Pairwise: new state: "<<s<<"  type: "<<branch.get_state_type(s)<<endl; 
       
-      if  (sType == "I")
+      if  (sType == "I") // insert state: child gets a character with a gap at the parent.  
 	{
 	  outgoingWeights = branch.get_emission_distribution(s);
 	  childSeq.push_back(sample(outgoingWeights)); 
@@ -573,7 +578,7 @@ Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence pare
 	  row1.push_back(true); 
 	}
       
-      else if (sType == "M") 
+      else if (sType == "M")  // match state: child gets a character sampled conditional on parent's character
 	{
 	  incomingCharacter = parentSeq[inIdx];
 	  outgoingWeights.clear(); 
@@ -584,7 +589,7 @@ Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence pare
 	  row0.push_back(true); 
 	  row1.push_back(true); 
 	}
-      else if ( sType == "D")
+      else if ( sType == "D") // delete state: child gets a gap, parent has a character
 	{
 	  row0.push_back(true);  
 	  row1.push_back(false); 
@@ -593,6 +598,7 @@ Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence pare
             
     }
 
+  // Make a DART-style alignment, and insert it into the big decomposition that will eventually become a multiple alignment
   Alignment_path pairAlign(0,0);
   pairAlign.insert_rows(0,row0);
   pairAlign.insert_rows(1,row1); 
@@ -606,16 +612,16 @@ void Reconstruction::show_indels(Stockholm stock)
   myfile.open (indel_filename.c_str());
   myfile << "Logging indel information is not yet implemented.\n";
   myfile.close();
-  node parent, child; 
+//   node parent, child; 
   
-  vector<Row_pair> row_pairs; 
+//   vector<Row_pair> row_pairs; 
   
-  for_nodes_post (tree, tree.root, -1, bi)
-    {
-      const Phylogeny::Branch& b = *bi;
-      row_pairs.push_back(b); 
-      if (b.second == tree.root) continue;
-      std::cout<<"Adding to pairs: " << tree.node_name[b.first] << " and " <<tree.node_name[b.second]<<endl; 
-    }
-  Decomposition decomp = stock.path.decompose(row_pairs); 
+//   for_nodes_post (tree, tree.root, -1, bi)
+//     {
+//       const Phylogeny::Branch& b = *bi;
+//       row_pairs.push_back(b); 
+//       if (b.second == tree.root) continue;
+//       std::cout<<"Adding to pairs: " << tree.node_name[b.first] << " and " <<tree.node_name[b.second]<<endl; 
+//     }
+//   Decomposition decomp = stock.path.decompose(row_pairs); 
 }

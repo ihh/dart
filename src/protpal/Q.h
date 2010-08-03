@@ -105,17 +105,15 @@ class QTransducer
   map< vector<int>, double> emission_weight;
 
   vector<state> get_components(state); 
-  
- private:  
-  
+
   // Component transducers R, B_l, B_r, Upsilon
   // Each state in q is a combination of these transducers
-
   SingletTrans R;
   BranchTrans B_l;
   BranchTrans B_r;
   SplittingTrans Upsilon;
   
+ private:  
   // Number of states
   int num_states; 
 

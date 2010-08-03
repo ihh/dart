@@ -4,6 +4,7 @@
 
 #include "protpal/profile.h"
 #include "protpal/reconstruction.h"
+#include "protpal/CompositePath.h"
 #include "protpal/exactMatch.h"
 #include "protpal/transducer.h"
 #include "protpal/Q.h"
@@ -146,12 +147,6 @@ int main(int argc, char* argv[])
 	  if(reconstruction.loggingLevel>=1)
 		std::cerr<<"\tFilling forward dynamic programming matrix..."; 
 	  profile.fill_DP(reconstruction.loggingLevel, reconstruction.estimate_params);
-	  if (reconstruction.estimate_params)
-	    {	  
-	      if(reconstruction.loggingLevel>=1)
-		std::cerr<<"Done.\n\tFilling backward dynamic programming matrix..."; 
-	      profile.fill_backward_DP(reconstruction.loggingLevel); 
-	    }
 
 	  if(reconstruction.loggingLevel>=1)
 		std::cerr<<"done.\n\t\tSubalignment likelihood: "<<-log(profile.forward_prob)/log(2)<<" bits\n"; 
@@ -189,9 +184,9 @@ int main(int argc, char* argv[])
 			std::cerr<<"done.\n";
 		}
 	  
-	  // When reaching the root: 
-	  else
+	  else	  // When reaching the root: 
 	    {
+	      
 	      string alignString = profile.sample_DP(
 						     1, // sample only the viterbi path
 						     0, // debugging log messages
@@ -213,54 +208,87 @@ int main(int argc, char* argv[])
 
 	      if (reconstruction.leaves_only)
 		stk.write_Stockholm(std::cout);
+	      else
+		{
+		  ECFG_main ecfg; 
+		  ecfg.ancrec_CYK_MAP = true; 
+		  if (reconstruction.ancrec_postprob)
+		    {
+		      ecfg.ancrec_postprob=true;
+		      ecfg.min_ancrec_postprob = reconstruction.min_ancrec_postprob; 
+		    }
+		  
+		  SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); 
+		  SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
+		  
+		  if (reconstruction.loggingLevel >=1) 
+		    std::cerr<< "\tReconstruction ancestral characters conditional on ML indel history..."; 
+		  Stockholm annotated = ecfg.run_alignment_annotation(stk, grammar_ecfg_sexpr); 
+		  if (reconstruction.loggingLevel >=1) 
+		    {
+		      std::cerr<<"Done.\n";
+		      std::cerr<<"\tDisplaying Viterbi alignment\n\n"; 
+		    }
+		  if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
+		    annotated.write_Stockholm(std::cout);
 		  else
 		    {
-		      ECFG_main ecfg; 
-		      ecfg.ancrec_CYK_MAP = true; 
-		      if (reconstruction.ancrec_postprob)
-			{
-			  ecfg.ancrec_postprob=true;
-			  ecfg.min_ancrec_postprob = reconstruction.min_ancrec_postprob; 
-			}
-		      
-		      SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); 
-		      SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
-		      
-		      if (reconstruction.loggingLevel >=1) 
-			std::cerr<< "\tReconstruction ancestral characters conditional on ML indel history..."; 
-		      Stockholm annotated = ecfg.run_alignment_annotation(stk, grammar_ecfg_sexpr); 
-		      if (reconstruction.loggingLevel >=1) 
-			{
-			  std::cerr<<"Done.\n";
-			  std::cerr<<"\tDisplaying Viterbi alignment\n\n"; 
-			}
-		      if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
-			annotated.write_Stockholm(std::cout);
-		      else
-			{
-			  Phonebook::iterator seq; 
-			  int nameSize, maxNameLength = 0; 
-			  sstring sequence; 
-			  std::cout<<treeStream.str(); 
-			  for (seq = annotated.row_index.begin(); seq!=annotated.row_index.end(); seq++)
+		      Phonebook::iterator seq; 
+		      int nameSize, maxNameLength = 0; 
+		      sstring sequence; 
+		      std::cout<<treeStream.str(); 
+		      for (seq = annotated.row_index.begin(); seq!=annotated.row_index.end(); seq++)
 			    {
 			      nameSize = seq->first.size();
 			      maxNameLength = max( maxNameLength, nameSize );
 			    }
-			  for (seq = annotated.row_index.begin(); seq!=annotated.row_index.end(); seq++)
-			    {
-			      if ( reconstruction.tree.is_leaf(index(seq->first, reconstruction.tree.node_name) ) )
-				sequence =  annotated.get_row_as_string(seq->second); 
-			      else 
-				sequence = annotated.gr_annot[seq->first]["ancrec_CYK_MAP"];
-			      if (reconstruction.fasta_output)
-				std::cout<< ">" << seq->first << "\n" << sequence << endl; 
-			      else
-				std::cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << sequence << endl; 
-			    }
+		      for (seq = annotated.row_index.begin(); seq!=annotated.row_index.end(); seq++)
+			{
+			  if ( reconstruction.tree.is_leaf(index(seq->first, reconstruction.tree.node_name) ) )
+			    sequence =  annotated.get_row_as_string(seq->second); 
+			  else 
+			    sequence = annotated.gr_annot[seq->first]["ancrec_CYK_MAP"];
+			  if (reconstruction.fasta_output)
+			    std::cout<< ">" << seq->first << "\n" << sequence << endl; 
+			  else
+			    std::cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << sequence << endl; 
 			}
 		    }
 		}
+	      if (reconstruction.estimate_params)
+		{
+		  if (reconstruction.loggingLevel >= 1)
+		    {
+		      std::cerr<<"\nBeginning parameter estimation";
+		      std::cerr<<"\n\tFilling backward dynamic programming matrix..."; 
+		    }
+		  profile.fill_backward_DP(reconstruction.loggingLevel); 
+		  if (reconstruction.loggingLevel >= 1)
+		    std::cerr<<"Done. \n\tAssembling expected transition event counts...";
+
+		  int numStates = profile.backward_states.size(); 
+		  for (int testIdx = 0 ; testIdx<15; testIdx++)
+		    {
+		      M_id m = profile.backward_states[testIdx]; 
+		      M_id mPrime = profile.outgoing[profile.backward_states[testIdx].toVector()][0];
+
+		      if ( m.q_state == 8 )
+			{
+			  std::cerr<<"Left state: " << m.q_state<< "\n";
+			  m.display(Q); 
+			  std::cerr<<"Right state: "<< mPrime.q_state<< "\n";
+			  mPrime.display(Q);
+			  CompositePath path(m, mPrime, reconstruction.tree, .5, reconstruction.profiles, Q); 
+			  std::cerr<<"Composite path created!\n";
+			  exit(0); 
+			}
+		      else 
+			continue; 
+		    }
+		  if (reconstruction.loggingLevel >= 1)
+		    std::cerr<<"Done\n";
+		}
+	    }
 	}
   return(0);
 }
