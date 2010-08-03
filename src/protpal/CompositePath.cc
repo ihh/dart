@@ -286,6 +286,7 @@ node CompositeState::active_node(void)
 
 vector<CompositeState> CompositePath::expand(int i, node n)
 {
+  bool logging = true; 
   // Assume there is a path of CompositeStates, each with a map from tree nodes to M_ids (profile_states).  
   // Taking the i'th and i+1'th of these, we'd like to expand the state sequence at node n, if necessary.
   //  This amounts to getting the summed null states at node n, between the i and i+1'th composite state,

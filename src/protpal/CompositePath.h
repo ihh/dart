@@ -29,7 +29,7 @@ class CompositePath
   vector<CompositeState>::iterator pathIter; 
   
   void get_counts(ExpCount&); 
-  ExpCount CompositePath::count(int, int); 
+  ExpCount count(int, int); 
 
   map<node, AbsorbingTransducer>* profiles; 
  private: // most private methods are called within get_counts

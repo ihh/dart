@@ -280,6 +280,7 @@ int main(int argc, char* argv[])
 			  mPrime.display(Q);
 			  CompositePath path(m, mPrime, reconstruction.tree, .5, reconstruction.profiles, Q); 
 			  std::cerr<<"Composite path created!\n";
+			  path.expand(1,reconstruction.tree.children(0,-1)[0]);
 			  exit(0); 
 			}
 		      else 
