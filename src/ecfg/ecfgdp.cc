@@ -1525,7 +1525,7 @@ void ECFG_trainer::do_dp (bool do_outside)
 		      << " (" << stock->rows() << " rows, " << stock->columns() << " columns)\n";
 
       const Aligned_score_profile& asp = asp_vec[n];
-      ECFG_envelope env (stock->columns(), max_subseq_len);
+      ECFG_auto_envelope env (*stock, ecfg, max_subseq_len);
       ECFG_inside_matrix inside (ecfg, *stock, asp, env, false);  // don't ever use fast pruning during training (not even post-iteration; likelihoods could turn out differently)
       inside.fill();	// calls fill_up() for each allowed subsequence, state pair
 
