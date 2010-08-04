@@ -32,14 +32,15 @@ class CompositePath
   ExpCount count(int, int); 
 
   map<node, AbsorbingTransducer>* profiles; 
+  vector<CompositeState> expand(int, node);  
+  void explode(bool logging=true); 
  private: // most private methods are called within get_counts
   // Do the state-path-explosion operation, start to finish.  After this, we can read off the counts
   // relatively easily.  
-  void explode(void); 
   bool logging; 
   // expand the state path at a given node starting at a given state.  Returns the number of new
   // states that were inserted after the given state
-  vector<CompositeState> expand(int, node);  
+
   bool component_changed(int, int, node); 
   QTransducer Q; 
 };

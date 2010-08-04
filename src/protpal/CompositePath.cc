@@ -44,7 +44,7 @@ void CompositePath::get_counts(ExpCount& masterCount)
 
   int j; 
 
-  explode(); 
+  explode(false); 
   for (unsigned int i=0; i<path.size(); i++)
     {
       j = i+1; 
@@ -83,11 +83,13 @@ bool CompositePath::component_changed(int i, int j, node n)
   return true; 
 }
 
-void CompositePath::explode(void)
+void CompositePath::explode(bool logging)
 {
   // Expand a composite path which initially consists only of two states.  
   // For each node in depth-first preorder, with the 'right' child coming first,
   // We proceed left-to right in the growing state path.  
+  
+  
   node treeNode = tree.root; 
   vector<CompositeState> newPath; 
   unsigned int pathIdx; 
@@ -102,21 +104,37 @@ void CompositePath::explode(void)
     {
       treeNode = nodeStack.top(); 
       nodeStack.pop();
+      if (tree.is_leaf(treeNode))
+	{
+	  if (logging)
+	    std::cerr<< tree.node_name[treeNode] << " is a leaf, continuing" <<endl; 
+	  continue;
+	}
+      
+      if (logging)
+	std::cerr<<"Current node: " << tree.node_name[treeNode] << endl; 
 
       for_rooted_children(tree, treeNode, child)
-	nodeStack.push(*child);  
+	{
+	  nodeStack.push(*child);  
+	}
       
       // For each state i in the path, expand state i, i+1 at node treeNode, 
       // keeping the vector of null states for later. 
+      if (logging)
+	std::cerr<<"Beginning expansion...\n"; 
       nulls.clear(); 
-      for (pathIdx = path.size(); pathIdx < path.size()-1; pathIdx++)
-	nulls[pathIdx] = expand(pathIdx, treeNode); 
-      
+      for (pathIdx = 0; pathIdx < path.size()-1; pathIdx++)
+	{
+	  if (logging)
+	    std::cerr<<"Expanding at " << pathIdx << "'th state in path..." << endl; 
+	  nulls[pathIdx] = expand(pathIdx, treeNode); 
+	}
       // Now insert each of these vectors of null states into the main path
       // This is done by making a new path from scratch, and plunking on the relevant elements,
       // and eventually exchanging the main path with it.
       newPath.clear();
-      for (pathIdx = path.size(); pathIdx < path.size(); pathIdx++)
+      for (pathIdx = 0; pathIdx < path.size(); pathIdx++)
 	{
 	  newPath.push_back(path[pathIdx]);
 	  for ( pathIter = nulls[pathIdx].begin(); pathIter != nulls[pathIdx].end() ; pathIter++)
@@ -127,166 +145,11 @@ void CompositePath::explode(void)
 }
   
 
-string CompositeState::state_type(node n)
-{
-  bool debug = false; 
-  if (n == tree->root)
-    {
-      std::cerr<<"Error: state_type of root called - root has no incoming branch\n";
-      exit(1); 
-    }
-  else if (profile_states.count(tree->parent[n]) < 1)
-    {
-      std::cerr<<"Error: node " << tree->node_name[n] << "'s  parent has no profile \n"; 
-      std::cerr<<tree->node_name[tree->parent[n]] << "has no profile \n";
-      exit(1); 
-    }
-  M_id m = profile_states[tree->parent[n]];
-  if (debug)
-    std::cerr<<"Use "<< tree->node_name[tree->parent[n]]; 
-
-  if (m.q_state == placeholder_wait)
-    return "W"; 
-  vector<node> children; 
-  for_rooted_children(*tree, tree->parent[n], child)
-    {
-      children.push_back(*child); 
-    }
-  if (n == children[0])  // left child
-    {
-      if (debug)
-	std::cerr<< " L "; 
-      return stringAt(Q->get_state_type(m.q_state),2);
-    }
-  else if (n == children[1])  // right child
-    {
-      if (debug)
-	std::cerr<< " R "; 
-      return stringAt(Q->get_state_type(m.q_state),3);
-    }
-  else 
-    {
-      std::cerr<<"Child appears to be an orphan, in state_type lookup...\n";
-      exit(1);
-    }
-}
-
-state CompositeState::node_state(node n)
-{
-  M_id m = profile_states[tree->parent[n]];
-  
-  if (m.q_state == placeholder_wait)
-    return -1; 
-  vector<node> children; 
-  for_rooted_children(*tree, tree->parent[n], child)
-    children.push_back(*child); 
-  if (n == children[0]) // left child
-    return Q->get_components(m.q_state)[2];
-  else if (n == children[1]) // right child
-    return Q->get_components(m.q_state)[3];
-}
-
-
-bool CompositeState::are_synced_types(string parentType, string childType)
-{
-  if (parentType == "S")
-    return childType == "S"; 
-  if (parentType == "D")
-    return childType == "W"; 
-  if (parentType == "E")
-    return childType == "E"; 
-
-  if (parentType == "W")
-    return childType == "W"; 
-
-  if (parentType == "M")
-    return childType == "M" || childType == "D"; 
-
-  if (parentType == "I")
-    return childType == "M" || childType == "D"; 
-  else
-    std::cerr<<"Unknown type: " << parentType <<endl; 
-}
-
-bool CompositeState::are_synced_nodes(node parent, node child)
-{
-  string childType=state_type(child), parentType=state_type(parent); 
-  return are_synced_types(parentType, childType); 
-}
-bool CompositeState::synced_below(node n)
-{
-  node treeNode; 
-  for_nodes_pre (*tree, n, tree->parent[n], bi)
-    {
-      const Phylogeny::Branch& b = *bi;
-      treeNode = b.second;
-      for_rooted_children(*tree, treeNode, child)
-	{
-	  if (!are_synced_nodes(treeNode, *child))
-	    {
-	      std::cerr<<" *** " << endl; 
-	      std::cerr<<"Not synced: " << tree->node_name[treeNode] << " " << tree->node_name[*child]<< endl; 
-	      std::cerr<<"Not synced: " << state_type(treeNode) << " " << state_type(*child)<< endl; 
-	      std::cerr<<" *** " << endl; 
-	      return false; 
-	    }
-	}
-    }
-  return true; 
-}
-	    
-
-node CompositeState::active_node(void)
-{
-  node treeNode, treeNode2; 
-  bool synced; 
-  vector<node> children; 
-  for_nodes_pre (*tree, tree->root, -1, bi)
-    {
-      const Phylogeny::Branch& b = *bi;
-      treeNode = b.second;
-      synced = true; 
-      
-      if (treeNode == tree->root)
-	{
-	  string Rtype = stringAt(Q->get_state_type(profile_states[tree->root].q_state),0);
-	  for_rooted_children(*tree, tree->root, child)
-	    {
-	      children.push_back(*child); 
-	      if (!are_synced_types(Rtype, state_type(*child)) )
-		{
-		  synced = false; 
-		  std::cerr<<"Root not synced with " << tree->node_name[*child] <<endl; 
-		}
-	    }
-	  synced = synced && synced_below(children[0]) && synced_below(children[1])  && Rtype == "I";
-	  if (!synced)
-	    {
-	      if (!synced_below(children[0]))
-		std::cerr<<"Not synced below " << tree->node_name[children[0]] <<endl; 
-	      else  if (!synced_below(children[1]))
-		std::cerr<<"Not synced below " << tree->node_name[children[1]] <<endl; 
-	      else
-		std::cerr<<"Not synced for unknown reason! " << endl;
-	    }
-	      
-	      
-	    
-	}
-      else
-	synced = synced && synced_below(treeNode) && state_type(treeNode) == "I";
-
-      if (synced)
-	return treeNode; 
-    }
-  std::cerr<<"Warning: No active node found\n";
-  return 0; 
-}
 
 
 vector<CompositeState> CompositePath::expand(int i, node n)
 {
-  bool logging = true; 
+  bool logging = false; 
   // Assume there is a path of CompositeStates, each with a map from tree nodes to M_ids (profile_states).  
   // Taking the i'th and i+1'th of these, we'd like to expand the state sequence at node n, if necessary.
   //  This amounts to getting the summed null states at node n, between the i and i+1'th composite state,
@@ -294,18 +157,50 @@ vector<CompositeState> CompositePath::expand(int i, node n)
   vector<CompositeState> out; 
   vector<M_id> nulls; 
   vector<M_id>::iterator mIter; 
-  M_id m = path[i].profile_states[n];
-  M_id mPrime = path[i+1].profile_states[n]; 
+  if (logging)
+    std::cerr<<"Current path size: " << path.size() << endl; 
+  M_id m, mPrime;
+  if (path[i].profile_states.count(n) < 1)
+    {
+      std::cerr<<"Error: state " << i << " at node " << tree.node_name[n] << " has no M_id assigned to it!\n"; 
+      exit(1); 
+    }
+  else
+    m = path[i].profile_states[n]; 
+
+
+  
+  if (path[i+1].profile_states.count(n) < 1)
+    {
+      std::cerr<<"Error: state " << i+1 << " at node " << tree.node_name[n] << " has no M_id assigned to it!\n"; 
+      exit(1); 
+    }
+  else
+    mPrime = path[i+1].profile_states[n]; 
+
   pair<int, int > transitionPair; 
+  if (logging)
+    std::cerr<<"converting M_id to states " <<endl; 
   transitionPair.first = (*profiles)[n].mid2int[m.toVector()]; 
   transitionPair.second = (*profiles)[n].mid2int[mPrime.toVector()]; 
-
+  if (logging)
+    std::cerr<<"Done " <<endl; 
   // if there are no summed null states (e.g. subtree insertions), we're done!
   if ( (*profiles)[n].summed_nulls.count(transitionPair) <1 )
-    return out; 
+    {
+      if (logging)
+	std::cerr<<"At node " << tree.node_name[n]<< ", there were no null states after state " << i <<endl; 
+      return out; 
+    }
   else 
-    nulls = (*profiles)[n].summed_nulls[transitionPair];
+    {
+      nulls = (*profiles)[n].summed_nulls[transitionPair];
 
+      if (logging)
+	std::cerr<<"At node " << tree.node_name[n]<< ", there were " << nulls.size() << " null states detected after state " << i <<endl; 
+
+    }
+  
   for (mIter = nulls.begin(); mIter != nulls.end(); mIter++)
     {
       CompositeState c(path[i], n, profiles, &Q); // create a new state identical to path[i] except at/below node n
@@ -497,10 +392,21 @@ void CompositeState::display(ostream& out, QTransducer& Q )
 
 	  out << "Branch incoming to node "<< tree->node_name[children[0]] << " has state type: " 
 	      << components[2] << " check: " << state_type(children[0]) << endl; 
-	  out<< "\tThe actual state: "<< Q.B_r.get_state_name(node_state(children[0])) <<endl; 
+	  out<< "\tThe actual state: ";
+	  if (state_type(children[0]) != "W")
+	    out << Q.B_r.get_state_name(node_state(children[0])) <<endl; 
+	  else
+	    out << "placeholder-wait\n";
+
 	  out << "Branch incoming to node "<< tree->node_name[children[1]] << " has state type: " 
 	      << components[3] << " check: " << state_type(children[1]) <<endl; 
-	  out<< "\tThe actual state: "<< Q.B_r.get_state_name(node_state(children[1])) <<endl; 
+	  
+	  out<< "\tThe actual state: ";
+	  if (state_type(children[1]) != "W")
+	    out << Q.B_r.get_state_name(node_state(children[1])) <<endl; 
+	  else
+	    out << "placeholder-wait\n";
+	    
 	}
     }
   out << "\n"; 
@@ -529,11 +435,160 @@ void CompositeState::get_component_states(map<node, BranchTrans> transducers)
 //     }
 }
 
+string CompositeState::state_type(node n)
+{
+  bool debug = false; 
+  if (n == tree->root)
+    {
+      std::cerr<<"Error: state_type of root called - root has no incoming branch\n";
+      exit(1); 
+    }
+  else if (profile_states.count(tree->parent[n]) < 1)
+    {
+      std::cerr<<"Error: node " << tree->node_name[n] << "'s  parent has no profile \n"; 
+      std::cerr<<tree->node_name[tree->parent[n]] << "has no profile \n";
+      exit(1); 
+    }
+  M_id m = profile_states[tree->parent[n]];
+  if (debug)
+    std::cerr<<"Use "<< tree->node_name[tree->parent[n]]; 
 
-      
-      
+  if (m.q_state == placeholder_wait)
+    return "W"; 
+  vector<node> children; 
+  for_rooted_children(*tree, tree->parent[n], child)
+    {
+      children.push_back(*child); 
+    }
+  if (n == children[0])  // left child
+    {
+      if (debug)
+	std::cerr<< " L "; 
+      return stringAt(Q->get_state_type(m.q_state),2);
+    }
+  else if (n == children[1])  // right child
+    {
+      if (debug)
+	std::cerr<< " R "; 
+      return stringAt(Q->get_state_type(m.q_state),3);
+    }
+  else 
+    {
+      std::cerr<<"Child appears to be an orphan, in state_type lookup...\n";
+      exit(1);
+    }
+}
 
+state CompositeState::node_state(node n)
+{
+  M_id m = profile_states[tree->parent[n]];
   
+  if (m.q_state == placeholder_wait)
+    return 0; 
+  vector<node> children; 
+  for_rooted_children(*tree, tree->parent[n], child)
+    children.push_back(*child); 
+  if (n == children[0]) // left child
+    return Q->get_components(m.q_state)[2];
+  else if (n == children[1]) // right child
+    return Q->get_components(m.q_state)[3];
+}
+
+
+bool CompositeState::are_synced_types(string parentType, string childType)
+{
+  if (parentType == "S")
+    return childType == "S"; 
+  if (parentType == "D")
+    return childType == "W"; 
+  if (parentType == "E")
+    return childType == "E"; 
+
+  if (parentType == "W")
+    return childType == "W"; 
+
+  if (parentType == "M")
+    return childType == "M" || childType == "D"; 
+
+  if (parentType == "I")
+    return childType == "M" || childType == "D"; 
+  else
+    std::cerr<<"Unknown type: " << parentType <<endl; 
+}
+
+bool CompositeState::are_synced_nodes(node parent, node child)
+{
+  string childType=state_type(child), parentType=state_type(parent); 
+  return are_synced_types(parentType, childType); 
+}
+bool CompositeState::synced_below(node n)
+{
+  node treeNode; 
+  for_nodes_pre (*tree, n, tree->parent[n], bi)
+    {
+      const Phylogeny::Branch& b = *bi;
+      treeNode = b.second;
+      for_rooted_children(*tree, treeNode, child)
+	{
+	  if (!are_synced_nodes(treeNode, *child))
+	    {
+	      std::cerr<<" *** " << endl; 
+	      std::cerr<<"Not synced: " << tree->node_name[treeNode] << " " << tree->node_name[*child]<< endl; 
+	      std::cerr<<"Not synced: " << state_type(treeNode) << " " << state_type(*child)<< endl; 
+	      std::cerr<<" *** " << endl; 
+	      return false; 
+	    }
+	}
+    }
+  return true; 
+}
+	    
+
+node CompositeState::active_node(void)
+{
+  bool logging = false; 
+  node treeNode, treeNode2; 
+  bool synced; 
+  vector<node> children; 
+  for_nodes_pre (*tree, tree->root, -1, bi)
+    {
+      const Phylogeny::Branch& b = *bi;
+      treeNode = b.second;
+      synced = true; 
+      
+      if (treeNode == tree->root)
+	{
+	  string Rtype = stringAt(Q->get_state_type(profile_states[tree->root].q_state),0);
+	  for_rooted_children(*tree, tree->root, child)
+	    {
+	      children.push_back(*child); 
+	      if (!are_synced_types(Rtype, state_type(*child)) )
+		{
+		  synced = false; 
+		  if (logging)
+		    std::cerr<<"Root not synced with " << tree->node_name[*child] <<endl; 
+		}
+	    }
+	  synced = synced && synced_below(children[0]) && synced_below(children[1])  && Rtype == "I";
+	  if (!synced && logging)
+	    {
+	      if (!synced_below(children[0]))
+		std::cerr<<"Not synced below " << tree->node_name[children[0]] <<endl; 
+	      else  if (!synced_below(children[1]))
+		std::cerr<<"Not synced below " << tree->node_name[children[1]] <<endl; 
+	      else
+		std::cerr<<"Not synced for unknown reason! " << endl;
+	    }
+	}
+      else
+	synced = synced && synced_below(treeNode) && state_type(treeNode) == "I";
+      if (synced)
+	return treeNode; 
+    }
+  std::cerr<<"Warning: No active node found\n";
+  return 0; 
+}
+
 
 //   for_nodes_pre (*tree, n, tree->parent[n], bi)
 //     {
