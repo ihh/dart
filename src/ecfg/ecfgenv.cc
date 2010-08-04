@@ -25,7 +25,7 @@ void ECFG_envelope::init_from_fold_string (const sstring& fold_string, bool conn
 void ECFG_envelope::init (int S, int L)
 {
   CTAG(4,FOLDENV) << "Initialising fold envelope: " << S << " columns, max subseq length = " << L << '\n';
-  if (L == 0)
+  if (S > 0 && L == 0)
     CL << "NB max subseq length is 0. This is only suitable for left- or right-regular grammars.\n";
 
   use_foldenv = false;
