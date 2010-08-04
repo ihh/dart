@@ -931,8 +931,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   transition_weight[transitionIntPair] = 1;  
 
 
-  // transfer the 'between' map from sampled_profile.  
-  
+  // transfer the 'between' map from sampled_profile.    
   map<pair<vector<int>, vector<int> >, map<node, string> >::iterator nodeState; 
   for (nodeState=sampled_profile->between.begin(); nodeState!=sampled_profile->between.end(); nodeState++)
 	{
@@ -940,6 +939,16 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 	  transitionIntPair.second = mid2int[nodeState->first.second]; 	  
 	  between[transitionIntPair] = nodeState->second; 
 	}
+  // transfer the 'summed_nulls' map from sampled_profile.    
+  map<pair<vector<int>, vector<int> >, vector<M_id> >::iterator nullState; 
+  for (nullState=sampled_profile->summed_nulls.begin(); nullState!=sampled_profile->summed_nulls.end(); nullState++)
+	{
+	  transitionIntPair.first = mid2int[nullState->first.first];
+	  transitionIntPair.second = mid2int[nodeState->first.second]; 	  
+	  summed_nulls[transitionIntPair] = nullState->second; 
+	}
+
+
 }
 
 
@@ -1645,6 +1654,7 @@ void Profile::store_summed_nulls(vector<M_id> path)
 	    {
 	      externalPair.second = m.toVector(); 
 	      summed_nulls[externalPair] = nulls; 
+	      //std::cerr<<"Nulls added at node" << treeNode << " : "<<summed_nulls.size() <<endl; 
 	      nulls.clear(); 
 	    }
 	}

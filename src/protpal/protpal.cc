@@ -270,21 +270,18 @@ int main(int argc, char* argv[])
 		  for (int testIdx = 0 ; testIdx<15; testIdx++)
 		    {
 		      M_id m = profile.backward_states[testIdx]; 
-		      M_id mPrime = profile.outgoing[profile.backward_states[testIdx].toVector()][0];
-
-		      if ( m.q_state == 8 )
+		      for (int testIdx2 =0 ; testIdx2 < profile.outgoing[profile.backward_states[testIdx].toVector()].size(); testIdx2++)
 			{
+			  M_id mPrime = profile.outgoing[profile.backward_states[testIdx].toVector()][testIdx2];
 			  std::cerr<<"Left state: " << m.q_state<< "\n";
 			  m.display(Q); 
 			  std::cerr<<"Right state: "<< mPrime.q_state<< "\n";
 			  mPrime.display(Q);
 			  CompositePath path(m, mPrime, reconstruction.tree, .5, reconstruction.profiles, Q); 
-			  std::cerr<<"Composite path created!\n";
-			  path.expand(1,reconstruction.tree.children(0,-1)[0]);
-			  exit(0); 
+			  std::cerr<<"Composite path created, length:" << path.path.size() << endl; 
+			  path.explode(true); 
+			  std::cerr<<"After expansion, path has length " << path.path.size() << endl;
 			}
-		      else 
-			continue; 
 		    }
 		  if (reconstruction.loggingLevel >= 1)
 		    std::cerr<<"Done\n";
