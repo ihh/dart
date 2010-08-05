@@ -6,11 +6,9 @@ ECFG_envelope::ECFG_envelope (int seqlen, int max_subseq_len)
   init (seqlen, max_subseq_len);
 }
 
-void ECFG_envelope::init_from_fold_string (const sstring& fold_string, bool connect_all_bifurcations)
+void ECFG_envelope::init_from_fold_string (const sstring& fold_string, int max_subseq_len)
 {
-  foldenv.initialise_from_fold_string (fold_string);
-  if (connect_all_bifurcations)
-    foldenv.connect_all();
+  foldenv.initialise_from_fold_string (fold_string, max_subseq_len);
   use_foldenv = true;
 
   // copy Subseq_coords and seqlen
