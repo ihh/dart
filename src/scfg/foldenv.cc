@@ -3,6 +3,9 @@
 #include "scfg/foldenv.h"
 #include "util/logfile.h"
 
+// periodicity (in columns) of log message when constructing a fold envelope
+#define INIT_FOLD_ENV_LOG_COLUMNS 100
+
 Subseq_coords::Subseq_coords (int start, int len) :
   start (start),
   len (len)
@@ -260,7 +263,7 @@ int Fold_envelope::bifurcations() const
   return bifurcs;
 }
 
-void Fold_envelope::initialise_from_fold_string (const sstring& fold_string)
+void Fold_envelope::initialise_from_fold_string (const sstring& fold_string, int max_subseq_len)
 {
   CTAG(6,FOLDENV) << "Initialising fold envelope from fold string '" << fold_string << "'\n";
 
@@ -273,6 +276,10 @@ void Fold_envelope::initialise_from_fold_string (const sstring& fold_string)
 
   for (int end = 0; end <= fold_size; ++end)
     {
+      // log
+      if (end > 0 && end % INIT_FOLD_ENV_LOG_COLUMNS == 0)
+	CTAG(6,FOLDENV) << "Still initialising fold envelope; finished " << end << " of " << fold_size << " columns (subseqs so far: " << subseq.size() << ")\n";
+
       // create empty Subseq
       const int empty_subseq_idx = new_subseq (end, 0);
       connect_b (empty_subseq_idx, empty_subseq_idx, empty_subseq_idx);
@@ -293,40 +300,62 @@ void Fold_envelope::initialise_from_fold_string (const sstring& fold_string)
 		  if (startpos_stack.empty())
 		    THROWEXPR ("Too many <'s\nFold string: " << fold_string);
 		  const int start = startpos_stack.top().back();
-		  const int lr_subseq_idx = by_start[start + 1].back();
-		  const int new_subseq_idx = new_subseq (start, end - start);
+		  const int new_subseq_len = end - start;
+		  if (max_subseq_len >= 0 && new_subseq_len > max_subseq_len && !(start == 0 || end == fold_size))
+		    THROWEXPR ("Fold envelope contains a basepair between columns " << start+1 << " and " << end+1
+			       << ", which implies a subseq of length " << new_subseq_len << ", but maximum allowed subseq length is " << max_subseq_len);
+		  // create the new subseq
+		  const int new_subseq_idx = new_subseq (start, new_subseq_len);
 		  // note that connect_lr () automatically sets subsequence connectivity:
 		  // here we implicitly set
 		  //  (*this).subseq[new_subseq_idx].inflags = (*this).subseq[lr_subseq_idx].outflags = Subseq::CFLAG_LR
-		  connect_lr (new_subseq_idx, lr_subseq_idx);
+		  const int lr_subseq_idx = find_lr (new_subseq_idx);
+		  if (lr_subseq_idx >= 0)
+		    connect_lr (new_subseq_idx, lr_subseq_idx);
+		  // dummy bifurcations involving empty subseqs at start & end
 		  connect_b (new_subseq_idx, by_len[0][start], new_subseq_idx);
 		  connect_b (new_subseq_idx, new_subseq_idx, by_len[0][end]);
 		}
 	      else
 		startpos_stack.top().push_back (end - 1);
 
+	      // create all subseqs (start,end) for each start in startpos
 	      vector<int>& startpos = startpos_stack.top();
 	      for (int start_idx = startpos.size() - (is_rchar(fold_char) ? 2 : 1); start_idx >= 0; --start_idx)
 		{
 		  const int start = startpos[start_idx];
 		  const vector<int>& start_subseqs = by_start[start];
-		  const int l_subseq_idx = subseq.size() - 1;
-		  const int r_subseq_idx = start_subseqs.back();
-		  const int new_subseq_idx = new_subseq (start, end - start); // NB after this call, start_subseqs includes new subseq
-		  if (!is_lchar (fold_string[start])) connect_l (new_subseq_idx, l_subseq_idx);
-		  if (!is_rchar (fold_char)) connect_r (new_subseq_idx, r_subseq_idx);
-		  // again, these (respectively) implicitly set
-		  //  (*this).subseq[new_subseq_idx].in_flags = (*this).subseq[l_subseq_idx].out_flags = Subseq::CFLAG_L
-		  //  (*this).subseq[new_subseq_idx].in_flags = (*this).subseq[r_subseq_idx].out_flags = Subseq::CFLAG_R
-		  if ((int) start_subseqs.size() != new_subseq_idx + 1 - empty_subseq_idx)
+		  const int new_subseq_len = end - start;
+		  if (max_subseq_len >= 0 && new_subseq_len > max_subseq_len && !(start == 0 || end == fold_size))
+		    continue;
+		  // create the new subseq
+		  const int new_subseq_idx = new_subseq (start, new_subseq_len); // NB after this call, start_subseqs includes new subseq
+		  // connect the new subseq, implicitly setting the Subseq::CFLAG_L and Subseq::CFLAG_R bits of in_flags/out_flags in the Subseq objects
+		  if (!is_lchar (fold_string[start]))
+		    {
+		      const int l_subseq_idx = find_l (new_subseq_idx);
+		      if (l_subseq_idx >= 0)
+			connect_l (new_subseq_idx, l_subseq_idx);
+		    }
+		  if (!is_rchar (fold_char))
+		    {
+		      const int r_subseq_idx = find_r (new_subseq_idx);
+		      if (r_subseq_idx >= 0)
+			connect_r (new_subseq_idx, r_subseq_idx);
+		    }
+		  // quick sanity test...
+		  if ((max_subseq_len < 0 || max_subseq_len >= fold_size) && (int) start_subseqs.size() != new_subseq_idx + 1 - empty_subseq_idx)
 		    THROWEXPR ("Should be one end_subseq for every start_subseq");
 		  // for every bifurcation point not flanked by CONTIGUOUS_UNPAIRED_CHAR characters...
 		  for (int bif_idx = 0; bif_idx < (int) start_subseqs.size(); ++bif_idx)
 		    if ((start == 0 || start == fold_size) ? true : !is_contiguous_digram (fold_string[start-1], fold_string[start]))
 		      {
 			const int bif_l_idx = start_subseqs[bif_idx];
-			const int bif_r_idx = new_subseq_idx - bif_idx;
-			connect_b (new_subseq_idx, bif_l_idx, bif_r_idx);
+			const int bif_r_start = subseq[bif_l_idx].end();
+			const int bif_r_len = new_subseq_len - bif_r_start;
+			const int bif_r_idx = find_subseq_idx (bif_r_start, bif_r_len);
+			if (bif_r_idx >= 0)
+			  connect_b (new_subseq_idx, bif_l_idx, bif_r_idx);
 		      }
 		}
 	    }
@@ -1106,10 +1135,20 @@ void Fold_envelope::dump (ostream& o) const
 
 int Fold_envelope::find_subseq_idx (int start, int len) const
 {
+  if (start < 0 || start >= (int) by_start.size())
+    return -1;
+  const int end = start + len;
+  if (first_with_end[end] == first_after_end[end])
+    return -1;
   const Subseq_coords coords (start, len);
-  const vector<Subseq>::const_iterator iter = lower_bound (subseq.begin(), subseq.end(), coords);
-  if (iter == subseq.end()) return -1;
-  if (iter->start != start || iter->len != len) return -1;
+  const vector<Subseq>::const_iterator
+    b = subseq.begin() + first_with_end[end],
+    e = subseq.begin() + first_after_end[end];
+  const vector<Subseq>::const_iterator iter = lower_bound (b, e, coords);
+  if (iter == e)
+    return -1;
+  if (iter->start != start || iter->len != len)
+    return -1;
   return iter - subseq.begin();
 }
 
