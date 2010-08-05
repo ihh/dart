@@ -18,6 +18,10 @@ void ECFG_envelope::init_from_fold_string (const sstring& fold_string, int max_s
     subseq.push_back (*ss);
 
   seqlen = foldenv.seqlen();
+
+  // log
+  if (CTAGGING(1,FOLDENV))
+    foldenv.dump (CL);
 }
 
 void ECFG_envelope::init (int S, int L)
