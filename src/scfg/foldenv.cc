@@ -321,15 +321,16 @@ void Fold_envelope::initialise_from_fold_string (const sstring& fold_string, int
 
 	      // create all subseqs (start,end) for each start in startpos
 	      vector<int>& startpos = startpos_stack.top();
-	      for (int start_idx = startpos.size() - (is_rchar(fold_char) ? 2 : 1); start_idx >= 0; --start_idx)
+	      const int max_start_idx = startpos.size() - (is_rchar(fold_char) ? 2 : 1);  // if fold_char is '>', we have already created the smallest subseq, so don't create it again
+	      for (int start_idx = max_start_idx; start_idx >= 0; --start_idx)
 		{
 		  const int start = startpos[start_idx];
+		  const int len = end - start;
 		  const vector<int>& start_subseqs = by_start[start];
-		  const int new_subseq_len = end - start;
-		  if (max_subseq_len >= 0 && new_subseq_len > max_subseq_len && !(start == 0 || end == fold_size))
+		  if (max_subseq_len >= 0 && len > max_subseq_len && !(start == 0 || end == fold_size))
 		    continue;
 		  // create the new subseq
-		  const int new_subseq_idx = new_subseq (start, new_subseq_len); // NB after this call, start_subseqs includes new subseq
+		  const int new_subseq_idx = new_subseq (start, len); // NB after this call, start_subseqs includes new subseq
 		  // connect the new subseq, implicitly setting the Subseq::CFLAG_L and Subseq::CFLAG_R bits of in_flags/out_flags in the Subseq objects
 		  if (!is_lchar (fold_string[start]))
 		    {
@@ -346,17 +347,19 @@ void Fold_envelope::initialise_from_fold_string (const sstring& fold_string, int
 		  // quick sanity test...
 		  if ((max_subseq_len < 0 || max_subseq_len >= fold_size) && (int) start_subseqs.size() != new_subseq_idx + 1 - empty_subseq_idx)
 		    THROWEXPR ("Should be one end_subseq for every start_subseq");
-		  // for every bifurcation point not flanked by CONTIGUOUS_UNPAIRED_CHAR characters...
+		  // add every bifurcation point not flanked by CONTIGUOUS_UNPAIRED_CHAR characters
 		  for (int bif_idx = 0; bif_idx < (int) start_subseqs.size(); ++bif_idx)
-		    if ((start == 0 || start == fold_size) ? true : !is_contiguous_digram (fold_string[start-1], fold_string[start]))
-		      {
-			const int bif_l_idx = start_subseqs[bif_idx];
-			const int bif_r_start = subseq[bif_l_idx].end();
-			const int bif_r_len = new_subseq_len - bif_r_start;
-			const int bif_r_idx = find_subseq_idx (bif_r_start, bif_r_len);
-			if (bif_r_idx >= 0)
-			  connect_b (new_subseq_idx, bif_l_idx, bif_r_idx);
-		      }
+		    {
+		      const int bif_l_idx = start_subseqs[bif_idx];
+		      const int bif_r_start = subseq[bif_l_idx].end();
+		      if ((start == 0 || end == fold_size) ? true : !is_contiguous_digram (fold_string[bif_r_start-1], fold_string[bif_r_start]))
+			{
+			  const int bif_r_len = end - bif_r_start;
+			  const int bif_r_idx = find_subseq_idx (bif_r_start, bif_r_len);
+			  if (bif_r_idx >= 0)
+			    connect_b (new_subseq_idx, bif_l_idx, bif_r_idx);
+			}
+		    }
 		}
 	    }
 	}
@@ -794,15 +797,15 @@ int Fold_envelope::new_subseq (int start, int len)
   const int new_subseq_idx = subseq.size();
   subseq.push_back (Subseq (start, len));
   Subseq& new_subseq = subseq[new_subseq_idx];
-  const int end = new_subseq.end();
   if (new_subseq_idx > 0)
     {
       const int prev_subseq_idx = new_subseq_idx - 1;
       const Subseq& prev_subseq = subseq[prev_subseq_idx];
       if (!(prev_subseq < new_subseq))
-	THROWEXPR ("New subsequence (" << start << "+" << len << ") added out of order, after existing subsequence (" << prev_subseq.start << "+" << prev_subseq.len << ")\n");
+	THROWEXPR("Subsequence (" << start  << "+" << len << ") added to fold envelope after subsequence (" << prev_subseq.start << "+" << prev_subseq.len << "), inconsistently with inside->outside ordering");
     }
   // update first_with_end & first_after_end
+  const int end = new_subseq.end();
   if (first_with_end[end] == 0)
     first_with_end[end] = new_subseq_idx;
   first_after_end[end] = new_subseq_idx + 1;
@@ -1135,12 +1138,10 @@ void Fold_envelope::dump (ostream& o) const
 
 int Fold_envelope::find_subseq_idx (int start, int len) const
 {
-  if (start < 0 || start >= (int) by_start.size())
-    return -1;
-  const int end = start + len;
-  if (first_with_end[end] == first_after_end[end])
-    return -1;
   const Subseq_coords coords (start, len);
+  const int end = coords.end(), sl = seqlen();
+  if (start < 0 || len < 0 || start > sl || end > sl)
+    return -1;
   const vector<Subseq>::const_iterator
     b = subseq.begin() + first_with_end[end],
     e = subseq.begin() + first_after_end[end];
