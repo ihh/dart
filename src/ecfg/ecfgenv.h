@@ -1,12 +1,16 @@
 #ifndef ECFG_FOLD_ENVELOPE_INCLUDED
 #define ECFG_FOLD_ENVELOPE_INCLUDED
 
+#include <ext/hash_map>
 #include "scfg/foldenv.h"
 
-// Fold envelopes for ECFG's are less flexible than for Pair_CFG's
+using namespace __gnu_cxx;  // for hash_map
+
+// Fold envelopes for ECFG's are, by default, less flexible than for Pair_CFG's
 // For parameters (seqlen=S, max_subseq_len=L) the following (start,len) Subseq_coords are allowed:
 //   (s,l)   where 0 <= s <= S-l and 0 <= l <= L
 //   (s,S-s) where 0 <= s < S-L
+// Alternatively the Pair_CFG Fold_envelope can be used (if use_foldenv is true) - in this case a quick lookup table is used to implement find_subseq_idx()
 struct ECFG_envelope
 {
   // data
@@ -16,6 +20,7 @@ struct ECFG_envelope
   // data for optional Fold_envelope
   bool use_foldenv;
   Fold_envelope foldenv;
+  vector<hash_map<int,int> > subseq_lookup;  // subseq_lookup[start][len] = index of subseq (start,len)
 
   // constructor
   ECFG_envelope (int seqlen = 0, int max_subseq_len = 0);
@@ -31,11 +36,18 @@ struct ECFG_envelope
   inline int find_subseq_idx (int start, int len) const
   {
     int idx = -1;
-    if (use_foldenv)
-      idx = foldenv.find_subseq_idx (start, len);
-    else
+    if (start >= 0 && len >= 0 && start + len <= seqlen)
       {
-	if (start >= 0 && len >= 0 && start + len <= seqlen)
+	if (use_foldenv)
+	  {
+	    // Commented out the delegation to Fold_envelope::find_subseq_idx, replaced with subseq_lookup[start][len] for performance reasons
+	    //	idx = foldenv.find_subseq_idx (start, len);
+	    const hash_map<int,int>& lookup = subseq_lookup[start];
+	    const hash_map<int,int>::const_iterator lookup_iter = lookup.find (len);
+	    if (lookup_iter != lookup.end())
+	      idx = lookup_iter->second;
+	  }
+	else
 	  {
 	    if (len <= max_subseq_len)
 	      idx = len * (2*seqlen + 3 - len) / 2 + start;   // = start + sum_{k=0}^{len-1} (seqlen + 1 - k)
@@ -46,7 +58,7 @@ struct ECFG_envelope
 	  }
       }
 #ifdef DART_DEBUG
-	if (idx >= 0)
+    if (idx >= 0)
       if (subseq[idx].start != start || subseq[idx].len != len)
 	THROWEXPR ("Incorrectly calculated subsequence (" << start << '+' << len << ')');
 #endif
