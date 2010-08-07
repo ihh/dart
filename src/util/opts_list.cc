@@ -3,6 +3,15 @@
 #include "util/macros.h"
 #include "util/logfile.h"
 
+// maximum number of columns for help text
+#define MAX_HELP_TEXT_COLS 80
+
+// maximum number of columns for help text options
+#define MAX_HELP_TEXT_OPTION_COLS 28
+
+// number of padding columns between an option and its help text
+#define OPTION_HELP_PADDING 2
+
 void Opts_list::print (const char* text)
 { options_help_text.append (text); }
 
@@ -43,16 +52,63 @@ sstring Opts_list::help() const
       for_const_contents (vector<sstring>, help_lines, line)
 	if (help_tab_re.Match (line->c_str()))
 	  max_lhs_width = max (max_lhs_width, (int) help_tab_re[1].size());
-      // print out each line, again splitting tabs & aligning LHS
+      const int main_lhs_width = min (max_lhs_width, MAX_HELP_TEXT_OPTION_COLS);
+      // print out each line, again splitting tabs & aligning LHS, and justifying RHS
       for_const_contents (vector<sstring>, help_lines, line)
 	if (help_tab_re.Match (line->c_str()))
 	  {
 	    const sstring lhs = help_tab_re[1];
 	    const sstring rhs = help_tab_re[2];
-	    h << lhs;
-	    for (int i = (int) lhs.size(); i < max_lhs_width + 1; ++i)
-	      h << ' ';
-	    h << rhs << '\n';
+	    const int lhs_width = max (main_lhs_width, (int) lhs.size());
+	    const sstring lhs_tabs (lhs_width + OPTION_HELP_PADDING, ' ');
+	    const vector<sstring> rhs_words = rhs.split();
+	    bool first_line = true;
+	    int word = 0;
+	    while (word < (int) rhs_words.size())
+	      {
+		if (first_line)
+		  {
+		    h << lhs;
+		    for (int i = (int) lhs.size(); i < lhs_width + OPTION_HELP_PADDING; ++i)
+		      h << ' ';
+		  }
+		else
+		  h << lhs_tabs;
+		
+		vector<sstring> word_buf;
+		int word_buf_len = 0, avail_cols = MAX_HELP_TEXT_COLS - (lhs_width + OPTION_HELP_PADDING);
+		while (word < (int) rhs_words.size())
+		  {
+		    const sstring& next_word = rhs_words[word];
+		    const int next_word_len = next_word.size();
+		    if (word_buf.size() == 0 || word_buf_len + 1 + next_word_len <= avail_cols)
+		      {
+			if (word_buf.size())
+			  {
+			    word_buf.back() << ' ';
+			    ++word_buf_len;
+			  }
+			word_buf.push_back (next_word);
+			word_buf_len += next_word_len;
+			++word;
+		      }
+		    else
+		      {
+			if (word_buf.size() > 1)
+			  for (int i = 0; word_buf_len < avail_cols; i = (i + 1) % (word_buf.size() - 1))
+			    {
+			      word_buf[i] << ' ';
+			      ++word_buf_len;
+			    }
+			h << sstring::join(word_buf,"") << '\n';
+			word_buf.clear();
+			first_line = false;
+			break;
+		      }
+		  }
+		h << sstring::join(word_buf,"");
+	      }
+	    h << '\n';
 	  }
 	else
 	  h << *line << '\n';
