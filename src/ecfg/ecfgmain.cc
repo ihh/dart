@@ -143,7 +143,7 @@ void ECFG_main::init_opts (const char* desc)
 
   opts.add ("mr -maxrounds", em_max_iter = -1, "max number of \"rounds\" (iterations) of EM", false);
   opts.add ("mi -mininc", em_min_inc = .001, "minimum fractional increase in log-likelihood per round of EM");
-  opts.add ("f -forgive", em_forgive = 0, "number of consecutive non-increasing rounds of EM to \"forgive\" before stopping");
+  opts.add ("f -forgive", em_forgive = 1, "number of consecutive non-increasing rounds of EM to \"forgive\" before stopping");
 
   opts.newline();
   opts.print_title ("Annotation algorithms");
