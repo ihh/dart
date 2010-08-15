@@ -427,10 +427,11 @@ struct ECFG_auto_envelope : ECFG_envelope {
   ECFG_auto_envelope (Stockholm& stock, const ECFG_scores& ecfg, int max_subseq_len = -1)
   {
     sstring fold_string;
+    const int effective_max_subseq_len = ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len;
     if (ecfg.fold_string_tag.size() > 0 && (fold_string = stock.get_gc_annot(ecfg.fold_string_tag)).size() > 0)
-      init_from_fold_string (fold_string);
+      init_from_fold_string (fold_string, effective_max_subseq_len);
     else
-      init (stock.columns(), ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len);
+      init (stock.columns(), effective_max_subseq_len);
   }
 };
 

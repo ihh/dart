@@ -6,11 +6,9 @@ ECFG_envelope::ECFG_envelope (int seqlen, int max_subseq_len)
   init (seqlen, max_subseq_len);
 }
 
-void ECFG_envelope::init_from_fold_string (const sstring& fold_string, bool connect_all_bifurcations)
+void ECFG_envelope::init_from_fold_string (const sstring& fold_string, int max_subseq_len)
 {
-  foldenv.initialise_from_fold_string (fold_string);
-  if (connect_all_bifurcations)
-    foldenv.connect_all();
+  foldenv.initialise_from_fold_string (fold_string, max_subseq_len);
   use_foldenv = true;
 
   // copy Subseq_coords and seqlen
@@ -20,12 +18,29 @@ void ECFG_envelope::init_from_fold_string (const sstring& fold_string, bool conn
     subseq.push_back (*ss);
 
   seqlen = foldenv.seqlen();
+
+  // initialize subseq_lookup
+  subseq_lookup = vector<hash_map<int,int> > (seqlen + 1);
+  for (int start = 0; start <= seqlen; ++start)
+    {
+      const vector<int>& by_start = foldenv.by_start[start];
+      subseq_lookup[start].resize (by_start.size());
+      for_const_contents (vector<int>, by_start, subseq_idx)
+	{
+	  const int len = foldenv.subseq[*subseq_idx].len;
+	  subseq_lookup[start][len] = *subseq_idx;
+	}
+    }
+
+  // log
+  if (CTAGGING(1,FOLDENV))
+    foldenv.dump (CL);
 }
 
 void ECFG_envelope::init (int S, int L)
 {
   CTAG(4,FOLDENV) << "Initialising fold envelope: " << S << " columns, max subseq length = " << L << '\n';
-  if (L == 0)
+  if (S > 0 && L == 0)
     CL << "NB max subseq length is 0. This is only suitable for left- or right-regular grammars.\n";
 
   use_foldenv = false;

@@ -1,6 +1,8 @@
 #ifndef FOLDENV_INCLUDED
 #define FOLDENV_INCLUDED
 
+#include <iterator>
+
 #include "util/sstring.h"
 #include "seq/biosequence.h"
 #include "seq/stockholm.h"
@@ -325,7 +327,7 @@ public:
 
   // The following method initialises from a global fold string, resulting in a single-fold envelope.
   // Call the connect_all() method to add extra basepairs & bifurcations.
-  void initialise_from_fold_string (const sstring& fold_string);
+  void initialise_from_fold_string (const sstring& fold_string, int max_subseq_len = -1);
 
   // The following methods initialise from a set of subsequences, adding all emissions & bifurcations.
   // First, a Subseq_coords_set.

@@ -131,7 +131,8 @@ void ECFG_main::init_opts (const char* desc)
 
   opts.newline();
   opts.print_title ("Pseudocounts for parameter estimation");
-  opts.print ("(Pseudocount options are obsolescent; they are superceded by pseudocount tags within the grammar. See biowiki.org/XrateFormat)\n\n");
+  opts.print ("(Pseudocount options are obsolescent; they are superceded by pseudocount tags\n");
+  opts.print (" within the grammar. See biowiki.org/XrateFormat)\n\n");
 
   opts.add ("pi -pseudinitial", pseud_init = 1e-9, "pseudocount for initial state occupancies and probability parameters");
   opts.add ("pm -pseudmutate", pseud_mutate = 0., "pseudocount for mutation rates and rate parameters");
