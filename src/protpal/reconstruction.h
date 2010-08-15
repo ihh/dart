@@ -69,6 +69,7 @@ class Reconstruction
   
   // show indel'd events
   void show_indels(Stockholm); 
+  map<node, Profile> pre_summed_profiles; 
   
   // Reconstruction algorithm parameters
   int num_sampled_paths;
@@ -89,7 +90,11 @@ class Reconstruction
   double ins_rate;
   double del_rate;   
   double gap_extend; 
-
+  
+  // Indel investigation
+  int num_root_alignments; 
+  bool viterbi_alignments; ; 
+  
  private:
   // Help message
   void display_opts(void);

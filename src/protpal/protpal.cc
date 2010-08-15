@@ -4,11 +4,14 @@
 
 #include "protpal/profile.h"
 #include "protpal/reconstruction.h"
-#include "protpal/CompositePath.h"
 #include "protpal/exactMatch.h"
 #include "protpal/transducer.h"
 #include "protpal/Q.h"
 #include "protpal/utils.h"
+#include "protpal/AlignmentSampler.h"
+// #include "protpal/CompositePath.h"
+
+
 #include "ecfg/ecfgsexpr.h"
 #include "tree/phylogeny.h"
 #include "ecfg/ecfgmain.h"
@@ -33,7 +36,7 @@ int main(int argc, char* argv[])
   srand((unsigned)time(0));
 
   // clunky, sorry
-  for (unsigned int i=0; i< reconstruction.tree.nodes(); i++)
+  for (int i=0; i< reconstruction.tree.nodes(); i++)
 	node_names.push_back(string(reconstruction.tree.node_name[i]));
 
 
@@ -61,7 +64,6 @@ int main(int argc, char* argv[])
 	  exit(0); 
 	}
 
-  
   // Otherwise, let the ancestral reconstruction begin!  
   //  Initialize the exact-match transducers at leaf nodes - can be thought of as a trivial reconstruction
   if(reconstruction.loggingLevel>=1)
@@ -162,11 +164,14 @@ int main(int argc, char* argv[])
 							reconstruction.num_sampled_paths, // number of paths
 							reconstruction.loggingLevel, // debugging log messages ?
 							reconstruction.show_alignments, // show sampled alignments ?
-							reconstruction.leaves_only // only show leaves
+							reconstruction.leaves_only, // only show leaves
+							false // sample viterbi path
 							); 
 
 		  // clear the DP matrix - this really only clears the associativity, not the actual objects therein
+		  // UPDATE - with some scope trickery, this should *actually* clear the DP entries
 		  profile.clear_DP();
+		  reconstruction.pre_summed_profiles[treeNode] = profile; 
 		  if(reconstruction.loggingLevel>=1)
 			{
 			  std::cerr<<"done.  ";
@@ -186,22 +191,24 @@ int main(int argc, char* argv[])
 	  
 	  else	  // When reaching the root: 
 	    {
-	      
-	      string alignString = profile.sample_DP(
-						     1, // sample only the viterbi path
-						     0, // debugging log messages
-						     true, // show the final alignment
-						     reconstruction.leaves_only // show only the leaf alignment
-						     ); 
+	      state_path path = reversed(profile.sample_DP(
+							   1, // sample only one path
+							   0, // debugging log messages
+							   false, // don't show alignments
+							   false, // leaves only
+							   true // sample the viterbi path
+							   )); 
+	      reconstruction.pre_summed_profiles[reconstruction.tree.root] = profile; 
+	      AlignmentSampler testAlign(path, 0, &reconstruction.pre_summed_profiles, &reconstruction.profiles,  &reconstruction.tree ); 
+	      stringstream alignStream; 
+	      testAlign.sample_all(true, false); // viterbi, logging
+	      testAlign.display(alignStream); 	      
+
 	      // There is no way that this is the easiest way to do this, but oh well:
-	      stringstream treeStream; 
-	      reconstruction.tree.write_Stockholm(treeStream);
-	      alignString = treeStream.str() + alignString; 
+	      reconstruction.tree.write_Stockholm(alignStream);
 	      Sequence_database db; 
-	      istringstream stockStream(alignString);
-	      
 	      Stockholm stk(1,1);
-	      stk.read_Stockholm(stockStream,db); 
+	      stk.read_Stockholm(alignStream,db); 
 	      // if requested, show what was inserted/deleted on each branch  (written to file)
 	      if (reconstruction.indel_filename != "None")
 		reconstruction.show_indels(stk);
@@ -236,7 +243,7 @@ int main(int argc, char* argv[])
 		      Phonebook::iterator seq; 
 		      int nameSize, maxNameLength = 0; 
 		      sstring sequence; 
-		      std::cout<<treeStream.str(); 
+		      reconstruction.tree.write_Stockholm(std::cout);
 		      for (seq = annotated.row_index.begin(); seq!=annotated.row_index.end(); seq++)
 			    {
 			      nameSize = seq->first.size();
@@ -254,38 +261,35 @@ int main(int argc, char* argv[])
 			    std::cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << sequence << endl; 
 			}
 		    }
-		}
+	    }
 	      if (reconstruction.estimate_params)
 		{
 		  if (reconstruction.loggingLevel >= 1)
-		    {
-		      std::cerr<<"\nBeginning parameter estimation";
-		      std::cerr<<"\n\tFilling backward dynamic programming matrix..."; 
-		    }
-		  profile.fill_backward_DP(reconstruction.loggingLevel); 
-		  if (reconstruction.loggingLevel >= 1)
-		    std::cerr<<"Done. \n\tAssembling expected transition event counts...";
-
-		  int numStates = profile.backward_states.size(); 
-		  for (int testIdx = 0 ; testIdx<15; testIdx++)
-		    {
-		      M_id m = profile.backward_states[testIdx]; 
-		      for (int testIdx2 =0 ; testIdx2 < profile.outgoing[profile.backward_states[testIdx].toVector()].size(); testIdx2++)
-			{
-			  M_id mPrime = profile.outgoing[profile.backward_states[testIdx].toVector()][testIdx2];
-			  std::cerr<<"Left state: " << m.q_state<< "\n";
-			  m.display(Q); 
-			  std::cerr<<"Right state: "<< mPrime.q_state<< "\n";
-			  mPrime.display(Q);
-			  CompositePath path(m, mPrime, reconstruction.tree, .5, reconstruction.profiles, Q); 
-			  std::cerr<<"Composite path created, length:" << path.path.size() << endl; 
-			  path.explode(true); 
-			  std::cerr<<"After expansion, path has length " << path.path.size() << endl;
-			}
-		    }
+		    std::cerr<<"\nBeginning parameter estimation\n";
+		  std::cerr<<"Parameter estimation not yet enabled.  sit tight.\n"; 
+		  
+// 		  for (int sample=0; sample<reconstruction.num_root_alignments; sample++)
+// 		    {
+// 		      state_path path = reversed(profile.sample_DP(
+// 								   1, // sample only one path
+// 								   0, // debugging log messages
+// 								   false, // don't show alignments
+// 								   false, // leaves only
+// 								   reconstruction.viterbi_alignments // viterbi path
+// 								   )); 
+// 		      if (reconstruction.loggingLevel>=1)
+// 			std::cerr<<"Sampled alignment at root level..displaying...\n"; 
+// 		      reconstruction.pre_summed_profiles[reconstruction.tree.root] = profile; 
+// 		      AlignmentSampler testAlign(path, 0, &reconstruction.pre_summed_profiles, &reconstruction.profiles,  &reconstruction.tree ); 
+		      
+// 		      testAlign.sample_all(false, false); 
+// 		      testAlign.display(std::cerr); 
+// 		    }
+		      
+		  
+		}
 		  if (reconstruction.loggingLevel >= 1)
 		    std::cerr<<"Done\n";
-		}
 	    }
 	}
   return(0);
