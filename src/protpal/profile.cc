@@ -2,6 +2,7 @@
 #include<map>
 #include<vector>
 #include <stack>
+#include <list>
 #include <queue>
 #include <algorithm>
 #include <math.h>
@@ -58,7 +59,7 @@ void M_id::display(QTransducer &Q)
 int index(M_id query, vector<M_id> in )
 {
   // Find the index of an M_n state in a vector of states
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
     {
       if (in[i] == query) return(i);
     }
@@ -93,6 +94,23 @@ bool contains(M_id child, deque<M_id> stateQueue)
   return 0;
 }
 	  
+vector<M_id> reversed(vector<M_id> in)
+{
+  int len = in.size(); 
+  vector<M_id> out; 
+  for (int i=len-1; i>=0; i--)
+    out.push_back(in[i]); 
+  return out; 
+}
+  
+state_path l2v(list<M_id> in)
+{
+  // is this as stupid as it feels? 
+  state_path out; 
+  for (list<M_id>::iterator iter=in.begin(); iter!=in.end(); iter++)
+    out.push_back(*iter); 
+  return out; 
+}
 
 // ***** Absorbing transducer (E_n) methods  ******
 
@@ -456,12 +474,12 @@ void AbsorbingTransducer::identify_states(Profile *sampled_profile)
   // This type-system is stupid, and a consequence of M_id's storing ints rather than strings
   // to denote the component types.  I'll this this soon, I hope. 
   int profile_start = -1;
-  int profile_wait = 0;
-  int profile_delete = 1;
+  //  int profile_wait = 0;
+  //  int profile_delete = 1;
   int profile_pre_end = 2;
   int profile_end = 3;  
 
-  int left_type, right_type;
+  //  int left_type, right_type;
   string q_type, upsilon_type, bl_type, br_type;
   int state_counter = -1;
   bool logging = false;
@@ -562,7 +580,7 @@ void AbsorbingTransducer::showDOT(Profile *sampled_profile)
   string name, nameDest; 
   vector<M_id> children;
   vector<M_id>::iterator child;
-  int i; 
+  unsigned int i; 
   for (i=0; i<sampled_profile->sampled_states.size(); i++)
 	{
 	  if (i == sampled_start_state) name="start";
@@ -751,13 +769,11 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   bfloat outSum, small=pow(.1,10000); 
   queue<M_id> stateQueue;
   vector<int>::iterator sourceIdx;
-  int state_counter = -2; //we want the start state to have index -1.  
-  int charIndex;
+  int charIndex, state_counter = -2; //we want the start state to have index -1.  
   vector<M_id> children;
   vector<M_id>::iterator child,dad;
   vector<int>::iterator i; 
   M_id parent, source;
-  //  map<vector<int>, int> mid2int;
   pair< vector<int> , vector<int> > transitionPair;
   bool logging = false, allParentsVisited;
 
@@ -794,56 +810,43 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 
 	  if(logging) { std::cerr<<"\nThe following state was indexed as "<< state_counter <<":\n\t"; parent.display(sampled_profile->Q);}
 
-	  // **** Store these important data containers, for non-start states. ****
-      // Absorption weight associated with this state index
+	  // **** Store these important data containers, for non-(start or pre_end) states. ****
+	  // Absorption weight associated with this state index 
 	  if (parent != sampled_profile->sampled_states[sampled_start_state] && 
-		  // !in(parent, sampled_profile->sampled_states[sampled_pre_end_states] )
-		  parent != sampled_profile->sampled_states[sampled_pre_end_state] )
-		{
-		  //double absorbSum= 0.0; 
-		  for (charIndex = 0; charIndex < alphabet_size; charIndex++)
-			{
-			  absorption_weight[state_counter].push_back(
-			   sampled_profile->get_external_cascade_weight(parent, charIndex));
-			  //inefficient - commented out for now
-			  //absorbSum += sampled_profile->get_external_cascade_weight(parent, charIndex);
-			}
-// 		  if ( absorbSum > 1.05 ) // track this down eventually
-// 			{
-// 			  std::cerr<<"Warning: absorb distribution is super-normalized!\n";
-// 			  std::cerr<<"Value: "<<absorbSum<<endl;
-// 			  //			  exit(1);
-// 			}
-
+	      parent != sampled_profile->sampled_states[sampled_pre_end_state] )
+	    {
+	      //double absorbSum= 0.0; 
+	      for (charIndex = 0; charIndex < alphabet_size; charIndex++)
+		absorption_weight[state_counter].push_back(
+							   sampled_profile->get_external_cascade_weight(parent, charIndex));
+	      
 		  // The leaf  coordinates accounted for by this state. 
 		  leaf_coords[state_counter] = sampled_profile->leaf_coords[parent.toVector()];
-		  // The states across the subtree of this state.
+		  // The alignment column accounted for by this state.
 		  state_type_phylogeny[state_counter] = sampled_profile->state_type_phylogeny[parent.toVector()];
 		}
 
 	  // If parent is the start state, we give it a "dummy" STP map
 	  if (parent == sampled_profile->sampled_states[sampled_start_state] ) 
-		{
-		  state_type_phylogeny[state_counter] = sampled_profile->merge_STP(parent); 	  
-		}
+	    state_type_phylogeny[state_counter] = sampled_profile->merge_STP(parent); 	  
 
 	  if ( sampled_externals_outgoing.count(parent.toVector()) < 1 )
-		{
-		  std::cerr<<"Error: in traversal, the following state has no outgoing transitions!\n\t";
-		  parent.display(sampled_profile->Q);
-		  exit(1);
-		}
-      children = sampled_externals_outgoing[parent.toVector()];
-      for (child = children.begin(); child != children.end(); child++)
-		{
-		  transitionPair.first = parent.toVector();
-		  transitionPair.second = child->toVector();
-		  
-		  //		  if ( !contains( *child, stateQueue) && mid2int.count(child->toVector()) == 0) stateQueue.push(*child);
-		  stateQueue.push(*child);
-		}
+	    {
+	      std::cerr<<"Error: in traversal, the following state has no outgoing transitions!\n\t";
+	      parent.display(sampled_profile->Q);
+	      exit(1);
+	    }
+	  children = sampled_externals_outgoing[parent.toVector()];
+	  for (child = children.begin(); child != children.end(); child++)
+	    {
+	      transitionPair.first = parent.toVector();
+	      transitionPair.second = child->toVector();
+	      
+	      //		  if ( !contains( *child, stateQueue) && mid2int.count(child->toVector()) == 0) stateQueue.push(*child);
+	      stateQueue.push(*child);
+	    }
     }    
-  
+
   // give the pre-end state an index
   state_counter++;
   pre_end_state = state_counter;
@@ -912,7 +915,6 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 			transition_weight_tmp[transitionVecPair];
 		}
     }
-
   // pre-end state
   source = sampled_profile->sampled_states[sampled_pre_end_state];      
 
@@ -930,23 +932,24 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   transitionIntPair.second = mid2int[end.toVector()];	  
   transition_weight[transitionIntPair] = 1;  
 
-
-  // transfer the 'between' map from sampled_profile.    
-  map<pair<vector<int>, vector<int> >, map<node, string> >::iterator nodeState; 
-  for (nodeState=sampled_profile->between.begin(); nodeState!=sampled_profile->between.end(); nodeState++)
-	{
-	  transitionIntPair.first = mid2int[nodeState->first.first];
-	  transitionIntPair.second = mid2int[nodeState->first.second]; 	  
-	  between[transitionIntPair] = nodeState->second; 
-	}
-  // transfer the 'summed_nulls' map from sampled_profile.    
-  map<pair<vector<int>, vector<int> >, vector<M_id> >::iterator nullState; 
-  for (nullState=sampled_profile->summed_nulls.begin(); nullState!=sampled_profile->summed_nulls.end(); nullState++)
-	{
-	  transitionIntPair.first = mid2int[nullState->first.first];
-	  transitionIntPair.second = mid2int[nodeState->first.second]; 	  
-	  summed_nulls[transitionIntPair] = nullState->second; 
-	}
+//   std::cerr<<"\n Transferring 'between'\n"; 
+//   // transfer the 'between' map from sampled_profile.    
+//   map<pair<vector<int>, vector<int> >, map<node, string> >::iterator nodeState; 
+//   for (nodeState=sampled_profile->between.begin(); nodeState!=sampled_profile->between.end(); nodeState++)
+// 	{
+// 	  transitionIntPair.first = mid2int[nodeState->first.first];
+// 	  transitionIntPair.second = mid2int[nodeState->first.second]; 	  
+// 	  between[transitionIntPair] = nodeState->second; 
+// 	}
+//   std::cerr<<"\n Transferring 'summed nulls'\n"; 
+//   // transfer the 'summed_nulls' map from sampled_profile.    
+//   map<pair<vector<int>, vector<int> >, vector<M_id> >::iterator nullState; 
+//   for (nullState=sampled_profile->summed_nulls.begin(); nullState!=sampled_profile->summed_nulls.end(); nullState++)
+// 	{
+// 	  transitionIntPair.first = mid2int[nullState->first.first];
+// 	  transitionIntPair.second = mid2int[nodeState->first.second]; 	  
+// 	  summed_nulls[transitionIntPair] = nullState->second; 
+// 	}
 
 
 }
@@ -1080,6 +1083,10 @@ bool AbsorbingTransducer::isDelState(state e)
 
 
 // Profile transducer methods 
+Profile::Profile(void)
+{
+  //placeholder
+}
 
 Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer right_in, QTransducer Q_in)
 {
@@ -1122,13 +1129,13 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
 
 }
 // Top-level public methods
-string Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool leaves_only)
+state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool leaves_only, bool viterbi)
 {
   // sample num_paths alignments from the DP matrix, showing the alignments according to 
   // showAlignments.  If showing alignments, they are printed in stockholm format, with
   // their bitscore and posterior probability as #=GF annotations.  
   
-  bool fromStart, viterbi, testing = false; 
+  bool testing = false;   //  bool fromStart;
   vector<M_id> states_in; // states for sampling
   vector<bfloat> weights; // weights for each of these states
   bfloat weight, pathWeight, emissionWeight, small=0.00001; 
@@ -1149,14 +1156,12 @@ string Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool 
   bigStart.right_state = right_profile.start_state;
   bigStart.right_type = -1;
   bigStart.left_type = -1;
-  if (num_paths == 1) viterbi=true; 
+  if (num_paths == 1 && viterbi==false && treeNode != 0) // assume root=0
+    std::cerr<<"Warning: sampling only one path with viterbi option off.  Consider more paths or turning on viterbi..\n"; 
   for (int pathIdx = 0; pathIdx < num_paths; pathIdx++)
 	{
-	  if (pathIdx == 0) viterbi = true;  //eventually make this an option, rather than a hack
-	  else viterbi=false;
-
 	  if (num_sampled_externals > max_sampled_externals)
-		{
+	    {
 		  if (logging >=1 )
 			{
 			  std::cerr<<"(sampling truncated after caching " << num_sampled_externals << " states via ";
@@ -1541,7 +1546,7 @@ string Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool 
 
   // Store the null states' accounted characters:
   cache_path(pi); 
-  store_summed_nulls(pi); 
+  //  store_summed_nulls(pi); 
   if(pathWeight/forward_prob > 1.001)
 	{
 	  std::cerr<<"\nError: an alignment's posterior probability was calculated as greater than 1.  This is not reasonable, and represents a calculation error. \n";
@@ -1561,7 +1566,7 @@ string Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool 
 	}
 
 	}	
-  return alignString; 
+  return pi; 
 }
 void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 {
@@ -1673,7 +1678,7 @@ void Profile::cache_path(vector<M_id> path)
   // external states.  Here we store that mapping, and call it up later when displaying multiple 
   // alignments.  
   bool logging = false; 
-  int i,j; 
+  unsigned int i,j; 
   M_id ext_start, right;
   map<node, string> btwn_tmp, left_tmp, right_tmp; 
   pair< vector<int> , vector<int> > externalPair; 
@@ -1813,7 +1818,7 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 	std::cerr<<"Asked to fill cell which already has entry!\n"; exit(1);
   }
   #endif
-
+  
   // This function fills the cell at mPrime in Z
   bool logging = false, testing = false;
   bool fromStart = 0;
@@ -2089,7 +2094,7 @@ void Profile::clear_DP(void)
 void Profile::fill_backward_DP(int logging)
 {
   bool debug = false; 
-  M_id m, mPrime; 
+  M_id m; //, mPrime; 
   vector<M_id>::iterator m_iter; 
   bfloat toAdd; 
   pair<vector<int>, vector<int> > transitionPair; 
@@ -2162,8 +2167,8 @@ void Profile::fill_DP(int logging, bool inLog)
   vector<state> qStates, left_incoming, right_incoming;
   bfloat toAdd;
   state el_Prime, er_Prime;
-  bool testing = false; 
-  
+  // bool testing = false; 
+  inLog = true; // used to be that we only logged incoming info for param estimation...but currently we need it for recursive sampling. 
   tmpEmitTuple.resize(3);
   tmpEmitVals.resize(alphabet_size);
 
@@ -2519,7 +2524,7 @@ bfloat Profile::compute_emission_weight(M_id m)
   // A somewhat hairy function, though luckily the relevant defs are in 2.3.2  of transducer.tex
 
   // left, right, character indices, respectively
-  unsigned int char1, char2; 
+  // unsigned int char1, char2; 
   // NB we use '-1' as a proxy for the null character in the non-match states below. 
 
   bfloat weight = 0.0;
@@ -2603,9 +2608,9 @@ bfloat Profile::get_sampled_transition_weight(M_id e, M_id ePrime)
       std::cerr<<"Error: requested a non-existant sampled transition weight.\n The offending call was:\n";
       std::cerr<<"Source state:\n\t";e.display(Q);
       std::cerr<<"Destination state:\n\t";ePrime.display(Q);      
+      exit(1); 
     }
-  else
-    return sampled_transition_weight[transitionPair]; 
+  return sampled_transition_weight[transitionPair]; 
 }
 
 bfloat Profile::get_internal_cascade_weight(M_id e)
@@ -2681,9 +2686,11 @@ bfloat Profile::get_external_cascade_weight(M_id e, int charIndex)
 	  exit(1);
 	}
   if (out>1.001)
-	std::cerr<<"Warning: absorb weight is greater than one, not reasonable\n";
-  else 
-	return out; 
+    {
+      std::cerr<<"Warning: absorb weight is greater than one, not reasonable\n";
+      exit(1); 
+    }
+  return out; 
 }
 
 //Utility functions for DP containers - forward is the 'unnamed', and the backward is so explicitely named
@@ -3033,7 +3040,7 @@ void Profile::show_state(M_id m)
 }
 
 
-void show_state_phylo(map<node, string> &stp)
+void show_state_phylo(map<node, string>& stp)
 {
   // visualize a single mapping from nodes to strings (e.g. an alignment).
   map<node, string>::iterator nodeState;
@@ -3244,7 +3251,12 @@ int Profile::get_profile_type(state qState, string side)
   //  std::cerr<<"Returning state types: "<<profileTypes.first<<" "<<profileTypes.second<<endl;
   if (side == "left") return profileTypes.first;
   else if (side =="right") return profileTypes.second;
-  else std::cerr<<"Unrecognized side in get_profile_type: "<<side<<endl;
+  else 
+    {
+      std::cerr<<"Unrecognized side in get_profile_type: "<<side<<endl;
+      exit(1); 
+    }
+  return 0; 
 }
 	  
 pair<int, int> merge_coords(pair<int, int> l, pair<int,int> r)

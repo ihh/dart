@@ -82,6 +82,10 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("m -max-DAG-size", max_sampled_externals=1000, "Max number (approximately) of delete states allowed in DAG");
   opts.add("e -max-distance", envelope_distance=300, "Maximum allowed distance between aligned leaf characters");
 
+  opts.newline();
+  opts.print_title("Indel rate investigation");
+  opts.add("ra -root-alignments", num_root_alignments=1, "Number of alignments to sample at root node.");
+
   opts.parse_or_die(); 
   string error=""; bool all_reqd_args=true; 
 
@@ -163,8 +167,6 @@ void Reconstruction::get_tree_from_file(const char* fileName)
   string line;
   ifstream treeFile(fileName);
   string tree_tmp = ""; 
-  const char* tree_string; 
-
   if (treeFile.is_open())
     {
       while (! treeFile.eof() )
@@ -198,7 +200,7 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
           if (splitLine.size()<2) continue;
 		  else if (splitLine[1] == "NH")
             {
-			  for (int i= 2; i<splitLine.size(); i++) // newick string possibly has spaces!
+			  for (unsigned int i= 2; i<splitLine.size(); i++) // newick string possibly has spaces!
 				tree_tmp += splitLine[i]; 
 
 			  tree_string = tree_tmp.c_str(); 
@@ -404,10 +406,7 @@ void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_
   map<node, Digitized_biosequence> sequences; 
   Digitized_biosequence parentSeq; 
   string childName;
-  Node childNode, parentNode; 
-
   Decomposition decomp; 
-
   SingletTrans R(alphabet, rate_matrix);
   //write the tree in stockolm style
   std::cout<<"#=GF NH\t";
@@ -456,7 +455,7 @@ void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_
 
 Digitized_biosequence Reconstruction::sample_root(SingletTrans R)
 {
-  state s = 0;  // 0 is the start state
+  unsigned int s = 0;  // 0 is the start state
   string sType;
   vector<state>::iterator sIter; 
   Digitized_biosequence childSeq;  // it's called childseq even though it's the root sequence which has no parents.  
@@ -509,7 +508,7 @@ Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence pare
   Digitized_biosequence childSeq; 
   vector<state> outgoing, possible; 
   vector<double> outgoingWeights; 
-  int inIdx = 0, incomingCharacter; 
+  unsigned int inIdx = 0, incomingCharacter; 
 
   Row_pair row_pair; 
   row_pair.first = parent; row_pair.second = child; 

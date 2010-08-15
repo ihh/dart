@@ -5,6 +5,7 @@
 #include<map>
 #include<vector>
 #include<queue>
+#include<list>
 
 #include "protpal/utils.h"
 #include "protpal/Q.h"
@@ -16,7 +17,7 @@ using namespace std;
 // forward declarations
 class Profile; 
 class M_id;
-
+typedef vector<M_id> state_path; 
 
 // ***** The 'mature' profile class (e.g. E_n) *****
 class AbsorbingTransducer 
@@ -140,6 +141,9 @@ int index(M_id query, vector<M_id> in );
 bool contains(M_id child, queue<M_id> stateQueue);
 bool contains(M_id child, deque<M_id> stateQueue);
 bool in(M_id query, vector<M_id> in);
+state_path reversed(vector<M_id>);
+state_path l2v(list<M_id>); 
+
 
 // ***** The 'immature' profile class (e.g. M_n) *****
 class Profile
@@ -152,7 +156,7 @@ class Profile
 
   // constructor: set left and right profiles, and node on the tree that this profile corresponds to
   Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer right_in, QTransducer Q_in);
-
+  Profile(void); 
   // Initiate and fill forward-like DP matrix
   void fill_DP(int, bool inLog=false);
   map< vector<int>, vector<M_id> > incoming; // this is filled only if the backward algorithm is requested
@@ -166,7 +170,7 @@ class Profile
 
   void clear_DP(void); 
   // sample set of paths from DP matrix, storing info on their transitions, transition weights, etc
-  string sample_DP(int, int, bool, bool);
+  state_path sample_DP(int, int, bool, bool, bool viterbi=false);
   void cache_state(M_id m, M_id mPrime, bfloat weight);
   void cache_path(vector<M_id>); 
   void store_summed_nulls(vector<M_id>); 

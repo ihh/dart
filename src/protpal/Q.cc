@@ -70,10 +70,16 @@ QTransducer::QTransducer(SingletTrans R_in, BranchTrans B_l_in, BranchTrans B_r_
 
 vector<state> QTransducer::get_components(state q)
 {
+  vector<state> out; 
+  vector<state>::iterator assIter; 
   if (q > num_states || q<0)
     std::cerr<<"Error: components of non-existent state queried\n";
   else 
-    return assignments[q]; 
+    {
+      for (assIter = assignments[q].begin(); assIter != assignments[q].end(); assIter++)
+	out.push_back(*assIter);
+      return out;
+    }
 }
 
 vector<state> QTransducer::get_state_indices(state q)
@@ -234,7 +240,9 @@ string QTransducer::get_state_class(state q)
 
 string QTransducer::get_state_type(state q)
 {
-  return state_type[q];
+  string out; 
+  out = state_type[q];
+  return out;
 }
 
 double QTransducer::left_delete_weight(state q, int absorb)
