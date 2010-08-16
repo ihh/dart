@@ -166,6 +166,12 @@ double sum(vector<int> in)
 
 string stringAt(string in, int index)
 {
+  if (index > in.size()-1)
+    {
+      std::cerr<<"Error: Asking for a substring  beyond the size of the string\n"; 
+      std::cerr<<"The  call was position " << index  << " in string " << in << endl; 
+      exit(1);
+    }
   string output;
   output = in[index];
   return output;
