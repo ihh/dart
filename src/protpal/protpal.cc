@@ -204,14 +204,13 @@ int main(int argc, char* argv[])
 	      testAlign.sample_all(true, false); // viterbi, logging
 	      testAlign.display(alignStream); 	      
 
+
 	      // There is no way that this is the easiest way to do this, but oh well:
 	      reconstruction.tree.write_Stockholm(alignStream);
 	      Sequence_database db; 
 	      Stockholm stk(1,1);
 	      stk.read_Stockholm(alignStream,db); 
-	      // if requested, show what was inserted/deleted on each branch  (written to file)
-	      if (reconstruction.indel_filename != "None")
-		reconstruction.show_indels(stk);
+
 
 	      if (reconstruction.leaves_only)
 		stk.write_Stockholm(std::cout);
@@ -261,7 +260,18 @@ int main(int argc, char* argv[])
 			    std::cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << sequence << endl; 
 			}
 		    }
-	    }
+		  
+		  // if requested, show what was inserted/deleted on each branch  (written to file)
+		  if (reconstruction.estimate_params)
+		    {
+		      IndelCounter indels(annotated, &reconstruction.tree); 
+		      indels.gather_indel_info(false); 
+		      indels.display_indel_info(std::cout, false);
+		      exit(0); 
+		    }
+  
+		}
+	      
 	      if (reconstruction.estimate_params)
 		{
 		  if (reconstruction.loggingLevel >= 1)
