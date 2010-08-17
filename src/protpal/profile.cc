@@ -932,26 +932,14 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   transitionIntPair.second = mid2int[end.toVector()];	  
   transition_weight[transitionIntPair] = 1;  
 
-//   std::cerr<<"\n Transferring 'between'\n"; 
-//   // transfer the 'between' map from sampled_profile.    
-//   map<pair<vector<int>, vector<int> >, map<node, string> >::iterator nodeState; 
-//   for (nodeState=sampled_profile->between.begin(); nodeState!=sampled_profile->between.end(); nodeState++)
-// 	{
-// 	  transitionIntPair.first = mid2int[nodeState->first.first];
-// 	  transitionIntPair.second = mid2int[nodeState->first.second]; 	  
-// 	  between[transitionIntPair] = nodeState->second; 
-// 	}
-//   std::cerr<<"\n Transferring 'summed nulls'\n"; 
-//   // transfer the 'summed_nulls' map from sampled_profile.    
-//   map<pair<vector<int>, vector<int> >, vector<M_id> >::iterator nullState; 
-//   for (nullState=sampled_profile->summed_nulls.begin(); nullState!=sampled_profile->summed_nulls.end(); nullState++)
-// 	{
-// 	  transitionIntPair.first = mid2int[nullState->first.first];
-// 	  transitionIntPair.second = mid2int[nodeState->first.second]; 	  
-// 	  summed_nulls[transitionIntPair] = nullState->second; 
-// 	}
-
-
+  // transfer the 'between' map from sampled_profile.    
+  map<pair<vector<int>, vector<int> >, map<node, string> >::iterator nodeState; 
+  for (nodeState=sampled_profile->between.begin(); nodeState!=sampled_profile->between.end(); nodeState++)
+	{
+	  transitionIntPair.first = mid2int[nodeState->first.first];
+	  transitionIntPair.second = mid2int[nodeState->first.second]; 	  
+	  between[transitionIntPair] = nodeState->second; 
+	}
 }
 
 
@@ -1129,13 +1117,13 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
 
 }
 // Top-level public methods
-state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool leaves_only, bool viterbi)
+state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, bool leaves_only, bool viterbi_in)
 {
   // sample num_paths alignments from the DP matrix, showing the alignments according to 
   // showAlignments.  If showing alignments, they are printed in stockholm format, with
   // their bitscore and posterior probability as #=GF annotations.  
   
-  bool testing = false;   //  bool fromStart;
+  bool testing = false, viterbi=false, nextBreak=false;   //  bool fromStart;
   vector<M_id> states_in; // states for sampling
   vector<bfloat> weights; // weights for each of these states
   bfloat weight, pathWeight, emissionWeight, small=0.00001; 
@@ -1160,15 +1148,22 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
     std::cerr<<"Warning: sampling only one path with viterbi option off.  Consider more paths or turning on viterbi..\n"; 
   for (int pathIdx = 0; pathIdx < num_paths; pathIdx++)
 	{
+	  if (logging >=1 and nextBreak )
+	    {
+	      std::cerr<<"(sampling truncated after caching " << num_sampled_externals << " states via ";
+	      std::cerr<< pathIdx << " paths)...";
+	      break; 
+	    }
+	  
+	  if (pathIdx == num_paths-1)
+	    viterbi = viterbi_in; 
+	  else
+	    viterbi =false; 
 	  if (num_sampled_externals > max_sampled_externals)
 	    {
-		  if (logging >=1 )
-			{
-			  std::cerr<<"(sampling truncated after caching " << num_sampled_externals << " states via ";
-			  std::cerr<< pathIdx << " paths)...";
-			}
-		  break;
-		}
+	      nextBreak = true; 
+	      viterbi = true; 
+	    }
 
 	  pathWeight = 1.0; 
 	  // initialize pi with the M_n end state:
@@ -1546,7 +1541,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 
   // Store the null states' accounted characters:
   cache_path(pi); 
-  //  store_summed_nulls(pi); 
+  store_summed_nulls(pi); 
   if(pathWeight/forward_prob > 1.001)
 	{
 	  std::cerr<<"\nError: an alignment's posterior probability was calculated as greater than 1.  This is not reasonable, and represents a calculation error. \n";
@@ -1556,12 +1551,12 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 	  std::cerr<<"\n";
 	  exit(1); 
 	}
-  alignString = show_alignment(pi, leaves_only); 
-  if (showAlignments && !viterbi) 
+  
+  if (showAlignments) 
 	{
 	  std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
 	  std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
-	  std::cout<<alignString; 
+	  std::cout<< show_alignment(pi, leaves_only); 
 	  std::cerr<<"\n";
 	}
 
@@ -1672,140 +1667,139 @@ void Profile::store_summed_nulls(vector<M_id> path)
 
 void Profile::cache_path(vector<M_id> path)
 {
-  // store the characters in-between two external states in a sampled path.  
-  // it is much easier to do this on a path than on a DAG
-  // The basic idea is that there is a unique sequence of null states between each pair of 
-  // external states.  Here we store that mapping, and call it up later when displaying multiple 
-  // alignments.  
-//   bool logging = false; 
-//   unsigned int i,j; 
-//   M_id ext_start, right;
-//   map<node, string> btwn_tmp, left_tmp, right_tmp; 
-//   pair< vector<int> , vector<int> > externalPair; 
-//   pair< state, state > profileExternalPair; 
-//   vector<node> toPad; // we'll need to pad one side with gaps.  
-//   int latestLeft, latestRight; 
-  
-//   // the path is reverse (e.g. start state is at the end), so the indexing is reversed...
-//   for (i=path.size()-1; i>-1; i--)
-// 	{
-// 	  ext_start = path[i]; 
-// 	  latestLeft = ext_start.left_state;
-// 	  latestRight = ext_start.right_state; 	  
+//   store the characters in-between two external states in a sampled path.  
+//   it is much easier to do this on a path than on a DAG
+//   The basic idea is that we fix a unique sequence of null states between each pair of 
+//   external states.  Here we store that mapping, and call it up later when displaying multiple 
+//   alignments.  
+  bool logging = false; 
+  int i,j; 
+  M_id ext_start, right;
+  map<node, string> btwn_tmp, left_tmp, right_tmp; 
+  pair< vector<int> , vector<int> > externalPair; 
+  pair< state, state > profileExternalPair; 
+  vector<node> toPad; // we'll need to pad one side with gaps.  
+  int latestLeft, latestRight; 
+  // the path is reverse (e.g. start state is at the end), so the indexing is reversed...
+  for (i=path.size()-1; i>-1; i--)
+	{
+	  ext_start = path[i]; 
+	  latestLeft = ext_start.left_state;
+	  latestRight = ext_start.right_state; 	  
 
-// 	  if (!is_external(ext_start) && i!=path.size()-1) continue;
-// 	  btwn_tmp.clear(); right_tmp.clear(); left_tmp.clear(); 
+	  if (!is_external(ext_start) && i!=path.size()-1) continue;
+	  btwn_tmp.clear(); right_tmp.clear(); left_tmp.clear(); 
 	  
-// 	  for (j=i-1; j>-1; j--)
-// 		{
-// 		  // right refers to the right state in the path, not the right profile.  
-// 		  right=path[j];
-// 		  // we'll add an empty map or two here, but I think that's OK
-// 		  // if external        or   pre_end_state   or  end state
-// 		  if (is_external(right) || is_pre_end(right) || j==0)
-// 			{
-// 			  profileExternalPair.first = latestLeft; 
-// 			  profileExternalPair.second = right.left_state; 
-// 			  if(left_profile.between.count(profileExternalPair) > 0)
-// 				{
-// 				  if(logging) std::cerr<<"concatenating left w/ left\n";
-// 				  left_tmp = cat_STP(left_tmp, left_profile.between[profileExternalPair]);
-// 				}
-// 			  if (!is_flush(left_tmp)) std::cerr<<"STP not flush after a ext-ext joining, left\n";
+	  for (j=i-1; j>-1; j--)
+		{
+		  // right refers to the right state in the path, not the right profile.  
+		  right=path[j];
+		  // we'll add an empty map or two here, but I think that's OK
+		  // if external        or   pre_end_state   or  end state
+		  if (is_external(right) || is_pre_end(right) || j==0)
+			{
+			  profileExternalPair.first = latestLeft; 
+			  profileExternalPair.second = right.left_state; 
+			  if(left_profile.between.count(profileExternalPair) > 0)
+				{
+				  if(logging) std::cerr<<"concatenating left w/ left\n";
+				  left_tmp = cat_STP(left_tmp, left_profile.between[profileExternalPair]);
+				}
+			  if (!is_flush(left_tmp)) std::cerr<<"STP not flush after a ext-ext joining, left\n";
 
-// 			  profileExternalPair.first = latestRight;
-// 			  profileExternalPair.second = right.right_state; 
-// 			  if(right_profile.between.count(profileExternalPair) > 0)
-// 				{
-// 				  if(logging) std::cerr<<"concatenating right w/ right\n";
-// 				  right_tmp = cat_STP(right_tmp, right_profile.between[profileExternalPair]);
-// 				}
+			  profileExternalPair.first = latestRight;
+			  profileExternalPair.second = right.right_state; 
+			  if(right_profile.between.count(profileExternalPair) > 0)
+				{
+				  if(logging) std::cerr<<"concatenating right w/ right\n";
+				  right_tmp = cat_STP(right_tmp, right_profile.between[profileExternalPair]);
+				}
 			  
-// 			  if (!left_tmp.empty())
-// 				{
-// 				  toPad = right_profile.subtreeNodes; toPad.push_back(treeNode);
-// 				  left_tmp = pad_STP(left_tmp, toPad);
-// 				  if(logging) std::cerr<<"concatenating left w/ btwn \n";
-// 				  btwn_tmp = cat_STP(btwn_tmp, left_tmp);
-// 				}			  
+			  if (!left_tmp.empty())
+				{
+				  toPad = right_profile.subtreeNodes; toPad.push_back(treeNode);
+				  left_tmp = pad_STP(left_tmp, toPad);
+				  if(logging) std::cerr<<"concatenating left w/ btwn \n";
+				  btwn_tmp = cat_STP(btwn_tmp, left_tmp);
+				}			  
 
-// 			  if (!right_tmp.empty())
-// 				{
-// 				  toPad = left_profile.subtreeNodes; toPad.push_back(treeNode);
-// 				  right_tmp = pad_STP(right_tmp, toPad); 
-// 				  if(logging) std::cerr<<"concatenating right w/ btwn \n";
-// 				  btwn_tmp = cat_STP(btwn_tmp, right_tmp);			  
-// 				}
+			  if (!right_tmp.empty())
+				{
+				  toPad = left_profile.subtreeNodes; toPad.push_back(treeNode);
+				  right_tmp = pad_STP(right_tmp, toPad); 
+				  if(logging) std::cerr<<"concatenating right w/ btwn \n";
+				  btwn_tmp = cat_STP(btwn_tmp, right_tmp);			  
+				}
 			  
-// 			  if (!is_flush(btwn_tmp)) std::cerr<<"STP not flush after a ext-ext joining, right. \n";
+			  if (!is_flush(btwn_tmp)) std::cerr<<"STP not flush after a ext-ext joining, right. \n";
 
-// 			  if (btwn_tmp.size() > 0)
-// 				{
-// 				  externalPair.first = ext_start.toVector();
-// 				  externalPair.second = right.toVector(); 			  
-// 				  between[externalPair] = btwn_tmp; 
-// 				  if(logging)
-// 					{
-// 					  std::cerr<<"Stored the in-between characters for the two states:\n";
-// 					  std::cerr<<"Start:\n";
-// 					  ext_start.display(Q); 
-// 					  std::cerr<<"End:\n";
-// 					  right.display(Q); 
-// 					  std::cerr<<"State:\n";
-// 					  show_state_phylo(btwn_tmp);
-// 					  std::cerr<<"flush?:"<<is_flush(btwn_tmp)<<endl;
-// 					}
-// 				}
-// 			  btwn_tmp.clear(); right_tmp.clear(); left_tmp.clear(); 
-// 			  break;
-// 			}
-// 		  else if(is_left_int(right))
-// 			{
-// 			  if(logging) std::cerr<<"Left internal...\n";
-// 			  profileExternalPair.first = latestLeft;
-// 			  profileExternalPair.second = right.left_state; 
-// 			  latestLeft = right.left_state; 
-// 			  if(left_profile.between.count(profileExternalPair) > 0)
-// 				{
-// 				  if(logging) std::cerr<<"concatenating left w/ left, internal \n";
-// 				  left_tmp = cat_STP(left_tmp, left_profile.between[profileExternalPair]);
-// 				  toPad = right_profile.subtreeNodes; toPad.push_back(treeNode);
-// 				  left_tmp = pad_STP(left_tmp, toPad);
-// 				}
-// 			  left_tmp = cat_STP(left_tmp, state_type_phylogeny[right.toVector()]); 
-// 			  btwn_tmp = cat_STP(btwn_tmp, left_tmp); 
-// 			  left_tmp.clear(); 
+			  if (btwn_tmp.size() > 0)
+				{
+				  externalPair.first = ext_start.toVector();
+				  externalPair.second = right.toVector(); 			  
+				  between[externalPair] = btwn_tmp; 
+				  if(logging)
+					{
+					  std::cerr<<"Stored the in-between characters for the two states:\n";
+					  std::cerr<<"Start:\n";
+					  ext_start.display(Q); 
+					  std::cerr<<"End:\n";
+					  right.display(Q); 
+					  std::cerr<<"State:\n";
+					  show_state_phylo(btwn_tmp);
+					  std::cerr<<"flush?:"<<is_flush(btwn_tmp)<<endl;
+					}
+				}
+			  btwn_tmp.clear(); right_tmp.clear(); left_tmp.clear(); 
+			  break;
+			}
+		  else if(is_left_int(right))
+			{
+			  if(logging) std::cerr<<"Left internal...\n";
+			  profileExternalPair.first = latestLeft;
+			  profileExternalPair.second = right.left_state; 
+			  latestLeft = right.left_state; 
+			  if(left_profile.between.count(profileExternalPair) > 0)
+				{
+				  if(logging) std::cerr<<"concatenating left w/ left, internal \n";
+				  left_tmp = cat_STP(left_tmp, left_profile.between[profileExternalPair]);
+				  toPad = right_profile.subtreeNodes; toPad.push_back(treeNode);
+				  left_tmp = pad_STP(left_tmp, toPad);
+				}
+			  left_tmp = cat_STP(left_tmp, state_type_phylogeny[right.toVector()]); 
+			  btwn_tmp = cat_STP(btwn_tmp, left_tmp); 
+			  left_tmp.clear(); 
 			  
-// 			  if (!is_flush(left_tmp)) std::cerr<<"STP not flush after a left-int joining\n";
+			  if (!is_flush(left_tmp)) std::cerr<<"STP not flush after a left-int joining\n";
 			  
-// // 			  if (left_tmp.size() < 1 ) std::cerr<<"Warning: tmp is still empty, after additions...\n";
-// // 			  else if(logging) {std::cerr<<"Current btwn: \n"; show_state_phylo(left_tmp); }
-// 			}
+// 			  if (left_tmp.size() < 1 ) std::cerr<<"Warning: tmp is still empty, after additions...\n";
+// 			  else if(logging) {std::cerr<<"Current btwn: \n"; show_state_phylo(left_tmp); }
+			}
 
-// 		  else if(is_right_int(right))
-// 			{
-// 			  if(logging) std::cerr<<"Right internal...\n";
-// 			  profileExternalPair.first = latestRight;
-// 			  profileExternalPair.second = right.right_state; 
-// 			  latestRight = right.right_state; 
-// 			  if(right_profile.between.count(profileExternalPair) > 0)
-// 				{
-// 				  if(logging) std::cerr<<"concatenating right w/ right, internal \n";
-// 				  right_tmp = cat_STP(right_tmp, right_profile.between[profileExternalPair]);
-// 				  toPad = left_profile.subtreeNodes; toPad.push_back(treeNode);
-// 				  right_tmp = pad_STP(right_tmp, toPad);
-// 				}
-// 			  right_tmp = cat_STP(right_tmp, state_type_phylogeny[right.toVector()]); 
-// 			  btwn_tmp = cat_STP(btwn_tmp, right_tmp); 
-// 			  right_tmp.clear(); 
+		  else if(is_right_int(right))
+			{
+			  if(logging) std::cerr<<"Right internal...\n";
+			  profileExternalPair.first = latestRight;
+			  profileExternalPair.second = right.right_state; 
+			  latestRight = right.right_state; 
+			  if(right_profile.between.count(profileExternalPair) > 0)
+				{
+				  if(logging) std::cerr<<"concatenating right w/ right, internal \n";
+				  right_tmp = cat_STP(right_tmp, right_profile.between[profileExternalPair]);
+				  toPad = left_profile.subtreeNodes; toPad.push_back(treeNode);
+				  right_tmp = pad_STP(right_tmp, toPad);
+				}
+			  right_tmp = cat_STP(right_tmp, state_type_phylogeny[right.toVector()]); 
+			  btwn_tmp = cat_STP(btwn_tmp, right_tmp); 
+			  right_tmp.clear(); 
 
-// 			  if (!is_flush(right_tmp)) std::cerr<<"STP not flush after a right-int joining\n";
+			  if (!is_flush(right_tmp)) std::cerr<<"STP not flush after a right-int joining\n";
 
-// 	// 		  if (right_tmp.size() <1) std::cerr<<"Warning: tmp is still empty, after additions...\n";
-// // 			  else if(logging) {std::cerr<<"Current btwn: \n"; show_state_phylo(right_tmp); }
-// 			}
-// 		}
-// 	}
+	// 		  if (right_tmp.size() <1) std::cerr<<"Warning: tmp is still empty, after additions...\n";
+// 			  else if(logging) {std::cerr<<"Current btwn: \n"; show_state_phylo(right_tmp); }
+			}
+		}
+	}
 }
 	
   
@@ -2168,7 +2162,6 @@ void Profile::fill_DP(int logging, bool inLog)
   bfloat toAdd;
   state el_Prime, er_Prime;
   // bool testing = false; 
-  inLog = true; // used to be that we only logged incoming info for param estimation...but currently we need it for recursive sampling. 
   tmpEmitTuple.resize(3);
   tmpEmitVals.resize(alphabet_size);
 

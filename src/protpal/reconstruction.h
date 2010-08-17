@@ -68,7 +68,6 @@ class Reconstruction
   Digitized_biosequence sample_root(SingletTrans); 
   
   // show indel'd events
-  void show_indels(Stockholm); 
   map<node, Profile> pre_summed_profiles; 
   
   // Reconstruction algorithm parameters
@@ -84,7 +83,8 @@ class Reconstruction
   bool fasta_output; 
   bool clock_seed; 
   bool estimate_params; 
-
+  bool stoch_trace, viterbi; 
+  
   
   //model parameters
   double ins_rate;

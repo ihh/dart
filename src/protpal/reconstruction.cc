@@ -59,10 +59,10 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.add("g -grammar-file", grammar_filename = default_grammar_filename, "<grammar filename> DART format grammar to be used for final character reconstruction");
   opts.add("a -leaves-only", leaves_only = false, "Show only leaves when displaying alignments, e.g. don't to ancestral reconstruction: 'alignment' mode (default false) ");
-  opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences for each branch, written to specified file.");
+  opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences, written to specified file.");
   opts.add("arpp -ancrec-postprob", ancrec_postprob = false,"report posterior probabilities of alternate reconstructions");
   opts.add("marp -min-ancrec-prob", min_ancrec_postprob =0.01,   "minimum probability to report for --ancrec-postprob option");
-  opts.add("ep -estimate-params", estimate_params =false,   "Use EM algorithm to estimate branch transducer's model parameters");
+  opts.add("tr -stochastic-traceback", stoch_trace=false,   "Stochastically trace through null states, rather than the most probable (Viterbi) path through transducers (ML alignment)");
 
   opts.newline(); 
   opts.print_title("Simulation Options"); 
@@ -85,9 +85,11 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.newline();
   opts.print_title("Indel rate investigation");
   opts.add("ra -root-alignments", num_root_alignments=1, "Number of alignments to sample at root node.");
+  opts.add("ep -estimate-parameters", estimate_params=false, "Estimate the indel rate parameters via a stochastic sample at the root level\n");
 
   opts.parse_or_die(); 
   string error=""; bool all_reqd_args=true; 
+  viterbi = !stoch_trace;
 
   // Make sure we have the essential data - sequences and a tree
   // First, make sure we have sequence data from somewhere
@@ -605,22 +607,22 @@ Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence pare
   return childSeq;
 }
 
-void Reconstruction::show_indels(Stockholm stock)
-{
-  ofstream myfile;
-  myfile.open (indel_filename.c_str());
-  myfile << "Logging indel information is not yet implemented.\n";
-  myfile.close();
-//   node parent, child; 
+// void Reconstruction::show_indels(Stockholm stock)
+// {
+//   ofstream myfile;
+//   myfile.open (indel_filename.c_str());
+//   myfile << "Logging indel information is not yet implemented.\n";
+//   myfile.close();
+// //   node parent, child; 
   
-//   vector<Row_pair> row_pairs; 
+// //   vector<Row_pair> row_pairs; 
   
-//   for_nodes_post (tree, tree.root, -1, bi)
-//     {
-//       const Phylogeny::Branch& b = *bi;
-//       row_pairs.push_back(b); 
-//       if (b.second == tree.root) continue;
-//       std::cout<<"Adding to pairs: " << tree.node_name[b.first] << " and " <<tree.node_name[b.second]<<endl; 
-//     }
-//   Decomposition decomp = stock.path.decompose(row_pairs); 
-}
+// //   for_nodes_post (tree, tree.root, -1, bi)
+// //     {
+// //       const Phylogeny::Branch& b = *bi;
+// //       row_pairs.push_back(b); 
+// //       if (b.second == tree.root) continue;
+// //       std::cout<<"Adding to pairs: " << tree.node_name[b.first] << " and " <<tree.node_name[b.second]<<endl; 
+// //     }
+// //   Decomposition decomp = stock.path.decompose(row_pairs); 
+// }
