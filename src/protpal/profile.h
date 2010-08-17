@@ -232,12 +232,11 @@ class Profile
 
   // Ordering of states
   deque<M_id> backward_states;
- private:
-
+  string show_alignment(vector<M_id> &, bool);
   // Left and right (mature) profile objects
   AbsorbingTransducer left_profile;
   AbsorbingTransducer right_profile;
-
+ private:
   // **** Fill_DP uses the following: ****
   // the actual DP matrix.  Maps states in profile (as M_id ) to double
   //  map<M_id, double> Z; //eventually a 'bigger' number class?
@@ -274,7 +273,7 @@ class Profile
   bool is_in_envelope(state left_state, state right_state); 
 
   void path2alignment(vector<M_id> &);
-  string show_alignment(vector<M_id> &, bool);
+
   void show_state(M_id);
 
 

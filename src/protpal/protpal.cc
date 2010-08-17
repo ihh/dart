@@ -1,4 +1,5 @@
 #include<iostream>
+#include<fstream>
 #include<math.h>
 #include<ctime>
 
@@ -165,13 +166,14 @@ int main(int argc, char* argv[])
 							reconstruction.loggingLevel, // debugging log messages ?
 							reconstruction.show_alignments, // show sampled alignments ?
 							reconstruction.leaves_only, // only show leaves
-							false // sample viterbi path
+							reconstruction.viterbi // sample viterbi path (on the last time through - only really applies to null states)
 							); 
 
 		  // clear the DP matrix - this really only clears the associativity, not the actual objects therein
 		  // UPDATE - with some scope trickery, this should *actually* clear the DP entries
 		  profile.clear_DP();
-		  reconstruction.pre_summed_profiles[treeNode] = profile; 
+		  if (reconstruction.estimate_params)
+		    reconstruction.pre_summed_profiles[treeNode] = profile; 
 		  if(reconstruction.loggingLevel>=1)
 			{
 			  std::cerr<<"done.  ";
@@ -191,25 +193,22 @@ int main(int argc, char* argv[])
 	  
 	  else	  // When reaching the root: 
 	    {
-	      state_path path = reversed(profile.sample_DP(
-							   1, // sample only one path
-							   0, // debugging log messages
-							   false, // don't show alignments
-							   false, // leaves only
-							   true // sample the viterbi path
-							   )); 
-	      reconstruction.pre_summed_profiles[reconstruction.tree.root] = profile; 
-	      AlignmentSampler testAlign(path, 0, &reconstruction.pre_summed_profiles, &reconstruction.profiles,  &reconstruction.tree ); 
-	      stringstream alignStream; 
-	      testAlign.sample_all(true, false); // viterbi, logging
-	      testAlign.display(alignStream); 	      
-
-
+	      state_path path = profile.sample_DP(
+						  1, // sample only one path
+						  0, // debugging log messages
+						  false, // don't show alignments
+						  false, // leaves only
+						  reconstruction.viterbi // sample the viterbi path
+						  );
+	      string alignString = profile.show_alignment( path, reconstruction.leaves_only); 
 	      // There is no way that this is the easiest way to do this, but oh well:
-	      reconstruction.tree.write_Stockholm(alignStream);
+	      stringstream treeStream;
+	      reconstruction.tree.write_Stockholm(treeStream);
+	      alignString = treeStream.str() + alignString;
+	      istringstream stockStream(alignString);
 	      Sequence_database db; 
 	      Stockholm stk(1,1);
-	      stk.read_Stockholm(alignStream,db); 
+	      stk.read_Stockholm(stockStream,db); 
 
 
 	      if (reconstruction.leaves_only)
@@ -233,7 +232,7 @@ int main(int argc, char* argv[])
 		  if (reconstruction.loggingLevel >=1) 
 		    {
 		      std::cerr<<"Done.\n";
-		      std::cerr<<"\tDisplaying Viterbi alignment\n\n"; 
+		      std::cerr<<"\tDisplaying root alignment\n\n"; 
 		    }
 		  if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
 		    annotated.write_Stockholm(std::cout);
@@ -261,13 +260,15 @@ int main(int argc, char* argv[])
 			}
 		    }
 		  
-		  // if requested, show what was inserted/deleted on each branch  (written to file)
-		  if (reconstruction.estimate_params)
+		  // if requested, show what was inserted/deleted on the tree  (written to file)
+		  if (reconstruction.indel_filename != "None")
 		    {
+		      ofstream indel_file;
+		      indel_file.open (reconstruction.indel_filename.c_str());
 		      IndelCounter indels(annotated, &reconstruction.tree); 
 		      indels.gather_indel_info(false); 
-		      indels.display_indel_info(std::cout, false);
-		      exit(0); 
+		      indels.display_indel_info(indel_file, false);
+		      indel_file.close();
 		    }
   
 		}
@@ -277,6 +278,13 @@ int main(int argc, char* argv[])
 		  if (reconstruction.loggingLevel >= 1)
 		    std::cerr<<"\nBeginning parameter estimation\n";
 		  std::cerr<<"Parameter estimation not yet enabled.  sit tight.\n"; 
+
+// 	      reconstruction.pre_summed_profiles[reconstruction.tree.root] = profile; 
+// 	      AlignmentSampler testAlign(path, 0, &reconstruction.pre_summed_profiles, &reconstruction.profiles,  &reconstruction.tree ); 
+// 	      stringstream alignStream; 
+// 	      testAlign.sample_all(false, false); // viterbi, logging
+// 	      testAlign.display(alignStream); 	      
+
 		  
 // 		  for (int sample=0; sample<reconstruction.num_root_alignments; sample++)
 // 		    {
