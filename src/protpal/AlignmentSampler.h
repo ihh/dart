@@ -56,6 +56,8 @@ class IndelCounter
   IndelCounter(Stockholm&, PHYLIP_tree*);
   void gather_indel_info(bool logging=false); 
   void display_indel_info(ostream&, bool per_branch=false); 
+
+  double avg_insert_rate, avg_delete_rate, avg_insert_ext, avg_delete_ext; 
  private:
   PHYLIP_tree* tree; 
   map<node, string> rows; 
@@ -70,7 +72,10 @@ class IndelCounter
   double insert_extend(node); 
   double delete_extend(node); 
   
+  void average_indel_counts(void); 
   void get_pairwise_alignment(node parent, node child, string& parentString, string& childString); 
+  void all_insertions(ostream&); 
+  void all_deletions(ostream&); 
 };
 
 

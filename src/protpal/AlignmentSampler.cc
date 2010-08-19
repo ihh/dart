@@ -93,11 +93,12 @@ void  AlignmentSampler::sample_all(bool viterbi, bool logging_in)
 
 	}
     }
-  std::cerr<<"Done with sampling from root\n"; 
 }
 // Display the alignment in stockholm form
 void AlignmentSampler::display(ostream& out, string format)
 {
+  if (columns.size() == 0)
+    return; 
   bool logging = false; 
   map<node, string> alignment; 
   map< node, string>::iterator nodeIter; 
@@ -111,6 +112,7 @@ void AlignmentSampler::display(ostream& out, string format)
     std::cerr<<"Building alignment...\n"; 
   for (colIter = columns.begin(); colIter != columns.end(); colIter++)
     {
+      std::cerr<<"Current column has size: " << colIter->size() <<endl; 
       for ( nodeIter = colIter->begin(); nodeIter != colIter->end(); nodeIter++)
 	{
 	  if (logging)
@@ -192,6 +194,7 @@ colMap AlignmentSampler::sample_expanded_path(node n, int start, int end, bool v
 
 colMap AlignmentSampler::sample_expanded_path(node n, M_id start, M_id end, bool viterbi)
 {
+  colMap columns, subColumns; 
   DP_container forward; 
   queue<M_id> stateQueue; 
   M_id state; 
@@ -209,6 +212,10 @@ colMap AlignmentSampler::sample_expanded_path(node n, M_id start, M_id end, bool
   map< vector<int> , vector<M_id> >* outgoing = &(profile->outgoing);
   map< pair<vector<int>, vector<int> >, bfloat >* transition_weight = &(profile->transition_weight);
 
+  // Possibly there's no null states between start and end.  In this case, skip DP and exit this function
+//   transitionPair.first = start.toVector();   transitionPair.second = end.toVector(); 
+//   if (!profile->between.count(transitionPair))
+//     return columns; 
 
   
   int startIdx = 0, endIdx = profile->backward_states.size(); 
@@ -343,8 +350,8 @@ colMap AlignmentSampler::sample_expanded_path(node n, M_id start, M_id end, bool
     }
     if(logging)
       std::cerr<< "\n"; 
-  colMap columns, subColumns; 
-  unsigned int pathIdx = -1; 
+
+  int pathIdx = -1; 
   string side; 
   for (list<M_id>::iterator piIter=pi.begin(); piIter!=pi.end(); piIter++)
     {
@@ -381,13 +388,22 @@ colMap AlignmentSampler::sample_expanded_path(node n, M_id start, M_id end, bool
 	}
       
       if (pathIdx!=pi.size()-1 && pathIdx != 0)
-	columns.push_back( padColumn(profile->state_type_phylogeny[piIter->toVector()] , tree) ); 
+	{
+	  columns.push_back( padColumn(profile->state_type_phylogeny[piIter->toVector()] , tree) ); 
+	  if (!profile->state_type_phylogeny.count(piIter->toVector()) )
+	    std::cerr<<"STP didn't contain M_id!\n"; 
+	  int stpSize = profile->state_type_phylogeny[piIter->toVector()].size(); 
+	  std::cerr<<"Size of STP at node " << tree->node_name[n] << " " << stpSize <<endl;
+	  std::cerr<<"State:  \n"; 
+	  std::cerr<< piIter->q_state << " " << piIter->left_state << " " << piIter->left_type << " " << piIter->right_state << " " <<piIter->right_type << endl; 
+	}
+      
 
     }
   if (logging)
     {  
       std::cerr<<"\n\n\n"; 
-      std::cerr<<"Alignment sampled at node " << tree->node_name[n] << ":\n"; 
+      std::cerr<<"Alignment sampled at node " << tree->node_name[n] << " " << columns.size()<< " columns :\n"; 
       AlignmentSampler a; 
       a.columns = columns; 
       a.tree = tree; 
@@ -436,79 +452,47 @@ IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in)
 void IndelCounter::display_indel_info(ostream& out, bool per_branch)
 {
   out<<"\n\n### Displaying indel information ###\n";  
-  double insert_rt, delete_rt, delete_ext, insert_ext; 
-  double insert_rate_tot = 0.0,  delete_rate_tot = 0.0,  delete_extend_tot = 0.0,  insert_extend_tot = 0.0; 
-  node treeNode; 
-  double b = double(tree->branches()); 
-  int insert_count = 0, delete_count = 0; // actually the count of nodes which have nonzero in/del rates
-  for_nodes_pre (*tree, tree->root, -1, bi)
+  if (per_branch)
     {
-      const Phylogeny::Branch& b = *bi;
-      treeNode = b.second; 
-      if (treeNode == tree->root)
-	continue; 
-      insert_rt = insert_rate(treeNode);
-      delete_rt = delete_rate(treeNode);
-
-      insert_ext = insert_extend(treeNode);
-      delete_ext = delete_extend(treeNode);
-
-      if (per_branch)
+      double insert_rt, delete_rt, delete_ext, insert_ext; 
+      node treeNode; 
+      for_nodes_pre (*tree, tree->root, -1, bi)
 	{
+	  const Phylogeny::Branch& b = *bi;
+	  treeNode = b.second; 
+	  if (treeNode == tree->root)
+	    continue; 
+	  insert_rt = insert_rate(treeNode);
+	  delete_rt = delete_rate(treeNode);
+	  
+	  insert_ext = insert_extend(treeNode);
+	  delete_ext = delete_extend(treeNode);
+	
 	  out << "Indel statistics for branch above node " << tree->node_name[treeNode] <<endl; 
 	  out << "Insertion rate (insertions per position per unit time): " << insert_rt <<endl; 
 	  if (insert_rt>0.0)
 	    out << "Insertion extension probability (1/(mean insertion length)): " << insert_ext <<endl; 
-
+	  
 	  out << "Deletion rate (deletions per position per unit time): " << delete_rt <<endl; 
 	  if (delete_rt>0.0)
 	    out << "Deletion extension probability (1/(mean deletion length)): " << delete_ext <<endl; 
 	}
-      else
-	{
-	  insert_rate_tot +=  insert_rt;
-	  delete_rate_tot +=  delete_rt;
-	  
-	  if (insert_rt > 0.0)
-	    {
-	      insert_extend_tot +=  insert_ext;
-	      insert_count++; 
-	    }
-	  if (delete_rt > 0.0)
-	    {
-	      delete_extend_tot +=  delete_ext;
-	      delete_count++; 
-	    }
-	}
     }
   out << "\n### Indel statistics averaged across tree ###\n"; 
-  out << "Insertion rate (insertions per position per unit time): " << insert_rate_tot/b <<endl; 
-  out << "Insertion extension probability (1/(mean insertion length)): " << insert_extend_tot/insert_count <<endl; 
+
+
+  out << "Insertion rate (insertions per position per unit time): " << avg_insert_rate <<endl; 
+  out << "Insertion extension probability (1/(mean insertion length)): " << avg_insert_ext <<endl; 
   
-  out << "Deletion rate (deletions per position per unit time): " << delete_rate_tot/b <<endl; 
-  out << "Deletion extension probability (1/(mean deletion length)): " << delete_extend_tot/delete_count <<endl; 
+  out << "Deletion rate (deletions per position per unit time): " << avg_delete_rate <<endl; 
+  out << "Deletion extension probability (1/(mean deletion length)): " << avg_delete_ext <<endl; 
   
   out << "Inserted sequence: ";
-  for_nodes_pre (*tree, tree->root, -1, bi)
-    {
-      const Phylogeny::Branch& b = *bi;
-      treeNode = b.second; 
-      if (treeNode == tree->root)
-	continue; 
-      for (vector<string>::iterator insIter=insertions[treeNode].begin(); insIter != insertions[treeNode].end(); insIter++)
-	out << " " << *insIter; 
-    }
+  all_insertions(out); 
   out <<"\n"; 
   out << "Deleted sequence: ";
-  for_nodes_pre (*tree, tree->root, -1, bi)
-    {
-      const Phylogeny::Branch& b = *bi;
-      treeNode = b.second; 
-      if (treeNode == tree->root)
-	continue; 
-      for (vector<string>::iterator delIter=deletions[treeNode].begin(); delIter != deletions[treeNode].end(); delIter++)
-	out << " " << *delIter; 
-    }
+  all_deletions(out); 
+
   out <<"\n\n\n"; 
 }
 
@@ -600,7 +584,77 @@ void IndelCounter::gather_indel_info(bool logging)
 
 	  
     }
+  average_indel_counts(); 
 }
+
+void IndelCounter::all_insertions(ostream& out)
+{
+  node treeNode; 
+  for_nodes_pre (*tree, tree->root, -1, bi)
+    {
+      const Phylogeny::Branch& b = *bi;
+      treeNode = b.second; 
+      if (treeNode == tree->root)
+	continue; 
+      for (vector<string>::iterator insIter=insertions[treeNode].begin(); insIter != insertions[treeNode].end(); insIter++)
+	out << " " << *insIter << " "; 
+    }
+}
+
+void IndelCounter::all_deletions(ostream& out)
+{
+  node treeNode; 
+  for_nodes_pre (*tree, tree->root, -1, bi)
+    {
+      const Phylogeny::Branch& b = *bi;
+      treeNode = b.second; 
+      if (treeNode == tree->root)
+	continue; 
+      for (vector<string>::iterator delIter=deletions[treeNode].begin(); delIter != deletions[treeNode].end(); delIter++)
+	out << " " << *delIter << " "; 
+    }
+}
+
+void IndelCounter::average_indel_counts(void)
+{
+  double insert_rt, delete_rt, delete_ext, insert_ext; 
+  double insert_rate_tot = 0.0,  delete_rate_tot = 0.0,  delete_extend_tot = 0.0,  insert_extend_tot = 0.0; 
+  node treeNode; 
+  double b = double(tree->branches()); 
+  int insert_count = 0, delete_count = 0; // actually the count of nodes which have nonzero in/del rates
+  for_nodes_pre (*tree, tree->root, -1, bi)
+    {
+      const Phylogeny::Branch& b = *bi;
+      treeNode = b.second; 
+      if (treeNode == tree->root)
+	continue; 
+      insert_rt = insert_rate(treeNode);
+      delete_rt = delete_rate(treeNode);
+
+      insert_ext = insert_extend(treeNode);
+      delete_ext = delete_extend(treeNode);
+
+      insert_rate_tot +=  insert_rt;
+      delete_rate_tot +=  delete_rt;
+      
+      if (insert_rt > 0.0)
+	{
+	  insert_extend_tot +=  insert_ext;
+	  insert_count++; 
+	}
+      if (delete_rt > 0.0)
+	{
+	  delete_extend_tot +=  delete_ext;
+	  delete_count++; 
+	}
+    }
+  avg_insert_rate = insert_rate_tot/b; 
+  avg_insert_ext = insert_extend_tot/insert_count; 
+  
+  avg_delete_rate = delete_rate_tot/b; 
+  avg_delete_ext = delete_extend_tot/delete_count; 
+}
+
 double IndelCounter::insert_extend(node n)
 {
   double totalSize = 0; 
@@ -711,5 +765,7 @@ map<node, string>  padColumn(map<node, string>& column, PHYLIP_tree* tree )
       if (column.count(n) < 1 && column.size() )
 	column[n] = "-"; 
     }
+  if (!column.size())
+    std::cerr<<"Warning: returning empty column\n"; 
   return column; 
 }

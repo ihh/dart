@@ -59,10 +59,12 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.add("g -grammar-file", grammar_filename = default_grammar_filename, "<grammar filename> DART format grammar to be used for final character reconstruction");
   opts.add("a -leaves-only", leaves_only = false, "Show only leaves when displaying alignments, e.g. don't to ancestral reconstruction: 'alignment' mode (default false) ");
-  opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences, written to specified file.");
+
+
   opts.add("arpp -ancrec-postprob", ancrec_postprob = false,"report posterior probabilities of alternate reconstructions");
   opts.add("marp -min-ancrec-prob", min_ancrec_postprob =0.01,   "minimum probability to report for --ancrec-postprob option");
   opts.add("tr -stochastic-traceback", stoch_trace=false,   "Stochastically trace through null states, rather than the most probable (Viterbi) path through transducers (ML alignment)");
+  
 
   opts.newline(); 
   opts.print_title("Simulation Options"); 
@@ -84,11 +86,15 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.newline();
   opts.print_title("Indel rate investigation");
+  opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences, as well as estimated indel open and extend rates - written to specified file.");
   opts.add("ra -root-alignments", num_root_alignments=1, "Number of alignments to sample at root node.");
-  opts.add("ep -estimate-parameters", estimate_params=false, "Estimate the indel rate parameters via a stochastic sample at the root level\n");
+  opts.add("ep -estimate-parameters", estimate_params=false, "Estimate the indel rate parameters via a stochastic sample (default 100 alignments, unless set by -ra option) at the root level\n");
+  
 
   opts.parse_or_die(); 
   string error=""; bool all_reqd_args=true; 
+  if (!estimate_params && num_root_alignments != 1)
+    estimate_params = true; 
   viterbi = !stoch_trace;
 
   // Make sure we have the essential data - sequences and a tree
@@ -216,6 +222,7 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
   else
     {
 	  std::cerr << "Error: Unable to open file: "<<fileName;
+	  exit(1); 
     }
 }
 
