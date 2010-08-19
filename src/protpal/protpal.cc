@@ -172,6 +172,19 @@ int main(int argc, char* argv[])
 		  // clear the DP matrix - this really only clears the associativity, not the actual objects therein
 		  // UPDATE - with some scope trickery, this should *actually* clear the DP entries
 		  profile.clear_DP();
+		  
+		  M_id testM;
+		  testM.q_state = 10; 
+		  testM.left_state = 2;
+		  testM.left_type = 1;
+		  testM.right_state = 2;
+		  testM.right_type = 1;
+
+		  if (profile.state_type_phylogeny.count(testM.toVector()))
+		      std::cerr<<"Count after sampling: " << profile.state_type_phylogeny[testM.toVector()].size() <<endl; 
+		  else
+		    std::cerr<<"Not in sample\n"; 
+
 		  if (reconstruction.estimate_params)
 		    reconstruction.pre_summed_profiles[treeNode] = profile; 
 		  if(reconstruction.loggingLevel>=1)
@@ -213,7 +226,7 @@ int main(int argc, char* argv[])
 
 	      if (reconstruction.leaves_only)
 		stk.write_Stockholm(std::cout);
-	      else
+	      else // display all characters
 		{
 		  ECFG_main ecfg; 
 		  ecfg.ancrec_CYK_MAP = true; 
@@ -236,7 +249,7 @@ int main(int argc, char* argv[])
 		    }
 		  if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
 		    annotated.write_Stockholm(std::cout);
-		  else
+		  else // display in bare-bones/ non-Xrate format
 		    {
 		      Phonebook::iterator seq; 
 		      int nameSize, maxNameLength = 0; 
@@ -272,42 +285,76 @@ int main(int argc, char* argv[])
 		    }
   
 		}
-	      
+
 	      if (reconstruction.estimate_params)
 		{
+		  std::cerr<<"Sample-based parameter estimation is not yet stable.  Use the -pi option for now...  \n";
+		  exit(0); 
 		  if (reconstruction.loggingLevel >= 1)
-		    std::cerr<<"\nBeginning parameter estimation\n";
-		  std::cerr<<"Parameter estimation not yet enabled.  sit tight.\n"; 
-
-// 	      reconstruction.pre_summed_profiles[reconstruction.tree.root] = profile; 
-// 	      AlignmentSampler testAlign(path, 0, &reconstruction.pre_summed_profiles, &reconstruction.profiles,  &reconstruction.tree ); 
-// 	      stringstream alignStream; 
-// 	      testAlign.sample_all(false, false); // viterbi, logging
-// 	      testAlign.display(alignStream); 	      
-
+		    {
+		      std::cerr<<"\nBeginning alignment sampling - " << reconstruction.num_root_alignments << " samples\n";
+		      std::cerr<<"Sample number: ";
+		    }
 		  
-// 		  for (int sample=0; sample<reconstruction.num_root_alignments; sample++)
-// 		    {
-// 		      state_path path = reversed(profile.sample_DP(
-// 								   1, // sample only one path
-// 								   0, // debugging log messages
-// 								   false, // don't show alignments
-// 								   false, // leaves only
-// 								   reconstruction.viterbi_alignments // viterbi path
-// 								   )); 
-// 		      if (reconstruction.loggingLevel>=1)
-// 			std::cerr<<"Sampled alignment at root level..displaying...\n"; 
-// 		      reconstruction.pre_summed_profiles[reconstruction.tree.root] = profile; 
-// 		      AlignmentSampler testAlign(path, 0, &reconstruction.pre_summed_profiles, &reconstruction.profiles,  &reconstruction.tree ); 
-		      
-// 		      testAlign.sample_all(false, false); 
-// 		      testAlign.display(std::cerr); 
-// 		    }
-		      
+
+
+		  reconstruction.pre_summed_profiles[reconstruction.tree.root] = profile; 
 		  
-		}
+		  double insert_rate_tot = 0.0, delete_rate_tot = 0.0, insert_ext_tot = 0.0, delete_ext_tot = 0.0; 
+		  SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); 
+		  SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
+		  
+		  for (int sample=0; sample<reconstruction.num_root_alignments; sample++)
+		    {
+		      //		      if (reconstruction.loggingLevel >= 1)
+		      //			std::cerr<< " " << sample;
+		      
+		      state_path path = reversed(profile.sample_DP(
+								   1, // sample only one path
+								   0, // debugging log messages
+								   false, // don't show alignments
+								   false, // leaves only
+								   false // viterbi path - no reason for viterbi , otherwise we wouldn't be sampling several alignmts
+								   )); 
+		      AlignmentSampler sampAlign(path, reconstruction.tree.root, 
+						 &reconstruction.pre_summed_profiles, &reconstruction.profiles,  &reconstruction.tree ); 
+		      sampAlign.sample_all(false, //viterbi
+					   true); //logging
+
+		      stringstream stockStream;
+		      reconstruction.tree.write_Stockholm(stockStream);
+		      sampAlign.display(stockStream); 
+		      Sequence_database db; 
+		      Stockholm stk(1,1);
+		      stk.read_Stockholm(stockStream,db); 
+
+		      ECFG_main ecfg; 
+		      ecfg.ancrec_CYK_MAP = true; 
+		  
+		      Stockholm annotated = ecfg.run_alignment_annotation(stk, grammar_ecfg_sexpr); 
+		      IndelCounter counts(annotated, &reconstruction.tree);
+		      counts.gather_indel_info(); 
+		      
+		      insert_rate_tot += counts.avg_insert_rate; 
+		      delete_rate_tot += counts.avg_delete_rate; 
+
+		      insert_ext_tot += counts.avg_insert_ext; 
+		      delete_ext_tot += counts.avg_delete_ext; 
+		      
+		      std::cerr<<" \n\n Current alignment:\n"; 
+		      sampAlign.display(std::cerr);
+		      std::cerr<<"Insert rate at sample " << sample << " " << counts.avg_insert_rate <<endl; 
+		      std::cerr<<"Delete rate at sample " << sample << " " << counts.avg_delete_rate <<endl; 
+		    }
+		  std::cout<< "Insert open  rate, averaged over samples: "  << insert_rate_tot/double(reconstruction.num_root_alignments) <<endl;  
+		  std::cout<< "Insert extend  rate, averaged over samples: "  << insert_ext_tot/double(reconstruction.num_root_alignments) <<endl;  
+
+		  std::cout<< "Delete open  rate, averaged over samples: "  << delete_rate_tot/double(reconstruction.num_root_alignments) <<endl;  
+		  std::cout<< "Delete extend  rate, averaged over samples: "  << delete_ext_tot/double(reconstruction.num_root_alignments) <<endl;  
+
 		  if (reconstruction.loggingLevel >= 1)
 		    std::cerr<<"Done\n";
+		}
 	    }
 	}
   return(0);
