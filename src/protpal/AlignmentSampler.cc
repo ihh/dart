@@ -660,7 +660,7 @@ double IndelCounter::insert_extend(node n)
   double totalSize = 0; 
   for (vector<string>::iterator inserts = insertions[n].begin(); inserts != insertions[n].end(); inserts++)
     totalSize += inserts->size(); 
-  return double(insertions[n].size()) / totalSize;
+  return 1.0 - (double(insertions[n].size()) / totalSize);
 }
 
 double IndelCounter::insert_rate(node n)
@@ -673,7 +673,7 @@ double IndelCounter::delete_extend(node n)
   double totalSize = 0; 
   for (vector<string>::iterator deletes = deletions[n].begin(); deletes != deletions[n].end(); deletes++)
     totalSize += deletes->size(); 
-  return double(deletions[n].size()) / totalSize;
+  return 1.0 - (double(deletions[n].size()) / totalSize);
 }
   
 double IndelCounter::delete_rate(node n)

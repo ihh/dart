@@ -36,6 +36,7 @@ class Reconstruction
   // rate matrix and sequence import
   sstring rate_matrix_filename;   
   sstring grammar_filename;   
+  sstring gap_grammar_filename;   
   sstring stkFileName;
   sstring fastaFileName;
   sstring indel_filename;   
@@ -83,7 +84,7 @@ class Reconstruction
   bool fasta_output; 
   bool clock_seed; 
   bool estimate_params; 
-  bool stoch_trace, viterbi; 
+  bool stoch_trace, viterbi, input_alignment; 
   
   
   //model parameters

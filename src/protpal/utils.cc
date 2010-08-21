@@ -334,7 +334,7 @@ map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
     }
   else 
     {
-      std::cerr << "Error: Unable to open file: "<<fileName<<endl;
+      std::cerr << "Error: Unable to open file: "<<fileName<< "\n"; 
     }
   return sequences; 
 }
