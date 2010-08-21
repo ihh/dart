@@ -19,6 +19,7 @@
 
 #define DEFAULT_CHAIN_FILE "data/handalign/prot3.hsm"
 #define DEFAULT_GRAMMAR_FILE "grammars/prot3.eg"
+#define DEFAULT_GAP_GRAMMAR_FILE "grammars/prot3gap.eg"
 
 using namespace std; 
 
@@ -26,9 +27,10 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 {
   INIT_OPTS_LIST (opts, argc, argv, 0, "[options]",
 		  "Align and reconstruct ancestral sequences\n");
-  sstring default_chain_filename, default_grammar_filename;
+  sstring default_chain_filename, default_gap_grammar_filename, default_grammar_filename;
   default_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE;
   default_grammar_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_GRAMMAR_FILE;
+  default_gap_grammar_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_GAP_GRAMMAR_FILE;
 
   have_tree=false; 
   have_sequences=false; 
@@ -89,6 +91,8 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences, as well as estimated indel open and extend rates - written to specified file.");
   opts.add("ra -root-alignments", num_root_alignments=1, "Number of alignments to sample at root node.");
   opts.add("ep -estimate-parameters", estimate_params=false, "Estimate the indel rate parameters via a stochastic sample (default 100 alignments, unless set by -ra option) at the root level\n");
+  opts.add("ia -input-alignment", input_alignment=false, "Estimate indel rate parameters via a fixed input alignment (specified as -stk or -fa), rather than using protpal's internal alignment/reconstruction algorithm.");
+  opts.add("gc -gap-chain", gap_grammar_filename = default_gap_grammar_filename, "<grammar_filename> use this dart grammar containing a rate matrix with a 'gap' character.  This is used when reconstructing with fixed input alignment");
   
 
   opts.parse_or_die(); 
@@ -221,8 +225,8 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
     }
   else
     {
-	  std::cerr << "Error: Unable to open file: "<<fileName;
-	  exit(1); 
+      std::cerr << "Error: Unable to open file: "<<fileName << endl; 
+      exit(1); 
     }
 }
 
