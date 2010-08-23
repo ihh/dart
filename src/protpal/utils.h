@@ -29,6 +29,7 @@ char* stockholm_tree(const char*);
 map<string, string> parse_stockholm(const char*, Alphabet );
 map<string, string> parse_fasta(const char*, Alphabet );
 vector<string> split(string,string); 
+vector<string> splitWhite(string); 
 
 map<node, bool> merge(map<node, bool>  *map1, map<node, bool>  *map2); 
 

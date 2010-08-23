@@ -67,13 +67,13 @@ int main(int argc, char* argv[])
   // If using an input alignment was requested, do this and bypass reconstruction
   else if (reconstruction.input_alignment)
     {
-      int seqLength;
+      int seqLength = -1;
       alignString = "";
       for (treeNode = 0; treeNode < reconstruction.tree.nodes(); treeNode++)
 	if (reconstruction.sequences.count(reconstruction.tree.node_name[treeNode]))
 	  {
 	    alignString += reconstruction.tree.node_name[treeNode] + "   " + reconstruction.sequences[reconstruction.tree.node_name[treeNode]] + "\n";
-	    if (treeNode != 0)
+	    if (seqLength != -1)
 	      {
 		if (reconstruction.sequences[reconstruction.tree.node_name[treeNode]].size() != seqLength)
 		  {
@@ -82,7 +82,10 @@ int main(int argc, char* argv[])
 		  }
 	      }
 	    else 
-	      seqLength = reconstruction.sequences[reconstruction.tree.node_name[treeNode]].size() != seqLength;
+	      {
+
+		seqLength = reconstruction.sequences[reconstruction.tree.node_name[treeNode]].size();
+	      }
 	  }
     }
   else
