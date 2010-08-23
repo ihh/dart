@@ -323,11 +323,11 @@ map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
 	{
 	  getline(seqFile,line);
 	  //std::cerr<<"Line: "<<line<<endl;
-	  if (stringAt(line,0) == "#" || split(line," ").size()<2) continue;
+	  if (stringAt(line,0) == "#" || splitWhite(line).size()<2) continue;
 	  else
 	    {
 	      //std::cerr<<"splitting line...\n";
-	      sequences[split(line," ")[0]] += split(line," ")[1];
+	      sequences[splitWhite(line)[0]] += splitWhite(line)[1];
 	    }
 	}
       seqFile.close();
@@ -339,6 +339,16 @@ map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
   return sequences; 
 }
 
+vector<string> splitWhite(string in)
+{
+  string buf; // Have a buffer string
+  stringstream ss(in); // Insert the string into a stream
+  vector<string> tokens; // Create vector to hold our words
+  
+  while (ss >> buf)
+    tokens.push_back(buf);
+  return tokens;
+}
 
 vector<string> split(string in, string splitChar)
 {
