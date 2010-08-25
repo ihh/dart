@@ -274,21 +274,25 @@ int main(int argc, char* argv[])
 	  grammar_sexpr_file = gap_grammar_sexpr_file; 
 	  ecfg.gap_chars = sstring("_"); 
 	}
+      
       SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
 
       // Get the alignment and grammar into the ecfg and get it ready for operations 
-      std::cerr<<"Reading alignment\n"; 
       ecfg.read_alignments(stk); 
-      std::cerr<<"Reading grammar\n"; 
       ecfg.read_grammars(&grammar_ecfg_sexpr); 
-      std::cerr<<"Converting seqs\n"; 
       ecfg.convert_sequences(); 
 
       // Train the Xrate grammar/chain, if requested
       if (reconstruction.train_grammar)
 	{
 	  if (reconstruction.loggingLevel >= 1)
-	    std::cerr<<"Training grammar used for character reconstruction, using starting point: " << reconstruction.gap_grammar_filename << endl;
+	    {
+	      std::cerr<<"\nTraining grammar used for character reconstruction, using starting point: \n\t ";
+	      if (reconstruction.input_alignment)
+		std::cerr << reconstruction.gap_grammar_filename << endl;
+	      else
+		std::cerr << reconstruction.grammar_filename << endl;
+	    }
 	  ecfg.train = "/dev/null";
 	  ecfg.train_grammars();
 	  ecfg.delete_trainers(); 
