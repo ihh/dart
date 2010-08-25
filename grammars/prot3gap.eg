@@ -40,13 +40,19 @@
  (transform (from (S2*)) (to (S2)) (prob 0.827023))
 
  ;; Markov chain substitution models
- (&define SEED .01)
+
+ (rate	   
+  (gap2char .01)
+  (char2gap .01)
+  )
+  (&define SEEDPROB .01)
+
  (chain
-  (update-policy rev)
+  (update-policy parametric)
   (terminal (A0))
 
   ;; initial probability distribution
-  (initial (state (-)) (prob SEED))
+  (initial (state (-)) (prob SEEDPROB))
   (initial (state (a)) (prob 0.016481))
   (initial (state (r)) (prob 0.0643491))
   (initial (state (n)) (prob 0.0342123))
@@ -70,8 +76,8 @@
 
   ;; mutation rates
   (&foreach-token TOK
-		  (mutate (from (-)) (to (TOK)) (rate SEED))
-		  (mutate (from (TOK)) (to (-)) (rate SEED))		  
+		  (mutate (from (-)) (to (TOK)) (rate gap2char0))
+		  (mutate (from (TOK)) (to (-)) (rate char2gap0))		  
 		  )
   (mutate (from (a)) (to (r)) (rate 0.0145634))
   (mutate (from (a)) (to (n)) (rate 0.0165577))
@@ -422,11 +428,11 @@
  )  ;; end chain A0
 
  (chain
-  (update-policy rev)
+  (update-policy parametric)
   (terminal (A1))
 
   ;; initial probability distribution
-  (initial (state (-)) (prob SEED))
+  (initial (state (-)) (prob SEEDPROB))
   (initial (state (a)) (prob 0.06764))
   (initial (state (r)) (prob 0.0309357))
   (initial (state (n)) (prob 0.0271373))
@@ -450,8 +456,8 @@
 
   ;; mutation rates
   (&foreach-token TOK
-		  (mutate (from (-)) (to (TOK)) (rate SEED))
-		  (mutate (from (TOK)) (to (-)) (rate SEED))		  
+		  (mutate (from (-)) (to (TOK)) (rate gap2char1))
+		  (mutate (from (TOK)) (to (-)) (rate char2gap1))		  
 		  )
   (mutate (from (a)) (to (r)) (rate 0.00105697))
   (mutate (from (a)) (to (n)) (rate 0.00402287))
@@ -802,11 +808,11 @@
  )  ;; end chain A1
 
  (chain
-  (update-policy rev)
+  (update-policy parametric)
   (terminal (A2))
 
   ;; initial probability distribution
-  (initial (state (-)) (prob SEED))
+  (initial (state (-)) (prob SEEDPROB))
   (initial (state (a)) (prob 0.0612873))
   (initial (state (r)) (prob 0.0404616))
   (initial (state (n)) (prob 0.0684408))
@@ -830,8 +836,8 @@
 
   ;; mutation rates
   (&foreach-token TOK
-		  (mutate (from (-)) (to (TOK)) (rate SEED))
-		  (mutate (from (TOK)) (to (-)) (rate SEED))		  
+		  (mutate (from (-)) (to (TOK)) (rate gap2char2))
+		  (mutate (from (TOK)) (to (-)) (rate char2gap2))		  
 		  )
   (mutate (from (a)) (to (r)) (rate 0.0182449))
   (mutate (from (a)) (to (n)) (rate 0.0384616))

@@ -84,7 +84,7 @@ class Reconstruction
   bool fasta_output; 
   bool clock_seed; 
   bool estimate_params; 
-  bool stoch_trace, viterbi, input_alignment; 
+  bool stoch_trace, viterbi, input_alignment, train_grammar; 
   
   
   //model parameters

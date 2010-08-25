@@ -93,6 +93,8 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("ep -estimate-parameters", estimate_params=false, "Estimate the indel rate parameters via a stochastic sample (default 100 alignments, unless set by -ra option) at the root level\n");
   opts.add("ia -input-alignment", input_alignment=false, "Estimate indel rate parameters via a fixed input alignment (specified as -stk or -fa), rather than using protpal's internal alignment/reconstruction algorithm.");
   opts.add("gc -gap-chain", gap_grammar_filename = default_gap_grammar_filename, "<grammar_filename> use this dart grammar containing a rate matrix with a 'gap' character.  This is used when reconstructing with fixed input alignment");
+  opts.add("tg -train-grammar", train_grammar = false, "Use EM algorithm to estimate the character substitution model's parameters before inferring ancestral characters.  This is especially useful when using a fixed alignment, since the 'gap chain' is essentially part of the indel model");
+
   
 
   opts.parse_or_die(); 
