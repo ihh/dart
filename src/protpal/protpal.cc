@@ -277,8 +277,11 @@ int main(int argc, char* argv[])
       SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
 
       // Get the alignment and grammar into the ecfg and get it ready for operations 
+      std::cerr<<"Reading alignment\n"; 
       ecfg.read_alignments(stk); 
+      std::cerr<<"Reading grammar\n"; 
       ecfg.read_grammars(&grammar_ecfg_sexpr); 
+      std::cerr<<"Converting seqs\n"; 
       ecfg.convert_sequences(); 
 
       // Train the Xrate grammar/chain, if requested
@@ -286,8 +289,7 @@ int main(int argc, char* argv[])
 	{
 	  if (reconstruction.loggingLevel >= 1)
 	    std::cerr<<"Training grammar used for character reconstruction, using starting point: " << reconstruction.gap_grammar_filename << endl;
-	  ecfg.train = "/Users/breadbaron/src/dartDev/dart/internalTrain.eg";
-	  //	  ecfg.train = "/dev/null";
+	  ecfg.train = "/dev/null";
 	  ecfg.train_grammars();
 	  ecfg.delete_trainers(); 
 	}
