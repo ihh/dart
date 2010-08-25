@@ -42,8 +42,14 @@
  ;; Markov chain substitution models
 
  (rate	   
-  (gap2char .01)
-  (char2gap .01)
+  (gap2char0 .01)
+  (char2gap0 .01)
+
+  (gap2char1 .01)
+  (char2gap1 .01)
+
+  (gap2char2 .01)
+  (char2gap2 .01)
   )
   (&define SEEDPROB .01)
 
