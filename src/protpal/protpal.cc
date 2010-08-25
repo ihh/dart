@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 	    alignString += reconstruction.tree.node_name[treeNode] + "   " + reconstruction.sequences[reconstruction.tree.node_name[treeNode]] + "\n";
 	    if (seqLength != -1)
 	      {
-		if (reconstruction.sequences[reconstruction.tree.node_name[treeNode]].size() != seqLength)
+		if ((int) reconstruction.sequences[reconstruction.tree.node_name[treeNode]].size() != seqLength)
 		  {
 		    std::cerr<<"Error: input alignment's sequences are not all of the same length.  Do not use -ia with unaligned sequences\n"; 
 		    exit(1); 
@@ -265,7 +265,7 @@ int main(int argc, char* argv[])
 	  ecfg.ancrec_postprob=true;
 	  ecfg.min_ancrec_postprob = reconstruction.min_ancrec_postprob; 
 	}
-      
+
       SExpr_file gap_grammar_sexpr_file (reconstruction.gap_grammar_filename.c_str()); 
       SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); 
 
@@ -275,10 +275,30 @@ int main(int argc, char* argv[])
 	  ecfg.gap_chars = sstring("_"); 
 	}
       SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
-      
+
+      // Get the alignment and grammar into the ecfg and get it ready for operations 
+      ecfg.read_alignments(stk); 
+      ecfg.read_grammars(&grammar_ecfg_sexpr); 
+      ecfg.convert_sequences(); 
+
+      // Train the Xrate grammar/chain, if requested
+      if (reconstruction.train_grammar)
+	{
+	  if (reconstruction.loggingLevel >= 1)
+	    std::cerr<<"Training grammar used for character reconstruction, using starting point: " << reconstruction.gap_grammar_filename << endl;
+	  ecfg.train = "/Users/breadbaron/src/dartDev/dart/internalTrain.eg";
+	  //	  ecfg.train = "/dev/null";
+	  ecfg.train_grammars();
+	  ecfg.delete_trainers(); 
+	}
+
+      // 'Annotate' the alignment, using the current grammar
       if (reconstruction.loggingLevel >=1) 
-	std::cerr<< "\tReconstruction ancestral characters conditional on ML indel history..."; 
-      Stockholm annotated = ecfg.run_alignment_annotation(stk, grammar_ecfg_sexpr); 
+	std::cerr<< "\tReconstructing ancestral characters conditional on ML indel history..."; 
+      ecfg.annotate_alignments(); 
+
+      Stockholm annotated = *(ecfg.stock_db.align.begin()); 
+
       if (reconstruction.loggingLevel >=1) 
 	{
 	  std::cerr<<"Done.\n";
