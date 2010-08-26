@@ -148,7 +148,7 @@ SingletTrans::SingletTrans(void)
 {
 }
 
-SingletTrans::SingletTrans(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix)
+SingletTrans::SingletTrans(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, double insertProb)
 {
   name = "Singlet";
   
@@ -185,10 +185,10 @@ SingletTrans::SingletTrans(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix)
   out.push_back(3); outgoing[2] = out; // wait -> end
 
   // Transition weights - hard coded here.  
-  double start2ins = .999;
-  double start2wait = .001;
-  double ins2ins = .999;
-  double ins2wait = .001;
+  double start2ins = insertProb;
+  double start2wait = 1.0 - insertProb;
+  double ins2ins = insertProb; 
+  double ins2wait = 1.0 - insertProb; 
 
   vector<state> transitionPair; 
   transitionPair.push_back(0); transitionPair.push_back(1); 

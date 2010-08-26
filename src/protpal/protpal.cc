@@ -51,11 +51,17 @@ int main(int argc, char* argv[])
   // We need the alphabet to parse sequences via DART's machinery...that's why this is out here away from other
   // data parsing stuff. 
   reconstruction.parse_sequences(alphabet);
-
+  // Same with this.
+  if (reconstruction.estimate_root_insert)
+    {
+      reconstruction.root_insert_prob = reconstruction.get_root_ins_estimate();
+      if (reconstruction.loggingLevel >=1 )
+	std::cerr<< "Root insert probability estimated as: " << reconstruction.root_insert_prob << endl; 
+    }
   
   // These  transducers remain the same throughout the traversal, so we can initialize them
   // once and for all and leave them.  
-  SingletTrans R(alphabet, rate_matrix);
+  SingletTrans R(alphabet, rate_matrix, reconstruction.root_insert_prob);
   SplittingTrans Upsilon;
 
   // If running a simulation was requested, do this instead of reconstruction

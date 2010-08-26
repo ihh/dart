@@ -81,6 +81,8 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "<rate matrix file> DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
   opts.add("i -insert-rate", ins_rate=0.0025,"Insertion rate ");
   opts.add("d -delete-rate", del_rate=0.0025,"Deletion rate ");
+  opts.add("ri -root-insert-prob", root_insert_prob=0.999, "Insert probability at root"); 
+  opts.add("eri -estimate-root-insert-prob", estimate_root_insert=false, "Estimate insertion probability at root by averaging leaf sequence length");
   opts.add("x -gap-extend", gap_extend=0.9, "Gap extend probability");
   opts.add("n -num-samples", num_sampled_paths=100, "Number of paths to sample in traceback");
   opts.add("m -max-DAG-size", max_sampled_externals=1000, "Max number (approximately) of delete states allowed in DAG");
@@ -137,6 +139,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
     srand((unsigned)time(0));
   // Name internal nodes of the tree, if not already named
   set_node_names(); 
+
 }
 
 
@@ -619,6 +622,24 @@ Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence pare
   decomp[row_pair] = pairAlign; 
   return childSeq;
 }
+
+double Reconstruction::get_root_ins_estimate(void)
+{
+  if (!sequences.size())
+    {
+      std::cerr<<"Error: no sequences, can't estimate root length distribution!\n";
+      return root_insert_prob; 
+    }
+  else
+    {
+      int totalLength = 0;
+      for (map<string,string>::iterator seqIter= sequences.begin(); seqIter!=sequences.end(); seqIter++)
+	totalLength += (seqIter->second).size();
+      double avg = double(totalLength)/double(sequences.size());
+      return 1.0-(1.0 / avg);
+    }
+}
+	
 
 // void Reconstruction::show_indels(Stockholm stock)
 // {
