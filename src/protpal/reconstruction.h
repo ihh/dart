@@ -85,17 +85,18 @@ class Reconstruction
   bool clock_seed; 
   bool estimate_params; 
   bool stoch_trace, viterbi, input_alignment, train_grammar; 
-  
+  bool estimate_root_insert;   
   
   //model parameters
   double ins_rate;
   double del_rate;   
   double gap_extend; 
-  
+  double root_insert_prob;
+
   // Indel investigation
   int num_root_alignments; 
   bool viterbi_alignments; ; 
-  
+  double get_root_ins_estimate(void);  
  private:
   // Help message
   void display_opts(void);
@@ -103,7 +104,8 @@ class Reconstruction
   // loading data 
   bool have_tree;
   bool have_sequences;   
-  
+
+
   void load_rate_matrix(const string);
   void get_tree_from_file(const char*);
   void loadTreeString(const char*);

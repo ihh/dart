@@ -89,7 +89,7 @@ class SingletTrans : public Transducer
   //  singletTrans(file);
   // For now, use a void-argument constructor that does everything for us...
   SingletTrans(void);
-  SingletTrans(Alphabet&, Irrev_EM_matrix&);
+  SingletTrans(Alphabet&, Irrev_EM_matrix&, double insertProb=0.999);
  private:
 };
 
