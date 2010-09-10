@@ -47,10 +47,10 @@ while (<MULTI>) {
 }
 close MULTI or die $!;
 
+my $trees = 0;
+my $group_id;
 local *TREE;
 open TREE, "gzip -cd $opticRoot/orthologs/${tree}_trees.gz |" or die $!;
-my $group_id;
-my $trees = 0;
 while (<TREE>) {
     if (/^>(\S+)/) {
 	$group_id = $1;
@@ -62,6 +62,6 @@ while (<TREE>) {
 }
 close TREE or die $!;
 
-for my $gene_id (sort { $a <=> $b } keys %stock) {
-    print $stock{$gene_id}->to_string;
+for my $group_id (sort { $a <=> $b } keys %stock) {
+    print $stock{$group_id}->to_string;
 }
