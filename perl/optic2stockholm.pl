@@ -54,7 +54,7 @@ my $trees = 0;
 while (<TREE>) {
     if (/^>(\S+)/) {
 	my $group_id = $1;
-    } elsif (/\S/ && defined($group_id)) {
+    } elsif (/\S/ && exists $stock{$group_id}) {
 	chomp;
 	$stock{$group_id}->add_gf ("NH", $_);
 	warn "Attached tree #$group_id\n" if (++$trees) % 100 == 0;
