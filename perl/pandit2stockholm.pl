@@ -17,9 +17,10 @@ while (@ARGV) {
     } elsif ($arg =~ /^-.+/) {
 	die $usage;
     } else {
-	push @ARGV, $arg;
+	push @argv, $arg;
     }
 }
+@ARGV = @argv;
 
 my @pandit;
 while (<>) {
