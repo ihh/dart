@@ -52,7 +52,7 @@ open TREE, "gzip -cd $opticRoot/orthologs/${tree}_trees.gz |" or die $!;
 my $group_id;
 my $trees = 0;
 while (<TREE>) {
-    if (/>(\S+)/) {
+    if (/^>(\S+)/) {
 	my $group_id = $1;
     } elsif (/\S/ && defined($group_id)) {
 	chomp;
