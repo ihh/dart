@@ -33,7 +33,7 @@ my ($opticRoot) = @argv;
 my %stock;
 my $alignments = 0;
 local *MULTI;
-open MULTI, "gzip -cd $opticRoot/multiple_alignments/${seq}_{type}.gz |" or die $!;
+open MULTI, "gzip -cd $opticRoot/multiple_alignments/${seq}s_${type}.gz |" or die $!;
 while (<MULTI>) {
     next if /^group_id\s+(gene|transcript)\s+alignment\s*$/;
     chomp;
