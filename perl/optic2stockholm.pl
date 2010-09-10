@@ -45,7 +45,7 @@ while (<MULTI>) {
     }
     $stock{$group_id}->add_row ($name, $alignment);
 }
-close MULTI;
+close MULTI or die $!;
 
 local *TREE;
 open TREE, "gzip -cd $opticRoot/orthologs/${tree}_trees.gz |" or die $!;
@@ -60,7 +60,7 @@ while (<TREE>) {
 	warn "Attached tree #$group_id\n" if (++$trees) % 100 == 0;
     }
 }
-close TREE;
+close TREE or die $!;
 
 for my $gene_id (sort { $a <=> $b } keys %stock) {
     print $stock{$gene_id}->to_string;
