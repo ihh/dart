@@ -14,12 +14,12 @@ my $usage = "Usage:\n $progname [-nj|-ds] [-gene|-transcript] [-aa|-na] <OPTIC c
 my @argv;
 while (@ARGV) {
     my $arg = shift;
-    if ($arg eq "-nj" || $arg eq "-ds") {
-	$tree = $arg;
-    } elsif ($arg eq "-gene" || $arg eq "-transcript") {
-	$seq = $arg;
-    } elsif ($arg eq "-aa" || $arg eq "-na") {
-	$type = $arg;
+    if ($arg =~ /^-(nj|ds)$/) {
+	$tree = $1;
+    } elsif ($arg =~ /^-(gene|transcript)$/) {
+	$seq = $1;
+    } elsif ($arg =~ /^-(aa|na)$/) {
+	$type = $1;
     } elsif ($arg =~ /^-/) {
 	die $usage;
     } else {
