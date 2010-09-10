@@ -7,9 +7,9 @@ $progname =~ s/^.*?([^\/]+)$/$1/;
 
 my $tree = "nj";
 my $seq = "gene";
-my $type = "na";
+my $type = "aa";
 
-my $usage = "Usage:\n $progname [-nj|-ds] [-gene|-transcript] [-na|-aa] <OPTIC clade dir>\n";
+my $usage = "Usage:\n $progname [-nj|-ds] [-gene|-transcript] [-aa|-na] <OPTIC clade dir>\n";
 
 my @argv;
 while (@ARGV) {
@@ -18,7 +18,7 @@ while (@ARGV) {
 	$tree = $arg;
     } elsif ($arg eq "-gene" || $arg eq "-transcript") {
 	$seq = $arg;
-    } elsif ($arg eq "-na" || $arg eq "-aa") {
+    } elsif ($arg eq "-aa" || $arg eq "-na") {
 	$type = $arg;
     } elsif ($arg =~ /^-/) {
 	die $usage;
