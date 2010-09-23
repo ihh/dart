@@ -150,10 +150,10 @@ int main(int argc, char* argv[])
 	  // Finally, marginalize Q's null states (e.g. IMDD)
 	  
 	  BranchTrans B_l(branchLengths[0], alphabet, rate_matrix, 
-			  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend);
+			  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend, reconstruction.sub_rate);
 	  B_l.name ="Left branch";
 	  BranchTrans B_r(branchLengths[1], alphabet, rate_matrix,
-			  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend);
+			  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend, reconstruction.sub_rate);
 	  B_r.name ="Right branch";
 
 	  QTransducer Q(R, //singlet
@@ -350,6 +350,7 @@ int main(int argc, char* argv[])
 	  ofstream indel_file;
 	  indel_file.open (reconstruction.indel_filename.c_str());
 	  IndelCounter indels(annotated, &reconstruction.tree); 
+	  //IndelCounter indels(reconstruction.sequences, &reconstruction.tree); 
 	  indels.gather_indel_info(false); 
 	  indels.display_indel_info(indel_file, false);
 	  indel_file.close();

@@ -90,6 +90,7 @@ class Reconstruction
   //model parameters
   double ins_rate;
   double del_rate;   
+  double sub_rate; 
   double gap_extend; 
   double root_insert_prob;
 
