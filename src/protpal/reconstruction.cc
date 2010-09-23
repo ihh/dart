@@ -79,6 +79,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.print_title("Model parameters");
 
   opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "<rate matrix file> DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
+  opts.add("bs -subst-scale", sub_rate = 1.0, "Substitution rate scaling parameter ");
   opts.add("i -insert-rate", ins_rate=0.0025,"Insertion rate ");
   opts.add("d -delete-rate", del_rate=0.0025,"Deletion rate ");
   opts.add("ri -root-insert-prob", root_insert_prob=0.999, "Insert probability at root"); 
@@ -320,7 +321,7 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
 		  child = string( tree.node_name[b.second].c_str() ); 	  
 
 		  // construct a branch transducer with the appropriate branch length.
-		  BranchTrans branch(tree.branch_length(b.first, b.second), alphabet, rate_matrix, ins_rate, del_rate, gap_extend); 
+		  BranchTrans branch(tree.branch_length(b.first, b.second), alphabet, rate_matrix, ins_rate, del_rate, gap_extend, sub_rate); 
 		  
 		  // define the Q_child match matrix
 		  for (state1 = branch.states.begin(); state1 != branch.states.end(); state1++)
@@ -442,7 +443,7 @@ void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_
       else
 	{
 	  // construct a branch transducer using the appropriate branch length.
-	  BranchTrans branch(tree.branch_length(b.first, b.second), alphabet, rate_matrix, ins_rate, del_rate, gap_extend); 
+	  BranchTrans branch(tree.branch_length(b.first, b.second), alphabet, rate_matrix, ins_rate, del_rate, gap_extend, sub_rate); 
 	  parentSeq = sequences[b.first]; 
 	  childName = string( tree.node_name[b.second].c_str() ); 	  
 	  sequences[treeNode] = sample_pairwise(parentSeq, branch, b.first, b.second, decomp);

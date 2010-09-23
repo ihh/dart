@@ -129,7 +129,7 @@ class BranchTrans : public Transducer
  public:
   float branch_length;
   // constructor.  Again, does everything for us for a basic setup/parameterization
-  BranchTrans(double, Alphabet&, Irrev_EM_matrix&, double, double, double);
+  BranchTrans(double, Alphabet&, Irrev_EM_matrix&, double, double, double, double subRate = 1.0);
   BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, double ins_open_rate, double del_open_rate, double gap_extend,
 	      double gap_extend2, double mixPrior, string name ); // mixture of affines
   BranchTrans(double, bool);  

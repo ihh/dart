@@ -316,7 +316,7 @@ double BranchTrans::get_match_weight(state b, int incoming_character, int outgoi
 
 // affine gap branch transducer
 BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, 
-						 double ins_open_rate, double del_open_rate, double gap_extend)
+			 double ins_open_rate, double del_open_rate, double gap_extend, double subRate)
 {
   branch_length = branch_length_in;
   name = "Branch";
@@ -327,7 +327,7 @@ BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_E
 
   alphabet_size = alphabet.size();
   
-  conditional_sub_matrix = rate_matrix.create_conditional_substitution_matrix(branch_length); 
+  conditional_sub_matrix = rate_matrix.create_conditional_substitution_matrix(branch_length*subRate); 
 
   // Initialize state names
   state_names.push_back("start");  

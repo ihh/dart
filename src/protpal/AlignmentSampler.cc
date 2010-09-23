@@ -446,6 +446,32 @@ IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in)
   L = size; 
 }  
 
+IndelCounter::IndelCounter(map<string,string>& sequences, PHYLIP_tree* tree_in)
+{
+  tree = tree_in; 
+  map<string,string>::iterator seq;
+  sstring sequence;
+  node n; 
+  unsigned int size=0; 
+  for (seq = sequences.begin(); seq!=sequences.end(); seq++)
+    {
+      n = index(seq->first, tree->node_name); 
+      rows[n] = seq->second;
+    }
+
+  // make sure is flush
+  for (rowIter = rows.begin(); rowIter!=rows.end(); rowIter++)
+    {
+      if (rowIter == rows.begin())
+	size = rowIter->second.size(); 
+      else if ( rowIter->second.size() != size )
+	{
+	  std::cerr<<"Error: input alignment appears not to be flush.  Indel counting not possible! Exiting. \n"; 
+	  exit(1); 
+	}
+    }
+  L = size; 
+}  
 
 
 
