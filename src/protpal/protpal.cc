@@ -238,8 +238,48 @@ int main(int argc, char* argv[])
 						  false, // leaves only
 						  reconstruction.viterbi // sample the viterbi path
 						  );
-	      
 	      alignString = profile.show_alignment( path, reconstruction.leaves_only); 
+	      if (reconstruction.num_root_alignments > 1 && reconstruction.indel_filename != "None")
+		{
+		  double tot_ins=0, tot_ins_ext=0, tot_del=0, tot_del_ext=0; 
+		  for (int samples = 1; samples<= reconstruction.num_root_alignments; samples++)
+		    {
+		      state_path path = profile.sample_DP(
+							  1, // sample only one path
+							  0, // debugging log messages
+							  false, // don't show alignments
+							  false, // leaves only
+							  false // don't sample the viterbi path!
+							  );
+		      map<string, string> alignment = profile.alignment_map(path, false); 
+		      IndelCounter indels(alignment, &reconstruction.tree); 
+		      indels.gather_indel_info(false); 
+
+		      tot_ins += indels.avg_insert_rate; 
+		      if (indels.avg_insert_rate > 0.0)
+			tot_ins_ext += indels.avg_insert_ext; 
+		      tot_del += indels.avg_delete_rate; 
+		      if (indels.avg_delete_rate > 0.0)
+			tot_del_ext += indels.avg_delete_ext; 
+		      
+		      // do a simple average over alignments' inferred param estimates
+		      if (samples == reconstruction.num_root_alignments)
+			{
+			  indels.avg_insert_rate = tot_ins / double(reconstruction.num_root_alignments); 
+			  indels.avg_insert_ext = tot_ins_ext / double(reconstruction.num_root_alignments); 
+			  indels.avg_delete_rate = tot_del / double(reconstruction.num_root_alignments); 
+			  indels.avg_delete_ext = tot_del_ext / double(reconstruction.num_root_alignments); 
+
+			  // write to file
+			  ofstream indel_file;
+			  indel_file.open (reconstruction.indel_filename.c_str());
+			  indel_file << "### Indel information averaged over " << reconstruction.num_root_alignments << " alignments ###"; 
+			  indels.display_indel_info(indel_file, false);
+			  indel_file.close();
+
+			}
+		    }
+		}
 	    }
 	}
     }
@@ -343,7 +383,7 @@ int main(int argc, char* argv[])
 	}
 		  
       // if requested, show what was inserted/deleted on the tree  (written to file)
-      if (reconstruction.indel_filename != "None")
+      if (reconstruction.indel_filename != "None" && reconstruction.num_root_alignments == 1)
 	{
 	  if (reconstruction.loggingLevel >=1)
 	    std::cerr<<"\nWriting indel information to file: " << reconstruction.indel_filename << endl; 
@@ -357,74 +397,7 @@ int main(int argc, char* argv[])
 	}
   
     }
-
-  if (reconstruction.estimate_params)
-    {
-      std::cerr<<"Sample-based parameter estimation is not yet stable.  Use the -pi option for now...  \n";
-      exit(0); 
-      if (reconstruction.loggingLevel >= 1)
-	{
-	  std::cerr<<"\nBeginning alignment sampling - " << reconstruction.num_root_alignments << " samples\n";
-	  std::cerr<<"Sample number: ";
-	}
-		  
-
-
-//       reconstruction.pre_summed_profiles[reconstruction.tree.root] = profile; 
-		  
-//       double insert_rate_tot = 0.0, delete_rate_tot = 0.0, insert_ext_tot = 0.0, delete_ext_tot = 0.0; 
-//       SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); 
-//       SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
-		  
-//       for (int sample=0; sample<reconstruction.num_root_alignments; sample++)
-// 	{
-// 	  //		      if (reconstruction.loggingLevel >= 1)
-// 	  //			std::cerr<< " " << sample;
-		      
-// 	  state_path path = reversed(profile.sample_DP(
-// 						       1, // sample only one path
-// 						       0, // debugging log messages
-// 						       false, // don't show alignments
-// 						       false, // leaves only
-// 						       false // viterbi path - no reason for viterbi , otherwise we wouldn't be sampling several alignmts
-// 						       )); 
-// 	  AlignmentSampler sampAlign(path, reconstruction.tree.root, 
-// 				     &reconstruction.pre_summed_profiles, &reconstruction.profiles,  &reconstruction.tree ); 
-// 	  sampAlign.sample_all(false, //viterbi
-// 			       true); //logging
-
-// 	  stringstream stockStream;
-// 	  reconstruction.tree.write_Stockholm(stockStream);
-// 	  sampAlign.display(stockStream); 
-// 	  Sequence_database db; 
-// 	  Stockholm stk(1,1);
-// 	  stk.read_Stockholm(stockStream,db); 
-
-// 	  ECFG_main ecfg; 
-// 	  ecfg.ancrec_CYK_MAP = true; 
-		  
-// 	  Stockholm annotated = ecfg.run_alignment_annotation(stk, grammar_ecfg_sexpr); 
-// 	  IndelCounter counts(annotated, &reconstruction.tree);
-// 	  counts.gather_indel_info(); 
-		      
-// 	  insert_rate_tot += counts.avg_insert_rate; 
-// 	  delete_rate_tot += counts.avg_delete_rate; 
-
-// 	  insert_ext_tot += counts.avg_insert_ext; 
-// 	  delete_ext_tot += counts.avg_delete_ext; 
-		      
-// 	  std::cerr<<" \n\n Current alignment:\n"; 
-// 	  sampAlign.display(std::cerr);
-// 	  std::cerr<<"Insert rate at sample " << sample << " " << counts.avg_insert_rate <<endl; 
-// 	  std::cerr<<"Delete rate at sample " << sample << " " << counts.avg_delete_rate <<endl; 
-// 	}
-//       std::cout<< "Insert open  rate, averaged over samples: "  << insert_rate_tot/double(reconstruction.num_root_alignments) <<endl;  
-//       std::cout<< "Insert extend  rate, averaged over samples: "  << insert_ext_tot/double(reconstruction.num_root_alignments) <<endl;  
-
-//       std::cout<< "Delete open  rate, averaged over samples: "  << delete_rate_tot/double(reconstruction.num_root_alignments) <<endl;  
-//       std::cout<< "Delete extend  rate, averaged over samples: "  << delete_ext_tot/double(reconstruction.num_root_alignments) <<endl;  
-
-    }
+  
   if (reconstruction.loggingLevel >= 1)
     std::cerr<<"ProtPal reconstruction completed without errors\n";
   

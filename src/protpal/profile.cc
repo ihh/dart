@@ -3178,6 +3178,94 @@ string Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
   return out; 
 }
 
+map<string, string> Profile::alignment_map(vector<M_id> &pi, bool leaves_only)
+{
+  // Return a multiple sequence alignment as a string-string map (names to seqs).  All null states that 
+  // were summed over in previous iterations are shown according to bool showNulls (I'm not
+  // sure why we'd ever set this to false, but possibly if the root ancestor was the ONLY
+  // sequence of interest, we'd like to trim out the extra alignment info).  
+  bool logging = false, showNulls=true,foundJ; 
+  string out; 
+  int i,j; 
+  M_id m,n; 
+  map<node, string>::iterator nodeState;
+  map<node, string> subAlignment;    
+  map<string, string> alignment; 
+  pair<vector<int>, vector<int> > statePair;
+  map<node, string>::iterator b_iter;   
+  for(i=pi.size()-1; i>-1; i--)
+    {
+      if (is_external(pi[i]) || pi[i].q_state == Q.composite_start_state)
+	{
+	  foundJ = false; 
+	  if(logging)
+	    {
+	      std::cerr<<"Left external state:"<<i<<endl;
+	      show_state_phylo(state_type_phylogeny[m.toVector()]);
+	      std::cerr<<"\n";
+	    }
+	  m=pi[i];
+	  for (nodeState = state_type_phylogeny[m.toVector()].begin(); 
+	       nodeState != state_type_phylogeny[m.toVector()].end(); nodeState++)
+	    {
+	      if (subAlignment.count(nodeState->first) < 1) subAlignment[nodeState->first] = nodeState->second;
+	      else subAlignment[nodeState->first] += nodeState->second;
+	    }
+	  for(j=i-1; j>-1; j--)
+	    {
+	      if (foundJ) break; 
+	      if(logging) std::cerr<<"Possible j: "<< j<<endl;
+	      if (is_external(pi[j]) || is_pre_end(pi[j]))
+		{
+		  foundJ = true; 
+		  if(logging) std::cerr<<"External j: "<< j<<endl;
+		  n=pi[j];
+		  statePair.first=m.toVector(); 
+		  statePair.second=n.toVector(); 
+		  if (between.count(statePair)>0)
+		    {
+		      if(between[statePair].size() > 0)
+			{
+			  if(logging)
+			    {
+			      std::cerr<<"Adding btw characters for states start: "<<i<<"\n";
+			      m.display(Q); 
+			      std::cerr<<"end: "<<j<<"\n";
+			      n.display(Q);
+			      std::cerr<<"state:\n";
+			      show_state_phylo(between[statePair]);
+			    }
+			  if (subAlignment.empty()) subAlignment=between[statePair]; 
+			  else{
+			    for (b_iter=between[statePair].begin(); b_iter!=between[statePair].end(); b_iter++)
+			      {
+				if(subAlignment.count(b_iter->first) >0) 
+				  subAlignment[b_iter->first] += b_iter->second; 
+				else {
+				  std::cerr<<"Error: in-between characters' tree nodes do not match external nodes!\n";
+				  std::cerr<<"Tried to add\n";
+				  show_state_phylo(between[statePair]); 
+				  std::cerr<<"To:\n";
+				  show_state_phylo(subAlignment); 
+				  exit(1);
+				}
+			      }
+			  }
+			  
+			}
+		    }
+		}
+	    }
+	}
+    }
+  for (nodeState = subAlignment.begin(); nodeState!= subAlignment.end(); nodeState++)	  
+	{
+	  if (leaves_only && (!in(nodeState->first, leaves)))
+		continue;
+	  alignment[node_names[nodeState->first]]  = nodeState->second; 
+	}
+  return alignment; 
+}
 
 
 

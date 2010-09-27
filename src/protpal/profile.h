@@ -233,6 +233,7 @@ class Profile
   // Ordering of states
   deque<M_id> backward_states;
   string show_alignment(vector<M_id> &, bool);
+  map<string, string> alignment_map(vector<M_id> &, bool);
   // Left and right (mature) profile objects
   AbsorbingTransducer left_profile;
   AbsorbingTransducer right_profile;
