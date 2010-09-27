@@ -169,6 +169,8 @@ int main(int argc, char* argv[])
 			  reconstruction.profiles[children[1]], // right absorbing transducer
 			  Q // Q transducer object - holds R, left branch, right branch, etc
 			  );
+	  reconstruction.profiles.erase(children[0]); 
+	  reconstruction.profiles.erase(children[1]); 
 
 	  // Somewhat clunky: allow the profile to see the node-name mapping that the reconstruction.tree object
 	  // holds, for multiple alignment display.  
@@ -211,8 +213,8 @@ int main(int argc, char* argv[])
 	      testM.right_state = 2;
 	      testM.right_type = 1;
 
-	      if (reconstruction.estimate_params)
-		reconstruction.pre_summed_profiles[treeNode] = profile; 
+	      //	      if (reconstruction.estimate_params)
+	      //		reconstruction.pre_summed_profiles[treeNode] = profile; 
 	      if(reconstruction.loggingLevel>=1)
 		{
 		  std::cerr<<"done.  ";
