@@ -92,6 +92,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.newline();
   opts.print_title("Indel rate investigation");
   opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences, as well as estimated indel open and extend rates - written to specified file.");
+  opts.add("db -stk-db", db_filename = "None", "Show alignments sampled at root level as a stockholm database - written to specified file.");
   opts.add("ra -root-alignments", num_root_alignments=1, "Number of alignments to sample at root node.");
   opts.add("ep -estimate-parameters", estimate_params=false, "Estimate the indel rate parameters via a stochastic sample (default 100 alignments, unless set by -ra option) at the root level\n");
   opts.add("ia -input-alignment", input_alignment=false, "Estimate indel rate parameters via a fixed input alignment (specified as -stk or -fa), rather than using protpal's internal alignment/reconstruction algorithm.");
@@ -641,7 +642,6 @@ double Reconstruction::get_root_ins_estimate(void)
     }
 }
 	
-
 // void Reconstruction::show_indels(Stockholm stock)
 // {
 //   ofstream myfile;

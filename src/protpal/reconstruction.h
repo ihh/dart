@@ -40,6 +40,7 @@ class Reconstruction
   sstring stkFileName;
   sstring fastaFileName;
   sstring indel_filename;   
+  sstring db_filename;   
   sstring treeFileName; 
   
   string sequenceFileType; 
@@ -98,6 +99,9 @@ class Reconstruction
   int num_root_alignments; 
   bool viterbi_alignments; ; 
   double get_root_ins_estimate(void);  
+
+  // Memory management
+  void clear_child(node);
  private:
   // Help message
   void display_opts(void);
