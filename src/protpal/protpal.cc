@@ -205,13 +205,6 @@ int main(int argc, char* argv[])
 	      // clear the DP matrix - this really only clears the associativity, not the actual objects therein
 	      // UPDATE - with some scope trickery, this should *actually* clear the DP entries
 	      profile.clear_DP();
-		  
-	      M_id testM;
-	      testM.q_state = 10; 
-	      testM.left_state = 2;
-	      testM.left_type = 1;
-	      testM.right_state = 2;
-	      testM.right_type = 1;
 
 	      //	      if (reconstruction.estimate_params)
 	      //		reconstruction.pre_summed_profiles[treeNode] = profile; 
@@ -233,6 +226,7 @@ int main(int argc, char* argv[])
 	    }
 	  else
 	    {
+	      ofstream db_file;
 	      state_path path = profile.sample_DP(
 						  1, // sample only one path
 						  0, // debugging log messages
@@ -243,7 +237,17 @@ int main(int argc, char* argv[])
 	      alignString = profile.show_alignment( path, reconstruction.leaves_only); 
 	      if (reconstruction.num_root_alignments > 1 && reconstruction.indel_filename != "None")
 		{
+		  if(reconstruction.loggingLevel>=1)
+		    std::cerr<<"\nSampling " << reconstruction.num_root_alignments << " alignments at root level..."; 
 		  double tot_ins=0, tot_ins_ext=0, tot_del=0, tot_del_ext=0; 
+
+		  if (reconstruction.db_filename != "None")
+		    {		  
+
+		      db_file.open (reconstruction.db_filename.c_str());
+		      reconstruction.tree.write_Stockholm(db_file);
+		      //alignString = treeStream.str()
+		    }
 		  for (int samples = 1; samples<= reconstruction.num_root_alignments; samples++)
 		    {
 		      state_path path = profile.sample_DP(
@@ -253,6 +257,9 @@ int main(int argc, char* argv[])
 							  false, // leaves only
 							  false // don't sample the viterbi path!
 							  );
+		      if (reconstruction.db_filename != "None")
+			db_file << profile.show_alignment(path, reconstruction.leaves_only);
+			  
 		      map<string, string> alignment = profile.alignment_map(path, false); 
 		      IndelCounter indels(alignment, &reconstruction.tree); 
 		      indels.gather_indel_info(false); 
@@ -281,10 +288,15 @@ int main(int argc, char* argv[])
 
 			}
 		    }
+		  if (reconstruction.db_filename != "None")
+		    db_file.close();
 		}
 	    }
 	}
     }
+  if(reconstruction.loggingLevel>=1)
+    std::cerr<<"done.\n";
+
   
   if (reconstruction.loggingLevel >= 1)
     std::cerr<<"\nFinished with alignment construction, now post-processing for ancestral characters and indels\n"; 
