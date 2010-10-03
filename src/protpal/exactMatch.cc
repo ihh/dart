@@ -49,6 +49,8 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
   vector<int> to; 
   vector<int> from;
   pair<int, int> pairIdx;
+  // for alignment envelope 
+  map<node, int> coordMap; 
   for (int i=0; i<sequence.size(); i++)
 	{
 	  sequence[i] = tolower(sequence[i]);
@@ -62,6 +64,9 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
 	  // This state accounts for position i of the sequence, this is the max and min
 	  pairIdx.first=i; pairIdx.second=i; 
 	  leaf_coords[i] = pairIdx; 
+	  // for alignment envelope 
+	  coordMap[treeNode] = i;
+	  leaf_seq_coords[i] = coordMap; 
 	  
 	  // eventually this ought to be able to handle degenerate characters...for now any non-alphabet symbol
 	  // assigned equal weight across the alphabet in the absorb map. 

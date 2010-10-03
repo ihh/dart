@@ -40,6 +40,10 @@ class ExactMatch
   // leaf coordinates.  Each state maps to a pair holding the smallest and largest leaf coordinate accounted
   // for by this state. 
   map<state, pair<int, int> > leaf_coords;
+
+  // leaf sequence coordinates , for use in guide alignment-based alignment envelopes
+  map<state, map<node, int> > leaf_seq_coords;
+  
   
   // Test incoming, absorb maps of this tranducer.  
   void test(void);

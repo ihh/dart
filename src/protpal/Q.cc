@@ -5,6 +5,7 @@
 #include "algebras.h"
 #include "ecfg/ecfgsexpr.h"
 #include "util/sstring.h"
+#include "hmm/transmat.h"
 
 QTransducer::QTransducer(void)
 {
@@ -819,77 +820,63 @@ void QTransducer::cache_emission_weights( void )
 void QTransducer::marginalizeNullStates(void)
 {
   // Marginalize over null states in Q, those having type (I,M,D,D)
-  // NB this is for the simplified case where there is only one such state...
-  // This means that in all cases we're eliminating null 'B' state from a set like this:
-  // A -> B -> C where B is possibly self-looping 
   bool logging = 0;
-  state a;
-  vector<state>::iterator b,c;
-  vector<state> b_states, c_states;
-  bool selfLoop=0; 
-  vector<state> transitionPair;
+  state a, aPrime;
+  vector<state> incoming_states, nulls, transitionPair; 
+  vector<state>::iterator b; 
   
+  // Initialize DART's transition matrix
+  Transition_probs pre_summed(num_states); 
+
+  // Fill the transition matrix as well as the list of null states
   for (a=0; a<num_states; a++)
+    {
+      if ( a == composite_start_state)
+	continue; 
+      if ( get_state_class(a) == "null" ) 
+	nulls.push_back(a); 
+
+      incoming_states = get_incoming(a); 
+      for ( b = incoming_states.begin(); b!= incoming_states.end(); b++ )
+	pre_summed.transition(*b, a) = get_transition_weight(*b, a);
+
+    }
+  
+  // eliminator does the null-state-summing returning a new transition matrix where transitions to/from null states are zero and the 
+  // transitions between non-nulls are summed over all possible paths between them. 
+  Transition_methods eliminator; 
+  Concrete_transition_probs post_summed = eliminator.eliminate(pre_summed, nulls); 
+  
+  // Clear Q's old data - incoming, outgoing transitions, and their associated weights
+  incoming.clear(); 
+  outgoing.clear(); 
+  transition_weight.clear();
+
+  // Re-populate Q's transition information that we deleted above  
+  // (Not the most efficient method here, though Q typically does not have that many states)
+  for (a=0; a<num_states; a++)
+    {
+      for (aPrime=0; aPrime<num_states; aPrime++)
 	{
-	  if (outgoing.count(a) <1 || state_class[a] == "null") continue;
-	  b_states = outgoing[a];
-	  for (b=b_states.begin(); b!=b_states.end(); b++)
-		{
-		  if (state_class[*b] == "null")
-			{
-			  if (has_transition(*b,*b)) selfLoop = 1;
-			  else selfLoop = 0; 
-
-			  c_states = outgoing[*b];
-			  for (c=c_states.begin(); c!=c_states.end(); c++)
-				{
-				  if (*c == *b) continue;
-				  else if (state_class[*c] == "null")
-					{
-					  std::cerr<<"Error: multiple null states in Q.  Can't marginalize with this simple method\n";
-					  exit(1);
-					}
-				  else
-					{
-					  if(logging) std::cerr<<"connecting states:"<<get_state_name(a)<<" and "<<get_state_name(*c)<<endl;
-
-					  if (!has_transition(a,*c))
-						{
-						  incoming[*c].push_back(a); outgoing[a].push_back(*c);
-						}
-						
-					  transitionPair.clear();
-					  transitionPair.push_back(a); transitionPair.push_back(*c); 
-					  //sum their transition until the difference is very small
-					  double toAdd = 100; 
-					  int counter = 1;
-					  bfloat ab, bc, bb; 
-					  ab = get_transition_weight(a, *b); bc = get_transition_weight( *b, *c); 
-					  if (!selfLoop) transition_weight[transitionPair] = ab*bc;
-					  else
-						{
-						  bb=get_transition_weight(*b,*b);
-						  while (toAdd> .0001)
-							{
-							  toAdd = ab*pow(bb, counter)*bc;
-							  transition_weight[transitionPair] += toAdd;
-							  counter += 1;
-							}
-						}
-					}
-				}
-			}
-		}
+	  if ( post_summed.transition(a,aPrime) > 0.0 )
+	    {
+	      incoming[aPrime].push_back(a); 
+	      outgoing[a].push_back(aPrime); 
+	      transitionPair.clear(); 
+	      transitionPair.push_back(a); transitionPair.push_back(aPrime); // why didn't I use pairs here? oh well
+	      transition_weight[transitionPair] = post_summed.transition(a, aPrime); 
+	      if (logging)
+		std::cerr<<"Transition between " << a << " and " << aPrime << " set to " << post_summed.transition(a, aPrime) << endl; 
+	    }
 	}
+    }
 }
-			  
-	  
+
+
 
   
 // The following functions initialize hard-coded aspects of the Qtransducer.  Most of this was auto-generated
-// via emacs or python code.  Probably best to check it over via other methods rather than looking at this directly
-
-
+// via emacs and/or python code.  Probably best to check it over via other methods rather than looking at this directly
 
 void QTransducer::get_state_type_reference(void)
 {
@@ -1636,3 +1623,63 @@ void QTransducer::get_transition_table(void)
 
 
 }
+/* 
+Some old null-elim code, now replaced with dart's 'eliminate' function
+
+  vector<state> b_states, c_states;
+  bool selfLoop=0; 
+  vector<state> transitionPair;
+  
+  for (a=0; a<num_states; a++)
+	{
+	  if (outgoing.count(a) <1 || state_class[a] == "null") continue;
+	  b_states = outgoing[a];
+	  for (b=b_states.begin(); b!=b_states.end(); b++)
+		{
+		  if (state_class[*b] == "null")
+			{
+			  if (has_transition(*b,*b)) selfLoop = 1;
+			  else selfLoop = 0; 
+
+			  c_states = outgoing[*b];
+			  for (c=c_states.begin(); c!=c_states.end(); c++)
+				{
+				  if (*c == *b) continue;
+				  else if (state_class[*c] == "null")
+					{
+					  std::cerr<<"Error: multiple null states in Q.  Can't marginalize with this simple method\n";
+					  exit(1);
+					}
+				  else
+					{
+					  if(logging) std::cerr<<"connecting states:"<<get_state_name(a)<<" and "<<get_state_name(*c)<<endl;
+
+					  if (!has_transition(a,*c))
+						{
+						  incoming[*c].push_back(a); outgoing[a].push_back(*c);
+						}
+						
+					  transitionPair.clear();
+					  transitionPair.push_back(a); transitionPair.push_back(*c); 
+					  //sum their transition until the difference is very small
+					  double toAdd = 100; 
+					  int counter = 1;
+					  bfloat ab, bc, bb; 
+					  ab = get_transition_weight(a, *b); bc = get_transition_weight( *b, *c); 
+					  if (!selfLoop) transition_weight[transitionPair] = ab*bc;
+					  else
+						{
+						  bb=get_transition_weight(*b,*b);
+						  while (toAdd> .0001)
+							{
+							  toAdd = ab*pow(bb, counter)*bc;
+							  transition_weight[transitionPair] += toAdd;
+							  counter += 1;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+*/

@@ -10,6 +10,7 @@
 #include "protpal/utils.h"
 #include "protpal/Q.h"
 #include "protpal/exactMatch.h"
+#include "protpal/AlignmentEnvelope.h"
 
 
 using namespace std;
@@ -71,6 +72,15 @@ class AbsorbingTransducer
   // leaf coordinates.  Each state maps to a pair holding the smallest and largest leaf coordinate accounted
   // for by this state.                                                                                 
   map<state, pair<int,int> > leaf_coords;
+
+  // Leaf sequence coordinates - naming is a bit awkward wrt the previous data.  I originally intended the above to be what 
+  // leaf_seq_coords is holding, but for a simple alignment envelope only the min/max leaf coords are necessary.  To use a guide
+  // alignment we're going to want to store the actual sequence coordinates.  
+
+  // Each state maps to a map holding the leaf coordinates of each sequence in the subtree accounted 
+  // for by this state.                                                                                 
+  map<state, map<node,int> > leaf_seq_coords;
+  
 
   //testing
   void test_transitions(void);
@@ -222,10 +232,24 @@ class Profile
   // leaf coordinates.  Each state maps to a pair holding the smallest and largest leaf coordinate accounted 
   // for by this state.
   map< vector<int>, pair<int, int> > leaf_coords;
-
   // Simple envelope criterion - leaf sequences must be within envelope_distance of each other
   int envelope_distance; 
+  
+  // Each state maps to a map holding the leaf coordinates of each sequence in the subtree accounted 
+  // for by this state.                                                                                 
+  map<vector<int>, map<node,int> > leaf_seq_coords;
 
+  // envelope-related variables
+  map<node, int> envMap; 
+  map<node, int>::iterator envIter1, envIter2; 
+  int guide_sausage; 
+  double total;
+  int num_total; 
+  bool use_guide_alignment; 
+  AlignmentEnvelope* envelope; 
+  string name1, name2; 
+  
+  
   // Qtransducer object
   QTransducer Q;
   int get_profile_type(state, string); 
@@ -237,6 +261,10 @@ class Profile
   // Left and right (mature) profile objects
   AbsorbingTransducer left_profile;
   AbsorbingTransducer right_profile;
+  // number of envelope-discards
+  int num_discarded_states; 
+  int DP_size(void); 
+
  private:
   // **** Fill_DP uses the following: ****
   // the actual DP matrix.  Maps states in profile (as M_id ) to double
@@ -245,12 +273,12 @@ class Profile
   map< vector<int>, bfloat> backward_matrix; 
 
   //accessor function, returns 0 if no matching entry
-  bfloat get_DP_cell(M_id); 
+  inline bfloat get_DP_cell(M_id); 
   bfloat get_backward_DP_cell(M_id); 
 
   
   // Add to a DP cell - first checks if the cell exists. 
-  void add_to_DP_cell(M_id, bfloat); 
+  inline void add_to_DP_cell(M_id, bfloat); 
   void add_to_backward_DP(M_id, bfloat); 
 
   // sum over all paths to the M_id cell in the forward matrix
@@ -269,9 +297,10 @@ class Profile
   vector<bfloat> tmpEmitVals; 
   vector<int> tmpEmitTuple; 
   vector<int> tmpMidVec;
+  map<vector<int>, bfloat>::iterator tmpIter; 
   
   // Utility functions
-  bool is_in_envelope(state left_state, state right_state); 
+  inline bool is_in_envelope(state left_state, state right_state, string checks="NA"); 
 
   void path2alignment(vector<M_id> &);
 
@@ -292,4 +321,5 @@ map<node, string> cat_STP(map<node, string>, map<node, string>);
 map<node, string> pad_STP(map<node, string>, vector<node>);
 bool is_flush(map<node, string> map1);
 pair<int, int> merge_coords(pair<int, int>, pair<int,int>); 
+map<node, int> merge_seq_coords(map<node, int> l , map<node, int> r); 
 #endif

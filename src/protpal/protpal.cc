@@ -71,6 +71,8 @@ int main(int argc, char* argv[])
 	  exit(0); 
 	}
   // If using an input alignment was requested, do this and bypass reconstruction
+  // This is a bit ambiguous now - an 'input alignment' is used for indel counting and other statistics, whereas a 
+  // "guide alignment" is used to constrain DP in aligning sequences.  
   else if (reconstruction.input_alignment)
     {
       int seqLength = -1;
@@ -149,11 +151,25 @@ int main(int argc, char* argv[])
 	  // and the depending parameters are correct.  Thus, Q's transitions must be re-built.  
 	  // Finally, marginalize Q's null states (e.g. IMDD)
 	  
+
 	  BranchTrans B_l(branchLengths[0], alphabet, rate_matrix, 
 			  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend, reconstruction.sub_rate);
-	  B_l.name ="Left branch";
 	  BranchTrans B_r(branchLengths[1], alphabet, rate_matrix,
 			  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend, reconstruction.sub_rate);
+	  // Boy this is awkward.  Can't seem to declare things within an if-else, so I'll declare it outside, then possibly overwrite it
+	  // hmm...
+	  if ( reconstruction.mixture )
+	    {
+	      BranchTrans B_l_mix(branchLengths[0], alphabet, rate_matrix, 
+			      reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend, 
+			      reconstruction.long_gap_extend, reconstruction.long_gap_weight, "mixture");
+	      BranchTrans B_r_mix(branchLengths[1], alphabet, rate_matrix,
+			      reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend, 
+			      reconstruction.long_gap_extend, reconstruction.long_gap_weight, "mixture");
+	      B_l = B_l_mix; 
+	      B_r = B_r_mix; 
+	    }
+	  B_l.name ="Left branch";
 	  B_r.name ="Right branch";
 
 	  QTransducer Q(R, //singlet
@@ -163,6 +179,7 @@ int main(int argc, char* argv[])
 			alphabet //sequence alphabet
 			);
 	  Q.marginalizeNullStates();
+
 	  // Create the new profile at node "treeNode", using the profiles at the children of treeNode:
 	  Profile profile(treeNode, // node on the tree where this profile sits
 			  reconstruction.profiles[children[0]], // left absorbing transducer
@@ -178,15 +195,26 @@ int main(int argc, char* argv[])
 	  profile.node_names = node_names; 
 	  profile.envelope_distance = reconstruction.envelope_distance; 
 	  profile.max_sampled_externals = reconstruction.max_sampled_externals; 
-
+	  // If we got a guide alignment on input, let the profile know about it so it can constrain DP breadth
+	  if (reconstruction.guide_alignment_filename != "None")
+	    {
+	      profile.use_guide_alignment = true; 
+	      profile.envelope = &reconstruction.envelope; 
+	      profile.guide_sausage = reconstruction.guide_sausage; // a bit redundant...maybe better to build all parameters into the envelope object
+	    }
+	  else
+	    profile.use_guide_alignment = false; 
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
 	    std::cerr<<"\tFilling forward dynamic programming matrix..."; 
 	  profile.fill_DP(reconstruction.loggingLevel, reconstruction.estimate_params);
 
 	  if(reconstruction.loggingLevel>=1)
-	    std::cerr<<"done.\n\t\tSubalignment likelihood: "<<-log(profile.forward_prob)/log(2)<<" bits\n"; 
-
+	    {
+	      std::cerr<<"done.\n\t\tSubalignment likelihood: "<<-log(profile.forward_prob)/log(2)<<" bits\n"; 
+	      std::cerr<<"\tProfile's DP matrix had " << profile.DP_size() << " cells\n"; 
+	      std::cerr<<"\tEnvelope allowed for discarding " << profile.num_discarded_states << " candidate states during DP recursion\n"; 
+	    }
 	  // For non-root nodes:
 	  if (treeNode != reconstruction.tree.root) 
 	    {
@@ -202,6 +230,7 @@ int main(int argc, char* argv[])
 				reconstruction.viterbi // sample viterbi path (on the last time through - only really applies to null states)
 				); 
 
+
 	      // clear the DP matrix - this really only clears the associativity, not the actual objects therein
 	      // UPDATE - with some scope trickery, this should *actually* clear the DP entries
 	      profile.clear_DP();
@@ -210,8 +239,9 @@ int main(int argc, char* argv[])
 	      //		reconstruction.pre_summed_profiles[treeNode] = profile; 
 	      if(reconstruction.loggingLevel>=1)
 		{
-		  std::cerr<<"done.  ";
-		  std::cerr<<"\n\tResulting DAG has "<< profile.num_sampled_externals<< " absorbing states." << endl; 
+		  std::cerr<<"done.  \n";
+		  std::cerr<<"\tResulting DAG has "<< profile.num_sampled_externals<< " absorbing states." << endl; 
+
 		}
 		  
 	      // Transform the (null-in, null-out) transducer into an absorbing transducer:
@@ -413,7 +443,7 @@ int main(int argc, char* argv[])
     }
   
   if (reconstruction.loggingLevel >= 1)
-    std::cerr<<"ProtPal reconstruction completed without errors\n";
+    std::cerr<<"\nProtPal reconstruction completed without errors.\n";
   
   return(0);
 }

@@ -8,6 +8,7 @@
 #include "protpal/utils.h"
 #include "protpal/profile.h"
 #include "protpal/transducer.h"
+#include "protpal/AlignmentEnvelope.h"
 #include "tree/phylogeny.h"
 #include "ecfg/ecfgsexpr.h"
 #include "seq/biosequence.h"
@@ -42,6 +43,11 @@ class Reconstruction
   sstring indel_filename;   
   sstring db_filename;   
   sstring treeFileName; 
+
+  // Alignment envelope stuff
+  sstring guide_alignment_filename; 
+  int guide_sausage; 
+  AlignmentEnvelope envelope; 
   
   string sequenceFileType; 
 
@@ -89,10 +95,13 @@ class Reconstruction
   bool estimate_root_insert;   
   
   //model parameters
+  bool mixture; 
   double ins_rate;
   double del_rate;   
   double sub_rate; 
   double gap_extend; 
+  double long_gap_extend; 
+  double long_gap_weight; 
   double root_insert_prob;
 
   // Indel investigation

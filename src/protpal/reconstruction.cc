@@ -84,10 +84,18 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("d -delete-rate", del_rate=0.0025,"Deletion rate ");
   opts.add("ri -root-insert-prob", root_insert_prob=0.999, "Insert probability at root"); 
   opts.add("eri -estimate-root-insert-prob", estimate_root_insert=false, "Estimate insertion probability at root by averaging leaf sequence length");
-  opts.add("x -gap-extend", gap_extend=0.9, "Gap extend probability");
+  opts.add("x -gap-extend", gap_extend=0.05, "Gap extend probability");
+  opts.add("mix -geo-mixture", mixture=false, "Use a mixture of geometrics for indel lengths (see also parameters lg and lw)");
+  opts.add("lg -long-gap-extend", long_gap_extend = 0.9, "Second mixture gap extend probability");
+  opts.add("lw -long-gap-weight", long_gap_weight = 0.2, "Mixture component weight for second mixture gap extend (e.g. -lg parameter)");
+
+  opts.newline(); 
+  opts.print_title("Speed/memory heuristics"); 
+  opts.add ("ga -guide-alignment",  guide_alignment_filename="None", "Aligned stockholm sequence file.  Use this as a guide alignment; the -gs option dictates how far from the guide alignment to explore .", false);
+  opts.add("gs -guide-sausage", guide_sausage = 50, "Max pairwise divergence from guide alignment homology relations."); 
   opts.add("n -num-samples", num_sampled_paths=100, "Number of paths to sample in traceback");
-  opts.add("m -max-DAG-size", max_sampled_externals=1000, "Max number (approximately) of delete states allowed in DAG");
-  opts.add("e -max-distance", envelope_distance=300, "Maximum allowed distance between aligned leaf characters");
+  opts.add("m -max-DAG-size", max_sampled_externals=1000, "Max number (approximately - due to sampling complete paths) of delete states allowed in DAG");
+  opts.add("e -max-distance", envelope_distance=300, "Maximum allowed distance between aligned leaf characters.  This is overridden if a guide alignment is supplied.");
 
   opts.newline();
   opts.print_title("Indel rate investigation");
@@ -142,6 +150,15 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   // Name internal nodes of the tree, if not already named
   set_node_names(); 
 
+  // If a guide alignment was used, initialize the alignmentEnvelope
+  if (guide_alignment_filename != "None")
+    {
+      if (loggingLevel >= 1)
+	std::cerr<<"\nBuilding alignment envelope from guide alignment...";
+      envelope.build_index(guide_alignment_filename);
+      if (loggingLevel >= 1)
+	std::cerr<<"Done.\n";
+    }
 }
 
 
