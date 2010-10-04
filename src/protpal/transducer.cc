@@ -475,228 +475,6 @@ BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_E
 
 
 
-// mixture-of-affine gaps branch transducer
-BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, 
-			 double ins_open_rate, double del_open_rate, double gap_extend, double gap_extend2, double mixPrior, string name)
-{
-  branch_length = branch_length_in;
-  name = "Mixture of affine gaps branch transducers";
-
-  vector<sstring> toks = alphabet_in.tokens(); 
-  for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
-	alphabet.push_back(string(a->c_str()));
-
-  alphabet_size = alphabet.size();
-  
-  conditional_sub_matrix = rate_matrix.create_conditional_substitution_matrix(branch_length); 
-
-  // Initialize state names
-  state_names.push_back("start");  
-  state_names.push_back("match");
-  state_names.push_back("wait");
-  state_names.push_back("delete_wait_1");  
-  state_names.push_back("delete_1");
-  state_names.push_back("delete_wait_2");  
-  state_names.push_back("delete_2");
-  state_names.push_back("insert_1");
-  state_names.push_back("insert_2");
-  state_names.push_back("end");
-
-  // Initialize state names
-  state_types.push_back("S");  
-  state_types.push_back("M");
-  state_types.push_back("W");
-  state_types.push_back("W");  
-  state_types.push_back("D");
-  state_types.push_back("W");  
-  state_types.push_back("D");
-  state_types.push_back("I");
-  state_types.push_back("I");
-  state_types.push_back("E");
-
-  /*
-   states:  
-    0 = start 
-    1 = match
-    2 = wait 
-    3 = delete_wait_1 
-    4 = delete_1
-    5 = delete_wait_2
-    6 = delete_2
-    7 = insert_1
-    8 = insert_2
-    9 = end    
-  */
-  int start=0, match=1, wait=2, delete_wait_1=3, delete_1=4, delete_wait_2=5, delete_2=6, insert_1=7, insert_2=8, end=9; 
-
-  for (int i=0; i<state_names.size(); i++) states.push_back(i); 
-
-  // Set outgoing transitions
-  vector<state> out;
-
-  out.push_back(insert_1); out.push_back(wait); out.push_back(insert_2); outgoing[start] = out; // start -> ( wait | insert_1 | insert_2 )
-
-  out.clear(); 
-  out.push_back(delete_1); out.push_back(delete_2); out.push_back(match); out.push_back(end); outgoing[wait] = out; // wait -> D1|D2|M|E
-
-  out.clear(); 
-  out.push_back(insert_1); out.push_back(insert_2); out.push_back(wait); outgoing[match] = out; // match(1) -> I1|I2|W
-
-  out.clear(); 
-  out.push_back(delete_1); outgoing[delete_wait_1] = out; // delete_wait_1 -> delete_1
-
-  out.clear(); 
-  out.push_back(delete_2); outgoing[delete_wait_2] = out; // delete_wait_2 -> delete_2
-  
-  out.clear(); 
-  out.push_back(delete_wait_1); out.push_back(insert_1); out.push_back(insert_2); out.push_back(wait); outgoing[delete_1] = out; // D1 -> delete_wait1|I1|I2|W
-
-  out.clear(); 
-  out.push_back(delete_wait_2); out.push_back(insert_1); out.push_back(insert_2); out.push_back(wait); outgoing[delete_2] = out; // D1 -> delete_wait1|I1|I2|W
-  
-  out.clear(); 
-  out.push_back(wait); out.push_back(insert_1);  outgoing[insert_1] = out; // I1 -> I1|W
-
-  out.clear(); 
-  out.push_back(wait); out.push_back(insert_2);  outgoing[insert_2] = out; // I2 -> I2|W
-  
-
-  // Transition weights are determined by the insertion/deletion rates and the branch_length (set on input)
-
-  double ins_extend_1 = gap_extend;
-  double del_extend_1 = gap_extend;
-
-  double ins_extend_2 = gap_extend2;
-  double del_extend_2 = gap_extend2;
-
-  // double mixPrior is prob of entering a insert2 or del2 state
-  double class1 = 1.0-mixPrior;
-  double class2 = mixPrior;
-  
-  double wait2end = 1; // This is a forced transition...should have weight 1.
-
-  // Probability/weight of an insertion 
-  double ins_open = 1-exp(-ins_open_rate*branch_length);
-  double del_open = 1-exp(-del_open_rate*branch_length);
-  
-  // Define their complements, for cleanliness 
-  double no_ins_open = 1-ins_open;
-  double no_del_open = 1-del_open; 
-  
-  double no_ins_extend_1 = 1-ins_extend_1;
-  double no_del_extend_1 = 1-del_extend_1;
-
-  double no_ins_extend_2 = 1-ins_extend_2;
-  double no_del_extend_2 = 1-del_extend_2;
-  
-
-  vector<state> transitionPair;  
-
-  // Transitions from start 
-  // start -> wait = no insertion
-  transitionPair.push_back(start); transitionPair.push_back(wait); 
-  transition_weight[transitionPair] = no_ins_open;   transitionPair.clear();
-  // start -> insert1 =  insertion, choose 1
-  transitionPair.push_back(start); transitionPair.push_back(insert_1); 
-  transition_weight[transitionPair] =ins_open*class1;   transitionPair.clear();
-  // start -> insert2 =  insertion, choose 2
-  transitionPair.push_back(start); transitionPair.push_back(insert_2); 
-  transition_weight[transitionPair] = ins_open*class2;   transitionPair.clear();
-
-
-  // Transitions from match 
-  // match -> wait = no insertion
-  transitionPair.push_back(match); transitionPair.push_back(wait); 
-  transition_weight[transitionPair] = no_ins_open;   transitionPair.clear();
-  // match -> insert1 =  insertion, choose 1
-  transitionPair.push_back(match); transitionPair.push_back(insert_1); 
-  transition_weight[transitionPair] = ins_open*class1;   transitionPair.clear();
-  // match -> insert1 =  insertion, choose 2
-  transitionPair.push_back(match); transitionPair.push_back(insert_2); 
-  transition_weight[transitionPair] = ins_open*class2;   transitionPair.clear();
-
-  // Transitions from wait 
-  // wait -> match = no deletion
-  transitionPair.push_back(wait); transitionPair.push_back(match); 
-  transition_weight[transitionPair] = no_del_open;   transitionPair.clear();
-  // wait -> delete1 =  deletion, choose 1
-  transitionPair.push_back(wait); transitionPair.push_back(delete_1); 
-  transition_weight[transitionPair] = del_open*class1;   transitionPair.clear();
-  // wait -> delete2 =  deletion, choose 2
-  transitionPair.push_back(wait); transitionPair.push_back(delete_2); 
-  transition_weight[transitionPair] = del_open*class2;   transitionPair.clear();
-  // wait -> end =  forced transition
-  transitionPair.push_back(wait); transitionPair.push_back(end); 
-  transition_weight[transitionPair] = wait2end;   transitionPair.clear();
-
-
-  // Transitions from delete_1
-  // delete1 -> wait = no insertion, no delete-extend_1
-  transitionPair.push_back(delete_1); transitionPair.push_back(wait); 
-  transition_weight[transitionPair] = no_del_extend_1*no_ins_open;   transitionPair.clear();
-  // delete1 -> delete_wait1 = delete-extend1
-  transitionPair.push_back(delete_1); transitionPair.push_back(delete_wait_1); 
-  transition_weight[transitionPair] = del_extend_1;   transitionPair.clear();
-  // delete1 -> insert1 = yes insertion, no delete-extend, choose 1
-  transitionPair.push_back(delete_1); transitionPair.push_back(insert_1); 
-  transition_weight[transitionPair] = no_del_extend_1*ins_open*class1;   transitionPair.clear();
-  // delete1 -> insert2 = yes insertion, no delete-extend, choose 2
-  transitionPair.push_back(delete_1); transitionPair.push_back(insert_2); 
-  transition_weight[transitionPair] = no_del_extend_1*ins_open*class2;   transitionPair.clear();
-
-  // Transitions from delete_2
-  // delete2 -> wait = no insertion, no delete-extend_2
-  transitionPair.push_back(delete_2); transitionPair.push_back(wait); 
-  transition_weight[transitionPair] = no_del_extend_2*no_ins_open;   transitionPair.clear();
-  // delete2 -> delete_wait2 = delete-extend2
-  transitionPair.push_back(delete_2); transitionPair.push_back(delete_wait_2); 
-  transition_weight[transitionPair] = del_extend_2;   transitionPair.clear();
-  // delete2 -> insert1 = yes insertion, no delete-extend, choose 1
-  transitionPair.push_back(delete_2); transitionPair.push_back(insert_1); 
-  transition_weight[transitionPair] = no_del_extend_2*ins_open*class1;   transitionPair.clear();
-  // delete1 -> insert2 = yes insertion, no delete-extend, choose 2
-  transitionPair.push_back(delete_2); transitionPair.push_back(insert_2); 
-  transition_weight[transitionPair] = no_del_extend_2*ins_open*class2;   transitionPair.clear();
-
-
-  //Transitions from delete_wait_1
-  // delete_wait_1 -> delete_1
-  transitionPair.push_back(delete_wait_1); transitionPair.push_back(delete_1); 
-  transition_weight[transitionPair] = 1;   transitionPair.clear();
-
-  //Transitions from delete_wait_2
-  // delete_wait_2 -> delete_2
-  transitionPair.push_back(delete_wait_2); transitionPair.push_back(delete_2); 
-  transition_weight[transitionPair] = 1;   transitionPair.clear();
-
-
-  // Transitions from insert1
-  // insert -> wait = no extend insertion
-  transitionPair.push_back(insert_1); transitionPair.push_back(wait); 
-  transition_weight[transitionPair] = no_ins_extend_1;   transitionPair.clear();
-  // insert -> insert =  extend insertion
-  transitionPair.push_back(insert_1); transitionPair.push_back(insert_1); 
-  transition_weight[transitionPair] = ins_extend_1;   transitionPair.clear();
-
-  // Transitions from insert2
-  // insert -> wait = no extend insertion
-  transitionPair.push_back(insert_2); transitionPair.push_back(wait); 
-  transition_weight[transitionPair] = no_ins_extend_2;   transitionPair.clear();
-  // insert -> insert =  extend insertion
-  transitionPair.push_back(insert_2); transitionPair.push_back(insert_2); 
-  transition_weight[transitionPair] = ins_extend_2;   transitionPair.clear();
-
-
-  // Emission weights
-  // Equilibrium over alphabet characters
-  // The states of type I are the only states which have an emission distribution
-
-  vector<double> equilibrium = rate_matrix.create_prior(); 
-  for (int i=0; i<states.size(); i++)
-	{
-	  if (state_types[i] == "I") emission_weight_matrix[i] = equilibrium;
-	}
-}
 
 
 
@@ -855,4 +633,902 @@ BranchTrans::BranchTrans(double branch_length_in, bool linear)
 	  if (state_types[i] == insert) emission_weight_matrix[i] = nullDistVector;
 	}
 
+}
+
+
+
+// mixture-of-affine gaps branch transducer - manually inputted
+// BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, 
+// 			 double ins_open_rate, double del_open_rate, double gap_extend, double gap_extend2, double mixPrior, string name)
+// {
+//   branch_length = branch_length_in;
+//   name = "Mixture of affine gaps branch transducers";
+
+//   vector<sstring> toks = alphabet_in.tokens(); 
+//   for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
+// 	alphabet.push_back(string(a->c_str()));
+
+//   alphabet_size = alphabet.size();
+  
+//   conditional_sub_matrix = rate_matrix.create_conditional_substitution_matrix(branch_length); 
+
+//   // Initialize state names
+//   state_names.push_back("start");  
+//   state_names.push_back("match");
+//   state_names.push_back("wait");
+//   state_names.push_back("delete_wait_1");  
+//   state_names.push_back("delete_1");
+//   state_names.push_back("delete_wait_2");  
+//   state_names.push_back("delete_2");
+//   state_names.push_back("insert_1");
+//   state_names.push_back("insert_2");
+//   state_names.push_back("end");
+
+//   // Initialize state names
+//   state_types.push_back("S");  
+//   state_types.push_back("M");
+//   state_types.push_back("W");
+//   state_types.push_back("W");  
+//   state_types.push_back("D");
+//   state_types.push_back("W");  
+//   state_types.push_back("D");
+//   state_types.push_back("I");
+//   state_types.push_back("I");
+//   state_types.push_back("E");
+
+//   /*
+//    states:  
+//     0 = start 
+//     1 = match
+//     2 = wait 
+//     3 = delete_wait_1 
+//     4 = delete_1
+//     5 = delete_wait_2
+//     6 = delete_2
+//     7 = insert_1
+//     8 = insert_2
+//     9 = end    
+//   */
+//   int start=0, match=1, wait=2, delete_wait_1=3, delete_1=4, delete_wait_2=5, delete_2=6, insert_1=7, insert_2=8, end=9; 
+
+//   for (int i=0; i<state_names.size(); i++) states.push_back(i); 
+
+//   // Set outgoing transitions
+//   vector<state> out;
+
+//   out.push_back(insert_1); out.push_back(wait); out.push_back(insert_2); outgoing[start] = out; // start -> ( wait | insert_1 | insert_2 )
+
+//   out.clear(); 
+//   out.push_back(delete_1); out.push_back(delete_2); out.push_back(match); out.push_back(end); outgoing[wait] = out; // wait -> D1|D2|M|E
+
+//   out.clear(); 
+//   out.push_back(insert_1); out.push_back(insert_2); out.push_back(wait); outgoing[match] = out; // match(1) -> I1|I2|W
+
+//   out.clear(); 
+//   out.push_back(delete_1); outgoing[delete_wait_1] = out; // delete_wait_1 -> delete_1
+
+//   out.clear(); 
+//   out.push_back(delete_2); outgoing[delete_wait_2] = out; // delete_wait_2 -> delete_2
+  
+//   out.clear(); 
+//   out.push_back(delete_wait_1); out.push_back(insert_1); out.push_back(insert_2); out.push_back(wait); outgoing[delete_1] = out; // D1 -> delete_wait1|I1|I2|W
+
+//   out.clear(); 
+//   out.push_back(delete_wait_2); out.push_back(insert_1); out.push_back(insert_2); out.push_back(wait); outgoing[delete_2] = out; // D1 -> delete_wait1|I1|I2|W
+  
+//   out.clear(); 
+//   out.push_back(wait); out.push_back(insert_1);  outgoing[insert_1] = out; // I1 -> I1|W
+
+//   out.clear(); 
+//   out.push_back(wait); out.push_back(insert_2);  outgoing[insert_2] = out; // I2 -> I2|W
+  
+
+//   // Transition weights are determined by the insertion/deletion rates and the branch_length (set on input)
+
+//   double ins_extend_1 = gap_extend;
+//   double del_extend_1 = gap_extend;
+
+//   double ins_extend_2 = gap_extend2;
+//   double del_extend_2 = gap_extend2;
+
+//   // double mixPrior is prob of entering a insert2 or del2 state
+//   double class1 = 1.0-mixPrior;
+//   double class2 = mixPrior;
+  
+//   double wait2end = 1; // This is a forced transition...should have weight 1.
+
+//   // Probability/weight of an insertion 
+//   double ins_open = 1-exp(-ins_open_rate*branch_length);
+//   double del_open = 1-exp(-del_open_rate*branch_length);
+  
+//   // Define their complements, for cleanliness 
+//   double no_ins_open = 1-ins_open;
+//   double no_del_open = 1-del_open; 
+  
+//   double no_ins_extend_1 = 1-ins_extend_1;
+//   double no_del_extend_1 = 1-del_extend_1;
+
+//   double no_ins_extend_2 = 1-ins_extend_2;
+//   double no_del_extend_2 = 1-del_extend_2;
+  
+
+//   vector<state> transitionPair;  
+
+//   // Transitions from start 
+//   // start -> wait = no insertion
+//   transitionPair.push_back(start); transitionPair.push_back(wait); 
+//   transition_weight[transitionPair] = no_ins_open;   transitionPair.clear();
+//   // start -> insert1 =  insertion, choose 1
+//   transitionPair.push_back(start); transitionPair.push_back(insert_1); 
+//   transition_weight[transitionPair] =ins_open*class1;   transitionPair.clear();
+//   // start -> insert2 =  insertion, choose 2
+//   transitionPair.push_back(start); transitionPair.push_back(insert_2); 
+//   transition_weight[transitionPair] = ins_open*class2;   transitionPair.clear();
+
+
+//   // Transitions from match 
+//   // match -> wait = no insertion
+//   transitionPair.push_back(match); transitionPair.push_back(wait); 
+//   transition_weight[transitionPair] = no_ins_open;   transitionPair.clear();
+//   // match -> insert1 =  insertion, choose 1
+//   transitionPair.push_back(match); transitionPair.push_back(insert_1); 
+//   transition_weight[transitionPair] = ins_open*class1;   transitionPair.clear();
+//   // match -> insert1 =  insertion, choose 2
+//   transitionPair.push_back(match); transitionPair.push_back(insert_2); 
+//   transition_weight[transitionPair] = ins_open*class2;   transitionPair.clear();
+
+//   // Transitions from wait 
+//   // wait -> match = no deletion
+//   transitionPair.push_back(wait); transitionPair.push_back(match); 
+//   transition_weight[transitionPair] = no_del_open;   transitionPair.clear();
+//   // wait -> delete1 =  deletion, choose 1
+//   transitionPair.push_back(wait); transitionPair.push_back(delete_1); 
+//   transition_weight[transitionPair] = del_open*class1;   transitionPair.clear();
+//   // wait -> delete2 =  deletion, choose 2
+//   transitionPair.push_back(wait); transitionPair.push_back(delete_2); 
+//   transition_weight[transitionPair] = del_open*class2;   transitionPair.clear();
+//   // wait -> end =  forced transition
+//   transitionPair.push_back(wait); transitionPair.push_back(end); 
+//   transition_weight[transitionPair] = wait2end;   transitionPair.clear();
+
+
+//   // Transitions from delete_1
+//   // delete1 -> wait = no insertion, no delete-extend_1
+//   transitionPair.push_back(delete_1); transitionPair.push_back(wait); 
+//   transition_weight[transitionPair] = no_del_extend_1*no_ins_open;   transitionPair.clear();
+//   // delete1 -> delete_wait1 = delete-extend1
+//   transitionPair.push_back(delete_1); transitionPair.push_back(delete_wait_1); 
+//   transition_weight[transitionPair] = del_extend_1;   transitionPair.clear();
+//   // delete1 -> insert1 = yes insertion, no delete-extend, choose 1
+//   transitionPair.push_back(delete_1); transitionPair.push_back(insert_1); 
+//   transition_weight[transitionPair] = no_del_extend_1*ins_open*class1;   transitionPair.clear();
+//   // delete1 -> insert2 = yes insertion, no delete-extend, choose 2
+//   transitionPair.push_back(delete_1); transitionPair.push_back(insert_2); 
+//   transition_weight[transitionPair] = no_del_extend_1*ins_open*class2;   transitionPair.clear();
+
+//   // Transitions from delete_2
+//   // delete2 -> wait = no insertion, no delete-extend_2
+//   transitionPair.push_back(delete_2); transitionPair.push_back(wait); 
+//   transition_weight[transitionPair] = no_del_extend_2*no_ins_open;   transitionPair.clear();
+//   // delete2 -> delete_wait2 = delete-extend2
+//   transitionPair.push_back(delete_2); transitionPair.push_back(delete_wait_2); 
+//   transition_weight[transitionPair] = del_extend_2;   transitionPair.clear();
+//   // delete2 -> insert1 = yes insertion, no delete-extend, choose 1
+//   transitionPair.push_back(delete_2); transitionPair.push_back(insert_1); 
+//   transition_weight[transitionPair] = no_del_extend_2*ins_open*class1;   transitionPair.clear();
+//   // delete1 -> insert2 = yes insertion, no delete-extend, choose 2
+//   transitionPair.push_back(delete_2); transitionPair.push_back(insert_2); 
+//   transition_weight[transitionPair] = no_del_extend_2*ins_open*class2;   transitionPair.clear();
+
+
+//   //Transitions from delete_wait_1
+//   // delete_wait_1 -> delete_1
+//   transitionPair.push_back(delete_wait_1); transitionPair.push_back(delete_1); 
+//   transition_weight[transitionPair] = 1;   transitionPair.clear();
+
+//   //Transitions from delete_wait_2
+//   // delete_wait_2 -> delete_2
+//   transitionPair.push_back(delete_wait_2); transitionPair.push_back(delete_2); 
+//   transition_weight[transitionPair] = 1;   transitionPair.clear();
+
+
+//   // Transitions from insert1
+//   // insert -> wait = no extend insertion
+//   transitionPair.push_back(insert_1); transitionPair.push_back(wait); 
+//   transition_weight[transitionPair] = no_ins_extend_1;   transitionPair.clear();
+//   // insert -> insert =  extend insertion
+//   transitionPair.push_back(insert_1); transitionPair.push_back(insert_1); 
+//   transition_weight[transitionPair] = ins_extend_1;   transitionPair.clear();
+
+//   // Transitions from insert2
+//   // insert -> wait = no extend insertion
+//   transitionPair.push_back(insert_2); transitionPair.push_back(wait); 
+//   transition_weight[transitionPair] = no_ins_extend_2;   transitionPair.clear();
+//   // insert -> insert =  extend insertion
+//   transitionPair.push_back(insert_2); transitionPair.push_back(insert_2); 
+//   transition_weight[transitionPair] = ins_extend_2;   transitionPair.clear();
+
+
+//   // Emission weights
+//   // Equilibrium over alphabet characters
+//   // The states of type I are the only states which have an emission distribution
+
+//   vector<double> equilibrium = rate_matrix.create_prior(); 
+//   for (int i=0; i<states.size(); i++)
+// 	{
+// 	  if (state_types[i] == "I") emission_weight_matrix[i] = equilibrium;
+// 	}
+// }
+
+
+
+
+// 2 - mixture-of-affine gaps branch transducer                                                                      
+BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix,
+                         double ins_open_rate, double del_open_rate, double gap_extend_0, double mix_prior_0, double gap_extend_1, double mix_prior_1)
+
+{
+branch_length = branch_length_in;
+name = "mixture";
+
+vector<sstring> toks = alphabet_in.tokens();
+for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
+   alphabet.push_back(string(a->c_str()));
+
+alphabet_size = alphabet.size();
+
+double ins_open = 1-exp(-ins_open_rate*branch_length);
+double del_open = 1-exp(-del_open_rate*branch_length);
+
+conditional_sub_matrix = rate_matrix.create_conditional_substitution_matrix(branch_length);
+
+// State identifiers
+int start = 0;
+int end = 1;
+int wait_end = 2;
+int match = 3;
+int wait_match = 4;
+int delete_0 = 5;
+int wait_delete_0 = 6;
+int insert_0 = 7;
+int delete_1 = 8;
+int wait_delete_1 = 9;
+int insert_1 = 10;
+
+// State list
+states.push_back(0);
+states.push_back(1);
+states.push_back(2);
+states.push_back(3);
+states.push_back(4);
+states.push_back(5);
+states.push_back(6);
+states.push_back(7);
+states.push_back(8);
+states.push_back(9);
+states.push_back(10);
+
+// State names
+state_names.push_back("start");
+state_names.push_back("end");
+state_names.push_back("wait_end");
+state_names.push_back("match");
+state_names.push_back("wait_match");
+state_names.push_back("delete_0");
+state_names.push_back("wait_delete_0");
+state_names.push_back("insert_0");
+state_names.push_back("delete_1");
+state_names.push_back("wait_delete_1");
+state_names.push_back("insert_1");
+
+// State types
+state_types.push_back("S");
+state_types.push_back("E");
+state_types.push_back("W");
+state_types.push_back("M");
+state_types.push_back("W");
+state_types.push_back("D");
+state_types.push_back("W");
+state_types.push_back("I");
+state_types.push_back("D");
+state_types.push_back("W");
+state_types.push_back("I");
+
+// State transitions
+vector<state> out;
+
+// Transitions out of delete_0
+out.clear();
+out.push_back(insert_0);
+out.push_back(insert_1);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[delete_0] = out;
+
+// Transitions out of delete_1
+out.clear();
+out.push_back(insert_0);
+out.push_back(insert_1);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[delete_1] = out;
+
+// Transitions out of insert_0
+out.clear();
+out.push_back(insert_0);
+out.push_back(wait_delete_0);
+out.push_back(wait_delete_1);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[insert_0] = out;
+
+// Transitions out of insert_1
+out.clear();
+out.push_back(insert_1);
+out.push_back(wait_delete_0);
+out.push_back(wait_delete_1);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[insert_1] = out;
+
+// Transitions out of start
+out.clear();
+out.push_back(insert_0);
+out.push_back(wait_delete_0);
+out.push_back(insert_1);
+out.push_back(wait_delete_1);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[start] = out;
+
+// Transitions out of wait_delete_1
+out.clear();
+out.push_back(delete_1);
+outgoing[wait_delete_1] = out;
+
+// Transitions out of wait_delete_0
+out.clear();
+out.push_back(delete_0);
+outgoing[wait_delete_0] = out;
+
+// Transitions out of wait_match
+out.clear();
+out.push_back(match);
+outgoing[wait_match] = out;
+
+// Transitions out of match
+out.clear();
+out.push_back(wait_delete_0);
+out.push_back(insert_0);
+out.push_back(wait_delete_1);
+out.push_back(insert_1);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[match] = out;
+
+// Transitions out of wait_end
+out.clear();
+out.push_back(end);
+outgoing[wait_end] = out;
+
+//Transition weights
+vector<state> transitionPair;
+
+// Transition weights out of delete_0
+transitionPair.clear();
+transitionPair.push_back(delete_0); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = (1-gap_extend_0)*ins_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(delete_0); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = (1-gap_extend_0)*ins_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(delete_0); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_0)*(1-ins_open);
+transitionPair.clear();
+transitionPair.push_back(delete_0); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of delete_1
+transitionPair.clear();
+transitionPair.push_back(delete_1); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = (1-gap_extend_1)*ins_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(delete_1); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = (1-gap_extend_1)*ins_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(delete_1); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_1)*(1-ins_open);
+transitionPair.clear();
+transitionPair.push_back(delete_1); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of insert_0
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = gap_extend_0;
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(wait_delete_0);
+transition_weight[transitionPair] = (1-gap_extend_0)*del_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(wait_delete_1);
+transition_weight[transitionPair] = (1-gap_extend_0)*del_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_0)*(1-del_open);
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of insert_1
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = gap_extend_1;
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(wait_delete_0);
+transition_weight[transitionPair] = (1-gap_extend_1)*del_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(wait_delete_1);
+transition_weight[transitionPair] = (1-gap_extend_1)*del_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_1)*(1-del_open);
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of start
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = ins_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(wait_delete_0);
+transition_weight[transitionPair] = (1-ins_open)*del_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = ins_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(wait_delete_1);
+transition_weight[transitionPair] = (1-ins_open)*del_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-ins_open)*(1-del_open);
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of wait_delete_1
+transitionPair.clear();
+transitionPair.push_back(wait_delete_1); transitionPair.push_back(delete_1);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of wait_delete_0
+transitionPair.clear();
+transitionPair.push_back(wait_delete_0); transitionPair.push_back(delete_0);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of wait_match
+transitionPair.clear();
+transitionPair.push_back(wait_match); transitionPair.push_back(match);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of match
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(wait_delete_0);
+transition_weight[transitionPair] = del_open*(1-ins_open)*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = ins_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(wait_delete_1);
+transition_weight[transitionPair] = del_open*(1-ins_open)*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = ins_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-ins_open)*(1-del_open);
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of wait_end
+transitionPair.clear();
+transitionPair.push_back(wait_end); transitionPair.push_back(end);
+transition_weight[transitionPair] = 1.0;
+
+vector<double> equilibrium = rate_matrix.create_prior();
+for (int i=0; i<states.size(); i++)
+    if (state_types[i] == "I") 
+        emission_weight_matrix[i] = equilibrium;
+}
+
+
+
+// 3 - mixture-of-affine gaps branch transducer                                                                      
+BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix,
+                         double ins_open_rate, double del_open_rate, double gap_extend_0, double mix_prior_0, double gap_extend_1, double mix_prior_1, double gap_extend_2, double mix_prior_2)
+
+{
+branch_length = branch_length_in;
+name = "mixture";
+
+vector<sstring> toks = alphabet_in.tokens();
+for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
+   alphabet.push_back(string(a->c_str()));
+
+alphabet_size = alphabet.size();
+
+double ins_open = 1-exp(-ins_open_rate*branch_length);
+double del_open = 1-exp(-del_open_rate*branch_length);
+
+conditional_sub_matrix = rate_matrix.create_conditional_substitution_matrix(branch_length);
+
+// State identifiers
+int start = 0;
+int end = 1;
+int wait_end = 2;
+int match = 3;
+int wait_match = 4;
+int delete_0 = 5;
+int wait_delete_0 = 6;
+int insert_0 = 7;
+int delete_1 = 8;
+int wait_delete_1 = 9;
+int insert_1 = 10;
+int delete_2 = 11;
+int wait_delete_2 = 12;
+int insert_2 = 13;
+
+// State list
+states.push_back(0);
+states.push_back(1);
+states.push_back(2);
+states.push_back(3);
+states.push_back(4);
+states.push_back(5);
+states.push_back(6);
+states.push_back(7);
+states.push_back(8);
+states.push_back(9);
+states.push_back(10);
+states.push_back(11);
+states.push_back(12);
+states.push_back(13);
+
+// State names
+state_names.push_back("start");
+state_names.push_back("end");
+state_names.push_back("wait_end");
+state_names.push_back("match");
+state_names.push_back("wait_match");
+state_names.push_back("delete_0");
+state_names.push_back("wait_delete_0");
+state_names.push_back("insert_0");
+state_names.push_back("delete_1");
+state_names.push_back("wait_delete_1");
+state_names.push_back("insert_1");
+state_names.push_back("delete_2");
+state_names.push_back("wait_delete_2");
+state_names.push_back("insert_2");
+
+// State types
+state_types.push_back("S");
+state_types.push_back("E");
+state_types.push_back("W");
+state_types.push_back("M");
+state_types.push_back("W");
+state_types.push_back("D");
+state_types.push_back("W");
+state_types.push_back("I");
+state_types.push_back("D");
+state_types.push_back("W");
+state_types.push_back("I");
+state_types.push_back("D");
+state_types.push_back("W");
+state_types.push_back("I");
+
+// State transitions
+vector<state> out;
+
+// Transitions out of insert_2
+out.clear();
+out.push_back(insert_2);
+out.push_back(wait_delete_0);
+out.push_back(wait_delete_1);
+out.push_back(wait_delete_2);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[insert_2] = out;
+
+// Transitions out of delete_1
+out.clear();
+out.push_back(insert_0);
+out.push_back(insert_1);
+out.push_back(insert_2);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[delete_1] = out;
+
+// Transitions out of insert_0
+out.clear();
+out.push_back(insert_0);
+out.push_back(wait_delete_0);
+out.push_back(wait_delete_1);
+out.push_back(wait_delete_2);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[insert_0] = out;
+
+// Transitions out of insert_1
+out.clear();
+out.push_back(insert_1);
+out.push_back(wait_delete_0);
+out.push_back(wait_delete_1);
+out.push_back(wait_delete_2);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[insert_1] = out;
+
+// Transitions out of delete_2
+out.clear();
+out.push_back(insert_0);
+out.push_back(insert_1);
+out.push_back(insert_2);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[delete_2] = out;
+
+// Transitions out of wait_delete_2
+out.clear();
+out.push_back(delete_2);
+outgoing[wait_delete_2] = out;
+
+// Transitions out of start
+out.clear();
+out.push_back(insert_0);
+out.push_back(wait_delete_0);
+out.push_back(insert_1);
+out.push_back(wait_delete_1);
+out.push_back(insert_2);
+out.push_back(wait_delete_2);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[start] = out;
+
+// Transitions out of wait_delete_1
+out.clear();
+out.push_back(delete_1);
+outgoing[wait_delete_1] = out;
+
+// Transitions out of wait_delete_0
+out.clear();
+out.push_back(delete_0);
+outgoing[wait_delete_0] = out;
+
+// Transitions out of delete_0
+out.clear();
+out.push_back(insert_0);
+out.push_back(insert_1);
+out.push_back(insert_2);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[delete_0] = out;
+
+// Transitions out of wait_match
+out.clear();
+out.push_back(match);
+outgoing[wait_match] = out;
+
+// Transitions out of match
+out.clear();
+out.push_back(wait_delete_0);
+out.push_back(insert_0);
+out.push_back(wait_delete_1);
+out.push_back(insert_1);
+out.push_back(wait_delete_2);
+out.push_back(insert_2);
+out.push_back(wait_match);
+out.push_back(wait_end);
+outgoing[match] = out;
+
+// Transitions out of wait_end
+out.clear();
+out.push_back(end);
+outgoing[wait_end] = out;
+
+//Transition weights
+vector<state> transitionPair;
+
+// Transition weights out of insert_2
+transitionPair.clear();
+transitionPair.push_back(insert_2); transitionPair.push_back(insert_2);
+transition_weight[transitionPair] = gap_extend_2;
+transitionPair.clear();
+transitionPair.push_back(insert_2); transitionPair.push_back(wait_delete_0);
+transition_weight[transitionPair] = (1-gap_extend_2)*del_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(insert_2); transitionPair.push_back(wait_delete_1);
+transition_weight[transitionPair] = (1-gap_extend_2)*del_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(insert_2); transitionPair.push_back(wait_delete_2);
+transition_weight[transitionPair] = (1-gap_extend_2)*del_open*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(insert_2); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_2)*(1-del_open);
+transitionPair.clear();
+transitionPair.push_back(insert_2); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of delete_1
+transitionPair.clear();
+transitionPair.push_back(delete_1); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = (1-gap_extend_1)*ins_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(delete_1); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = (1-gap_extend_1)*ins_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(delete_1); transitionPair.push_back(insert_2);
+transition_weight[transitionPair] = (1-gap_extend_1)*ins_open*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(delete_1); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_1)*(1-ins_open);
+transitionPair.clear();
+transitionPair.push_back(delete_1); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of insert_0
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = gap_extend_0;
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(wait_delete_0);
+transition_weight[transitionPair] = (1-gap_extend_0)*del_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(wait_delete_1);
+transition_weight[transitionPair] = (1-gap_extend_0)*del_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(wait_delete_2);
+transition_weight[transitionPair] = (1-gap_extend_0)*del_open*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_0)*(1-del_open);
+transitionPair.clear();
+transitionPair.push_back(insert_0); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of insert_1
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = gap_extend_1;
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(wait_delete_0);
+transition_weight[transitionPair] = (1-gap_extend_1)*del_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(wait_delete_1);
+transition_weight[transitionPair] = (1-gap_extend_1)*del_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(wait_delete_2);
+transition_weight[transitionPair] = (1-gap_extend_1)*del_open*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_1)*(1-del_open);
+transitionPair.clear();
+transitionPair.push_back(insert_1); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of delete_2
+transitionPair.clear();
+transitionPair.push_back(delete_2); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = (1-gap_extend_2)*ins_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(delete_2); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = (1-gap_extend_2)*ins_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(delete_2); transitionPair.push_back(insert_2);
+transition_weight[transitionPair] = (1-gap_extend_2)*ins_open*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(delete_2); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_2)*(1-ins_open);
+transitionPair.clear();
+transitionPair.push_back(delete_2); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of wait_delete_2
+transitionPair.clear();
+transitionPair.push_back(wait_delete_2); transitionPair.push_back(delete_2);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of start
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = ins_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(wait_delete_0);
+transition_weight[transitionPair] = (1-ins_open)*del_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = ins_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(wait_delete_1);
+transition_weight[transitionPair] = (1-ins_open)*del_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(insert_2);
+transition_weight[transitionPair] = ins_open*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(wait_delete_2);
+transition_weight[transitionPair] = (1-ins_open)*del_open*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-ins_open)*(1-del_open);
+transitionPair.clear();
+transitionPair.push_back(start); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of wait_delete_1
+transitionPair.clear();
+transitionPair.push_back(wait_delete_1); transitionPair.push_back(delete_1);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of wait_delete_0
+transitionPair.clear();
+transitionPair.push_back(wait_delete_0); transitionPair.push_back(delete_0);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of delete_0
+transitionPair.clear();
+transitionPair.push_back(delete_0); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = (1-gap_extend_0)*ins_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(delete_0); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = (1-gap_extend_0)*ins_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(delete_0); transitionPair.push_back(insert_2);
+transition_weight[transitionPair] = (1-gap_extend_0)*ins_open*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(delete_0); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-gap_extend_0)*(1-ins_open);
+transitionPair.clear();
+transitionPair.push_back(delete_0); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of wait_match
+transitionPair.clear();
+transitionPair.push_back(wait_match); transitionPair.push_back(match);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of match
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(wait_delete_0);
+transition_weight[transitionPair] = del_open*(1-ins_open)*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(insert_0);
+transition_weight[transitionPair] = ins_open*mix_prior_0;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(wait_delete_1);
+transition_weight[transitionPair] = del_open*(1-ins_open)*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(insert_1);
+transition_weight[transitionPair] = ins_open*mix_prior_1;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(wait_delete_2);
+transition_weight[transitionPair] = del_open*(1-ins_open)*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(insert_2);
+transition_weight[transitionPair] = ins_open*mix_prior_2;
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(wait_match);
+transition_weight[transitionPair] = (1-ins_open)*(1-del_open);
+transitionPair.clear();
+transitionPair.push_back(match); transitionPair.push_back(wait_end);
+transition_weight[transitionPair] = 1.0;
+
+// Transition weights out of wait_end
+transitionPair.clear();
+transitionPair.push_back(wait_end); transitionPair.push_back(end);
+transition_weight[transitionPair] = 1.0;
+
+vector<double> equilibrium = rate_matrix.create_prior();
+for (int i=0; i<states.size(); i++)
+    if (state_types[i] == "I") 
+        emission_weight_matrix[i] = equilibrium;
 }

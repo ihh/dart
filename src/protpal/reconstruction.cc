@@ -84,11 +84,21 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("d -delete-rate", del_rate=0.0025,"Deletion rate ");
   opts.add("ri -root-insert-prob", root_insert_prob=0.999, "Insert probability at root"); 
   opts.add("eri -estimate-root-insert-prob", estimate_root_insert=false, "Estimate insertion probability at root by averaging leaf sequence length");
-  opts.add("x -gap-extend", gap_extend=0.05, "Gap extend probability");
-  opts.add("mix -geo-mixture", mixture=false, "Use a mixture of geometrics for indel lengths (see also parameters lg and lw)");
-  opts.add("lg -long-gap-extend", long_gap_extend = 0.9, "Second mixture gap extend probability");
-  opts.add("lw -long-gap-weight", long_gap_weight = 0.2, "Mixture component weight for second mixture gap extend (e.g. -lg parameter)");
 
+  opts.newline();
+  opts.print_title("Indel length modeling");
+  opts.add("x -gap-extend", gap_extend=0.9, "Gap extend probability (for first component if a mixture model is used)");
+  opts.add("mix2 -geo-mixture-2", mixture_2=false, "Use a mixture of 2 geometrics for indel lengths (see also parameters ge2 and mp2)");
+  opts.add("ge2 -gap-extend-2", gap_extend_2 = 0.31, "Second mixture gap extend probability");
+  opts.add("mp2 -mix-prior-2", mix_prior_2 = 0.43, "Mixture component weight for second mixture gap extend (e.g. goes with -ge2 parameter)");
+  
+    opts.add("mix3 -geo-mixture-3", mixture_3=false, "Use a mixture of 3 geometrics for indel lengths (see also parameters ge3 and mp3)");
+  opts.add("ge3 -gap_extend_3", gap_extend_3 = 0.00001, "Third mixture gap extend probability");
+  opts.add("mp3 -mix-prior-3", mix_prior_3 = 0.2, "Mixture component weight for third mixture gap extend (e.g. goes with -ge3 parameter)");
+
+  opts.print("Note: currently only 1, 2, and 3-component mixtures are implemented.  However, using dart/perl/quickgmix.pl (for parameter estimates) and dart/python/mixture-gen.py (to generate C++ code to append to transducer.{h,cc}) you could make a mixture of any number of components.");
+  
+  opts.newline(); 
   opts.newline(); 
   opts.print_title("Speed/memory heuristics"); 
   opts.add ("ga -guide-alignment",  guide_alignment_filename="None", "Aligned stockholm sequence file.  Use this as a guide alignment; the -gs option dictates how far from the guide alignment to explore .", false);
@@ -159,6 +169,14 @@ Reconstruction::Reconstruction(int argc, char* argv[])
       if (loggingLevel >= 1)
 	std::cerr<<"Done.\n";
     }
+
+  if ( 1 - mix_prior_2 - mix_prior_3 < 0)
+    {
+      std::cerr<<"Error - prior on first mixture component is less than 0.  In specifying 2nd and 3rd components, remember that P(first) = 1 - P(2nd) - P(3rd)\n"; 
+      exit(0); 
+    }
+	
+
 }
 
 

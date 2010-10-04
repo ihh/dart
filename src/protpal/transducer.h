@@ -128,10 +128,18 @@ class BranchTrans : public Transducer
 {
  public:
   float branch_length;
-  // constructor.  Again, does everything for us for a basic setup/parameterization
+  // constructor.  Again, does everything for us for a basic setup/parameterization of an affine-gap transducer
   BranchTrans(double, Alphabet&, Irrev_EM_matrix&, double, double, double, double subRate = 1.0);
-  BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, double ins_open_rate, double del_open_rate, double gap_extend,
-	      double gap_extend2, double mixPrior, string name ); // mixture of affines
+  // 2 - mixture-of-affine gaps branch transducer                                                                      
+  BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, double ins_open_rate, double del_open_rate, 
+	      double gap_extend, double mixPrior, 
+	      double gap_extend2, double mixPrior2); 
+  // 3 - mixture-of-affine gaps branch transducer                                                                      
+  BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix,
+	      double ins_open_rate, double del_open_rate, 
+	      double gap_extend_0, double mix_prior_0, 
+	      double gap_extend_1, double mix_prior_1, 
+	      double gap_extend_2,double mix_prior_2);
   BranchTrans(double, bool);  
   BranchTrans(void);  
   array2d<double> conditional_sub_matrix;

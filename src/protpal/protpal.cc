@@ -158,17 +158,47 @@ int main(int argc, char* argv[])
 			  reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend, reconstruction.sub_rate);
 	  // Boy this is awkward.  Can't seem to declare things within an if-else, so I'll declare it outside, then possibly overwrite it
 	  // hmm...
-	  if ( reconstruction.mixture )
+	  if ( reconstruction.mixture_2 )
 	    {
-	      BranchTrans B_l_mix(branchLengths[0], alphabet, rate_matrix, 
-			      reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend, 
-			      reconstruction.long_gap_extend, reconstruction.long_gap_weight, "mixture");
-	      BranchTrans B_r_mix(branchLengths[1], alphabet, rate_matrix,
-			      reconstruction.ins_rate, reconstruction.del_rate, reconstruction.gap_extend, 
-			      reconstruction.long_gap_extend, reconstruction.long_gap_weight, "mixture");
-	      B_l = B_l_mix; 
-	      B_r = B_r_mix; 
+	      BranchTrans L_mix_2(branchLengths[0], alphabet, rate_matrix, 
+			      reconstruction.ins_rate, reconstruction.del_rate, 
+				  reconstruction.gap_extend, 
+				  1-reconstruction.mix_prior_2, 
+				  reconstruction.gap_extend_2,
+				  reconstruction.mix_prior_2);
+
+	      BranchTrans R_mix_2(branchLengths[1], alphabet, rate_matrix,
+			      reconstruction.ins_rate, reconstruction.del_rate, 
+				  reconstruction.gap_extend, 
+				  1-reconstruction.mix_prior_2, 
+				  reconstruction.gap_extend_2,
+				  reconstruction.mix_prior_2);
+	      B_l = L_mix_2; 
+	      B_r = R_mix_2; 
 	    }
+	  else if ( reconstruction.mixture_3 )
+	    {
+	      BranchTrans L_mix_3(branchLengths[0], alphabet, rate_matrix, 
+				  reconstruction.ins_rate, reconstruction.del_rate, 
+				  reconstruction.gap_extend, 
+				  1-reconstruction.mix_prior_2 - reconstruction.mix_prior_3, 
+				  reconstruction.gap_extend_2,
+				  reconstruction.mix_prior_2, 
+				  reconstruction.gap_extend_3,
+				  reconstruction.mix_prior_3);
+
+	      BranchTrans R_mix_3(branchLengths[1], alphabet, rate_matrix,
+			      reconstruction.ins_rate, reconstruction.del_rate, 
+				  reconstruction.gap_extend, 
+				  1-reconstruction.mix_prior_2 - reconstruction.mix_prior_3, 
+				  reconstruction.gap_extend_2,
+				  reconstruction.mix_prior_2, 
+				  reconstruction.gap_extend_3,
+				  reconstruction.mix_prior_3);
+	      B_l = L_mix_3; 
+	      B_r = R_mix_3; 
+	    }
+	  
 	  B_l.name ="Left branch";
 	  B_r.name ="Right branch";
 
@@ -213,7 +243,8 @@ int main(int argc, char* argv[])
 	    {
 	      std::cerr<<"done.\n\t\tSubalignment likelihood: "<<-log(profile.forward_prob)/log(2)<<" bits\n"; 
 	      std::cerr<<"\tProfile's DP matrix had " << profile.DP_size() << " cells\n"; 
-	      std::cerr<<"\tEnvelope allowed for discarding " << profile.num_discarded_states << " candidate states during DP recursion\n"; 
+	      if (profile.num_discarded_states > 0)
+		std::cerr<<"\tEnvelope allowed for discarding " << profile.num_discarded_states << " candidate states during DP recursion\n"; 
 	    }
 	  // For non-root nodes:
 	  if (treeNode != reconstruction.tree.root) 

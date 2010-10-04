@@ -95,13 +95,16 @@ class Reconstruction
   bool estimate_root_insert;   
   
   //model parameters
-  bool mixture; 
+  bool mixture_2; 
+  bool mixture_3; 
   double ins_rate;
   double del_rate;   
   double sub_rate; 
   double gap_extend; 
-  double long_gap_extend; 
-  double long_gap_weight; 
+  double gap_extend_2; 
+  double mix_prior_2;
+  double gap_extend_3; 
+  double mix_prior_3;
   double root_insert_prob;
 
   // Indel investigation
