@@ -8,16 +8,16 @@ while (<>) {
     if (/^\s*>\s*(\S+)/) {
 	$name = $1;
 	die "Duplicate name '$name'" if exists $seq{$name};
-	$seq{$name} = $ss{$name} = "";
+	$seq{$name} = $ss{$name} = undef;
 	push @name, $name;
     } elsif (defined $name) {
 	push @name, $name unless @name > 0;  # handle the case of anonymous sequences
-	if (/^\s*(\S+)\s*$/) {
-	    $seq{$name} .= $1;
-	} elsif (/^\s*([\(\)\.]+)\s+\(\s*[0-9\.\-]+\)/) {
+	if (/^\s*(\S+)\s*$/ && !defined($seq{$name})) {
+	    $seq{$name} = $1;
+	} elsif (/^\s*([\(\)\.]+)/ && !defined($ss{$name})) {
 	    my $ss = $1;
 	    $ss =~ tr/()/<>/;
-	    $ss{$name} .= $ss;
+	    $ss{$name} = $ss;
 	}
     }
 }
