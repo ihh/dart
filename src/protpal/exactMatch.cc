@@ -33,9 +33,13 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
 
   alphabet_size = alphabet.size();
   float aSize = alphabet_size;
-
+  // for alignment envelope 
+  map<node, int> coordMap; 
   num_delete_states = sequence.length();
   start_state = -1; 
+  coordMap[treeNode] = -1;
+  leaf_seq_coords[start_state] = coordMap; 
+
   pre_end_state = num_delete_states;
   end_state = num_delete_states + 1;
 
@@ -49,8 +53,7 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
   vector<int> to; 
   vector<int> from;
   pair<int, int> pairIdx;
-  // for alignment envelope 
-  map<node, int> coordMap; 
+
   for (int i=0; i<sequence.size(); i++)
 	{
 	  sequence[i] = tolower(sequence[i]);
@@ -102,6 +105,10 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
 		}
 	}
 
+  // for alignment envelope 
+  coordMap[treeNode] = num_delete_states-1;
+  leaf_seq_coords[pre_end_state] = coordMap; 
+  
   // Add to/from entries for the WAIT state and END state
   to.clear(); from.clear();
   //  to.push_back(num_delete_states+1); outgoing.push_back(to);

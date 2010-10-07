@@ -833,7 +833,11 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 
 	  // If parent is the start state, we give it a "dummy" STP map
 	  if (parent == sampled_profile->sampled_states[sampled_start_state] ) 
-	    state_type_phylogeny[state_counter] = sampled_profile->merge_STP(parent); 	  
+	    {
+	      state_type_phylogeny[state_counter] = sampled_profile->merge_STP(parent); 	  
+	      // for alignment envelope
+	      leaf_seq_coords[state_counter] = sampled_profile->leaf_seq_coords[parent.toVector()]; 
+	    }
 
 	  if ( sampled_externals_outgoing.count(parent.toVector()) < 1 )
 	    {
@@ -859,6 +863,9 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   mid2int[parent.toVector()] = pre_end_state; 
   state2mid[pre_end_state] = parent; 
   state_type_phylogeny[state_counter] = sampled_profile->merge_STP(parent); 
+  // for alignment envelope
+  leaf_seq_coords[pre_end_state] = sampled_profile->leaf_seq_coords[parent.toVector()]; 
+
   if (num_delete_states != pre_end_state)
 	{
 	  std::cerr<<"Pre-end state set as "<<state_counter<<".  There were "<<num_delete_states<<" external states.\n";
@@ -1582,11 +1589,10 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 		  num_sampled_externals += 1; 
 	}
   if (index(mPrime, sampled_outgoing[m.toVector()]) == -1) 
-    { sampled_outgoing[m.toVector()].push_back(mPrime); }
-  if (index(m, sampled_incoming[mPrime.toVector()]) == -1) 
-    { sampled_incoming[mPrime.toVector()].push_back(m);   }
+    sampled_outgoing[m.toVector()].push_back(mPrime);
   
-
+  if (index(m, sampled_incoming[mPrime.toVector()]) == -1) 
+    sampled_incoming[mPrime.toVector()].push_back(m); 
 
   if (leaf_coords.count(m.toVector())<1)
 	{
@@ -1608,15 +1614,13 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
   // for alignment envelope - merge a pair of leaf sequence coords, similar to above. 
   if (leaf_seq_coords.count(m.toVector())<1)
 	{
-	  if ( m.left_state  == left_profile.end_state || m.left_state  == left_profile.pre_end_state)
-		if ( m.right_state  == right_profile.end_state || m.right_state  == right_profile.pre_end_state)
-		  // do not store coordinates
-		  {}
-		else 
-		  leaf_seq_coords[m.toVector()] = right_profile.leaf_seq_coords[m.right_state];
+	  if ( m.left_state  == left_profile.end_state || m.right_state  == right_profile.end_state )
+	    {}
+// 	  else 
+// 	    leaf_seq_coords[m.toVector()] = right_profile.leaf_seq_coords[m.right_state];
 
-	  else if ( m.right_state  == right_profile.end_state || m.right_state  == right_profile.pre_end_state)
-		leaf_seq_coords[m.toVector()] = left_profile.leaf_seq_coords[m.left_state];
+// 	  else if ( m.right_state  == right_profile.end_state || m.right_state  == right_profile.pre_end_state)
+// 		leaf_seq_coords[m.toVector()] = left_profile.leaf_seq_coords[m.left_state];
 
 	  else
 		leaf_seq_coords[m.toVector()] = merge_seq_coords(left_profile.leaf_seq_coords[m.left_state],
@@ -1940,9 +1944,10 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 		  outgoing[start_state.toVector()].push_back(mPrime); 
 		  transitionPair.first = start_state.toVector(); transitionPair.second = mPrimeVec; 
 		  transition_weight[transitionPair] = toAdd / emissionWeight; 
+		  if (1) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
 		}
 
-	      if (logging) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
+
 	      finalSum +=toAdd; 
 	    }
 	}
@@ -2182,6 +2187,7 @@ void Profile::fill_backward_DP(int logging)
 
 void Profile::fill_DP(int logging, bool inLog)
 {
+  inLog = false; 
   // top -level DP function - traverse over all states in M_n (in the proper order) and call
   // up sum_paths_to for each of them. 
   M_id mPrime, m;
@@ -2206,7 +2212,7 @@ void Profile::fill_DP(int logging, bool inLog)
 	}
   add_to_DP_cell(mPrime, 1);  
   // bLog
-  backward_states.push_back(mPrime); 
+  //  backward_states.push_back(mPrime); 
   if (logging>=2) 
 	{
 	  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2215,8 +2221,8 @@ void Profile::fill_DP(int logging, bool inLog)
   qStates = Q.get_SSSI_states();
   for (er_Prime=0; er_Prime < right_profile.num_delete_states; er_Prime++)
 	{
-	  //	  if (!is_in_envelope( left_profile.start_state, er_Prime )) // always returns true
-	  //		  continue; 
+	  if (!is_in_envelope( left_profile.start_state, er_Prime )) // always returns true
+	   		  continue; 
 	  for (qPrime = qStates.begin();qPrime != qStates.end(); qPrime++)
 		{
 		  mPrime.q_state = *qPrime; 
@@ -2232,7 +2238,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			}
 		  sum_paths_to(mPrime, inLog);
 		  // bLog
-		  backward_states.push_back(mPrime); 
+		  //		  backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2244,12 +2250,6 @@ void Profile::fill_DP(int logging, bool inLog)
 	{
 	  for (er_Prime=0; er_Prime < right_profile.num_delete_states; er_Prime++)
 		{
-		  //f		  if (!is_in_envelope(er_Prime, el_Prime))
-		  //		    continue; 
-		  //		  std::cerr<<"Going to attempt to align these columns:\n"; 
-		  //		  show_state_phylo(left_profile.state_type_phylogeny[el_Prime]); 
-		  //		  show_state_phylo(right_profile.state_type_phylogeny[er_Prime]); 
-			  //if (logging>=2) std::cerr<<"Examining state pair: "<< el_Prime <<" , " <<er_Prime<<endl;
 		  if (is_in_envelope(el_Prime, er_Prime, "both"))
 		    {
 		      //  q is match state, both right and left types are "1"
@@ -2269,7 +2269,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			  
 			  sum_paths_to(mPrime, inLog);
 			  // bLog
-			  backward_states.push_back(mPrime); 
+			  //			  backward_states.push_back(mPrime); 
 			  if (logging>=2) 
 			    {
 			      std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2295,7 +2295,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			  
 			  sum_paths_to(mPrime, inLog);
 			  // bLog
-			  backward_states.push_back(mPrime); 
+			  //			  backward_states.push_back(mPrime); 
 			  if (logging>=2) 
 			    {
 			      std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2329,43 +2329,13 @@ void Profile::fill_DP(int logging, bool inLog)
 			  
 			  sum_paths_to(mPrime, inLog);
 			  // bLog
-			  backward_states.push_back(mPrime); 
+			  //			  backward_states.push_back(mPrime); 
 			  if (logging>=2) 
 			    {
 			      std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
 			    }
 			}
 		    }
-
-			  // I don't think we actually need this set of states...
-			  //q is a wait state, right, left types are 0, both are set to 0
-			//   if (0) //el_Prime == left_profile.num_delete_states-1 && er_Prime == right_profile.num_delete_states-1)
-// 				{
-// 				  qStates = Q.get_wait_states();
-// 				  for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
-// 					{
-// 					  mPrime.q_state = *qPrime; 
-// 					  mPrime.left_state = el_Prime; 
-// 					  mPrime.left_type = 0;
-// 					  mPrime.right_state = er_Prime; 
-// 					  mPrime.right_type = 0;
-// 					  if(logging>=2)
-// 						{
-// 						  std::cerr<<"\nThe following state is being filled:\n";
-// 						  mPrime.display(Q);
-// 						}
-// 					  sum_paths_to(mPrime, inLog);
-// 					  // bLog
-// 					  backward_states.push_back(mPrime); 
-// 					}
-
-// 				  if (logging>=2) 
-// 					{
-// 					  std::cerr<<"\tForward value of wait state: "<< get_DP_cell(mPrime)<<endl;
-// 					}
-// 				  if (get_DP_cell(mPrime)==0.0) {std::cerr<<"The following wait state has zero forward weight:"; mPrime.display(Q);}
-// 				}
-			  
 		}
 	}
 
@@ -2375,8 +2345,10 @@ void Profile::fill_DP(int logging, bool inLog)
   // Q is left-emit 
   for (el_Prime=0; el_Prime < left_profile.num_delete_states; el_Prime++)
 	{
-	  // if (! is_in_envelope(el_Prime, right_profile.pre_end_state ))//always true
-	  //		continue; 
+	  if (! is_in_envelope(el_Prime, right_profile.pre_end_state, "left" ))
+	    {
+	      continue; 
+	    }
 	  //q is a left-emit state, left type is 1, right is 0.  right index is right_profile.pre_end_state
 	  qStates = Q.get_left_emit_states();
 	  string S = "S";
@@ -2397,7 +2369,7 @@ void Profile::fill_DP(int logging, bool inLog)
 
 		  sum_paths_to(mPrime, inLog);
 		  // bLog
-		  backward_states.push_back(mPrime); 
+		  //		  backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -2408,8 +2380,10 @@ void Profile::fill_DP(int logging, bool inLog)
   // Q is right-emit 
   for (er_Prime=0; er_Prime < right_profile.num_delete_states; er_Prime++)
 	{
-	  //	  if (! is_in_envelope(left_profile.pre_end_state, er_Prime ))
-	  //		continue; 
+	  if (! is_in_envelope(left_profile.pre_end_state, er_Prime, "right" ))
+	    {
+	      continue; 
+	    }
 	  //q is a right-emit state, left type is 0, right is 1.  left index is left_profile.pre_end_state
 	  qStates = Q.get_right_emit_states();
 	  string S = "S";
@@ -2435,7 +2409,7 @@ void Profile::fill_DP(int logging, bool inLog)
 
 		  sum_paths_to(mPrime, inLog);
 		  // bLog
-		  backward_states.push_back(mPrime); 
+		  //		  backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -2463,7 +2437,7 @@ void Profile::fill_DP(int logging, bool inLog)
 
 	  sum_paths_to(mPrime, inLog);
 	  // bLog
-	  backward_states.push_back(mPrime); 
+	  //	  backward_states.push_back(mPrime); 
 	  if (logging>=2) 
 		{
 		  std::cerr<<"\tForward value of wait/pre-end state: "<< get_DP_cell(mPrime)<<endl;
@@ -2480,7 +2454,7 @@ void Profile::fill_DP(int logging, bool inLog)
   
   Z[mPrime.toVector()] = 0;
   // bLog
-  backward_states.push_back(mPrime); 
+  //  backward_states.push_back(mPrime); 
   
   // Fill the end state cell
   // for left_pre_end in left_profile.pre_end_states:
@@ -2730,8 +2704,15 @@ inline void Profile::add_to_DP_cell(M_id m , bfloat toAdd)
 {
   tmpMidVec = m.toVector(); 
   // Add the value toAdd to the DP cell for state m
-  if (Z.count(tmpMidVec) <1) Z[tmpMidVec] = toAdd; 
-  else Z[tmpMidVec] += toAdd; 
+
+  tmpIter = Z.find(tmpMidVec);
+  if (tmpIter == Z.end())
+    Z[tmpMidVec] = toAdd; 
+  else
+    tmpIter->second += toAdd; 
+
+  //  if (Z.count(tmpMidVec) <1) Z[tmpMidVec] = toAdd; 
+  //  else Z[tmpMidVec] += toAdd; 
 }
 void Profile::add_to_backward_DP(M_id m , bfloat toAdd)
 {
@@ -2768,64 +2749,49 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 {
   //debugging logging
   bool  logging = false; 
-  if (left_state == left_profile.pre_end_state || left_state == left_profile.end_state )
-	return true;
-
-  if (right_state == right_profile.pre_end_state || right_state == right_profile.end_state )
-	return true; 
-
-  if (! use_guide_alignment)
-    {
-      pair<int,int> left_coords = left_profile.leaf_coords[left_state];
-      pair<int,int> right_coords = right_profile.leaf_coords[right_state];
-
-      // alignment envelope function.  Simple check for distance between most distant leaf coordinates>
-      if (max(left_coords.second, right_coords.second) - min(left_coords.first, right_coords.first) < envelope_distance )
-	return true;
-      else 
-	//std::cerr<<"Not in envelope!\n";
-	return false; 
-    }
-  else // using guide alignment
+  if ( use_guide_alignment ) // using guide alignment
     {  
+      //      if (left_state == left_profile.end_state || right_state == right_profile.end_state)
+      //	return true; 
+
       // for alignment envelope
-      //      map<state, map<node, int> > leaf_seq_coords;
-      // map<node, int> envIter1, envIter2, total, and num_total are member variables in profile; 
-      // total = 0.0; num_total = 0;
-      //      map<node,int> envMap; ;
-      //      envMap.insert(left_profile.leaf_seq_coords[left_state].begin(),left_profile.leaf_seq_coords[left_state].end()); 
-      //      envMap.insert(right_profile.leaf_seq_coords[right_state].begin(),right_profile.leaf_seq_coords[right_state].end()); 
       bool bad = false; 
+      // leaf_seq_coords is a map from leaf nodes to integer.  Each absorbing profile (e.g. left_profile, right_profile) has one of these for each of its
+      // absorbing states.  leaf_seq_coords[s][n] = a  means that the state s accounts for the a'th position of the sequence at 
+      // leaf node n
       for ( envIter1 = left_profile.leaf_seq_coords[left_state].begin(); envIter1 != left_profile.leaf_seq_coords[left_state].end(); envIter1++)
 	{
 	  for ( envIter2 = right_profile.leaf_seq_coords[right_state].begin(); envIter2 != right_profile.leaf_seq_coords[right_state].end(); envIter2++)
 	    {
 	      name1 = node_names[envIter1->first]; 
 	      name2 = node_names[envIter2->first]; 
-	      //	      num_total++; 
-	      // averaging
-	      //	      total += ( abs( envIter1->second - envelope->lookup(name1, envIter1->second, name2) ) +
-	      //			 abs( envIter2->second - envelope->lookup(name2,envIter2->second, name1 ) ) ) / 2.0; 
 	      
 	      if (checks == "both"  || checks == "left")
+		// the following line reads like this:
+		// is  coordinate of R character  within guide_sausage of the index at which the L character is  aligned 
+		// in the guide alignment ?
 		if ( abs( envIter2->second - envelope->coordinates[name1][envIter1->second][name2] ) > guide_sausage )
 		  {
 		    ++num_discarded_states;
 		    bad  = true; 
 		  }
-	      if (checks == "both"  || checks == "left")
+	      if (checks == "both"  || checks == "right")
+		// Reworded - 
+		// is the left coordinate within g_s of the right character's 'true' aligned coordinate?
 		if ( abs( envIter1->second - envelope->coordinates[name2][envIter2->second][name1] ) > guide_sausage )
 		  {
 		    ++num_discarded_states;
 		    bad = true; 
 		  }
 		  
+	      // Warning -don't turn on logging unless you're working on a very small (e.g. 3-5 characters) alignment
 	      if (logging)
 		{
 		  if (bad)
 		    std::cerr<<"\nThe alignment of these two columns was NOT in the envelope:\n"; 
 		  else
 		    std::cerr<<"\nThe alignment of these two columns WAS in the envelope: (checktype: " << checks << ") \n"; 
+
 		  std::cerr<<"The distance from guide alignment was: " << abs( envIter2->second - envelope->lookup(name1, envIter1->second, name2) ) << " " <<
 		    abs( envIter1->second - envelope->lookup(name1, envIter2->second, name1) ) << endl; 
 		  std::cerr<<"Left:\n"; 
@@ -2848,6 +2814,24 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 	    }
 	}
       return true; 
+    }
+  else //  a more  primitive  envelope
+    {
+      if (left_state == left_profile.pre_end_state || left_state == left_profile.end_state )
+	return true;
+      
+      if (right_state == right_profile.pre_end_state || right_state == right_profile.end_state )
+	return true; 
+
+      pair<int,int> left_coords = left_profile.leaf_coords[left_state];
+      pair<int,int> right_coords = right_profile.leaf_coords[right_state];
+
+      // alignment envelope function.  Simple check for distance between most distant leaf coordinates>
+      if (max(left_coords.second, right_coords.second) - min(left_coords.first, right_coords.first) < envelope_distance )
+	return true;
+      else 
+	//std::cerr<<"Not in envelope!\n";
+	return false; 
     }
 }
 

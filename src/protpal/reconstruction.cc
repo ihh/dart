@@ -75,6 +75,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("sa -show-alignments", show_alignments=false, "show intermediate sampled alignments  ");
   opts.add("rl -root-length", rootLength=-1, "<int> Root sequence length in simulation.  Default is to sample direclty from singlet transducer's insert distribution.", false);
 
+  opts.add("pc -phylocomposer-file", phylocomposer_filename = "None", "Generate a phylocomposer s-expression file for simulation or likelihood comparison (impractical for large data)", false);
   opts.newline();
   opts.print_title("Model parameters");
 
@@ -127,7 +128,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   // Make sure we have the essential data - sequences and a tree
   // First, make sure we have sequence data from somewhere
-  if(stkFileName == "None" && fastaFileName =="None" && !simulate)
+  if(stkFileName == "None" && fastaFileName =="None" && !simulate && phylocomposer_filename == "None")
 	{
 	  error += "\tNo sequence file could be imported.  Use -stk or -fa  to specify a sequence file\n";
 	  all_reqd_args = false; 
@@ -169,8 +170,14 @@ Reconstruction::Reconstruction(int argc, char* argv[])
       if (loggingLevel >= 1)
 	std::cerr<<"Done.\n";
     }
+  if ( mixture_2 && 1 - mix_prior_2 < 0)
+    {
+      std::cerr<<"Error - prior on first mixture component is less than 0.  In specifying 2nd component's prior, remember that P(first) = 1 - P(2nd)\n"; 
+      exit(0); 
+    }
 
-  if ( 1 - mix_prior_2 - mix_prior_3 < 0)
+
+  if ( mixture_3 && 1 - mix_prior_2 - mix_prior_3 < 0)
     {
       std::cerr<<"Error - prior on first mixture component is less than 0.  In specifying 2nd and 3rd components, remember that P(first) = 1 - P(2nd) - P(3rd)\n"; 
       exit(0); 
@@ -273,7 +280,7 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
 }
 
   
-void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_matrix)
+void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_matrix, ostream& out)
 {
   map<string,string> prot2pc;
   prot2pc["S"] = "start";
@@ -283,8 +290,8 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
   prot2pc["W"] = "wait";
   prot2pc["E"] = "end";   
   
-  std::cout << ";; phylocomposer file for simulating branch-length dependent transducers\n";
-  std::cout << "(token ("  ; 
+  out << ";; phylocomposer file for simulating branch-length dependent transducers\n";
+  out << "(token ("  ; 
   vector<sstring> tokens = alphabet.tokens(); 
   unsigned int alph_size = tokens.size();
   vector<sstring>::iterator tok, tok2; 
@@ -294,56 +301,56 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
   string parent, child; 
 
   for (tok = tokens.begin(); tok != tokens.end(); tok++)
-	std::cout << " "<< *tok << " "; 
-  std::cout<< ") )\n"; 
+	out << " "<< *tok << " "; 
+  out<< ") )\n"; 
 
   // define pi, the shared equilibrium distribution over tokens
   vector<double> equilibrium = rate_matrix.create_prior();
   for (tokIdx = 0 ; tokIdx != alph_size; tokIdx++)
-	std::cout << "(value ((pi " << tokens[tokIdx] << ") " << equilibrium[tokIdx] << "))\n";
+	out << "(value ((pi " << tokens[tokIdx] << ") " << equilibrium[tokIdx] << "))\n";
   
   
   // Define parameters for, then declare singlet transducer
   SingletTrans R(alphabet, rate_matrix);
   
   // Define parameters in 'value' blocks
-  std::cout<<"\n";
+  out<<"\n";
   for (state1 = R.states.begin(); state1 != R.states.end(); state1++)
 	{
 	  if (R.get_state_type(*state1) == "E") continue; 
 	  outgoing = R.get_outgoing(*state1); 
 	  for (state2 = outgoing.begin(); state2 != outgoing.end(); state2++)
 		{
-		  std::cout<< "(value (root_"<<R.get_state_name(*state1)<<"_"<<R.get_state_name(*state2)<<" ";
-		  std::cout<< R.get_transition_weight(*state1, *state2)<<"))\n";
+		  out<< "(value (root_"<<R.get_state_name(*state1)<<"_"<<R.get_state_name(*state2)<<" ";
+		  out<< R.get_transition_weight(*state1, *state2)<<"))\n";
 		}
 	} 
 
-  std::cout<<"\n(transducer \n\n\t(name ROOT)\n\n"; 
+  out<<"\n(transducer \n\n\t(name ROOT)\n\n"; 
   
   for (state1 = R.states.begin(); state1 != R.states.end(); state1++)
 	{
-	  std::cout<<"\t(state (name "<< R.get_state_name(*state1)<< ") (type "<< prot2pc[R.get_state_type(*state1)] << ")";
+	  out<<"\t(state (name "<< R.get_state_name(*state1)<< ") (type "<< prot2pc[R.get_state_type(*state1)] << ")";
 	  if (R.get_state_type(*state1) == "I")
-		std::cout<<" (label pi)"; 
-	  std::cout<<")\n";
+		out<<" (label pi)"; 
+	  out<<")\n";
 	}
 
   // Define transitions, referring back to earlier specified values
-  std::cout<<"\n";
+  out<<"\n";
   for (state1 = R.states.begin(); state1 != R.states.end(); state1++)
 	{
 	  if (R.get_state_type(*state1) == "E") continue; 
 	  outgoing = R.get_outgoing(*state1); 
 	  for (state2 = outgoing.begin(); state2 != outgoing.end(); state2++)
 		{
-		  std::cout<<"\t(transition (from "<< R.get_state_name(*state1) << ") ";
-		  std::cout<<"(to "<< R.get_state_name(*state2) << ") ";
-		  std::cout<< "(label root_"<<R.get_state_name(*state1)<<"_"<<R.get_state_name(*state2)<<" ";
-		  std::cout<<"))\n";
+		  out<<"\t(transition (from "<< R.get_state_name(*state1) << ") ";
+		  out<<"(to "<< R.get_state_name(*state2) << ") ";
+		  out<< "(label root_"<<R.get_state_name(*state1)<<"_"<<R.get_state_name(*state2)<<" ";
+		  out<<"))\n";
 		}
 	} 
-  std::cout<<");; end transducer ROOT\n\n";
+  out<<");; end transducer ROOT\n\n";
 
 
 
@@ -357,7 +364,33 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
 		  child = string( tree.node_name[b.second].c_str() ); 	  
 
 		  // construct a branch transducer with the appropriate branch length.
+		  // must alter this to use mixture models
 		  BranchTrans branch(tree.branch_length(b.first, b.second), alphabet, rate_matrix, ins_rate, del_rate, gap_extend, sub_rate); 
+
+		  if ( mixture_2 )
+		    {
+		      BranchTrans mix_2(tree.branch_length(b.first, b.second), alphabet, rate_matrix,
+					  ins_rate, del_rate,
+					  gap_extend,
+					  1-mix_prior_2,
+					  gap_extend_2,
+					  mix_prior_2);
+		      branch = mix_2; 
+		    }
+		  else if ( mixture_3 )
+		    {
+		      BranchTrans mix_3(tree.branch_length(b.first, b.second), alphabet, rate_matrix,
+					  ins_rate, del_rate,
+					  gap_extend,
+					  1-mix_prior_2 - mix_prior_3,
+					  gap_extend_2,
+					  mix_prior_2,
+					  gap_extend_3,
+					  mix_prior_3);
+		      branch = mix_3;
+		    }
+
+
 		  
 		  // define the Q_child match matrix
 		  for (state1 = branch.states.begin(); state1 != branch.states.end(); state1++)
@@ -368,58 +401,58 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
 				{
 				  for (tokIdx2 = 0 ; tokIdx2 != alph_size; tokIdx2++)
 					{
-					  std::cout<< "(value ((Q_"<< child<< " " << tokens[tokIdx] << " "<< tokens[tokIdx2] << ") "; 
-					  std::cout<<  branch.get_match_weight(*state1, tokIdx, tokIdx2);
-					  std::cout<< "))\n";
+					  out<< "(value ((Q_"<< child<< " " << tokens[tokIdx] << " "<< tokens[tokIdx2] << ") "; 
+					  out<<  branch.get_match_weight(*state1, tokIdx, tokIdx2);
+					  out<< "))\n";
 					}
 				}
 			}
 		  
 
 		  // Define transition parameters in 'value' blocks
-		  std::cout<<"\n";
+		  out<<"\n";
 		  for (state1 = branch.states.begin(); state1 != branch.states.end(); state1++)
 			{
 			  if (branch.get_state_type(*state1) == "E") continue; 
 			  outgoing = branch.get_outgoing(*state1); 
 			  for (state2 = outgoing.begin(); state2 != outgoing.end(); state2++)
 				{
-				  std::cout<< "(value ("<< child <<"_"<<branch.get_state_name(*state1)<<"_"<<branch.get_state_name(*state2)<<" ";
-				  std::cout<< branch.get_transition_weight(*state1, *state2)<<"))\n";
+				  out<< "(value ("<< child <<"_"<<branch.get_state_name(*state1)<<"_"<<branch.get_state_name(*state2)<<" ";
+				  out<< branch.get_transition_weight(*state1, *state2)<<"))\n";
 				}
 			} 
 
 
 		  // begin transducer declaration
-		  std::cout<<"\n(transducer \n\n\t(name "<<child<< ")\n\n"; 
+		  out<<"\n(transducer \n\n\t(name "<<child<< ")\n\n"; 
 
   		  //  declare states, possibly with labels for insert and match states
 		  for (state1 = branch.states.begin(); state1 != branch.states.end(); state1++)
 			{
-			  std::cout<<"\t(state (name "<< branch.get_state_name(*state1)<< ") (type "<< prot2pc[branch.get_state_type(*state1)] << ")";
+			  out<<"\t(state (name "<< branch.get_state_name(*state1)<< ") (type "<< prot2pc[branch.get_state_type(*state1)] << ")";
 			  if (branch.get_state_type(*state1) == "I")
-				std::cout<<" (label pi)"; 
+				out<<" (label pi)"; 
 			  else if  (branch.get_state_type(*state1) == "M")
-				std::cout<<" (label Q_"<<child<<")"; 
+				out<<" (label Q_"<<child<<")"; 
 					 
-			  std::cout<<")\n";
+			  out<<")\n";
 			}
 
 		  // Define transitions, referring back to earlier specified values
-		  std::cout<<"\n";
+		  out<<"\n";
 		  for (state1 = branch.states.begin(); state1 != branch.states.end(); state1++)
 			{
 			  if (branch.get_state_type(*state1) == "E") continue; 
 			  outgoing = branch.get_outgoing(*state1); 
 			  for (state2 = outgoing.begin(); state2 != outgoing.end(); state2++)
 				{
-				  std::cout<<"\t(transition (from "<< branch.get_state_name(*state1) << ") ";
-				  std::cout<<"(to "<< branch.get_state_name(*state2) << ") ";
-				  std::cout<< "(label " << child << "_"<<branch.get_state_name(*state1)<<"_"<<branch.get_state_name(*state2)<<" ";
-				  std::cout<<"))\n";
+				  out<<"\t(transition (from "<< branch.get_state_name(*state1) << ") ";
+				  out<<"(to "<< branch.get_state_name(*state2) << ") ";
+				  out<< "(label " << child << "_"<<branch.get_state_name(*state1)<<"_"<<branch.get_state_name(*state2)<<" ";
+				  out<<"))\n";
 				}
 			} 
-		  std::cout<<");; end transducer " << child << "\n\n";
+		  out<<");; end transducer " << child << "\n\n";
 		  
 		}
 	}
@@ -427,33 +460,35 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
   for_rooted_children(tree, tree.root , child)
 	rootsKids.push_back(*child);
 
-  std::cout<<"(branch (name ROOT)\n\t(from SUBROOT) (to root)\n\t(transducer ROOT) \n\t";
+  out<<"(branch (name ROOT)\n\t(from SUBROOT) (to root)\n\t(transducer ROOT) \n\t";
 
-  std::cout<< show_branch(rootsKids[0]) ;
-  std::cout<< show_branch(rootsKids[1]);
-  std::cout<< ");; end phylogenetic tree"; 
+  //  out<< show_branch(rootsKids[0]) ;
+  //  out<< show_branch(rootsKids[1]);
+  show_branch(rootsKids[0], out) ;
+  show_branch(rootsKids[1], out) ;
+  out<< ");; end phylogenetic tree"; 
 }
 
-string Reconstruction::show_branch(node startNode)
+void Reconstruction::show_branch(node startNode, ostream& out)
 {
-  string out; 
+  //  string out; 
   vector<node> kids; 
-  out += "(branch (name " + string(tree.node_name[startNode].c_str()) + ")\n";
+  out << "(branch (name " + string(tree.node_name[startNode].c_str()) + ")\n";
 
-  out += "\t(from " + string(tree.node_name[tree.parent[startNode]].c_str()) + ") ";
-  out += "(to " + string(tree.node_name[startNode].c_str()) + ") \n";  
+  out << "\t(from " + string(tree.node_name[tree.parent[startNode]].c_str()) + ") ";
+  out << "(to " + string(tree.node_name[startNode].c_str()) + ") \n";  
 
-  out += "\t(transducer " + string(tree.node_name[startNode].c_str()) + ")\n";
+  out << "\t(transducer " + string(tree.node_name[startNode].c_str()) + ")\n";
 
   if (tree.is_internal(startNode))
 	{
 	    for_rooted_children(tree, startNode , child)
 		  kids.push_back(*child);
-		out += show_branch(kids[0]);
-		out += show_branch(kids[1]); 
+	    show_branch(kids[0], out);
+	    show_branch(kids[1], out); 
 	}		
-  out += "\t);; end branch " + string(tree.node_name[startNode].c_str()) +  " \n\n";
-  return out; 
+  out << "\t);; end branch " + string(tree.node_name[startNode].c_str()) +  " \n\n";
+  //  return out; 
 }
 
 void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_matrix)

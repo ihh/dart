@@ -159,6 +159,7 @@ for i in range(num_mixes):
     for j in range(num_mixes):
         branch.add_transition("delete_%s"%i, "insert_%s"%j, "(1-gap_extend_%s)*ins_open*mix_prior_%s"%(i,j))
     branch.add_transition("delete_%s"%i, "wait_match", "(1-gap_extend_%s)*(1-ins_open)"%i)
+    branch.add_transition("delete_%s"%i, "wait_delete_%s"%i, "gap_extend_%s"%i)
     branch.add_transition("delete_%s"%i, "wait_end", "1.0")
 
 # Match states' transitions

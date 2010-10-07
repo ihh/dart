@@ -70,6 +70,19 @@ int main(int argc, char* argv[])
 	  reconstruction.simulate_alignment(alphabet, rate_matrix); 
 	  exit(0); 
 	}
+  // If generating a phylocomposer input file was requested, do this instead of reconstruction
+  if ( reconstruction.phylocomposer_filename != "None" )
+    {
+      ofstream phylocomp_out;
+      phylocomp_out.open( reconstruction.phylocomposer_filename.c_str() );
+      if (reconstruction.loggingLevel >= 1)
+	std::cerr<<"Generating phylocomposer file..."; 
+      reconstruction.make_sexpr_file(alphabet, rate_matrix, phylocomp_out);
+      if (reconstruction.loggingLevel >= 1)
+	std::cerr<<"done.\n"; 
+      exit(0); 
+    }
+  
   // If using an input alignment was requested, do this and bypass reconstruction
   // This is a bit ambiguous now - an 'input alignment' is used for indel counting and other statistics, whereas a 
   // "guide alignment" is used to constrain DP in aligning sequences.  
@@ -103,11 +116,12 @@ int main(int argc, char* argv[])
       if(reconstruction.loggingLevel>=1)
 	std::cerr<<"\n";
       vector<Node> leaves = reconstruction.tree.leaf_vector(); 
+      if(reconstruction.loggingLevel>=1)
+	std::cerr<<"Making exact-match transducers for leaf nodes...";
+
       for (unsigned int i=0; i<leaves.size(); i++)
 	{
 	  treeNode = leaves[i]; 
-	  if(reconstruction.loggingLevel>=1)
-	    std::cerr<<"Making exact-match transducer for: "<<reconstruction.tree.node_name[treeNode]<<endl;
 	  ExactMatch leaf(
 			  reconstruction.sequences[reconstruction.tree.node_name[treeNode]], // sequence
 			  leaves[i], //tree index
@@ -117,7 +131,8 @@ int main(int argc, char* argv[])
 	  AbsorbingTransducer leafAbsorb(&leaf); 
 	  reconstruction.profiles[treeNode] = leafAbsorb; 	  
  	}
-
+      if(reconstruction.loggingLevel>=1)
+	std::cerr<<"Done\n"; 
       // Postorder traversal over internal nodes.  
       // For each internal node:
       //    1. Instantiate its profile using its two child profiles, delete children
@@ -237,7 +252,7 @@ int main(int argc, char* argv[])
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
 	    std::cerr<<"\tFilling forward dynamic programming matrix..."; 
-	  profile.fill_DP(reconstruction.loggingLevel, reconstruction.estimate_params);
+	  profile.fill_DP(reconstruction.loggingLevel, false); // do not store incoming/outgoing information.  
 
 	  if(reconstruction.loggingLevel>=1)
 	    {

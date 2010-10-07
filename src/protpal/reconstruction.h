@@ -66,10 +66,11 @@ class Reconstruction
   
   // simulation
   bool simulate; 
-  void make_sexpr_file(Alphabet, Irrev_EM_matrix);
-  string show_branch(node); 
+  void make_sexpr_file(Alphabet, Irrev_EM_matrix, ostream&);
+  void show_branch(node, ostream&); 
   void simulate_alignment(Alphabet, Irrev_EM_matrix);
   int rootLength; 
+  sstring phylocomposer_filename; 
   
   //simulation utility functions
   Digitized_biosequence sample_pairwise(Digitized_biosequence, BranchTrans, Node, Node, Decomposition&); 

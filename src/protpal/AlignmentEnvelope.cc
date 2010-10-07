@@ -12,6 +12,7 @@ using namespace std;
 
 AlignmentEnvelope::AlignmentEnvelope(void)
 {
+  // Placeholder constructor
 }
 void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring gap_char_in)
 {
@@ -46,13 +47,25 @@ int AlignmentEnvelope::sequence_coordinate(int alignment_coordinate, string seqN
   int seqCoord = -1; 
   for(int alignCoord = alignment_coordinate; alignCoord >=0; alignCoord--)
     if ( stringAt(alignment[seqName],alignCoord) != gap_char )
-      seqCoord++; 
+      ++seqCoord; 
   return seqCoord; 
 }
 
 int AlignmentEnvelope::lookup(string seqName, int index, string otherSeqName)
 {
+  bool debug = true; 
   // might need to add some checking here...
+  if (debug)
+    {
+      if ( ! coordinates.count(seqName) )
+	std::cerr<<"this sequence name not found: " << seqName << endl; 
+      else if ( ! coordinates[seqName].count(index) )
+	std::cerr<< "Index " << index  << " in sequence " << seqName << " not found!\n"; 
+      else if ( ! coordinates[seqName][index].count(otherSeqName) )
+	std::cerr<< "other sequence " << otherSeqName << " in index " << index  << " in sequence " << seqName << " not found!\n"; 
+      else 
+	return coordinates[seqName][index][otherSeqName]; 
+    }
   return coordinates[seqName][index][otherSeqName]; 
 }
 
