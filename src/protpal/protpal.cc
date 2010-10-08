@@ -226,6 +226,7 @@ int main(int argc, char* argv[])
 	    }
 	  else
 	    {
+	      std::cout<<"#=GF alignment_likelihood "<<-log(profile.forward_prob)/log(2) << endl; 
 	      ofstream db_file;
 	      state_path path = profile.sample_DP(
 						  1, // sample only one path
