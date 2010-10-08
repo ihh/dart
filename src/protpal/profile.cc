@@ -1116,8 +1116,9 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
   subtreeNodes.push_back(treeNode); 
 
   envelope_distance = 200; //hard-coded envelope distance
+  guide_sausage = -1; // placeholder sausage size
   num_sampled_externals = 0; 
-
+  
   // This is a bit awkward...owing to the quirk that M_ids store types as integers
   // rather than strings.  If I store all types now as variables it gets a bit less confusing.
   profile_start = -1;
