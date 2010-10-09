@@ -23,7 +23,7 @@ my $file = shift @argv or die $usage;
 open ALN, "<$file" or die "Couldn't open '$file'\n";
 my $stk = Stockholm->new();
 
-my $gapChars = '-._';
+my $gapChars = '-';
 while (<ALN>) {
   my @a = split;
   next unless @a == 2;
