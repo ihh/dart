@@ -1837,7 +1837,7 @@ void Profile::cache_path(vector<M_id> path)
 	
   
 
-void Profile::sum_paths_to(M_id mPrime, bool inLog)
+void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 {
   // The core DP function - sum over paths into the composite state mPrime.  
   #ifdef DART_DEBUG
@@ -1847,7 +1847,7 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
   #endif
   
   // This function fills the cell at mPrime in Z
-  bool logging = false, testing = false;
+  bool testing = false;
   bool fromStart = 0;
   bfloat toAdd, finalSum = 0.0;
   bfloat small = pow(.1,100);
@@ -2003,10 +2003,14 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 					  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 					}
 				  
-				  if (logging) std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
-				   
+				  if (logging) 
+				    {
+				      std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
+				      std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
 				    }
+				  
 				}
+			}
 		}
 	}
   //  if (mPrime.left_state !=0  && mPrime.left_state != left_profile.start_state)
@@ -2050,7 +2054,11 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 				  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 				}
 
-			  if (logging) std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
+			  if (logging) 
+			    {
+			      std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
+			      std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
+			    }
 			  
 			}
 		}
@@ -2237,7 +2245,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			  std::cerr<<"\nThe following state is being filled:\n";
 			  mPrime.display(Q);
 			}
-		  sum_paths_to(mPrime, inLog);
+		  sum_paths_to(mPrime, inLog, logging>=2);
 		  // bLog
 		  //		  backward_states.push_back(mPrime); 
 		  if (logging>=2) 
@@ -2268,7 +2276,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			      mPrime.display(Q);
 			    }
 			  
-			  sum_paths_to(mPrime, inLog);
+			  sum_paths_to(mPrime, inLog, logging>=2);
 			  // bLog
 			  //			  backward_states.push_back(mPrime); 
 			  if (logging>=2) 
@@ -2294,7 +2302,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			      mPrime.display(Q);
 			    }
 			  
-			  sum_paths_to(mPrime, inLog);
+			  sum_paths_to(mPrime, inLog, logging>=2);
 			  // bLog
 			  //			  backward_states.push_back(mPrime); 
 			  if (logging>=2) 
@@ -2328,7 +2336,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			      mPrime.display(Q);
 			    }
 			  
-			  sum_paths_to(mPrime, inLog);
+			  sum_paths_to(mPrime, inLog, logging>=2);
 			  // bLog
 			  //			  backward_states.push_back(mPrime); 
 			  if (logging>=2) 
@@ -2368,7 +2376,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			  mPrime.display(Q);
 			}
 
-		  sum_paths_to(mPrime, inLog);
+		  sum_paths_to(mPrime, inLog, logging>=2);
 		  // bLog
 		  //		  backward_states.push_back(mPrime); 
 		  if (logging>=2) 
@@ -2408,7 +2416,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			  mPrime.display(Q);
 			}
 
-		  sum_paths_to(mPrime, inLog);
+		  sum_paths_to(mPrime, inLog, logging>=2);
 		  // bLog
 		  //		  backward_states.push_back(mPrime); 
 		  if (logging>=2) 
@@ -2423,6 +2431,7 @@ void Profile::fill_DP(int logging, bool inLog)
   qStates = Q.get_wait_states();
   for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
 	{
+	  if (!Q.has_transition(*qPrime, Q.composite_end_state)) continue; // don't fill states which don't connect to end state
 	  // for left_pre_end in left_profile.pre_end_states:
 	  // for right_pre_end in right_profile.pre_end_states:
 	  mPrime.q_state = *qPrime; 
@@ -2430,16 +2439,16 @@ void Profile::fill_DP(int logging, bool inLog)
 	  mPrime.left_type = 2;
 	  mPrime.right_state = right_profile.pre_end_state; 
 	  mPrime.right_type = 2;
-	  if(logging>=2)
+	  if(logging>=1) // log for now
 		{
 		  std::cerr<<"\nThe following state is being filled:\n";
 		  mPrime.display(Q);
 		}
 
-	  sum_paths_to(mPrime, inLog);
+	  sum_paths_to(mPrime, inLog,logging>=2); //log for now, debugging
 	  // bLog
 	  //	  backward_states.push_back(mPrime); 
-	  if (logging>=2) 
+	  if (logging>=1) 
 		{
 		  std::cerr<<"\tForward value of wait/pre-end state: "<< get_DP_cell(mPrime)<<endl;
 		}
@@ -2789,7 +2798,7 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 	      if (logging)
 		{
 		  if (bad)
-		    std::cerr<<"\nThe alignment of these two columns was NOT in the envelope:\n"; 
+		    std::cerr<<"\nThe alignment of these two columns was NOT in the envelope: (checktype: " << checks << ") \n"; 
 		  else
 		    std::cerr<<"\nThe alignment of these two columns WAS in the envelope: (checktype: " << checks << ") \n"; 
 

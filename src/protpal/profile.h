@@ -282,7 +282,7 @@ class Profile
   void add_to_backward_DP(M_id, bfloat); 
 
   // sum over all paths to the M_id cell in the forward matrix
-  void sum_paths_to(M_id, bool);
+  void sum_paths_to(M_id, bool, bool logging=false);
 
   //Access functions
   // compute/access the transition weight from state M_id m  to M_id mPrime
