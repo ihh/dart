@@ -29,6 +29,7 @@ QTransducer::QTransducer(SingletTrans R_in, BranchTrans B_l_in, BranchTrans B_r_
   
   alphabet_size = alphabet.size();
   name = "QTransducer";
+  state_l_r.push_back(0);   state_l_r.push_back(0);   state_l_r.push_back(0); 
   
   // composite state classes
   match =  "match";
@@ -275,8 +276,7 @@ double QTransducer::get_emission_weight(state q, int left_emit, int right_emit)
 {
   // Check state existence, character validity, then lookup in emission_weight matrix
   //safety
-  vector<int> emission_tuple;
-  emission_tuple.push_back(q);  emission_tuple.push_back(left_emit);  emission_tuple.push_back(right_emit);
+  state_l_r[0] = q;  state_l_r[1] = left_emit;  state_l_r[2] = right_emit;
   #ifdef DART_DEBUG
   if (q >= num_states)
 	{
@@ -284,14 +284,15 @@ double QTransducer::get_emission_weight(state q, int left_emit, int right_emit)
 	  std::cerr<<"The offending call was: get_emission_weight in transducer: "<<name<<" state: "<<q<<" named: "<<get_state_name(q)<<endl;
 	  exit(1);
 	} 
-  if (emission_weight.count(emission_tuple)<1)
+  if (emission_weight.count(state_l_r)<1)
 	{
 	  std::cerr<<"One of the character indices " <<left_emit<<" "<<right_emit<< " is not valid.\n";
 	  std::cerr<<"The offending call was: get_emission_weight in transducer: "<<name<<" state: "<<q<<" named: "<<get_state_name(q)<<" left-symbol index: "<<left_emit<<" right-symbol index "<<right_emit<<endl;
 	  exit(1);
 	}
   #endif
-  return emission_weight[emission_tuple];
+  //  return emission_weight[emission_int]; 
+  return emission_weight[state_l_r];
 }
 
 
@@ -696,7 +697,7 @@ void QTransducer::cache_states(void)
 void QTransducer::cache_emission_weights( void )
 {
   double weight;
-  vector<int> state_l_r; 
+  //  vector<int> state_l_r; 
   bool logging = 0;
   //  store emission weight of state q, omega_l, omega_r
   // This will get stored in the map emission_weight, which maps a vector state, left-emit, right-emit to a double
@@ -723,8 +724,9 @@ void QTransducer::cache_emission_weights( void )
 			{
 			  for (omega_right = 0; omega_right<alphabet_size; omega_right++)
 				{
-				  state_l_r.clear(); 
-				  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+// 				  state_l_r.clear(); 
+// 				  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+				  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 				  weight = 0; 
 				  // omega_R is the character at R
 				  for (omega_R=0; omega_R<alphabet_size; omega_R++)
@@ -733,7 +735,8 @@ void QTransducer::cache_emission_weights( void )
 						B_l.get_match_weight(state_B_l, omega_R, omega_left)*\
 						B_r.get_match_weight(state_B_r, omega_R, omega_right);
 					}
-				  emission_weight[state_l_r] = weight;
+				  //				  emission_weight[state_l_r_int] = weight;
+				  emission_weight[state_l_r] = weight; //changed 10/11/10 OW
 				  if(logging) 
 					{
 					  std::cerr<<"Caching emission weight for "<<get_state_name(q)<<" chars: ";
@@ -752,8 +755,9 @@ void QTransducer::cache_emission_weights( void )
 		  omega_left = -1; 
 		  for (omega_right = 0; omega_right<alphabet_size; omega_right++)
 			{
-			  state_l_r.clear(); 
-			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  //			  state_l_r.clear(); 
+			  //			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 			  weight = 0; 
 			  // omega_R is the character at R
 			  for (omega_R=0; omega_R<alphabet_size; omega_R++)
@@ -761,7 +765,8 @@ void QTransducer::cache_emission_weights( void )
 				  weight += R.get_emission_weight(state_R, omega_R)*	\
 					B_r.get_match_weight(state_B_r, omega_R, omega_right);
 					}
-			  emission_weight[state_l_r] = weight;
+			  // emission_weight[state_l_r_int] = weight;
+			  emission_weight[state_l_r] = weight; //changed 10/11/10 OW
 			}
 		}
 	  //right-del - omega_right is -1
@@ -770,8 +775,9 @@ void QTransducer::cache_emission_weights( void )
 		  omega_right = -1; 
 		  for (omega_left = 0; omega_left<alphabet_size; omega_left++)
 			{
-			  state_l_r.clear(); 
-			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  //			  state_l_r.clear(); 
+			  //			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 			  weight = 0; 
 			  // omega_R is the character at R
 			  for (omega_R=0; omega_R<alphabet_size; omega_R++)
@@ -779,6 +785,7 @@ void QTransducer::cache_emission_weights( void )
 				  weight += R.get_emission_weight(state_R, omega_R)*	\
 					B_l.get_match_weight(state_B_l, omega_R, omega_left);
 					}
+			  // emission_weight[state_l_r_int] = weight; // changed 10/11/10 OW
 			  emission_weight[state_l_r] = weight;
 			}
 		}
@@ -789,10 +796,12 @@ void QTransducer::cache_emission_weights( void )
 		  omega_right = -1;
 		  for (omega_left = 0; omega_left<alphabet_size; omega_left++)
 			{
-			  state_l_r.clear(); 
-			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  //			  state_l_r.clear(); 
+			  //			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 
 			  weight = B_l.get_emission_weight(state_B_l, omega_left);
+			  //emission_weight[state_l_r_int] = weight; //changed 10/11/10 OW
 			  emission_weight[state_l_r] = weight;
 			  
 			}
@@ -804,10 +813,12 @@ void QTransducer::cache_emission_weights( void )
 		  omega_left = -1;
 		  for (omega_right = 0; omega_right<alphabet_size; omega_right++)
 			{
-			  state_l_r.clear(); 
-			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  //			  state_l_r.clear(); 
+			  //			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 			  
 			  weight = B_r.get_emission_weight(state_B_r, omega_right);
+			  //emission_weight[state_l_r_int] = weight; // changed 10/11/10 OW
 			  emission_weight[state_l_r] = weight;
 			}
 		}

@@ -102,8 +102,9 @@ class QTransducer
 
   // The map emission_weight holds these...the vector<int> is state, omega_left, omega_right
   // One of the omegas can be -1, meaning 'no character' (e.g. omega_left = -1 in a left_del state)
+  //  map< vector<int>, double> emission_weight;
   map< vector<int>, double> emission_weight;
-
+  vector<int> state_l_r; 
   vector<state> get_components(state); 
 
   // Component transducers R, B_l, B_r, Upsilon

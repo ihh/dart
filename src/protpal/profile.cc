@@ -1325,11 +1325,14 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 							{
 
 							  m.q_state = *q;
-							  weight = 
-								get_DP_cell(m) *
-								Q.get_transition_weight(*q, mPrime.q_state) * 
-								left_profile.get_transition_weight(*e_l, mPrime.left_state) *
-								right_profile.get_transition_weight(*e_r, mPrime.right_state) ;
+							  weight = get_DP_cell(m); 
+							  if (weight>0.0)
+							    weight *=
+							      Q.get_transition_weight(*q, mPrime.q_state) * 
+							      left_profile.get_transition_weight(*e_l, mPrime.left_state) *
+							      right_profile.get_transition_weight(*e_r, mPrime.right_state) ;
+							  else
+							    continue;
 
 
 							  // for test
@@ -1385,10 +1388,13 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 					  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 						{
 						  m.q_state = *q;
-						  weight =
-							get_DP_cell(m)*
-							Q.get_transition_weight(*q, mPrime.q_state)*
-							left_profile.get_transition_weight(*e_l, mPrime.left_state);
+						  weight = get_DP_cell(m);
+						  if (weight >0.0)
+						    weight *=
+						      Q.get_transition_weight(*q, mPrime.q_state)*
+						      left_profile.get_transition_weight(*e_l, mPrime.left_state);
+						  else
+						    continue;
 						  // right profile transition weight is implicitely 1 here 
 
 						  // for test
@@ -1452,10 +1458,13 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 								}
 							}// end if SSSI
 
-						  weight =
-							get_DP_cell(m)*		
-							Q.get_transition_weight(*q, mPrime.q_state)*
-							right_profile.get_transition_weight(*e_r, mPrime.right_state);
+						  weight = get_DP_cell(m);
+						  if (weight>0.0)
+						    weight *=
+						      Q.get_transition_weight(*q, mPrime.q_state)*
+						      right_profile.get_transition_weight(*e_r, mPrime.right_state);
+						  else
+						    continue;
 						  // left profile transition weight is implicitely 1 here 			  
 
 
@@ -1504,8 +1513,8 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 
 			  if (viterbi) sampleIdx = maxIndex(weights);
 			  else sampleIdx = sample(weights);
-			  pathWeight *= (weights[sampleIdx] / get_DP_cell(states_in[sampleIdx]))*
-				compute_emission_weight(states_in[sampleIdx]);
+			  //pathWeight *= (weights[sampleIdx] / get_DP_cell(states_in[sampleIdx]))*
+			  //				compute_emission_weight(states_in[sampleIdx]);
 
 			  if (logging>=2) std::cerr<<"Sampled state number: "<<sampleIdx<<endl;
 			  pi.push_back(states_in[sampleIdx]);
@@ -1526,8 +1535,8 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 			  pi.push_back(states_in[0]);
 			  cache_state(states_in[0], mPrime, weights[0] );
 			  state_type_phylogeny[states_in[0].toVector()] = merge_STP(states_in[0]);
-			  pathWeight *= (weights[0] / get_DP_cell(states_in[0]))*
-				compute_emission_weight(states_in[0]);
+			  //pathWeight *= (weights[0] / get_DP_cell(states_in[0]))*
+			  //				compute_emission_weight(states_in[0]);
 
 			  if(logging>=2)
 				{
@@ -1556,15 +1565,15 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
   // Store the null states' accounted characters:
   cache_path(pi); 
   store_summed_nulls(pi); 
-  if(pathWeight/forward_prob > 1.001)
-	{
-	  std::cerr<<"\nError: an alignment's posterior probability was calculated as greater than 1.  This is not reasonable, and represents a calculation error. \n";
-	  std::cout<<"#Sampled alignment, bit-score: "<< -log(pathWeight)/log(2)<<":\n";	  
-	  std::cout<<  "       posterior probability: "<< pathWeight/forward_prob<<":\n";
-	  show_alignment(pi, false); 
-	  std::cerr<<"\n";
-	  exit(1); 
-	}
+//   if(pathWeight/forward_prob > 1.001)
+// 	{
+// 	  std::cerr<<"\nError: an alignment's posterior probability was calculated as greater than 1.  This is not reasonable, and represents a calculation error. \n";
+// 	  std::cout<<"#Sampled alignment, bit-score: "<< -log(pathWeight)/log(2)<<":\n";	  
+// 	  std::cout<<  "       posterior probability: "<< pathWeight/forward_prob<<":\n";
+// 	  show_alignment(pi, false); 
+// 	  std::cerr<<"\n";
+// 	  exit(1); 
+// 	}
   
   if (showAlignments) 
 	{
@@ -1581,7 +1590,11 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 {
   // upon sampling a move from m to mPrime, store the info about the state
   // m and the transition m -> mPrime
-  
+
+  pair< vector<int>, vector<int> > transitionPair;
+  transitionPair.first=m.toVector();   transitionPair.second=mPrime.toVector();
+  if (sampled_transition_weight.count(transitionPair))
+    return; 
   // m is the new state
   if (index(m, sampled_states) == -1 ) 
 	{
@@ -1631,8 +1644,6 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 
 
 
-  pair< vector<int>, vector<int> > transitionPair;
-  transitionPair.first=m.toVector();   transitionPair.second=mPrime.toVector();
   if (sampled_transition_weight.count(transitionPair)<1)
 	{
 	  if (is_external(mPrime) || is_pre_end(mPrime) )
@@ -1861,6 +1872,9 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
   vector<M_id> pi; 
   bool showState = 0; 
   bfloat emissionWeight = compute_emission_weight(mPrime);
+  if (!emissionWeight>0)
+    return;
+
   if (showState)
 	{
 	  state_type_phylogeny[mPrime.toVector()] = merge_STP(mPrime);
@@ -1877,7 +1891,7 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
   #endif
 
   //  Z[mPrime.toVector()] = 0;
-  add_to_DP_cell(mPrime, 0.0 ); 
+  //  add_to_DP_cell(mPrime, 0.0 ); 
 
   if (Q.has_transition(Q.composite_start_state, mPrime.q_state) &&  \
 	  left_profile.has_transition(left_profile.start_state, mPrime.left_state) && \
@@ -2433,9 +2447,8 @@ void Profile::fill_DP(int logging, bool inLog)
   qStates = Q.get_wait_states();
   for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
 	{
-	  if (!Q.has_transition(*qPrime, Q.composite_end_state)) continue; // don't fill states which don't connect to end state
-	  // for left_pre_end in left_profile.pre_end_states:
-	  // for right_pre_end in right_profile.pre_end_states:
+	  if (!Q.has_transition(*qPrime, Q.composite_end_state)) 
+	    continue; // don't fill states which don't connect to end state
 	  mPrime.q_state = *qPrime; 
 	  mPrime.left_state = left_profile.pre_end_state; 
 	  mPrime.left_type = 2;
