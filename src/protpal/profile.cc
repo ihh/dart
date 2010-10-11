@@ -2780,22 +2780,42 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 		// the following line reads like this:
 		// is  coordinate of R character  within guide_sausage of the index at which the L character is  aligned 
 		// in the guide alignment ?
+		if ( envelope->coordinates[name1][envIter1->second][name2].first < envIter2->second ||
+		     envelope->coordinates[name1][envIter1->second][name2].second +1  > envIter2->second )
+		  {
+		    ++num_discarded_states;
+		    bad = true;
+		  }
+
+	      //old:
+	      /*
 		if ( abs( envIter2->second - envelope->coordinates[name1][envIter1->second][name2] ) > guide_sausage )
 		  {
 		    ++num_discarded_states;
 		    bad  = true; 
 		  }
+	      */
 	      if (checks == "both"  || checks == "right")
 		// Reworded - 
 		// is the left coordinate within g_s of the right character's 'true' aligned coordinate?
+		if ( envelope->coordinates[name2][envIter2->second][name1].first < envIter1->second ||
+		     envelope->coordinates[name2][envIter2->second][name1].second +1 > envIter1->second )
+		  {
+		    ++num_discarded_states;
+		    bad = true;
+		  }
+
+	      /*
 		if ( abs( envIter1->second - envelope->coordinates[name2][envIter2->second][name1] ) > guide_sausage )
 		  {
 		    ++num_discarded_states;
 		    bad = true; 
 		  }
+	      */
 		  
 	      // Warning -don't turn on logging unless you're working on a very small (e.g. 3-5 characters) alignment
-	      if (logging)
+	      /*
+		if (logging)
 		{
 		  if (bad)
 		    std::cerr<<"\nThe alignment of these two columns was NOT in the envelope: (checktype: " << checks << ") \n"; 
@@ -2819,6 +2839,7 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 	      
 		  std::cerr<<"\n"; 
 		}
+	      */
 	      if (bad)
 		return false; 
 	    }
