@@ -50,6 +50,12 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
 	}
     }
   alignment.clear(); 
+  if (coordinates.size() == 0)
+    {
+      std::cerr<<"\nERROR - no coordinates stored in alignment envelope.\n";
+      std::cerr<<"This is most likely due to an empty or incorrectly formatted guide alignment.  Guide alignment must be in Stockholm format (see www.biowiki.org/StockholmFormat for specifications)\n";
+      exit(1);
+    }
 }
 
 int AlignmentEnvelope::next_match_column(int alignment_coordinate, string direction, string seqName1, string seqName2)

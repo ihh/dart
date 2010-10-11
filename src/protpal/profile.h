@@ -3,6 +3,7 @@
 #include<iostream>
 #include<set>
 #include<map>
+#include<ext/hash_map>
 #include<vector>
 #include<queue>
 #include<list>
@@ -268,8 +269,7 @@ class Profile
  private:
   // **** Fill_DP uses the following: ****
   // the actual DP matrix.  Maps states in profile (as M_id ) to double
-  //  map<M_id, double> Z; //eventually a 'bigger' number class?
-  map< vector<int>, bfloat> Z; //fix this up soon!
+  map< vector<int>, bfloat> Z; // change from map to hash_map ?
   map< vector<int>, bfloat> backward_matrix; 
 
   //accessor function, returns 0 if no matching entry
@@ -297,7 +297,7 @@ class Profile
   vector<bfloat> tmpEmitVals; 
   vector<int> tmpEmitTuple; 
   vector<int> tmpMidVec;
-  map<vector<int>, bfloat>::iterator tmpIter; 
+  map<vector<int>, bfloat>::iterator tmpIter; // change from map to hash_map ?
   
   // Utility functions
   inline bool is_in_envelope(state left_state, state right_state, string checks="NA"); 

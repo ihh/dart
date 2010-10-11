@@ -334,7 +334,8 @@ map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
     }
   else 
     {
-      std::cerr << "Error: Unable to open file: "<<fileName<< "\n"; 
+      std::cerr << "\nERROR: Unable to open Stockholm file: "<<fileName<< "\n"; 
+      exit(1); 
     }
   return sequences; 
 }
@@ -378,6 +379,11 @@ map<string, string> parse_fasta(const char* sequenceFileName, Alphabet alphabet)
 {
   map<string, string> sequences;
   ifstream sequenceFileStream(sequenceFileName); 
+  if (! sequenceFileStream.is_open())
+    {
+      std::cerr<<"\nERROR: could not open fasta file " << sequenceFileName << endl; 
+      exit(1); 
+    }
   Sequence_database seq_db;  // create the object
   seq_db.read_FASTA (sequenceFileStream);  // read from file
   seq_db.seqs2dsqs (alphabet);   // parse the sequences into tokens using the Alphabet class that you read in with the substitution model

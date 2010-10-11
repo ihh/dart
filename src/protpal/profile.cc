@@ -2439,7 +2439,7 @@ void Profile::fill_DP(int logging, bool inLog)
 	  mPrime.left_type = 2;
 	  mPrime.right_state = right_profile.pre_end_state; 
 	  mPrime.right_type = 2;
-	  if(logging>=1) // log for now
+	  if(logging>=2) // log for now
 		{
 		  std::cerr<<"\nThe following state is being filled:\n";
 		  mPrime.display(Q);
@@ -2448,7 +2448,7 @@ void Profile::fill_DP(int logging, bool inLog)
 	  sum_paths_to(mPrime, inLog,logging>=2); //log for now, debugging
 	  // bLog
 	  //	  backward_states.push_back(mPrime); 
-	  if (logging>=1) 
+	  if (logging>=2) 
 		{
 		  std::cerr<<"\tForward value of wait/pre-end state: "<< get_DP_cell(mPrime)<<endl;
 		}
@@ -2713,16 +2713,17 @@ bfloat Profile::get_external_cascade_weight(M_id e, int charIndex)
 inline void Profile::add_to_DP_cell(M_id m , bfloat toAdd)
 {
   tmpMidVec = m.toVector(); 
-  // Add the value toAdd to the DP cell for state m
-
+  // Add the value toAdd to the DP cell for state m, if it exists.  otherwise initialize this value. 
   tmpIter = Z.find(tmpMidVec);
   if (tmpIter == Z.end())
     Z[tmpMidVec] = toAdd; 
   else
     tmpIter->second += toAdd; 
 
-  //  if (Z.count(tmpMidVec) <1) Z[tmpMidVec] = toAdd; 
-  //  else Z[tmpMidVec] += toAdd; 
+//   if (Z.count(tmpMidVec) <1) 
+//     Z[tmpMidVec] = toAdd; 
+//   else 
+//     Z[tmpMidVec] += toAdd; 
 }
 void Profile::add_to_backward_DP(M_id m , bfloat toAdd)
 {
@@ -2776,18 +2777,18 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 	      name1 = node_names[envIter1->first]; 
 	      name2 = node_names[envIter2->first]; 
 	      
-	      if (checks == "both"  || checks == "left")
-		// the following line reads like this:
-		// is  coordinate of R character  within guide_sausage of the index at which the L character is  aligned 
-		// in the guide alignment ?
-		if ( envelope->coordinates[name1][envIter1->second][name2].first < envIter2->second ||
-		     envelope->coordinates[name1][envIter1->second][name2].second +1  > envIter2->second )
+	      if ( checks == "left" )
+		if ( envelope->coordinates[name1][envIter1->second][name2].first > envIter2->second || // min is greater than R coordinate
+		     envelope->coordinates[name1][envIter1->second][name2].second +1  < envIter2->second )// max+1 is less than R coordinate
 		  {
 		    ++num_discarded_states;
 		    bad = true;
 		  }
 
 	      //old:
+	      // the following line reads like this:
+	      // is  coordinate of R character  within guide_sausage of the index at which the L character is  aligned 
+	      // in the guide alignment ?
 	      /*
 		if ( abs( envIter2->second - envelope->coordinates[name1][envIter1->second][name2] ) > guide_sausage )
 		  {
@@ -2795,26 +2796,38 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 		    bad  = true; 
 		  }
 	      */
-	      if (checks == "both"  || checks == "right")
-		// Reworded - 
-		// is the left coordinate within g_s of the right character's 'true' aligned coordinate?
-		if ( envelope->coordinates[name2][envIter2->second][name1].first < envIter1->second ||
-		     envelope->coordinates[name2][envIter2->second][name1].second +1 > envIter1->second )
+	      if ( checks == "right" )
+		if ( envelope->coordinates[name2][envIter2->second][name1].first > envIter1->second ||// min is greater than L coordinate
+		     envelope->coordinates[name2][envIter2->second][name1].second +1 < envIter1->second )// max+1 is less than L coordinate
 		  {
 		    ++num_discarded_states;
 		    bad = true;
 		  }
 
 	      /*
+		// Reworded - 
+		// is the left coordinate within g_s of the right character's 'true' aligned coordinate?
+
 		if ( abs( envIter1->second - envelope->coordinates[name2][envIter2->second][name1] ) > guide_sausage )
 		  {
 		    ++num_discarded_states;
 		    bad = true; 
 		  }
 	      */
+	      if ( checks == "both" )
+		if ( envelope->coordinates[name2][envIter2->second][name1].first > envIter1->second || // min is greater than R coordinate
+		     envelope->coordinates[name2][envIter2->second][name1].second < envIter1->second  ||// max is less than R coordinate
+
+		     envelope->coordinates[name1][envIter1->second][name2].first > envIter2->second ||// min is greater than R coordinate
+		     envelope->coordinates[name1][envIter1->second][name2].second  < envIter2->second )// max is less than R coordinate
+		  {
+		    ++num_discarded_states;
+		    bad = true;
+		  }
+
 		  
 	      // Warning -don't turn on logging unless you're working on a very small (e.g. 3-5 characters) alignment
-	      /*
+
 		if (logging)
 		{
 		  if (bad)
@@ -2822,24 +2835,26 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 		  else
 		    std::cerr<<"\nThe alignment of these two columns WAS in the envelope: (checktype: " << checks << ") \n"; 
 
-		  std::cerr<<"The distance from guide alignment was: " << abs( envIter2->second - envelope->lookup(name1, envIter1->second, name2) ) << " " <<
-		    abs( envIter1->second - envelope->lookup(name1, envIter2->second, name1) ) << endl; 
-		  std::cerr<<"Left:\n"; 
+		  //		  std::cerr<<"The distance from guide alignment was: " << abs( envIter2->second - envelope->lookup(name1, envIter1->second, name2) ) << " " <<
+		  //		    abs( envIter1->second - envelope->lookup(name1, envIter2->second, name1) ) << endl; 
+		  std::cerr<<"Left state:\n"; 
 		  show_state_phylo(left_profile.state_type_phylogeny[left_state]);
-		  std::cerr<<"\nRight:\n"; 
+		  std::cerr<<"\nRight state:\n"; 
 		  show_state_phylo(right_profile.state_type_phylogeny[right_state]);
 	      
-		  std::cerr<<"\nThe coordinates, lookup of the left state are: ";
+		  std::cerr<<"\nThe coordinates, min, max of the left state are: ";
 		  for (map<node,int>::iterator envIter = left_profile.leaf_seq_coords[left_state].begin(); envIter !=left_profile.leaf_seq_coords[left_state].end(); envIter++)
-		    std::cerr<< envIter->second << " " << envelope->coordinates[name1][envIter->second][name2]<< " "; 
+		    std::cerr<< envIter->second << " " << envelope->coordinates[name1][envIter->second][name2].first<< " " <<
+		      envelope->coordinates[name1][envIter->second][name2].second << " "; 
 	      
-		  std::cerr<<"\nThe coordinates, lookup of the right state are: ";
+		  std::cerr<<"\nThe coordinates, min, max of the right state are: ";
 		  for (map<node,int>::iterator envIter = right_profile.leaf_seq_coords[right_state].begin(); envIter !=right_profile.leaf_seq_coords[right_state].end(); envIter++)
-		    std::cerr<< envIter->second << " " <<  envelope->coordinates[name2][envIter->second][name1] << " "; 
+		    std::cerr<< envIter->second << " " <<  envelope->coordinates[name2][envIter->second][name1].first << " " << 
+		      envelope->coordinates[name2][envIter->second][name1].second << " ";
 	      
 		  std::cerr<<"\n"; 
 		}
-	      */
+
 	      if (bad)
 		return false; 
 	    }
