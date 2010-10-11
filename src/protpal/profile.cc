@@ -10,8 +10,8 @@
 #include "protpal/utils.h"
 #include "protpal/profile.h"
 using namespace std;
-
 // Mini-class M_id methods
+
 
 int M_id::operator==(const M_id &right)
 {
@@ -55,6 +55,7 @@ void M_id::display(QTransducer &Q)
   std::cout<<"\tleftProfile:\t type: "<<int2state[left_type]<<", index:"<<left_state<<endl;
   std::cout<<"\trightProfile: \t type: "<<int2state[right_type]<<", index:"<<right_state<<endl;
 }
+
 
 int index(M_id query, vector<M_id> in )
 {
@@ -1875,7 +1876,8 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
   if (emissionWeight < small) { std::cerr<<"Warning: very small emission weight for state: \n";mPrime.display(Q);}
   #endif
 
-  Z[mPrime.toVector()] = 0;
+  //  Z[mPrime.toVector()] = 0;
+  add_to_DP_cell(mPrime, 0.0 ); 
 
   if (Q.has_transition(Q.composite_start_state, mPrime.q_state) &&  \
 	  left_profile.has_transition(left_profile.start_state, mPrime.left_state) && \
@@ -2123,7 +2125,8 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 
 void Profile::clear_DP(void)
 {
-  map< vector<int>, bfloat> Z_tmp;
+  //  map< vector<int>, bfloat> Z_tmp;
+  DP_hash Z_tmp; 
   Z_tmp.swap(Z); 
 }
 void Profile::fill_backward_DP(int logging)
@@ -2461,7 +2464,8 @@ void Profile::fill_DP(int logging, bool inLog)
   mPrime.right_type = 3;
   mPrime.left_type = 3; 
   
-  Z[mPrime.toVector()] = 0;
+  //  Z[mPrime.toVector()] = 0;
+  add_to_DP_cell(mPrime, 0.0 ); 
   // bLog
   //  backward_states.push_back(mPrime); 
   
@@ -2711,18 +2715,13 @@ bfloat Profile::get_external_cascade_weight(M_id e, int charIndex)
 //Utility functions for DP containers - forward is the 'unnamed', and the backward is so explicitely named
 inline void Profile::add_to_DP_cell(M_id m , bfloat toAdd)
 {
-  tmpMidVec = m.toVector(); 
   // Add the value toAdd to the DP cell for state m, if it exists.  otherwise initialize this value. 
-  tmpIter = Z.find(tmpMidVec);
+  //  tmpIter = Z.find(tmpMidVec);
+  tmpIter = Z.find(m); 
   if (tmpIter == Z.end())
-    Z[tmpMidVec] = toAdd; 
+    Z[m] = toAdd; 
   else
     tmpIter->second += toAdd; 
-
-//   if (Z.count(tmpMidVec) <1) 
-//     Z[tmpMidVec] = toAdd; 
-//   else 
-//     Z[tmpMidVec] += toAdd; 
 }
 void Profile::add_to_backward_DP(M_id m , bfloat toAdd)
 {
@@ -2744,15 +2743,11 @@ bfloat Profile::get_backward_DP_cell(M_id m)
 
 inline bfloat Profile::get_DP_cell(M_id m)
 {
-  tmpMidVec = m.toVector(); 
-  // Access the value of DP cell for state m.  If this is nonexistant, return 0.  
-  tmpIter = Z.find(tmpMidVec); 
+  tmpIter = Z.find(m); 
   if (tmpIter == Z.end())
     return 0.0; 
   else 
     return tmpIter->second; 
-  //  if (!Z.count(tmpMidVec)) return 0; 
-  //  else return Z[tmpMidVec];
 } 
 
 inline bool Profile::is_in_envelope(state left_state, state right_state, string checks)

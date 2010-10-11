@@ -13,13 +13,50 @@
 #include "protpal/exactMatch.h"
 #include "protpal/AlignmentEnvelope.h"
 
-
 using namespace std;
+class M_id
+{
+ public:
+  state q_state;
+  state left_state;
+  state right_state;
+/*   string left_type; */
+/*   string right_type; */
+  int left_type;
+  int right_type;
+
+  void display(QTransducer &);
+  int operator==(const M_id &);
+  int operator!=(const M_id &);
+  vector<int> toVector(void);
+};
+
+
+struct eqM_id{                                                                                                   
+  bool operator()(const M_id m1, const M_id m2) const {                                                          
+    return (m1.q_state == m2.q_state &&                                                                          
+            m1.left_state == m2.left_state &&                                                                    
+            m1.left_type == m2.left_type &&                                                                      
+            m1.right_state == m2.right_state &&                                                                  
+            m1.right_type == m2.right_type);                                                                     
+  }                                                                                                          
+};
 
 // forward declarations
 class Profile; 
-class M_id;
 typedef vector<M_id> state_path; 
+//hash_map<const char*, int, hash<const char*>, eqstr> months;
+namespace __gnu_cxx {
+  template<> struct hash<M_id>{
+    size_t operator()(const M_id& m) const {
+      return size_t(m.q_state*1 + m.left_state*10 + m.left_type*100 + m.right_state*1000 + m.right_type*10000); 
+    }
+  };
+}  // namespace __gnu_cxx
+
+
+typedef __gnu_cxx::hash_map<M_id,bfloat, hash<M_id>, eqM_id> DP_hash;
+
 
 // ***** The 'mature' profile class (e.g. E_n) *****
 class AbsorbingTransducer 
@@ -130,23 +167,6 @@ class AbsorbingTransducer
 
 // The states in Profile s are identified by M_id:
 
-class M_id
-{
- public:
-  state q_state;
-  state left_state;
-  state right_state;
-  
-/*   string left_type; */
-/*   string right_type; */
-  int left_type;
-  int right_type;
-
-  void display(QTransducer &);
-  int operator==(const M_id &);
-  int operator!=(const M_id &);
-  vector<int> toVector(void);
-};
 
 int index(M_id query, vector<M_id> in );
 bool contains(M_id child, queue<M_id> stateQueue);
@@ -268,7 +288,8 @@ class Profile
  private:
   // **** Fill_DP uses the following: ****
   // the actual DP matrix.  Maps states in profile (as M_id ) to double
-  map< vector<int>, bfloat> Z; // change from map to hash_map ?
+  //  map< vector<int>, bfloat> Z; // change from map to hash_map ?
+  DP_hash Z; 
   map< vector<int>, bfloat> backward_matrix; 
 
   //accessor function, returns 0 if no matching entry
@@ -296,7 +317,8 @@ class Profile
   vector<bfloat> tmpEmitVals; 
   vector<int> tmpEmitTuple; 
   vector<int> tmpMidVec;
-  map<vector<int>, bfloat>::iterator tmpIter; // change from map to hash_map ?
+  //  map<vector<int>, bfloat>::iterator tmpIter; // change from map to hash_map ?
+  DP_hash::iterator tmpIter; 
   
   // Utility functions
   inline bool is_in_envelope(state left_state, state right_state, string checks="NA"); 
