@@ -107,7 +107,8 @@ class Reconstruction
   double gap_extend_3; 
   double mix_prior_3;
   double root_insert_prob;
-
+  sstring gap_char; 
+  
   // Indel investigation
   int num_root_alignments; 
   bool viterbi_alignments; ; 

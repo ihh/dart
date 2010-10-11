@@ -243,7 +243,6 @@ class Profile
   // envelope-related variables
   map<node, int> envMap; 
   map<node, int>::iterator envIter1, envIter2; 
-  int guide_sausage; 
   double total;
   int num_total; 
   bool use_guide_alignment; 

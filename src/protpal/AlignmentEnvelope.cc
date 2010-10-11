@@ -14,7 +14,7 @@ AlignmentEnvelope::AlignmentEnvelope(void)
 {
   // Placeholder constructor
 }
-void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring gap_char_in, int sausage_size)
+void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring gap_char_in, int sausage_size_in)
 {
   map<string, string>::iterator seqIter, seqIter2; 
   unsigned int seqSize; 
@@ -22,7 +22,7 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
   Alphabet dummy_alpha("Uninitialized", 0); 
   alignment = parse_stockholm(guide_alignment_filename.c_str(), dummy_alpha); 
   gap_char = gap_char_in; 
-  
+  sausage_size = sausage_size_in; 
   for (seqIter = alignment.begin(); seqIter != alignment.end(); seqIter++)
     {
       seqSize = (seqIter->second).size(); 
@@ -60,6 +60,9 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
 
 int AlignmentEnvelope::next_match_column(int alignment_coordinate, string direction, string seqName1, string seqName2)
 {
+  bool logging = false; 
+  if (logging)
+    std::cerr<< "Beginning from alignment coord: " << alignment_coordinate << " "; 
   int matches_found = 0; 
   while ( matches_found < sausage_size )
     {
@@ -67,10 +70,25 @@ int AlignmentEnvelope::next_match_column(int alignment_coordinate, string direct
 	   stringAt(alignment[seqName2], alignment_coordinate) != gap_char )
 	++matches_found; 
       if (direction == "forward")
-	++alignment_coordinate; 
+	{
+	  if ( alignment_coordinate == alignment[seqName1].size()-1)
+	    return alignment_coordinate; 
+	  else
+	    ++alignment_coordinate; 
+	}
       else
-	--alignment_coordinate; 
+	{
+	  if (alignment_coordinate == 0 )
+	    return alignment_coordinate; 
+	  else
+	    --alignment_coordinate; 
+	}
+      if (logging)
+	std::cerr<<" " << alignment_coordinate << " ";
     }
+  if (logging)
+    std::cerr<< "\nAlignment coordinate " << sausage_size << " match columns " << direction << " between " << 
+      seqName1 << " and " << seqName2 << " was " << alignment_coordinate<<endl; 
   return alignment_coordinate; 
 }
 	

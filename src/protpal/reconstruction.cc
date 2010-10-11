@@ -55,7 +55,8 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("tf -tree-file", treeFileName="None", "File containing tree string in newick format.", false);
   opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called).  Default is a compact Stockholm form. ");
   opts.add("fo -fasta-output", fasta_output=false, "Display final alignment in FASTA format");
-
+  opts.add("gpc -gap-char", gap_char="-", "Gap character - for use in importing guide alignments\n");
+  
   opts.newline(); 
   opts.print_title("Reconstruction options");
 
@@ -166,7 +167,12 @@ Reconstruction::Reconstruction(int argc, char* argv[])
     {
       if (loggingLevel >= 1)
 	std::cerr<<"\nBuilding alignment envelope from guide alignment...";
-      envelope.build_index(guide_alignment_filename);
+      if (guide_sausage < 0)
+	{
+	  std::cerr<<"Guide sausage size must be >= 0, setting to 0\n";
+	  guide_sausage = 0; 
+	}
+      envelope.build_index(guide_alignment_filename, gap_char, guide_sausage);
       if (loggingLevel >= 1)
 	std::cerr<<"Done.\n";
     }

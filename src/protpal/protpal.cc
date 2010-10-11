@@ -245,7 +245,6 @@ int main(int argc, char* argv[])
 	    {
 	      profile.use_guide_alignment = true; 
 	      profile.envelope = &reconstruction.envelope; 
-	      profile.guide_sausage = reconstruction.guide_sausage; // a bit redundant...maybe better to build all parameters into the envelope object
 	    }
 	  else
 	    profile.use_guide_alignment = false; 
