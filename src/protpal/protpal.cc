@@ -446,6 +446,8 @@ int main(int argc, char* argv[])
 	  std::cerr<<"Done.\n";
 	  std::cerr<<"\tDisplaying full ancestral alignment\n\n"; 
 	}
+      
+      std::cout<< "#=GF TIME_MINUTES " << clock() / (CLOCKS_PER_SEC * 60.0) <<endl; 
       if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
 	annotated.write_Stockholm(std::cout);
       else // display in bare-bones/ non-Xrate format
@@ -489,7 +491,10 @@ int main(int argc, char* argv[])
     }
   
   if (reconstruction.loggingLevel >= 1)
-    std::cerr<<"\nProtPal reconstruction completed without errors.\n";
+    {
+      std::cerr<<"\nProtPal reconstruction completed without errors. ";
+    }
+  
   
   return(0);
 }
