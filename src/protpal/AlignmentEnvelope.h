@@ -16,7 +16,7 @@ class AlignmentEnvelope
  public:
   // constructor, initializer
   AlignmentEnvelope(void); 
-  void build_index(sstring guide_alignment_filename, sstring gap_char = "-", int sausage_size=0); 
+  void build_index(sstring guide_alignment_filename, sstring gap_char = "-", int sausage_size=0, sstring type="basic"); 
   // main data storage unit - nested maps
   map< string, map<int, map<string, pair<int, int> > > > coordinates; 
   pair<int, int> lookup(string seqName, int index, string otherSeqName);
@@ -24,6 +24,7 @@ class AlignmentEnvelope
   void show(ostream& out); 
  private:
   int sausage_size; 
+  sstring type; 
   map<string, string> alignment;  
   sstring gap_char; 
   // convert from alignment coords to sequence coords

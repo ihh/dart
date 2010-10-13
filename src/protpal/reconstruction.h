@@ -48,7 +48,8 @@ class Reconstruction
   sstring guide_alignment_filename; 
   int guide_sausage; 
   AlignmentEnvelope envelope; 
-  
+  sstring envelope_type; 
+
   string sequenceFileType; 
 
   // the phylogenetic tree, stored as a PHYLYP_tree object.  This is a fairly hairy object, with most of its code

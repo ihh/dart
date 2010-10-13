@@ -14,7 +14,7 @@ AlignmentEnvelope::AlignmentEnvelope(void)
 {
   // Placeholder constructor
 }
-void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring gap_char_in, int sausage_size_in)
+void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring gap_char_in, int sausage_size_in, sstring type_in)
 {
   map<string, string>::iterator seqIter, seqIter2; 
   unsigned int seqSize; 
@@ -22,6 +22,7 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
   Alphabet dummy_alpha("Uninitialized", 0); 
   alignment = parse_stockholm(guide_alignment_filename.c_str(), dummy_alpha); 
   gap_char = gap_char_in; 
+  type = type_in; 
   sausage_size = sausage_size_in; 
   for (seqIter = alignment.begin(); seqIter != alignment.end(); seqIter++)
     {
@@ -36,12 +37,20 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
 		    continue;
 		  else
 		    {
-		      envPair.first = 
-			sequence_coordinate(
-			   next_match_column(idx, "backward", seqIter2->first, seqIter->first), seqIter2->first);
-		      envPair.second = 
-			sequence_coordinate(
-			   next_match_column(idx, "forward", seqIter2->first, seqIter->first), seqIter2->first);
+		      if (type == "basic")
+			{
+			  envPair.first = 
+			    sequence_coordinate( idx, seqIter2->first ) - sausage_size; 
+			  envPair.second = 
+			    sequence_coordinate( idx, seqIter2->first ) + sausage_size; 
+			}
+		      else
+			{
+			  envPair.first = 
+			    sequence_coordinate(next_match_column(idx, "backward", seqIter2->first, seqIter->first), seqIter2->first);
+			  envPair.second = 
+			    sequence_coordinate(next_match_column(idx, "forward", seqIter2->first, seqIter->first), seqIter2->first);
+			}
 		      coordinates[seqIter->first][ sequence_coordinate(idx, seqIter->first) ][ seqIter2->first ] = 
 			envPair; 
 		    }

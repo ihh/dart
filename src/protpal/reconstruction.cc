@@ -104,6 +104,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.newline(); 
   opts.print_title("Speed/memory heuristics"); 
   opts.add ("ga -guide-alignment",  guide_alignment_filename="None", "Aligned stockholm sequence file.  Use this as a guide alignment; the -gs option dictates how far from the guide alignment to explore .", false);
+  opts.add("et -envelope-type", envelope_type = "basic", "Envelope type - basic or gap-sliding."); 
   opts.add("gs -guide-sausage", guide_sausage = 50, "Max pairwise divergence from guide alignment homology relations."); 
   opts.add("n -num-samples", num_sampled_paths=100, "Number of paths to sample in traceback");
   opts.add("m -max-DAG-size", max_sampled_externals=1000, "Max number (approximately - due to sampling complete paths) of delete states allowed in DAG");
@@ -172,7 +173,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 	  std::cerr<<"Guide sausage size must be >= 0, setting to 0\n";
 	  guide_sausage = 0; 
 	}
-      envelope.build_index(guide_alignment_filename, gap_char, guide_sausage);
+      envelope.build_index(guide_alignment_filename, gap_char, guide_sausage, envelope_type);
       if (loggingLevel >= 1)
 	std::cerr<<"Done.\n";
     }
