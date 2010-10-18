@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
   vector<Node> children;
   vector<double> branchLengths;   
   vector<string> node_names;
-  double verySmall = 0.001; //proxy for zero-length branches
+  double verySmall = 0.01; //proxy for zero-length branches
   double branch_length; 
   string alignString; 
   // create main reconstruction object

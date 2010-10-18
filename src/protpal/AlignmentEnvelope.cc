@@ -26,16 +26,19 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
   sausage_size = sausage_size_in; 
   for (seqIter = alignment.begin(); seqIter != alignment.end(); seqIter++)
     {
+      //      std::cerr<<"\nIndexing from " << seqIter->first << " to: \n"; 
       seqSize = (seqIter->second).size(); 
-      for (unsigned int idx = 0; idx < seqSize; idx++)
+
+      for (seqIter2 = alignment.begin(); seqIter2 != alignment.end(); seqIter2++)
 	{
-	  if ( stringAt((seqIter->second), idx) != gap_char)
+	  if  ( seqIter->first == seqIter2->first ) 
+	    continue;
+	  else
 	    {
-	      for (seqIter2 = alignment.begin(); seqIter2 != alignment.end(); seqIter2++)
+	      //	      std::cerr << " " << seqIter2->first << " "; 
+	      for (unsigned int idx = 0; idx < seqSize; idx++)
 		{
-		  if  ( seqIter->first == seqIter2->first ) 
-		    continue;
-		  else
+		  if ( stringAt((seqIter->second), idx) != gap_char)
 		    {
 		      if (type == "basic")
 			{

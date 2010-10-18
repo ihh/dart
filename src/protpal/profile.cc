@@ -2246,8 +2246,8 @@ void Profile::fill_DP(int logging, bool inLog)
   qStates = Q.get_SSSI_states();
   for (er_Prime=0; er_Prime < right_profile.num_delete_states; er_Prime++)
 	{
-	  if (!is_in_envelope( left_profile.start_state, er_Prime )) // always returns true
-	   		  continue; 
+	  //	  if (!is_in_envelope( left_profile.start_state, er_Prime )) // always returns true
+	  //	   		  continue; 
 	  for (qPrime = qStates.begin();qPrime != qStates.end(); qPrime++)
 		{
 		  mPrime.q_state = *qPrime; 
@@ -2370,10 +2370,8 @@ void Profile::fill_DP(int logging, bool inLog)
   // Q is left-emit 
   for (el_Prime=0; el_Prime < left_profile.num_delete_states; el_Prime++)
 	{
-	  if (! is_in_envelope(el_Prime, right_profile.pre_end_state, "left" ))
-	    {
-	      continue; 
-	    }
+	  //	  if (! is_in_envelope(el_Prime, right_profile.pre_end_state, "left" ))
+	  //     continue; 
 	  //q is a left-emit state, left type is 1, right is 0.  right index is right_profile.pre_end_state
 	  qStates = Q.get_left_emit_states();
 	  string S = "S";
@@ -2405,10 +2403,8 @@ void Profile::fill_DP(int logging, bool inLog)
   // Q is right-emit 
   for (er_Prime=0; er_Prime < right_profile.num_delete_states; er_Prime++)
 	{
-	  if (! is_in_envelope(left_profile.pre_end_state, er_Prime, "right" ))
-	    {
-	      continue; 
-	    }
+	  //	  if (! is_in_envelope(left_profile.pre_end_state, er_Prime, "right" ))
+	  //	      continue; 
 	  //q is a right-emit state, left type is 0, right is 1.  left index is left_profile.pre_end_state
 	  qStates = Q.get_right_emit_states();
 	  string S = "S";
