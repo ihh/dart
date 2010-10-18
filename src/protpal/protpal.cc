@@ -492,7 +492,7 @@ int main(int argc, char* argv[])
   
   if (reconstruction.loggingLevel >= 1)
     {
-      std::cerr<<"\nProtPal reconstruction completed without errors. ";
+      std::cerr<<"\nProtPal reconstruction completed without errors. \n";
     }
   
   
