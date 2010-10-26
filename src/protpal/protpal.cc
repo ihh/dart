@@ -383,9 +383,6 @@ int main(int argc, char* argv[])
   reconstruction.tree.write_Stockholm(treeStream);
   alignString = treeStream.str() + alignString;
 
-  std::cout<<"Pre-Xrate alignment string:\n"; 
-  std::cout<<alignString<<endl; 
-
   istringstream stockStream(alignString);
   Sequence_database db; 
   Stockholm stk(1,1);
