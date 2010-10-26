@@ -910,6 +910,8 @@ void Stockholm_database::update_index()
 		align_row[row_name] = Align_row (nAlign, nRow);  // update align_row
 	      ++name_count[row_name];
 	    }
+	  else
+	    THROWEXPR ("While building index for Stockholm database: found an unnamed row. Balking...");
 	}
     }
   for_const_contents (Phonebook, name_count, nc)
