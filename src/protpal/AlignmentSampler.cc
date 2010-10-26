@@ -19,6 +19,7 @@ AlignmentSampler::AlignmentSampler(void)
 }
 AlignmentSampler::AlignmentSampler(state_path path_in, node node_in, map<node, Profile>* profiles_in, map<node, AbsorbingTransducer>* AbsProfiles_in, PHYLIP_tree* tree_in)
 {
+
   path = path_in; 
   treeNode = node_in; 
   profiles = profiles_in; 
@@ -422,6 +423,7 @@ IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in)
   sstring sequence;
   node n; 
   unsigned int size=0; 
+  verySmall = .01; 
   for (seq = stk.row_index.begin(); seq!=stk.row_index.end(); seq++)
     {
       n = index(seq->first, tree->node_name); 
@@ -691,7 +693,7 @@ double IndelCounter::insert_extend(node n)
 
 double IndelCounter::insert_rate(node n)
 {
-  return insertions[n].size() / ((matches[n] + deletions[n].size() + 1) * tree->branch_length(n, tree->parent[n]));
+  return insertions[n].size() / ((matches[n] + deletions[n].size() + 1) * max(tree->branch_length(n, tree->parent[n]), verySmall));
 }
 
 double IndelCounter::delete_extend(node n)
@@ -704,7 +706,7 @@ double IndelCounter::delete_extend(node n)
   
 double IndelCounter::delete_rate(node n)
 {
-  return deletions[n].size() / ((matches[n] + deletions[n].size() + 1) * tree->branch_length(n, tree->parent[n]));
+  return deletions[n].size() / ((matches[n] + deletions[n].size() + 1) * max(tree->branch_length(n, tree->parent[n]), verySmall));
 }
 
 

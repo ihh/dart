@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
 	      branch_length = max(verySmall, reconstruction.tree.branch_length(treeNode ,*child));
 	      if (branch_length != reconstruction.tree.branch_length(treeNode ,*child))
 		{
-		  std::cerr<<"NB: branch length "<< reconstruction.tree.branch_length(treeNode ,*child);
+		  std::cerr<<"\tNB: branch length "<< reconstruction.tree.branch_length(treeNode ,*child);
 		  std::cerr<<" rounded up to "<< branch_length<<endl; 
 		}
 	      branchLengths.push_back(branch_length); 
@@ -382,6 +382,10 @@ int main(int argc, char* argv[])
   stringstream treeStream;
   reconstruction.tree.write_Stockholm(treeStream);
   alignString = treeStream.str() + alignString;
+
+  std::cout<<"Pre-Xrate alignment string:\n"; 
+  std::cout<<alignString<<endl; 
+
   istringstream stockStream(alignString);
   Sequence_database db; 
   Stockholm stk(1,1);
@@ -484,7 +488,7 @@ int main(int argc, char* argv[])
 	  IndelCounter indels(annotated, &reconstruction.tree); 
 	  //IndelCounter indels(reconstruction.sequences, &reconstruction.tree); 
 	  indels.gather_indel_info(false); 
-	  indels.display_indel_info(indel_file, false);
+	  indels.display_indel_info(indel_file, reconstruction.per_branch);
 	  indel_file.close();
 	}
   

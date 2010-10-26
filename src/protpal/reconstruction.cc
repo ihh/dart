@@ -113,6 +113,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.newline();
   opts.print_title("Indel rate investigation");
   opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences, as well as estimated indel open and extend rates - written to specified file.");
+  opts.add("pb -per-branch", per_branch=false, "When used with -pi option, show per-branch indel statistics, rather than averaged over the tree");
   opts.add("db -stk-db", db_filename = "None", "Show alignments sampled at root level as a stockholm database - written to specified file.");
   opts.add("ra -root-alignments", num_root_alignments=1, "Number of alignments to sample at root node.");
   opts.add("ep -estimate-parameters", estimate_params=false, "Estimate the indel rate parameters via a stochastic sample (default 100 alignments, unless set by -ra option) at the root level\n");
@@ -156,6 +157,14 @@ Reconstruction::Reconstruction(int argc, char* argv[])
       std::cout<<opts.short_help(); 
       exit(1);
     }
+  // NOw that we've got the tree - make sure it's binary. 
+  bool changed = tree.force_binary(); 
+  if (changed)
+    if (loggingLevel >= 1)
+      std::cerr<<"NB: Non-binary input tree was coerced to equivalent binary form.\n"; 
+  
+
+  
   // Otherwise, do some preliminary stuff
   //seed rand on the clock time          
   if (rndtime)

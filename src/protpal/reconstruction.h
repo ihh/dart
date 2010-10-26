@@ -95,7 +95,7 @@ class Reconstruction
   bool estimate_params; 
   bool stoch_trace, viterbi, input_alignment, train_grammar; 
   bool estimate_root_insert;   
-  
+  bool per_branch;
   //model parameters
   bool mixture_2; 
   bool mixture_3; 
