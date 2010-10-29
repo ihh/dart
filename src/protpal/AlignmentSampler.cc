@@ -478,6 +478,7 @@ IndelCounter::IndelCounter(map<string,string>& sequences, PHYLIP_tree* tree_in)
 void IndelCounter::display_indel_info(ostream& out, bool per_branch)
 {
   out<<"\n\n### Displaying indel information ###\n";  
+  out << "#branch insertion_rate \t insertion_extend \t deletion_rate \t deletion_extend\n"; 
   if (per_branch)
     {
       double insert_rt, delete_rt, delete_ext, insert_ext; 
@@ -494,14 +495,14 @@ void IndelCounter::display_indel_info(ostream& out, bool per_branch)
 	  insert_ext = insert_extend(treeNode);
 	  delete_ext = delete_extend(treeNode);
 	
-	  out << "Indel statistics for branch above node " << tree->node_name[treeNode] <<endl; 
-	  out << "Insertion rate (insertions per position per unit time): " << insert_rt <<endl; 
-	  if (insert_rt>0.0)
-	    out << "Insertion extension probability (1/(mean insertion length)): " << insert_ext <<endl; 
+	  out << tree->node_name[treeNode] << "\t" << insert_rt << "\t" << insert_ext << "\t" << delete_rt << "\t" << delete_ext << endl; 
+// 	  out << "Insertion rate (insertions per position per unit time) above branch " << tree->node_name[treeNode] << ": " << insert_rt <<endl; 
+// 	  if (insert_rt>0.0)
+// 	    out << "Insertion extension probability (1/(mean insertion length)) above branch " << tree->node_name[treeNode] << ": " << insert_ext <<endl; 
 	  
-	  out << "Deletion rate (deletions per position per unit time): " << delete_rt <<endl; 
-	  if (delete_rt>0.0)
-	    out << "Deletion extension probability (1/(mean deletion length)): " << delete_ext <<endl; 
+// 	  out << "Deletion rate (deletions per position per unit time): above branch " << tree->node_name[treeNode] << ": " << delete_rt <<endl; 
+// 	  if (delete_rt>0.0)
+// 	    out << "Deletion extension probability (1/(mean deletion length)) above branch " << tree->node_name[treeNode] << ": " << delete_ext <<endl; 
 	}
     }
   out << "\n### Indel statistics averaged across tree ###\n"; 
