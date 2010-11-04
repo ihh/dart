@@ -29,6 +29,7 @@ class Reconstruction
   // Each leaf node is assigned a sequence. Possibly delete these after making ExactMatch transducers for each
   // leaf.  Hmm, maybe I should have used pointers instead. 
   map<string, string> sequences; 
+  sstring truncate_names_char; //truncate the names by this character, if requested
 
   // not (yet) using Ian's fancy Alphabet class
   // at least this is not a string any more, but a vector of strings, allowing latent-variable models.
@@ -57,6 +58,7 @@ class Reconstruction
   sstring treeString;
   PHYLIP_tree tree; 
 
+
   // Each tree node will at some point contain a sequence profile.  The profile at a node  is constructed via its
   // two children, which are viciously deleted after the parent is constructed.  
   map<node, AbsorbingTransducer> profiles; 
@@ -81,6 +83,7 @@ class Reconstruction
   map<node, Profile> pre_summed_profiles; 
   
   // Reconstruction algorithm parameters
+
   int num_sampled_paths;
   int max_sampled_externals; 
   bool show_alignments; 

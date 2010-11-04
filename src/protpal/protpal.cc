@@ -122,6 +122,22 @@ int main(int argc, char* argv[])
       for (unsigned int i=0; i<leaves.size(); i++)
 	{
 	  treeNode = leaves[i]; 
+	  string sequence = reconstruction.sequences[reconstruction.tree.node_name[treeNode]]; // sequence
+	  if (sequence.size() == 0 )
+	    {
+	      std::cerr<<"\n\tERROR: the leaf node " << reconstruction.tree.node_name[treeNode] << " has no sequence associated with it!\n";
+	      std::cerr<<"This is usually caused by a tree having slightly different names than the sequences in the input sequences. \n";
+
+	      std::cerr<<"Sequence names in input file: \n";
+	      for (map<string, string>::iterator seqIter = reconstruction.sequences.begin(); seqIter != reconstruction.sequences.end(); seqIter++)
+		if ((seqIter->second).size() > 0)
+		  std::cerr<<"\t" << seqIter->first << "\t" << split(seqIter->first, string("|"))[0] << endl; 
+		    
+	      std::cerr<<"Sequence names in tree leaves: \n";
+	      for (unsigned int j=0; j<leaves.size(); j++)
+		std::cerr<<"\t" << reconstruction.tree.node_name[leaves[j]] << endl; 
+	      exit(1); 
+	    }
 	  ExactMatch leaf(
 			  reconstruction.sequences[reconstruction.tree.node_name[treeNode]], // sequence
 			  leaves[i], //tree index

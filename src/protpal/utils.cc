@@ -337,6 +337,9 @@ map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
       std::cerr << "\nERROR: Unable to open Stockholm file: "<<fileName<< "\n"; 
       exit(1); 
     }
+  for (map<string, string>::iterator seqIter = sequences.begin(); seqIter!=sequences.end(); seqIter++)
+    if ( (seqIter->second).size() == 0)
+      std::cerr<<"Warning: 0 length sequence for species: " << seqIter->first << endl; 
   return sequences; 
 }
 
@@ -388,7 +391,17 @@ map<string, string> parse_fasta(const char* sequenceFileName, Alphabet alphabet)
   seq_db.read_FASTA (sequenceFileStream);  // read from file
   seq_db.seqs2dsqs (alphabet);   // parse the sequences into tokens using the Alphabet class that you read in with the substitution model
   for_const_contents (list<Named_profile>, seq_db, prof) 
-    sequences[prof->name] = (prof->seq); 
+    {
+      sequences[prof->name] = (prof->seq); 
+      if (sequences[prof->name].size() == 0)
+	std::cerr<<"Warning: zero length sequence for species " << prof->name << endl; 
+    }
+
   return sequences; 
 }
 
+void seqDictSize(map<string, string> seqDict)
+{
+  for (map<string,string>::iterator seqIter =  seqDict.begin(); seqIter!=seqDict.end(); seqIter++)
+    std::cerr<< seqIter->first << " " << (seqIter->second).size() << endl;
+}

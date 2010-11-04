@@ -32,8 +32,7 @@ vector<string> split(string,string);
 vector<string> splitWhite(string); 
 
 map<node, bool> merge(map<node, bool>  *map1, map<node, bool>  *map2); 
-
-
+void seqDictSize(map<string, string>);                                                                                                                                     
 bfloat randomUnit(void);
 double absoluted(bfloat);
 

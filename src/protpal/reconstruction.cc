@@ -49,7 +49,8 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.newline(); 
   opts.print_title("Input/output options");
-  opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t option.", false);
+  opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t and -tf options.", false);
+  opts.add("tn -truncate-names", truncate_names_char = "None", "Truncate sequence names - only include characters occurring before this character");
   opts.add("fa -fasta-file", fastaFileName="None", "Unaligned FASTA sequence file",false );
   opts.add("t -tree-string", treeString="None", "Tree string in newick format, within double quotes. ", false);
   opts.add("tf -tree-file", treeFileName="None", "File containing tree string in newick format.", false);
@@ -137,27 +138,25 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 	  all_reqd_args = false; 
 	}
   // Next, see if we have a tree, first trying to get it from a #=GF NH stockholm line
-  if (stkFileName != "None")
+  if (stkFileName != "None" && treeString == "None" && treeFileName == "None")// && treeFileName == "None" && treeString == "None")
     get_stockholm_tree(stkFileName.c_str());
   if (treeString == "None" && treeFileName == "None" && !have_tree )
 	{
 	  error += "\tNo tree string was specified.  Use -t  or -tf <to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
 	  all_reqd_args = false; 
 	}
-  else
-    {
-      if (treeString != "None")
-	loadTreeString(treeString.c_str());
-      else if (treeFileName != "None")
-	get_tree_from_file(treeFileName.c_str());
-    }
+  if (treeString != "None")
+    loadTreeString(treeString.c_str());
+  else if (treeFileName != "None")
+    get_tree_from_file(treeFileName.c_str());
+
   if(!all_reqd_args)
     {
       std::cout<<"\nNot all required arguments were supplied:\n"<<error<<endl;  
       std::cout<<opts.short_help(); 
       exit(1);
     }
-  // NOw that we've got the tree - make sure it's binary. 
+  // Now that we've got the tree - make sure it's binary. 
   bool changed = tree.force_binary(); 
   if (changed)
     if (loggingLevel >= 1)
@@ -210,8 +209,25 @@ void Reconstruction::parse_sequences(Alphabet alphabet)
     sequences = parse_stockholm(stkFileName.c_str(), alphabet); 
   else if (fastaFileName != "None")
     sequences = parse_fasta(fastaFileName.c_str(), alphabet); 
+  if (truncate_names_char != "None")
+    {
+      vector<string> toErase; 
+      for (map<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
+	{
+	  if (in(string(truncate_names_char.c_str()), seqIter->first))
+	    {
+	      sequences[ split(seqIter->first, string(truncate_names_char.c_str()))[0] ] = seqIter->second; 
+	      if (loggingLevel >=1 )
+		std::cerr<< "\t NB: " << seqIter->first << " replaced with truncated name " << split(seqIter->first, string(truncate_names_char.c_str()))[0] << endl; 
+	      toErase.push_back(seqIter->first); 
+	    }
+	  else
+	    std::cerr<<"Seqname " << seqIter->first << " left alone\n"; 
+	}
+      for (vector<string>::iterator eraser=toErase.begin(); eraser!=toErase.end(); eraser++)
+	sequences.erase(*eraser);
+    }
 }
-
   
 void Reconstruction::loadTreeString(const char* in)
 {
@@ -727,7 +743,8 @@ double Reconstruction::get_root_ins_estimate(void)
       return 1.0-(1.0 / avg);
     }
 }
-	
+
+
 // void Reconstruction::show_indels(Stockholm stock)
 // {
 //   ofstream myfile;

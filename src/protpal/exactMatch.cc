@@ -117,6 +117,7 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
   to.clear(); from.clear();
   //  to.push_back(num_delete_states+2); outgoing.push_back(to);
   from.push_back(pre_end_state);incoming[end_state] = from;   
+  //  std::cerr<<"Created exact match trans from " << sequence << " having " << num_delete_states << " states \n";
 }
 
 void ExactMatch::test(void)
