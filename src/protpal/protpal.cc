@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
   vector<Node> children;
   vector<double> branchLengths;   
   vector<string> node_names;
-  double verySmall = 0.01; //proxy for zero-length branches
+  double verySmall = 0.001; //proxy for zero-length branches
   double branch_length; 
   string alignString; 
   // create main reconstruction object
@@ -483,7 +483,6 @@ int main(int argc, char* argv[])
 	  ofstream indel_file;
 	  indel_file.open (reconstruction.indel_filename.c_str());
 	  IndelCounter indels(annotated, &reconstruction.tree); 
-	  //IndelCounter indels(reconstruction.sequences, &reconstruction.tree); 
 	  indels.gather_indel_info(false); 
 	  indels.display_indel_info(indel_file, reconstruction.per_branch);
 	  indel_file.close();

@@ -423,7 +423,7 @@ IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in)
   sstring sequence;
   node n; 
   unsigned int size=0; 
-  verySmall = .01; 
+  verySmall = 0.001; 
   for (seq = stk.row_index.begin(); seq!=stk.row_index.end(); seq++)
     {
       n = index(seq->first, tree->node_name); 
@@ -480,9 +480,9 @@ IndelCounter::IndelCounter(map<string,string>& sequences, PHYLIP_tree* tree_in)
 void IndelCounter::display_indel_info(ostream& out, bool per_branch)
 {
   out<<"\n\n### Displaying indel information ###\n";  
-  out << "#branch insertion_rate \t insertion_extend \t deletion_rate \t deletion_extend\n"; 
   if (per_branch)
     {
+      out << "#branch insertion_rate \t insertion_extend \t deletion_rate \t deletion_extend\n"; 
       double insert_rt, delete_rt, delete_ext, insert_ext; 
       node treeNode; 
       for_nodes_pre (*tree, tree->root, -1, bi)
