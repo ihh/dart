@@ -181,7 +181,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 	  std::cerr<<"Guide sausage size must be >= 0, setting to 0\n";
 	  guide_sausage = 0; 
 	}
-      envelope.build_index(guide_alignment_filename, gap_char, guide_sausage, envelope_type);
+      envelope.build_index(guide_alignment_filename, gap_char, guide_sausage, envelope_type, truncate_names_char);
       if (loggingLevel >= 1)
 	std::cerr<<"Done.\n";
     }

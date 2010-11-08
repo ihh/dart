@@ -14,13 +14,29 @@ AlignmentEnvelope::AlignmentEnvelope(void)
 {
   // Placeholder constructor
 }
-void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring gap_char_in, int sausage_size_in, sstring type_in)
+void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring gap_char_in, int sausage_size_in, sstring type_in, sstring truncate_names_char)
 {
   map<string, string>::iterator seqIter, seqIter2; 
   unsigned int seqSize; 
   pair<int, int> envPair; 
   Alphabet dummy_alpha("Uninitialized", 0); 
   alignment = parse_stockholm(guide_alignment_filename.c_str(), dummy_alpha); 
+  if (truncate_names_char != "None")
+    {
+      vector<string> toErase;
+      for (map<string, string>::iterator seqIter = alignment.begin(); seqIter != alignment.end(); seqIter++)
+        {
+          if (in(string(truncate_names_char.c_str()), seqIter->first))
+            {
+              alignment[ split(seqIter->first, string(truncate_names_char.c_str()))[0] ] = seqIter->second;
+              toErase.push_back(seqIter->first);
+            }
+        }
+      for (vector<string>::iterator eraser=toErase.begin(); eraser!=toErase.end(); eraser++)
+        alignment.erase(*eraser);
+    }
+
+
   gap_char = gap_char_in; 
   type = type_in; 
   sausage_size = sausage_size_in; 
