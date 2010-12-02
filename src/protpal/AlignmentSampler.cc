@@ -647,7 +647,7 @@ void IndelCounter::all_deletions(ostream& out)
 void IndelCounter::average_indel_counts(void)
 {
   double insert_rt, delete_rt, delete_ext, insert_ext; 
-  double insert_rate_tot = 0.0,  delete_rate_tot = 0.0,  delete_extend_tot = 0.0,  insert_extend_tot = 0.0; 
+  double insert_rate_num = 0.0,  delete_rate_num = 0.0, insert_rate_den = 0.0,  delete_rate_den = 0.0, delete_extend_tot = 0.0,  insert_extend_tot = 0.0; 
   node treeNode; 
   double b = double(tree->branches()); 
   int insert_count = 0, delete_count = 0; // actually the count of nodes which have nonzero in/del rates
@@ -662,9 +662,17 @@ void IndelCounter::average_indel_counts(void)
 
       insert_ext = insert_extend(treeNode);
       delete_ext = delete_extend(treeNode);
-
-      insert_rate_tot +=  insert_rt;
-      delete_rate_tot +=  delete_rt;
+      
+//       insert_rate_tot +=  insert_rt;
+//       delete_rate_tot +=  delete_rt;
+      
+      insert_rate_num += insertions[treeNode].size();
+      delete_rate_num += deletions[treeNode].size();
+      
+      insert_rate_den += ( matches[treeNode]+deletions[treeNode].size()+insertions[treeNode].size()+1 )*
+	max(tree->branch_length(treeNode, tree->parent[treeNode]), verySmall);
+      delete_rate_den += ( matches[treeNode]+deletions[treeNode].size()+1 )*
+	max(tree->branch_length(treeNode, tree->parent[treeNode]), verySmall);
       
       if (insert_rt > 0.0)
 	{
@@ -677,10 +685,11 @@ void IndelCounter::average_indel_counts(void)
 	  delete_count++; 
 	}
     }
-  avg_insert_rate = insert_rate_tot/b; 
+
+  avg_insert_rate = insert_rate_num / insert_rate_den; 
   avg_insert_ext = insert_extend_tot/insert_count; 
   
-  avg_delete_rate = delete_rate_tot/b; 
+  avg_delete_rate = delete_rate_num / delete_rate_den; 
   avg_delete_ext = delete_extend_tot/delete_count; 
 }
 
@@ -694,7 +703,7 @@ double IndelCounter::insert_extend(node n)
 
 double IndelCounter::insert_rate(node n)
 {
-  return insertions[n].size() / ((matches[n] + deletions[n].size() + 1) * max(tree->branch_length(n, tree->parent[n]), verySmall));
+  return insertions[n].size() / ((matches[n] + deletions[n].size() +insertions[n].size() + 1) * max(tree->branch_length(n, tree->parent[n]), verySmall));
 }
 
 double IndelCounter::delete_extend(node n)
