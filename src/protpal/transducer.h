@@ -59,14 +59,14 @@ class Transducer
   vector<string> state_names;
 
   // Record of state connectivity.  state -> vector of states s.t. weight(q-> q') != 0
-  map<state, vector<state> > outgoing; 
+  MyMap<state, vector<state> > outgoing; 
 
   // Transition weight map.  state x state -> weight
-  map<vector <state>, double> transition_weight; 
+  MyMap<vector <state>, double> transition_weight; 
 
   // Emission weight map.  Each insert state maps to a vector of length alphabet.size()
   // emission_weight_matrix[state][i] gives the weight of emitting character alphabet[i] from "state"
-  map< state, vector<double> > emission_weight_matrix;     
+  MyMap< state, vector<double> > emission_weight_matrix;     
 
   // a state type for each state
   vector<string> state_types;

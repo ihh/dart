@@ -102,8 +102,8 @@ class QTransducer
 
   // The map emission_weight holds these...the vector<int> is state, omega_left, omega_right
   // One of the omegas can be -1, meaning 'no character' (e.g. omega_left = -1 in a left_del state)
-  //  map< vector<int>, double> emission_weight;
-  map< vector<int>, double> emission_weight;
+  //  MyMap< vector<int>, double> emission_weight;
+  MyMap< vector<int>, double> emission_weight;
   vector<int> state_l_r; 
   vector<state> get_components(state); 
 
@@ -119,12 +119,12 @@ class QTransducer
   int num_states; 
 
   // This map has keys according to state 'classes': match, wait, right_del, left_del, right_ins, left_ins
-  map< string, vector<state> >  state_class_set;
+  MyMap< string, vector<state> >  state_class_set;
 
 
 
   // This map has keys according to state 'types': "SSSI", "MMID", etc
-  map< string, vector<state> >  state_type_set; 
+  MyMap< string, vector<state> >  state_type_set; 
 
   // Vector for individual state classes (e.g. match, wait, right_del, etc)
   vector<string> state_class;
@@ -146,13 +146,13 @@ class QTransducer
   
   // First fill these, based on the table
   void cache_in_out_info(void);
-  map<state, vector<state> > outgoing;
-  map<state, vector<state> > incoming;
+  MyMap<state, vector<state> > outgoing;
+  MyMap<state, vector<state> > incoming;
 
   
 
   // Then fill this map with weights
-  map< vector<state>, double> transition_weight;
+  MyMap< vector<state>, double> transition_weight;
   double compute_transition_weight(state, state, vector<int>);
   
 
@@ -165,7 +165,7 @@ class QTransducer
 
   // The composite state types of Q.  Hard-coded here, though I think this is true for any Q (?)
   // This is taken directly from section 2.2.1 in transducer.tex
-  map<string, vector<string> > state_type_reference;
+  MyMap<string, vector<string> > state_type_reference;
 
   // The function to initialize this:
   void get_state_type_reference(void);
@@ -175,7 +175,7 @@ class QTransducer
   // and the value is a vector of integers, telling us how many transitions each component transducer
   // must make for the composite transition to occur.  This is described in the latex document.
   // The table is taken from the latex document, and code is generated with table2cc.py
-  map<vector<string>, vector<int> > transition_table;
+  MyMap<vector<string>, vector<int> > transition_table;
 
   // The function to initialize this:
   void get_transition_table(void);  

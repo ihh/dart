@@ -10,8 +10,8 @@
 #include "utils.h"
 #include "ecfg/ecfgsexpr.h"
 #include "seq/biosequence.h"
-
 #include "util/macros.h"
+#include "protpal/MyMap.h"
 
 using namespace std;
 
@@ -117,10 +117,10 @@ int sample(vector<bfloat> &weights)
 
 
 
-map<node, bool> merge(map<node, bool>  *map1, map<node, bool>  *map2)
+MyMap<node, bool> merge(MyMap<node, bool>  *map1, MyMap<node, bool>  *map2)
 {
-  map<node, bool> joinedMap; 
-  map<node, bool>::iterator it; 
+  MyMap<node, bool> joinedMap; 
+  MyMap<node, bool>::iterator it; 
   for (it = (*map1).begin(); it!=(*map1).end(); it++) joinedMap[(*it).first] = (*it).second;
   for (it = (*map2).begin(); it!=(*map2).end(); it++) joinedMap[(*it).first] = (*it).second;	    
   
@@ -310,9 +310,9 @@ void displayVector(vector <vector <int> > in)
 	}
 }
 
-map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
+MyMap<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
 {
-  map<string, string> sequences; 
+  MyMap<string, string> sequences; 
   string line;
   ifstream seqFile(fileName);
 
@@ -327,7 +327,8 @@ map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
 	  else
 	    {
 	      //std::cerr<<"splitting line...\n";
-	      sequences[splitWhite(line)[0]] += splitWhite(line)[1];
+	      sequences[splitWhite(line)[0]] += splitWhite(line)[1]; 
+	      //sequences.insert(pair<string, string>(splitWhite(line)[0], sequences[splitWhite(line)[0]] + splitWhite(line)[1]));
 	    }
 	}
       seqFile.close();
@@ -337,7 +338,7 @@ map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
       std::cerr << "\nERROR: Unable to open Stockholm file: "<<fileName<< "\n"; 
       exit(1); 
     }
-  for (map<string, string>::iterator seqIter = sequences.begin(); seqIter!=sequences.end(); seqIter++)
+  for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter!=sequences.end(); seqIter++)
     if ( (seqIter->second).size() == 0)
       std::cerr<<"Warning: 0 length sequence for species: " << seqIter->first << endl; 
   return sequences; 
@@ -378,9 +379,9 @@ vector<string> split(string in, string splitChar)
 
 
 
-map<string, string> parse_fasta(const char* sequenceFileName, Alphabet alphabet)
+MyMap<string, string> parse_fasta(const char* sequenceFileName, Alphabet alphabet)
 {
-  map<string, string> sequences;
+  MyMap<string, string> sequences;
   ifstream sequenceFileStream(sequenceFileName); 
   if (! sequenceFileStream.is_open())
     {
@@ -400,8 +401,8 @@ map<string, string> parse_fasta(const char* sequenceFileName, Alphabet alphabet)
   return sequences; 
 }
 
-void seqDictSize(map<string, string> seqDict)
+void seqDictSize(MyMap<string, string> seqDict)
 {
-  for (map<string,string>::iterator seqIter =  seqDict.begin(); seqIter!=seqDict.end(); seqIter++)
+  for (MyMap<string,string>::iterator seqIter =  seqDict.begin(); seqIter!=seqDict.end(); seqIter++)
     std::cerr<< seqIter->first << " " << (seqIter->second).size() << endl;
 }

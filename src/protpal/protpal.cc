@@ -9,7 +9,9 @@
 #include "protpal/transducer.h"
 #include "protpal/Q.h"
 #include "protpal/utils.h"
+
 #include "protpal/AlignmentSampler.h"
+#include "protpal/MyMap.h"
 // #include "protpal/CompositePath.h"
 
 
@@ -18,11 +20,28 @@
 #include "ecfg/ecfgmain.h"
 #include "seq/alignment.h"
 #include "seq/biosequence.h"
+#include "util/dexception.h"
 
 // Main reconstruction program. 
 
 int main(int argc, char* argv[])
 {
+//   bfloat num=.1;
+//   bfloat old; 
+//   bool isReal = true;
+//   while (isReal)
+//     {
+//       old = num; 
+//       num *= 1e-100; 
+//       if (!(num > 0.0))
+// 	{
+// 	  isReal = false;
+// 	}
+//     }
+//   cout<< "Last real number: "<< old << " " << num << endl; 
+//   exit(0); 
+
+  
   // A few utility variables
   node treeNode; 
   vector<Node> children;
@@ -34,7 +53,7 @@ int main(int argc, char* argv[])
   // create main reconstruction object
   Reconstruction reconstruction(argc, argv);
   
-  srand((unsigned)time(0));
+  // srand((unsigned)time(0));
 
   // clunky, sorry
   for (int i=0; i< reconstruction.tree.nodes(); i++)
@@ -129,7 +148,7 @@ int main(int argc, char* argv[])
 	      std::cerr<<"This is usually caused by a tree having slightly different names than the sequences in the input sequences. \n";
 
 	      std::cerr<<"Sequence names in input file: \n";
-	      for (map<string, string>::iterator seqIter = reconstruction.sequences.begin(); seqIter != reconstruction.sequences.end(); seqIter++)
+	      for (MyMap<string, string>::iterator seqIter = reconstruction.sequences.begin(); seqIter != reconstruction.sequences.end(); seqIter++)
 		if ((seqIter->second).size() > 0)
 		  std::cerr<<"\t" << seqIter->first << "\t" << split(seqIter->first, string("|"))[0] << endl; 
 		    
@@ -249,6 +268,11 @@ int main(int argc, char* argv[])
 			  );
 	  reconstruction.profiles.erase(children[0]); 
 	  reconstruction.profiles.erase(children[1]); 
+	  if (reconstruction.loggingLevel>=1)
+	    {
+	      std::cerr<<"\tLeft profile has: "<<profile.left_profile.num_delete_states<< "  absorbing states.\n"; 
+	      std::cerr<<"\tRight profile has: "<<profile.right_profile.num_delete_states<< "  absorbing states.\n"; 
+	    }
 
 	  // Somewhat clunky: allow the profile to see the node-name mapping that the reconstruction.tree object
 	  // holds, for multiple alignment display.  
@@ -267,7 +291,10 @@ int main(int argc, char* argv[])
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
 	    std::cerr<<"\tFilling forward dynamic programming matrix..."; 
-	  profile.fill_DP(reconstruction.loggingLevel, false); // do not store incoming/outgoing information.  
+// 	  if ( reconstruction.tree.node_name[treeNode] == "Node_1307")
+// 	    profile.fill_DP(2, false); 
+// 	  else
+	    profile.fill_DP(reconstruction.loggingLevel, false); // do not store incoming/outgoing information.  
 
 	  if(reconstruction.loggingLevel>=1)
 	    {
@@ -290,11 +317,12 @@ int main(int argc, char* argv[])
 				reconstruction.leaves_only, // only show leaves
 				reconstruction.viterbi // sample viterbi path (on the last time through - only really applies to null states)
 				); 
+	      //	      profile.show_DOT(cout, reconstruction.tree.node_name[treeNode]); 
 
 
 	      // clear the DP matrix - this really only clears the associativity, not the actual objects therein
 	      // UPDATE - with some scope trickery, this should *actually* clear the DP entries
-	      profile.clear_DP();
+	      // profile.clear_DP();
 
 	      //	      if (reconstruction.estimate_params)
 	      //		reconstruction.pre_summed_profiles[treeNode] = profile; 
@@ -310,6 +338,7 @@ int main(int argc, char* argv[])
 	      if(reconstruction.loggingLevel>=1)
 		std::cerr<<"\tTransforming sampled profile DAG into an absorbing transducer...";
 	      AbsorbingTransducer absorbTrans(&profile);
+	      //absorbTrans.show_DOT(cout, reconstruction.tree.node_name[treeNode]+"_absorbing"); 
 	      absorbTrans.test_transitions(); 
 	      reconstruction.profiles[treeNode] = absorbTrans; 
 	      if(reconstruction.loggingLevel>=1)
@@ -352,7 +381,7 @@ int main(int argc, char* argv[])
 		      if (reconstruction.db_filename != "None")
 			db_file << profile.show_alignment(path, reconstruction.leaves_only);
 			  
-		      map<string, string> alignment = profile.alignment_map(path, false); 
+		      MyMap<string, string> alignment = profile.alignment_map(path, false); 
 		      IndelCounter indels(alignment, &reconstruction.tree); 
 		      indels.gather_indel_info(false); 
 

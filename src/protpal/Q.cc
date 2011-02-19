@@ -471,7 +471,7 @@ void QTransducer::cache_transition_weights(void)
   // Here, we loop through the entries in the table, then call up all the states that have that type-string,
   // which is stored in the map state_type_set 
 
-  map<vector<string>, vector<int> >::iterator it;
+  MyMap<vector<string>, vector<int> >::iterator it;
   vector<state>::iterator i;   vector<state>::iterator j; 
   string to; string from; vector<int> componentChanges;
   vector<state> transitionPair;
@@ -596,7 +596,7 @@ void QTransducer::cache_states(void)
   bool logging = 0;
 
   int state_count = 0;
-  map<string, vector<string> >::iterator it;
+  MyMap<string, vector<string> >::iterator it;
   vector<string> type_strings; 
   vector<state> state_indices;
   string compositeClass, type_R, type_B_l, type_B_r, type_Upsilon;

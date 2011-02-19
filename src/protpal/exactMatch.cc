@@ -34,7 +34,7 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
   alphabet_size = alphabet.size();
   float aSize = alphabet_size;
   // for alignment envelope 
-  map<node, int> coordMap; 
+  MyMap<node, int> coordMap; 
   num_delete_states = sequence.length();
   start_state = -1; 
   coordMap[treeNode] = -1;
@@ -49,7 +49,7 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
   state_type_phylogeny[end_state][treeNode] = "";      
 
 
-  // Initialize binary absorb matrix, adjacency matrix
+  // Initialize psuedo-binary absorb matrix, adjacency matrix
   vector<int> to; 
   vector<int> from;
   pair<int, int> pairIdx;
@@ -76,30 +76,31 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
 	  // We CAN now handle hidden alphabets, albiet in a primitive sort of way - if the alphabet is seen to have
 	  // more than 1 character per token, the 2nd character is assumed to be the 'label' and the first is what matches to 
 	  // the sequence
-	  vector<double> delta; 
+	  vector<bfloat> delta; 
   	  if (index(stringAt(sequence,i), single_alphabet) != -1)
 		{
 		  for (int charIndex = 0; charIndex < alphabet_size; charIndex++)
 			{
 			  if (hidden)
 				{
-				  if (sequence[i] == alphabet[charIndex][0]) absorb[i].push_back(1.0);
-				  else absorb[i].push_back(0.0);
+				  if (sequence[i] == alphabet[charIndex][0]) absorb[i].push_back(0.99);
+				  else absorb[i].push_back(0.01);
 				}
 
 			  else
 				{
-				  if (stringAt(sequence,i) == alphabet[charIndex] ) absorb[i].push_back(1.0);
-				  else absorb[i].push_back(0.0);
+				  if (stringAt(sequence,i) == alphabet[charIndex] ) absorb[i].push_back(0.99);
+				  else absorb[i].push_back(0.01);
 				}
 			}
 		}
 	  else
 		{
 		  std::cerr<<"Warning: the character "<<sequence[i]<<" is not in alphabet.  Setting weight for all characters equal\n";
+		  bfloat uniform = 1.0/aSize; 
 		  for (int charIndex = 0; charIndex!=alphabet_size; charIndex++)
 			{
-			  delta.push_back(1/aSize);
+			  delta.push_back(uniform);
 			}
 		  absorb[i]  = delta;
 		}

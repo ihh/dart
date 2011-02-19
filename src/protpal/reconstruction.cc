@@ -166,8 +166,8 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   
   // Otherwise, do some preliminary stuff
   //seed rand on the clock time          
-  if (rndtime)
-    srand((unsigned)time(0));
+  //  if (rndtime)
+  //    srand((unsigned)time(0));
   // Name internal nodes of the tree, if not already named
   set_node_names(); 
 
@@ -212,7 +212,7 @@ void Reconstruction::parse_sequences(Alphabet alphabet)
   if (truncate_names_char != "None")
     {
       vector<string> toErase; 
-      for (map<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
+      for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
 	{
 	  if (in(string(truncate_names_char.c_str()), seqIter->first))
 	    {
@@ -314,7 +314,7 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
   
 void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_matrix, ostream& out)
 {
-  map<string,string> prot2pc;
+  MyMap<string,string> prot2pc;
   prot2pc["S"] = "start";
   prot2pc["M"] = "match"; 
   prot2pc["I"] = "insert"; 
@@ -525,7 +525,7 @@ void Reconstruction::show_branch(node startNode, ostream& out)
 
 void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_matrix)
 {
-  map<node, Digitized_biosequence> sequences; 
+  MyMap<node, Digitized_biosequence> sequences; 
   Digitized_biosequence parentSeq; 
   string childName;
   Decomposition decomp; 
@@ -737,7 +737,7 @@ double Reconstruction::get_root_ins_estimate(void)
   else
     {
       int totalLength = 0;
-      for (map<string,string>::iterator seqIter= sequences.begin(); seqIter!=sequences.end(); seqIter++)
+      for (MyMap<string,string>::iterator seqIter= sequences.begin(); seqIter!=sequences.end(); seqIter++)
 	totalLength += (seqIter->second).size();
       double avg = double(totalLength)/double(sequences.size());
       return 1.0-(1.0 / avg);

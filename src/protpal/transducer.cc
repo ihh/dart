@@ -247,7 +247,7 @@ SplittingTrans::SplittingTrans(void)
 
   // outgoing transitions
   vector<state> out;
-  out.push_back(1); outgoing[0] = out;  // start(0) -> match(1)
+  out.push_back(1); out.push_back(2); outgoing[0] = out;  // start(0) -> match(1)
   out.clear(); 
   out.push_back(2); outgoing[1] = out; // match(1) -> wait(2)
   out.clear(); 
@@ -257,6 +257,9 @@ SplittingTrans::SplittingTrans(void)
 
   vector<state> transitionPair;  
   transitionPair.push_back(0); transitionPair.push_back(1); 
+  transition_weight[transitionPair] = 1; 
+
+  transitionPair.push_back(0); transitionPair.push_back(2); 
   transition_weight[transitionPair] = 1; 
   
   transitionPair.clear();
@@ -289,6 +292,7 @@ double BranchTrans::get_match_weight(state b, int incoming_character, int outgoi
   // here, for testing purposes only!!
 
   string match = "M"; 
+  #ifdef DART_DEBUG
   if (get_state_type(b) != match) 
 	{
 	  std::cerr<<"Calling get_match_weight on a non-match state!\n";
@@ -302,15 +306,13 @@ double BranchTrans::get_match_weight(state b, int incoming_character, int outgoi
 	  std::cerr<<"The offending call was: transducer "<<name<<" character indices (in,out): "<<incoming_character<<" "<<outgoing_character<<endl;
 	  exit(1);
 	}
-  else
-	{
-	  double result = conditional_sub_matrix(incoming_character, outgoing_character); 
-	  return result; 
-// 	  float n = alphabet_size;
-// 	  // Uniform match distribution, from early testing days
-// 	  if (incoming_character == outgoing_character) return  1/n + ((n-1)/n)*exp(-branch_length*n); 
-// 	  else return 1/n - (1/n)*exp(-branch_length*n); 
-	}
+#endif
+  double result = conditional_sub_matrix(incoming_character, outgoing_character); 
+  return result; 
+  // 	  float n = alphabet_size;
+  // 	  // Uniform match distribution, from early testing days
+  // 	  if (incoming_character == outgoing_character) return  1/n + ((n-1)/n)*exp(-branch_length*n); 
+  // 	  else return 1/n - (1/n)*exp(-branch_length*n); 
 }  
 
 
@@ -797,8 +799,8 @@ BranchTrans::BranchTrans(double branch_length_in, bool linear)
   transition_weight[transitionPair] = insertion_weight;   transitionPair.clear();
 
   // Emission weights
-  //  map< state, vector<double> > emission_weight_matrix;     
-  map< string, double> nullDist; 
+  //  MyMap< state, vector<double> > emission_weight_matrix;     
+  MyMap< string, double> nullDist; 
   // NB These are taken from xrate's nullprot.eg grammar's equil distribution.  
   nullDist["a"]=0.0962551;
 //   nullDist["r"]=0.0373506;

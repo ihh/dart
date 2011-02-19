@@ -70,8 +70,8 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
 			  envPair.second = 
 			    sequence_coordinate(next_match_column(idx, "forward", seqIter2->first, seqIter->first), seqIter2->first);
 			}
-		      coordinates[seqIter->first][ sequence_coordinate(idx, seqIter->first) ][ seqIter2->first ] = 
-			envPair; 
+		      coordinates[seqIter->first][ sequence_coordinate(idx, seqIter->first) ][ seqIter2->first ] = envPair; 
+		      
 		    }
 		}
 	    }

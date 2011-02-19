@@ -21,14 +21,14 @@ class Reconstruction
   Reconstruction(int argc, char* argv[]);
 
   // store the possible cmd line options, and brief descriptions
-  map<string, string> options; 
+  MyMap<string, string> options; 
 
   // Get sequences
   void parse_sequences(Alphabet); 
   
   // Each leaf node is assigned a sequence. Possibly delete these after making ExactMatch transducers for each
   // leaf.  Hmm, maybe I should have used pointers instead. 
-  map<string, string> sequences; 
+  MyMap<string, string> sequences; 
   sstring truncate_names_char; //truncate the names by this character, if requested
 
   // not (yet) using Ian's fancy Alphabet class
@@ -61,7 +61,7 @@ class Reconstruction
 
   // Each tree node will at some point contain a sequence profile.  The profile at a node  is constructed via its
   // two children, which are viciously deleted after the parent is constructed.  
-  map<node, AbsorbingTransducer> profiles; 
+  MyMap<node, AbsorbingTransducer> profiles; 
 
 
   // default naming of internal nodes.
@@ -80,7 +80,7 @@ class Reconstruction
   Digitized_biosequence sample_root(SingletTrans); 
   
   // show indel'd events
-  map<node, Profile> pre_summed_profiles; 
+  MyMap<node, Profile> pre_summed_profiles; 
   
   // Reconstruction algorithm parameters
 

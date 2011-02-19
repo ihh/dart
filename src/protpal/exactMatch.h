@@ -7,6 +7,7 @@
 #include<string>
 
 #include "protpal/utils.h"
+#include "protpal/algebras.h"
 
 using namespace std;
 
@@ -29,20 +30,20 @@ class ExactMatch
   // explicitely keep track of start, end, pre-end, end states here...
   state start_state, pre_end_state, end_state; 
   // Incoming transitions
-  map <state, vector <state> > incoming;
+  MyMap <state, vector <state> > incoming;
 
   // Absorption matrix; one entry per state, character
-  map <state, vector<double> > absorb; 
+  MyMap <state, vector<bfloat> > absorb; 
   
   // state-type-phylogeny. stores binary ((wait, null, end), (match, delete)) state assignments for each state
-  map<state, map<node, string> > state_type_phylogeny;
+  MyMap<state, MyMap<node, string> > state_type_phylogeny;
 
   // leaf coordinates.  Each state maps to a pair holding the smallest and largest leaf coordinate accounted
   // for by this state. 
-  map<state, pair<int, int> > leaf_coords;
+  MyMap<state, pair<int, int> > leaf_coords;
 
   // leaf sequence coordinates , for use in guide alignment-based alignment envelopes
-  map<state, map<node, int> > leaf_seq_coords;
+  MyMap<state, MyMap<node, int> > leaf_seq_coords;
   
   
   // Test incoming, absorb maps of this tranducer.  
