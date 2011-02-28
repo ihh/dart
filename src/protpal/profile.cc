@@ -9,6 +9,8 @@
 
 #include "protpal/utils.h"
 #include "protpal/profile.h"
+#include "util/dexception.h"
+
 using namespace std;
 
 // Mini-class M_id methods
@@ -27,6 +29,40 @@ int M_id::operator!=(const M_id &right)
   else return 1;
 }
 
+bool M_id::isValid(void)
+{
+  bool retVal = true; 
+  if ( q_state == dummy_value)
+    {
+      cerr<<"Warning: uninitialized Q state.\n ";
+      retVal = false; 
+    }
+
+  if ( left_state == dummy_value)
+    {
+      cerr<<"Warning: uninitialized l state.\n ";
+      retVal = false; 
+    }
+  if ( right_state == dummy_value)
+    {
+      cerr<<"Warning: uninitialized r state state.\n ";
+      retVal = false; 
+    }
+
+  if ( left_type == dummy_value)
+    {
+      cerr<<"Warning: uninitialized r type.\n ";
+      retVal = false; 
+    }
+
+  if ( right_type == dummy_value)
+    {
+      cerr<<"Warning: uninitialized r type.\n ";
+      retVal = false; 
+    }
+  return retVal; 
+}
+
 vector<int> M_id::toVector(void)
 {
   // An inefficient hack: rather than storing maps from M_id to data (e.g. DP cells),
@@ -39,7 +75,7 @@ vector<int> M_id::toVector(void)
   out[4]= right_type;	  
   if (index(dummy_value, out) != -1)
     {
-      cerr<<"ERROR: Uninitialized M_id used in vector conversion!\n" << endl; 
+      cerr<<"Warning: Uninitialized M_id used in vector conversion! The vector: "; displayVector(out); 
     }
   return out; 
 }
@@ -387,29 +423,52 @@ bool Profile::is_external(M_id m)
 {
   // query whether an M_n state is external - that is, the 'R' transducer is emitting a character 
   // which is absorbed by the branch transducers (and matched or deleted). 
-  string q_type, upsilon_type, bl_type, br_type;
+  string q_type;
+  //string upsilon_type, bl_type, br_type;
+
+  //string q_type; 
+  //  char upsilon_type, bl_type, br_type; 
   int left_type, right_type; 
   q_type = Q.get_state_type(m.q_state);
-  upsilon_type = stringAt(q_type,1);
-  bl_type = stringAt(q_type,2);
-  br_type = stringAt(q_type,3);            
+//   upsilon_type = stringAt(q_type,1);
+//   bl_type = stringAt(q_type,2);
+//   br_type = stringAt(q_type,3);            
   right_type = m.right_type;
   left_type = m.left_type;
-  if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete && 
-      br_type == "M" && right_type == profile_delete ||  // MMDMD
+
+  //  upsilon_type = q_type[1];
+  //  bl_type = q_type[2]; 
+  //  br_type = q_type[3]; 
+
+
+
+  if (q_type == "IMMM" && left_type == profile_delete && right_type == profile_delete)
+    return true;
+//   if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete && 
+//       br_type == "M" && right_type == profile_delete)
+//     return true; //   // MMDMD
       
-      upsilon_type == "M" && bl_type == "M" && left_type == profile_delete &&
-      br_type == "D" && right_type == profile_wait ||  // MMDDW
-      
-      upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
-      br_type == "M" && right_type == profile_delete || // MDWMD
-      
-      upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
-      br_type == "D" && right_type == profile_wait )  // MDWDW
-	{
-	  return 1; 
-	}
-  else return 0;
+
+  if (q_type == "IMMD" && left_type == profile_delete && right_type == profile_wait)
+    return true;
+//   else if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete &&
+// 	   br_type == "D" && right_type == profile_wait)
+//     return true; // ||  // MMDDW
+
+  if (q_type == "IMDM" && left_type == profile_wait && right_type == profile_delete)
+    return true;      
+//   else if (upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
+// 	   br_type == "M" && right_type == profile_delete)
+//     return true; //|| // MDWMD
+
+  if (q_type == "IMDD" && left_type == profile_wait && right_type == profile_wait)
+    return true;      
+//   else if (upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
+//       br_type == "D" && right_type == profile_wait )  // MDWDW
+//     return 1; 
+  
+  else 
+    return false; 
 }
 
 bool Profile::is_left_int(M_id m)
@@ -1598,7 +1657,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
   vector<M_id> states_in; // states for sampling
   vector<bfloat> weights; // weights for each of these states
   bfloat weight, pathWeight, emissionWeight, small=0.00001, left_transition_weight; 
-  vector<M_id> pi; // sampled state path
+  vector<M_id> pi, pi_previous; // sampled state path
   string S = "S";
   string I = "I";   
   int sampleIdx, loopIdx;
@@ -1619,6 +1678,10 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
     std::cerr<<"Warning: sampling only one path with viterbi option off.  Consider more paths or turning on viterbi..\n"; 
   for (int pathIdx = 0; pathIdx < num_paths; pathIdx++)
 	{
+	  if (logging >=1)
+	    if (pathIdx % 1000 == 0 and pathIdx!=0)
+	      cerr<<" " << pathIdx << " "; 
+	  
 	  if (logging >=1 and nextBreak )
 	    {
 	      std::cerr<<"(sampling truncated after caching " << num_sampled_externals << " states via ";
@@ -1653,8 +1716,11 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 	  // Keep sampling states until we reach M_n's start state
 	  // Keep a counter, in case things get out of control. 
 	  loopIdx = 0;
+
 	  while( mPrime != bigStart ) 
 		{
+		  try
+		    {
 		  loopIdx++; 
 		  if (loopIdx > 100000) {std::cerr<<"Possibly caught in  while loop. Exiting...\n";exit(1);}
 		  if(logging>=2) 
@@ -1670,11 +1736,13 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 				{
 				  // for left_pre_end in left_profile.pre_end_states
 				  // for right_pre_end in right_profile.pre_end_states				  
-				  if (!Q.has_transition(*q, Q.composite_end_state)) continue;
+				  if (!Q.has_transition(*q, Q.composite_end_state)) 
+				    continue;
 				  m.q_state = *q;
 				  m.left_state = left_profile.pre_end_state;
 				  m.right_state = right_profile.pre_end_state; 			  
-				  m.left_type = 2; m.right_type = 2;
+				  m.left_type = 2; 
+				  m.right_type = 2;
 				  weight = get_DP_cell(m)*Q.get_transition_weight(*q, mPrime.q_state) *
 					left_profile.get_transition_weight(left_profile.pre_end_state,left_profile.end_state) *
 					right_profile.get_transition_weight(right_profile.pre_end_state,right_profile.end_state); 
@@ -1696,8 +1764,11 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 					} //end testing loop
 				  if (weight > 0.0)
 					{
-					  states_in.push_back(m);
-					  weights.push_back( weight );
+					  if (m.isValid())
+					    {
+					      states_in.push_back(m);
+					      weights.push_back( weight );
+					    }
 					}
 				}
 			  if (weights.size() == 0) 
@@ -1752,8 +1823,11 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 				  
 				  if (weight > 0.0)
 				    {
-				      states_in.push_back(m);
-				      weights.push_back( weight );
+					  if (m.isValid())
+					    {
+					      states_in.push_back(m);
+					      weights.push_back( weight );
+					    }
 				    }
 					}
 				}
@@ -1768,16 +1842,20 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 				  for (e_l = left_incoming.begin(); e_l != left_incoming.end(); e_l++)
 					{
 					  m.left_state = *e_l;
-					  if (m.left_state == left_profile.start_state) m.left_type = -1;
-					  else m.left_type = 1;
+					  if (m.left_state == left_profile.start_state) 
+					    m.left_type = -1;
+					  else 
+					    m.left_type = 1;
 
 					  for (e_r = right_incoming.begin(); e_r != right_incoming.end(); e_r++)
 						{
 						  //						  if (! is_in_envelope(*e_l, *e_r))
 						  //							continue;
 						  m.right_state = *e_r;
-						  if (m.right_state == right_profile.start_state) m.right_type = -1;
-						  else m.right_type = 1;
+						  if (m.right_state == right_profile.start_state) 
+						    m.right_type = -1;
+						  else 
+						    m.right_type = 1;
 
 						  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 							{
@@ -1817,8 +1895,11 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 
 							  if (weight > 0.0)
 							    {
-							      states_in.push_back(m);
-							      weights.push_back( weight );
+							      if (m.isValid())
+								{
+								  states_in.push_back(m);
+								  weights.push_back( weight );
+								}
 							    }
 							}
 						}
@@ -1837,11 +1918,12 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 					  //						continue; 
 
 					  m.left_state = *e_l;
-					  if (m.left_state == left_profile.start_state) m.left_type = -1;
-					  else m.left_type = 1;
+					  if (m.left_state == left_profile.start_state) 
+					    m.left_type = -1;
+					  else 
+					    m.left_type = 1;
 					  
 					  m.right_state = mPrime.right_state;
-					  
 					  m.right_type = 0; 
 					  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 						{
@@ -1876,8 +1958,11 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 							} // end test
 						  if (weight > 0.0)
 						    {
-						      states_in.push_back(m);
-						      weights.push_back( weight );
+						      if (m.isValid())
+							{
+							  states_in.push_back(m);
+							  weights.push_back( weight );
+							}
 						    }
 						}
 					}
@@ -1896,8 +1981,10 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 					  //						continue;
 
 					  m.right_state = *e_r;
-					  if (m.right_state == right_profile.start_state) continue; //m.right_type = -1;
-					  else m.right_type = 1;
+					  if (m.right_state == right_profile.start_state) 
+					    continue; //m.right_type = -1;
+					  else
+					    m.right_type = 1;
 					  
    					  
 
@@ -1905,7 +1992,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 						{
 						  m.q_state = *q;
 						  m.left_type = get_profile_type(*q, "left");
-						  //begin careful stuff
+						  // begin careful stuff
 						  if (m.left_type == profile_start)
 						    m.left_state = left_profile.start_state;
 						  else
@@ -1921,6 +2008,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 						    }
 						  else
 						    left_transition_weight  = 1.0;
+						  // end careful stuff
 
 
 
@@ -1967,53 +2055,72 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 							} //end test
 						  if (weight > 0.0)
 							{
-							  states_in.push_back(m);
-							  weights.push_back( weight );
+							  if (m.isValid())
+							    {
+							      states_in.push_back(m);
+							      weights.push_back( weight );
+							    }
 							}
 						}
 					}
 				}
 			}
-
-		  if (weights.size() > 1)
+		    }
+		  catch(char * str)
+		    {
+		      cerr<<"Error in computing weights\n"; 
+		      exit(1); 
+		    }
+		  try
+		    {
+		      if (weights.size() > 1)
 			{
 			  if (logging>=2) 
+			    {
+			      /*
+				std::cerr<<"\nWeights for incoming states: "; 
+				displayVector(weights);
+				std::cerr<<"\nThese states were:\n";
+				for (vector<M_id>::iterator in=states_in.begin(); in!=states_in.end(); in++)
 				{
-				  /*
-				  std::cerr<<"\nWeights for incoming states: "; 
-				  displayVector(weights);
-				  std::cerr<<"\nThese states were:\n";
-				  for (vector<M_id>::iterator in=states_in.begin(); in!=states_in.end(); in++)
-					{
-					  MyMap<node, string> tmpMap = merge_STP(*in); 
-					  show_state_phylo(tmpMap);
-					  std::cerr<<endl;
-					  } */
-				}
+				MyMap<node, string> tmpMap = merge_STP(*in); 
+				show_state_phylo(tmpMap);
+				std::cerr<<endl;
+				} */
+			    }
 
 			  if (viterbi) 
 			    sampleIdx = maxIndex(weights);
 			  else 
 			    sampleIdx = sample(weights);
+			  if (sampleIdx >= states_in.size())
+			    cerr<<"ERROR: Sampled a state beyond end of vector of possible states!\n";
 			  //pathWeight *= (weights[sampleIdx] / get_DP_cell(states_in[sampleIdx]))*
 			  //				compute_emission_weight(states_in[sampleIdx]);
 
+			  if (weights.size() != states_in.size())
+			    {
+			      cerr<<"Error: candidate states and their relative weights are not size-matched!\n"; 
+			      exit(1); 
+			    }
 			  if (logging>=2) std::cerr<<"Sampled state number: "<<sampleIdx<<endl;
-			  pi.push_back(states_in[sampleIdx]);
-			  cache_state(states_in[sampleIdx], mPrime, weights[sampleIdx] );
-			  state_type_phylogeny[states_in[sampleIdx].toVector()] = merge_STP(states_in[sampleIdx]);
+			  if (! states_in.at(sampleIdx).isValid())
+			    cerr<<"WARNING: the sampled state is not 'valid':\n" << getDOTname(states_in[sampleIdx]) << endl; 
+			  pi.push_back(states_in.at(sampleIdx));
+			  cache_state(states_in.at(sampleIdx), mPrime, weights.at(sampleIdx) );
+			  state_type_phylogeny[states_in.at(sampleIdx).toVector()] = merge_STP(states_in.at(sampleIdx));
 			  if(logging>=2)
 				{
 				  std::cerr<<"Next state:"<<endl;
 				  states_in[sampleIdx].display(Q);
 				  show_state(states_in[sampleIdx]);
 				}
-			  
-
-			}
+		    }
 		  else if (weights.size() == 1)
 			{
 			  if(logging>=2)std::cerr<<"(Deterministic sample: only one incoming state)\n";
+			  if (!states_in[0].isValid())
+			    cerr<<"WARNING: the sampled state is not 'valid':\n" << getDOTname(states_in[0]) << endl; 
 			  pi.push_back(states_in[0]);
 			  cache_state(states_in[0], mPrime, weights[0] );
 			  state_type_phylogeny[states_in[0].toVector()] = merge_STP(states_in[0]);
@@ -2040,25 +2147,50 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 			  exit(1);
 			}
 		  mPrime = pi.back();
+		    }
+		  catch(char * str)
+		    {
+		      cerr<<"Error in caching state\n";
+		    }
+		
+		  if(logging>=2) 
+		    { std::cerr<<"\nFinal state:\n\t"; mPrime.display(Q); }
+
+		  // Ideally this would be handled with a nice compression/fast representation of the sampled path
+		  // This accounts just for the simple cases of sampling the same path over and over again. 
+		  bool samePath = true; 
+		  if (pi_previous.size() == pi.size())
+		    {
+		      for (int pathCount=0; pathCount < pi.size(); pathCount++)
+			{
+			  if (pi_previous[pathCount] != pi[pathCount])
+			    {
+			      samePath =false;
+			      break;
+			    }
+			}
+		    }
+		  else
+		    samePath = false;
+		  if (!samePath)
+		    {
+		      // Store the null states' accounted characters:
+		      cache_path(pi); 
+		      pi_previous = pi; 
+		    }
+		  // this operation is now handled within cache_path:
+		  //  store_summed_nulls(pi); 
+		  
+		  if (showAlignments) 
+		    {
+		      std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
+		      std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
+		      std::cout<< show_alignment(pi, leaves_only); 
+		      std::cerr<<"\n";
+		    }
+		  
 		}
-  if(logging>=2) 
-	{ std::cerr<<"\nFinal state:\n\t"; mPrime.display(Q); }
-
-  // Store the null states' accounted characters:
-  cache_path(pi); 
-  
-  // this operation is now handled within cache_path:
-  //  store_summed_nulls(pi); 
-  
-  if (showAlignments) 
-	{
-	  std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
-	  std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
-	  std::cout<< show_alignment(pi, leaves_only); 
-	  std::cerr<<"\n";
 	}
-
-	}	
   return pi; 
 }
 void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
@@ -2868,7 +3000,7 @@ void Profile::fill_DP(int logging, bool inLog)
 			  //			  backward_states.push_back(mPrime); 
 			  if (logging>=2) 
 			    {
-			      std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
+			      std::cerr<<"\tForward value of state matching: "<< el_Prime << " and " << er_Prime << " : " << get_DP_cell(mPrime)<<endl;
 			    }
 			}
 		    }

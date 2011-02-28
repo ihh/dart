@@ -31,6 +31,7 @@ class M_id
   int operator==(const M_id &);
   int operator!=(const M_id &);
   vector<int> toVector(void);
+  bool isValid(void); 
 };
 
 

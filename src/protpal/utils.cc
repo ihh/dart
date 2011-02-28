@@ -31,9 +31,14 @@ double absoluted(bfloat in)
 
 bfloat randomUnit(void)
 {
+  bfloat retVal; 
   bfloat rm = RAND_MAX;
   bfloat draw = rand();
-  return draw/(rm+1.0);
+  retVal = draw/(rm+1.0);
+  if (retVal<=1.0)
+    return retVal;
+  else
+    cerr<<"Error - random unit returned a number larger than 1: " << retVal << endl; 
 }
 
 
@@ -70,7 +75,7 @@ int sample(vector<float> &weights)
   //  std::cerr<<"number drawn: "<<draw<<endl;
   for (i=0; i<probs.size(); i++)
 	{
-	  if (draw < probs[i]) return i;
+	  if (draw <= probs[i]) return i;
 	}
 }
 
@@ -90,7 +95,7 @@ int sample(vector<double> &weights)
   //  std::cerr<<"number drawn: "<<draw<<endl;
   for (i=0; i<probs.size(); i++)
 	{
-	  if (draw < probs[i]) return i;
+	  if (draw <= probs[i]) return i;
 	}
 }
 
@@ -111,8 +116,10 @@ int sample(vector<bfloat> &weights)
   //  std::cerr<<"number drawn: "<<draw<<endl;
   for (i=0; i<probs.size(); i++)
 	{
-	  if (draw < probs[i]) return i;
+	  if (draw <= probs[i]) return i;
+	  
 	}
+  cerr<<"ERROR: reached end of sampling vector without choosing an element! The sampled number was " << draw << endl; 
 }
 
 

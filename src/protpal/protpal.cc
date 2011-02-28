@@ -26,22 +26,6 @@
 
 int main(int argc, char* argv[])
 {
-//   bfloat num=.1;
-//   bfloat old; 
-//   bool isReal = true;
-//   while (isReal)
-//     {
-//       old = num; 
-//       num *= 1e-100; 
-//       if (!(num > 0.0))
-// 	{
-// 	  isReal = false;
-// 	}
-//     }
-//   cout<< "Last real number: "<< old << " " << num << endl; 
-//   exit(0); 
-
-  
   // A few utility variables
   node treeNode; 
   vector<Node> children;
