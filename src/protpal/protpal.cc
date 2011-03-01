@@ -2,6 +2,7 @@
 #include<fstream>
 #include<math.h>
 #include<ctime>
+#include<time.h>
 
 #include "protpal/profile.h"
 #include "protpal/reconstruction.h"
@@ -26,6 +27,8 @@
 
 int main(int argc, char* argv[])
 {
+  time_t start,end;
+  time (&start);
   // A few utility variables
   node treeNode; 
   vector<Node> children;
@@ -477,7 +480,9 @@ int main(int argc, char* argv[])
 	  std::cerr<<"\tDisplaying full ancestral alignment\n\n"; 
 	}
       
-      std::cout<< "#=GF TIME_MINUTES " << clock() / (CLOCKS_PER_SEC * 60.0) <<endl; 
+
+      time(&end); 
+      std::cout<< "#=GF TIME_MINUTES " << difftime (end, start)/60.0 <<endl; 
       if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
 	annotated.write_Stockholm(std::cout);
       else // display in bare-bones/ non-Xrate format

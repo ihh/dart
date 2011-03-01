@@ -3525,7 +3525,8 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 		     envelope->coordinates[name1][envIter1->second][name2].second +1  < envIter2->second )// max+1 is less than R coordinate
 		  {
 		    ++num_discarded_states;
-		    bad = true;
+		    return false; 
+		    //		    bad = true;
 		  }
 
 	      //old:
@@ -3544,7 +3545,8 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 		     envelope->coordinates[name2][envIter2->second][name1].second +1 < envIter1->second )// max+1 is less than L coordinate
 		  {
 		    ++num_discarded_states;
-		    bad = true;
+		    return false; 
+		    //		    bad = true;
 		  }
 
 	      /*
@@ -3565,7 +3567,8 @@ inline bool Profile::is_in_envelope(state left_state, state right_state, string 
 		     envelope->coordinates[name1][envIter1->second][name2].second   < envIter2->second )// max is less than R coordinate
 		  {
 		    ++num_discarded_states;
-		    bad = true;
+		    return false; 
+		    //		    bad = true;
 		  }
 
 		  

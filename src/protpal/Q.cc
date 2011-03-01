@@ -237,13 +237,13 @@ bool QTransducer::has_transition(state q, state qPrime)
 
 string QTransducer::get_state_class(state q)
 {
-  return state_class[q];
+  return state_class.at(q);
 }
 
 string QTransducer::get_state_type(state q)
 {
   string out; 
-  out = state_type[q];
+  out = state_type.at(q);
   return out;
 }
 
