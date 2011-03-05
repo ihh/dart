@@ -1064,10 +1064,10 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
   // return; 
 
   // yet another option - use a slimmer BFS/DP version
-//   ofstream fh;
-//   fh.open("saved_profile.dot");
-//   sampled_profile->show_DOT(fh); 
-//   cerr<<"Profile saved as saved_profile.dot\n";
+   ofstream fh;
+   fh.open("saved_profile.dot");
+   sampled_profile->show_DOT(fh); 
+   cerr<<"Profile saved as saved_profile.dot\n";
   
   BFS_marginalize_null_states(sampled_profile); 
   return; 
@@ -2156,28 +2156,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 		  if(logging>=2) 
 		    { std::cerr<<"\nFinal state:\n\t"; mPrime.display(Q); }
 
-		  // Ideally this would be handled with a nice compression/fast representation of the sampled path
-		  // This accounts just for the simple cases of sampling the same path over and over again. 
-		  bool samePath = true; 
-		  if (pi_previous.size() == pi.size())
-		    {
-		      for (int pathCount=0; pathCount < pi.size(); pathCount++)
-			{
-			  if (pi_previous[pathCount] != pi[pathCount])
-			    {
-			      samePath =false;
-			      break;
-			    }
-			}
-		    }
-		  else
-		    samePath = false;
-		  if (!samePath)
-		    {
-		      // Store the null states' accounted characters:
-		      cache_path(pi); 
-		      pi_previous = pi; 
-		    }
+		  cache_path(pi); 
 		  // this operation is now handled within cache_path:
 		  //  store_summed_nulls(pi); 
 		  
@@ -4165,6 +4144,7 @@ void Profile::show_DOT(ostream& out, string name)
   for (vector<M_id>::iterator fromIter = sampled_states.begin(); fromIter!=sampled_states.end(); fromIter++)
     {
       from = getDOTname(*fromIter); 
+      out << from<< "[fillcolor=black,style=filled];" <<endl; 
       for (vector<M_id>::iterator toIter = sampled_outgoing[fromIter->toVector()].begin(); 
 	   toIter!= sampled_outgoing[fromIter->toVector()].end(); toIter++)
 	{

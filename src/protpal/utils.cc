@@ -115,11 +115,11 @@ int sample(vector<bfloat> &weights)
   bfloat draw = randomUnit();
   //  std::cerr<<"number drawn: "<<draw<<endl;
   for (i=0; i<probs.size(); i++)
-	{
-	  if (draw <= probs[i]) return i;
-	  
-	}
+    if (draw <= probs[i] || i == probs.size()-1) return i;
+
   cerr<<"ERROR: reached end of sampling vector without choosing an element! The sampled number was " << draw << endl; 
+  cerr<<"The weights vector  was "; displayVector(weights); 
+  cerr<<"The probabilities vector  was "; displayVector(probs); 
 }
 
 
