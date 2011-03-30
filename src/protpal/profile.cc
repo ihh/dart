@@ -419,7 +419,7 @@ bool Profile::is_end(M_id m)
   return (m.q_state == Q.composite_end_state);
 }
 
-bool Profile::is_external(M_id m)
+inline bool Profile::is_external(M_id m)
 {
   // query whether an M_n state is external - that is, the 'R' transducer is emitting a character 
   // which is absorbed by the branch transducers (and matched or deleted). 
@@ -441,28 +441,31 @@ bool Profile::is_external(M_id m)
   //  br_type = q_type[3]; 
 
 
-
-  if (q_type == "IMMM" && left_type == profile_delete && right_type == profile_delete)
-    return true;
-//   if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete && 
-//       br_type == "M" && right_type == profile_delete)
-//     return true; //   // MMDMD
-      
-
-  if (q_type == "IMMD" && left_type == profile_delete && right_type == profile_wait)
-    return true;
-//   else if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete &&
-// 	   br_type == "D" && right_type == profile_wait)
-//     return true; // ||  // MMDDW
+  if (left_type == profile_delete)
+    {
+      if (q_type == "IMMM" && left_type == profile_delete && right_type == profile_delete)
+	return true;
+      //   if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete && 
+      //       br_type == "M" && right_type == profile_delete)
+      //     return true; //   // MMDMD
+      if (q_type == "IMMD" && left_type == profile_delete && right_type == profile_wait)
+	return true;
+      //   else if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete &&
+      // 	   br_type == "D" && right_type == profile_wait)
+      //     return true; // ||  // MMDDW
+    }
 
   if (q_type == "IMDM" && left_type == profile_wait && right_type == profile_delete)
     return true;      
-//   else if (upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
-// 	   br_type == "M" && right_type == profile_delete)
-//     return true; //|| // MDWMD
-
+  //   else if (upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
+  // 	   br_type == "M" && right_type == profile_delete)
+  //     return true; //|| // MDWMD
+      
   if (q_type == "IMDD" && left_type == profile_wait && right_type == profile_wait)
-    return true;      
+    {
+      std::cerr<<"IMDD type encountered!!\n";
+      return true;      
+    }
 //   else if (upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
 //       br_type == "D" && right_type == profile_wait )  // MDWDW
 //     return 1; 
@@ -1644,6 +1647,7 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
   profile_end = 3;
   
   num_discarded_states = 0; 
+  num_zero_states = 0; 
 
 }
 // Top-level public methods
@@ -1681,7 +1685,6 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 	  if (logging >=1)
 	    if (pathIdx % 1000 == 0 and pathIdx!=0)
 	      cerr<<" " << pathIdx << " "; 
-	  
 	  if (logging >=1 and nextBreak )
 	    {
 	      std::cerr<<"(sampling truncated after caching " << num_sampled_externals << " states via ";
@@ -1722,7 +1725,6 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 		  try
 		    {
 		  loopIdx++; 
-		  if (loopIdx > 100000) {std::cerr<<"Possibly caught in  while loop. Exiting...\n";exit(1);}
 		  if(logging>=2) 
 			{ std::cerr<<"\nCurrent state:\n\t"; mPrime.display(Q); }
 
@@ -2156,19 +2158,18 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 		  if(logging>=2) 
 		    { std::cerr<<"\nFinal state:\n\t"; mPrime.display(Q); }
 
-		  cache_path(pi); 
-		  // this operation is now handled within cache_path:
-		  //  store_summed_nulls(pi); 
-		  
-		  if (showAlignments) 
-		    {
-		      std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
-		      std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
-		      std::cout<< show_alignment(pi, leaves_only); 
-		      std::cerr<<"\n";
-		    }
-		  
 		}
+	  cache_path(pi); 
+	  // this operation is now handled within cache_path:
+	  //  store_summed_nulls(pi); 
+	  
+	  if (showAlignments) 
+	    {
+	      std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
+	      std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
+	      std::cout<< show_alignment(pi, leaves_only); 
+	      std::cerr<<"\n";
+	    }
 	}
   return pi; 
 }
@@ -2378,7 +2379,8 @@ void Profile::cache_path(vector<M_id> path)
 	  latestLeft = ext_start.left_state;
 	  latestRight = ext_start.right_state; 	  
 
-	  if (!is_external(ext_start) && i!=path.size()-1) continue;
+	  if (!is_external(ext_start) && i!=path.size()-1) 
+	    continue;
 	  btwn_tmp.clear(); right_tmp.clear(); left_tmp.clear(); 
 	  
 	  for (j=i-1; j>-1; j--)
@@ -2422,7 +2424,8 @@ void Profile::cache_path(vector<M_id> path)
 				  btwn_tmp = cat_STP(btwn_tmp, right_tmp);			  
 				}
 			  
-			  if (!is_flush(btwn_tmp)) std::cerr<<"STP not flush after a ext-ext joining, right. \n";
+			  if (!is_flush(btwn_tmp)) 
+			    std::cerr<<"STP not flush after a ext-ext joining, right. \n";
 
 			  if (btwn_tmp.size() > 0)
 				{
@@ -2518,7 +2521,7 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
   M_id m; 
   vector<M_id> pi; 
   bool showState = 0; 
-  bfloat emissionWeight = compute_emission_weight(mPrime);
+  bfloat emissionWeight = 1.0;
   // underflow test
   //if (!emissionWeight>0)
   //return;
@@ -2666,20 +2669,20 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 					  transitionPair.first = m.toVector(); transitionPair.second = mPrimeVec; 
 					  transition_weight[transitionPair] = toAdd /  ( get_DP_cell(m) * emissionWeight); 
 					}
-				    }
 				  // for test
-				  if (testing)
+				      if (testing)
 					{
 					  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
 					  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 					}
-				  
-				  if (logging) 
-				    {
-				      std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
-				      std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
+				      
+				      if (logging) 
+					{
+					  std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
+					  std::cerr<<"This is greater than zero: " << toAdd << endl;
+					  std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
+					}
 				    }
-				  
 				}
 			}
 		}
@@ -2719,20 +2722,20 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 				  transitionPair.first = m.toVector(); transitionPair.second = mPrimeVec; 
 				  transition_weight[transitionPair] = toAdd /  ( get_DP_cell(m) * emissionWeight); 
 				}
-			    }
-			  // for test
-			  if (testing)
+
+			      // for test
+			      if (testing)
 				{
 				  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
 				  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 				}
-
-			  if (logging) 
-			    {
-			      std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
-			      std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
+			      
+			      if (logging) 
+				{
+				  std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
+				  std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
+				}
 			    }
-			  
 			}
 		}
 	}
@@ -2796,34 +2799,37 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 				  transitionPair.first = m.toVector(); transitionPair.second = mPrimeVec; 
 				  transition_weight[transitionPair] = toAdd /  ( get_DP_cell(m) * emissionWeight); 
 				}
-			    }
-			  //for test
-			  if(testing)
+			    
+			      //for test
+			      if(testing)
 				{
 				  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
 				  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 				}
-
-			  if (logging) 
+			      
+			      if (logging) 
 				{
 				  std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
 				  std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
 				}
-		  
+			    }
 			  
 			}
 		}
 	}
+
   if (finalSum > 0.0)
-    add_to_DP_cell(mPrime, finalSum);
+    add_to_DP_cell(mPrime, finalSum * compute_emission_weight(mPrime));
+  else
+    ++num_zero_states;
 }
   
 
 void Profile::clear_DP(void)
 {
   //  MyMap< vector<int>, bfloat> Z_tmp;
-  //  DP_hash Z_tmp; 
-  //  Z_tmp.swap(Z); 
+  DP_hash Z_tmp; 
+  Z_tmp.swap(Z); 
 }
 void Profile::fill_backward_DP(int logging)
 {
@@ -3657,7 +3663,7 @@ MyMap<node, string> pad_STP(MyMap<node, string> map1, vector<node> toPad)
   return outMap; 
 }
 
-MyMap<node, string> cat_STP(MyMap<node, string> map1, MyMap<node, string> map2)
+inline MyMap<node, string> cat_STP(MyMap<node, string> map1, MyMap<node, string> map2)
 {
   /*  construct a new STP where all entries of m are added to those of mPrime.  
   for example: 
@@ -3679,6 +3685,8 @@ MyMap<node, string> cat_STP(MyMap<node, string> map1, MyMap<node, string> map2)
    
   MyMap<node, string> outMap;
   MyMap<node, string>::iterator nodeState;  
+
+  #ifdef DART_DEBUG
   vector<node> map1_nodes, map2_nodes; 
 
   for (nodeState = map1.begin(); nodeState != map1.end(); nodeState++) map1_nodes.push_back(nodeState->first);
@@ -3701,7 +3709,7 @@ MyMap<node, string> cat_STP(MyMap<node, string> map1, MyMap<node, string> map2)
 	  
 	  exit(1);
 	}
-  
+  #endif
   for (nodeState = map1.begin(); nodeState != map1.end(); nodeState++)  outMap[nodeState->first] = nodeState->second; 
   for (nodeState = map2.begin(); nodeState != map2.end(); nodeState++)  outMap[nodeState->first] += nodeState->second; 
 

@@ -64,8 +64,10 @@ namespace __gnu_cxx {
     size_t operator()(const M_id& m) const {
       string s; 
       stringstream inter; 
+#ifdef DART_DEBUG
       if (m.q_state == -10 || m.left_state == -10 || m.right_state == -10 || m.left_type == -10 || m.right_type == -10 )
 	std::cerr<<"\nWarning: using uninitialized M_id in vector conversion!\n";
+#endif
       inter << m.q_state << "," << m.left_state << "," << m.right_state << "," << m.left_type << "," << m.right_type; 
       s = inter.str();
       // SDBM hash taken from http://www.partow.net/programming/hashfunctions
@@ -248,7 +250,7 @@ class Profile
   bfloat compute_emission_weight(M_id m);
 
   bool is_start(M_id);
-  bool is_external(M_id);
+  inline bool is_external(M_id);
   bool is_right_int(M_id); 
   bool is_left_int(M_id);
   bool is_pre_end(M_id);     
@@ -313,6 +315,7 @@ class Profile
   AbsorbingTransducer right_profile;
   // number of envelope-discards
   int num_discarded_states; 
+  int num_zero_states; 
   int DP_size(void); 
 
   // Displaying the transducer
@@ -376,7 +379,7 @@ class Profile
 };
 
 void show_state_phylo(MyMap<node, string> &);    
-MyMap<node, string> cat_STP(MyMap<node, string>, MyMap<node, string>);
+inline MyMap<node, string> cat_STP(MyMap<node, string>, MyMap<node, string>);
 MyMap<node, string> pad_STP(MyMap<node, string>, vector<node>);
 bool is_flush(MyMap<node, string> map1);
 pair<int, int> merge_coords(pair<int, int>, pair<int,int>); 

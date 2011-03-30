@@ -22,6 +22,7 @@
 #include "seq/alignment.h"
 #include "seq/biosequence.h"
 #include "util/dexception.h"
+#include "util/rnd.h"
 
 // Main reconstruction program. 
 
@@ -287,6 +288,7 @@ int main(int argc, char* argv[])
 	    {
 	      std::cerr<<"done.\n\t\tSubalignment likelihood: "<<-log(profile.forward_prob)/log(2)<<" bits\n"; 
 	      std::cerr<<"\tProfile's DP matrix had " << profile.DP_size() << " cells\n"; 
+	      std::cerr<<"\tEncountered " << profile.num_zero_states << " zero-likelihood cells\n"; 
 	      if (profile.num_discarded_states > 0)
 		std::cerr<<"\tEnvelope allowed for discarding " << profile.num_discarded_states << " candidate states during DP recursion\n"; 
 	    }
