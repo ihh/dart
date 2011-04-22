@@ -13,6 +13,7 @@
 #include "protpal/exactMatch.h"
 #include "protpal/AlignmentEnvelope.h"
 #include "hmm/transmat.h"
+#include "util/sexpr.h"
 
 using namespace std;
 class M_id
@@ -95,8 +96,12 @@ class AbsorbingTransducer
   // Constructs an absorbing transducer from a (sampled) profile object, an exact-match transducer, or void input. 
   AbsorbingTransducer(Profile *sampled_profile);
   AbsorbingTransducer(ExactMatch *EM_in);
+  AbsorbingTransducer(const char*, vector<string> alphabet, PHYLIP_tree& tree);   
   AbsorbingTransducer(void);   
+  
+  bool test_equality(AbsorbingTransducer&, bool, bool); 
 
+  
   //Basic info about the transducer
   node treeNode; 
   vector<node> subtreeNodes; 
@@ -152,7 +157,19 @@ class AbsorbingTransducer
   //testing
   void test_transitions(void);
 
+  // I/O stuff
+  void write_profile(ostream& out);  
+  void add_tag_value_pair(ostream& out, string tag, string value, bool newline=true);  
+  void add_tag_value_pair(ostream& out, string tag, bfloat value, bool newline=true);  
+  void add_tag_value_pair(ostream& out, string tag, int value, bool newline=true);  
+  void add_basic_state(ostream& out, string type, int stateIndex);  
+  void add_delete_state(ostream& out, int stateIndex);  
+  void add_transition(ostream& out, int fromState, int toState, bfloat weight); 
 
+  void read_profile(const char* profile_filename, bool logging=false); 
+  void parse_state(SExpr* s); 
+  void parse_transition(SExpr* s); 
+  void verify(bool  logging); 
 
  private:
   // Constructor uses the following private functions to transform profile -> absorbing :

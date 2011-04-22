@@ -41,6 +41,7 @@ class Reconstruction
   sstring gap_grammar_filename;   
   sstring stkFileName;
   sstring fastaFileName;
+  sstring root_profile_filename; 
   sstring indel_filename;   
   sstring db_filename;   
   sstring treeFileName; 
