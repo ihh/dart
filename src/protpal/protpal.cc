@@ -175,11 +175,11 @@ int main(int argc, char* argv[])
 	  for_rooted_children(reconstruction.tree, treeNode, child)
 	    {
 	      children.push_back(*child); 
-	      branch_length = max(verySmall, reconstruction.tree.branch_length(treeNode ,*child));
+	      branch_length = min(reconstruction.max_branch_length, max(verySmall, reconstruction.tree.branch_length(treeNode ,*child)));
 	      if (branch_length != reconstruction.tree.branch_length(treeNode ,*child))
 		{
 		  std::cerr<<"\tNB: branch length "<< reconstruction.tree.branch_length(treeNode ,*child);
-		  std::cerr<<" rounded up to "<< branch_length<<endl; 
+		  std::cerr<<" rounded to "<< branch_length<< endl; 
 		}
 	      branchLengths.push_back(branch_length); 
 	    }
@@ -279,10 +279,7 @@ int main(int argc, char* argv[])
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
 	    std::cerr<<"\tFilling forward dynamic programming matrix..."; 
-// 	  if ( reconstruction.tree.node_name[treeNode] == "Node_1307")
-// 	    profile.fill_DP(2, false); 
-// 	  else
-	    profile.fill_DP(reconstruction.loggingLevel, false); // do not store incoming/outgoing information.  
+	  profile.fill_DP(reconstruction.loggingLevel, false); // do not store incoming/outgoing information.  
 
 	  if(reconstruction.loggingLevel>=1)
 	    {
@@ -516,10 +513,15 @@ int main(int argc, char* argv[])
 	{
 	  if (reconstruction.loggingLevel >=1)
 	    std::cerr<<"\nWriting indel information to file: " << reconstruction.indel_filename << endl; 
+	  std::cerr<<"\nCreating file... \n";
 	  ofstream indel_file;
+	  std::cerr<<"Opening file... \n";
 	  indel_file.open (reconstruction.indel_filename.c_str());
+	  std::cerr<<"Creating indel object... \n";
 	  IndelCounter indels(annotated, &reconstruction.tree); 
-	  indels.gather_indel_info(false); 
+	  std::cerr<<"Gathering indel info... \n";
+	  indels.gather_indel_info(true); 
+	  std::cerr<<"Writing indel info to file... \n";
 	  indels.display_indel_info(indel_file, reconstruction.per_branch);
 	  indel_file.close();
 	}

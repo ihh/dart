@@ -104,7 +104,8 @@ class Reconstruction
   bool mixture_3; 
   double ins_rate;
   double del_rate;   
-  double sub_rate; 
+  double sub_rate;
+  double max_branch_length; 
   double gap_extend; 
   double gap_extend_2; 
   double mix_prior_2;

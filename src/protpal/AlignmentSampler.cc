@@ -533,7 +533,8 @@ void IndelCounter::gather_indel_info(bool logging)
   node parent_node, child_node;
   unsigned int pair_length, match_count, pos; 
   bool prev_was_ins, prev_was_del, prev_was_match;
-
+  if (logging)
+    cerr<<"Beginning to gather indel information\n";
   for_nodes_pre (*tree, tree->root, -1, bi)
     {
       const Phylogeny::Branch& b = *bi;
@@ -541,6 +542,8 @@ void IndelCounter::gather_indel_info(bool logging)
       child_node = b.second; 
       if (child_node == tree->root)
 	continue; 
+      if (logging)
+	cerr<<"\t Getting indel information at node " << tree->node_name[parent_node] << endl ;
       get_pairwise_alignment(parent_node, child_node, parent, child);
       pair_length = parent.size(); 
       if (logging)

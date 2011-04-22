@@ -83,10 +83,12 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "<rate matrix file> DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
   opts.add("bs -subst-scale", sub_rate = 1.0, "Substitution rate scaling parameter ");
+  opts.add("mbl -max-branch-length", max_branch_length = 1.0, "Maximum allowed branch length (branches longer than this will be truncated).");
   opts.add("i -insert-rate", ins_rate=0.0025,"Insertion rate ");
   opts.add("d -delete-rate", del_rate=0.0025,"Deletion rate ");
   opts.add("ri -root-insert-prob", root_insert_prob=0.999, "Insert probability at root"); 
   opts.add("eri -estimate-root-insert-prob", estimate_root_insert=false, "Estimate insertion probability at root by averaging leaf sequence length");
+  
 
   opts.newline();
   opts.print_title("Indel length modeling");
