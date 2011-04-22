@@ -1068,9 +1068,9 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 
   // yet another option - use a slimmer BFS/DP version
    ofstream fh;
-   fh.open("saved_profile.dot");
-   sampled_profile->show_DOT(fh); 
-   cerr<<"Profile saved as saved_profile.dot\n";
+//    fh.open("saved_profile.dot");
+//    sampled_profile->show_DOT(fh); 
+//    cerr<<"Profile saved as saved_profile.dot\n";
   
   BFS_marginalize_null_states(sampled_profile); 
   return; 

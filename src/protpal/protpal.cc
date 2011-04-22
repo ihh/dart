@@ -1,5 +1,6 @@
 #include<iostream>
 #include<fstream>
+#include<stack>
 #include<math.h>
 #include<ctime>
 #include<time.h>
@@ -10,6 +11,7 @@
 #include "protpal/transducer.h"
 #include "protpal/Q.h"
 #include "protpal/utils.h"
+#include "protpal/ReadProfileScore.h"
 
 #include "protpal/AlignmentSampler.h"
 #include "protpal/MyMap.h"
@@ -23,6 +25,7 @@
 #include "seq/biosequence.h"
 #include "util/dexception.h"
 #include "util/rnd.h"
+#include "util/sexpr.h"
 
 // Main reconstruction program. 
 
@@ -54,7 +57,12 @@ int main(int argc, char* argv[])
   Irrev_EM_matrix rate_matrix(1,1);
   Alphabet alphabet ("uninitialized", 1);
   ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
-  
+  // yeccch
+  vector<string> alphabetVector;
+  vector<sstring> toks = alphabet.tokens(); 
+  for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
+    alphabetVector.push_back(string(a->c_str()));
+
   // We need the alphabet to parse sequences via DART's machinery...that's why this is out here away from other
   // data parsing stuff. 
   reconstruction.parse_sequences(alphabet);
@@ -325,13 +333,65 @@ int main(int argc, char* argv[])
 		std::cerr<<"\tTransforming sampled profile DAG into an absorbing transducer...";
 	      AbsorbingTransducer absorbTrans(&profile);
 	      //absorbTrans.show_DOT(cout, reconstruction.tree.node_name[treeNode]+"_absorbing"); 
+
+
+	      // ********* Testing some things ********* 
+// 	      ofstream saved_profile;
+// 	      saved_profile.open( "saved_profile.sexpr" );
+// 	      absorbTrans.write_profile(saved_profile); 
+// 	      cerr<<"Wrote profile to file: saved_profile.sexpr\n";
+// 	      saved_profile.close();
+// 	      AbsorbingTransducer absorbTrans2("saved_profile.sexpr",alphabetVector, reconstruction.tree);
+
 	      absorbTrans.test_transitions(); 
 	      reconstruction.profiles[treeNode] = absorbTrans; 
+
+	      //absorbTrans2.test_equality(absorbTrans,true, true); 
+	      // ********* End testing some things ********* 	      
+
+// 	      time_t readStart,readEnd;
+// 	      time (&readStart);
+// 	      ReadProfileScore testScore(&absorbTrans); 
+// 	      Read read; 
+// 	      for (int i=0; i<1000; i++)
+// 		{
+// 		  read.set("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); 
+// 		  read.identifier="oscarsRead"; 
+// 		  cout<<"Analyzing read number: " << i << endl; 
+// 		  testScore.score_and_print(read, cout, false); 
+// 		}
+// 	      time(&readEnd); 
+// 	      std::cout<< "Minutes used to map 1000 reads to a 500-base profile: " << difftime (readEnd, readStart)/60.0 <<endl; 
+// 	      exit(0); 
+	      
 	      if(reconstruction.loggingLevel>=1)
 		std::cerr<<"done.\n";
 	    }
 	  else
 	    {
+	      if (reconstruction.root_profile_filename != "None")
+		{
+		  if(reconstruction.loggingLevel>=1)
+		    std::cerr<<"\tSampling "<<reconstruction.num_sampled_paths<<" alignments from root alignment..."; 
+		  profile.sample_DP(
+				    reconstruction.num_sampled_paths, // number of paths
+				    reconstruction.loggingLevel, // debugging log messages ?
+				    reconstruction.show_alignments, // show sampled alignments ?
+				    reconstruction.leaves_only, // only show leaves
+				    reconstruction.viterbi // sample viterbi path (on the last time through - only really applies to null states)
+				    ); 
+		  if(reconstruction.loggingLevel>=1)
+		    std::cerr<<"\tTransforming sampled root profile DAG into an absorbing transducer...";
+		  AbsorbingTransducer absorbTrans(&profile);
+		  // ********* Write to file ********* 
+		  ofstream saved_profile;
+		  saved_profile.open(reconstruction.root_profile_filename.c_str() );
+		  absorbTrans.write_profile(saved_profile); 
+		  cerr<<"Wrote profile to file: root_profile.sexpr\n";
+		  saved_profile.close();
+		}
+	      
+		  
 	      std::cout<<"#=GF alignment_likelihood "<<-log(profile.forward_prob)/log(2) << endl; 
 	      ofstream db_file;
 	      state_path path = profile.sample_DP(
