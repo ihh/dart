@@ -42,6 +42,7 @@ class Reconstruction
   sstring stkFileName;
   sstring fastaFileName;
   sstring root_profile_filename; 
+  bool root_viterbi_path; 
   sstring indel_filename;   
   sstring db_filename;   
   sstring treeFileName; 

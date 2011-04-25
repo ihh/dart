@@ -287,8 +287,17 @@ int main(int argc, char* argv[])
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
 	    std::cerr<<"\tFilling forward dynamic programming matrix..."; 
-	  profile.fill_DP(reconstruction.loggingLevel, false); // do not store incoming/outgoing information.  
-
+	  if (treeNode != reconstruction.tree.root || reconstruction.root_profile_filename == "None")) 
+	    profile.fill_DP(reconstruction.loggingLevel, false); // do not store incoming/outgoing information.  
+	  else if (reconstruction.root_profile_filename != "None")
+	    {
+	      if(reconstruction.loggingLevel>=1)
+		std::cerr<<" (logging state connectivity) "; 
+	      profile.fill_DP(reconstruction.loggingLevel, true); // do not store incoming/outgoing information.  
+	      if(reconstruction.loggingLevel>=1)
+		std::cerr<<"\n\tFilling backward DP matrix... "; 	      
+	      profile.fill_backward_DP(reconstruction.loggingLevel); 
+	    }
 	  if(reconstruction.loggingLevel>=1)
 	    {
 	      std::cerr<<"done.\n\t\tSubalignment likelihood: "<<-log(profile.forward_prob)/log(2)<<" bits\n"; 
@@ -372,9 +381,9 @@ int main(int argc, char* argv[])
 	      if (reconstruction.root_profile_filename != "None")
 		{
 		  if(reconstruction.loggingLevel>=1)
-		    std::cerr<<"\tSampling "<<reconstruction.num_sampled_paths<<" alignments from root alignment..."; 
+		    std::cerr<<"\tSampling "<<reconstruction.num_root_alignments<<" alignments from root alignment..."; 
 		  profile.sample_DP(
-				    reconstruction.num_sampled_paths, // number of paths
+				    reconstruction.num_root_alignments, // number of paths
 				    reconstruction.loggingLevel, // debugging log messages ?
 				    reconstruction.show_alignments, // show sampled alignments ?
 				    reconstruction.leaves_only, // only show leaves
@@ -382,11 +391,20 @@ int main(int argc, char* argv[])
 				    ); 
 		  if(reconstruction.loggingLevel>=1)
 		    std::cerr<<"\tTransforming sampled root profile DAG into an absorbing transducer...";
+		  state_path viterbi_path;
+		  if (reconstruction.root_viterbi_path)
+		    viterbi_path = profile.sample_DP(
+						       1, // sample only one path
+						       0, // debugging log messages
+						       false, // don't show alignments
+						       false, // leaves only
+						       true // sample the viterbi path
+						       );
 		  AbsorbingTransducer absorbTrans(&profile);
 		  // ********* Write to file ********* 
 		  ofstream saved_profile;
 		  saved_profile.open(reconstruction.root_profile_filename.c_str() );
-		  absorbTrans.write_profile(saved_profile); 
+		  absorbTrans.write_profile(saved_profile, viterbi_path); 
 		  cerr<<"Wrote profile to file: root_profile.sexpr\n";
 		  saved_profile.close();
 		}
