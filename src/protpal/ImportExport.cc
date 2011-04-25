@@ -5,7 +5,7 @@
 
 
 /// Writing functions 
-void AbsorbingTransducer::write_profile(ostream& out)
+void AbsorbingTransducer::write_profile(ostream& out, state_path& viterbi_path)
 {
   out.setf(ios::fixed, ios::floatfield);
   out.setf(ios::showpoint);
@@ -39,6 +39,16 @@ void AbsorbingTransducer::write_profile(ostream& out)
   for (MyMap<state, vector<state> >::iterator e = incoming.begin(); e != incoming.end(); e++)
     for (vector<state>::iterator ePrime = e->second.begin(); ePrime != e->second.end(); ePrime++)
       add_transition(out, *ePrime, e->first, get_transition_weight( *ePrime, e->first)); 
+
+  // If viterbi path is non-null, add it after converting each M_id to an integer
+  if (viterbi_path.size())
+    {
+      out << "(viterbi_path "; 
+      for (state_path::reverse_iterator vit=viterbi_path.rbegin(); vit!=viterbi_path.rend(); vit++)
+	if (mid2int.count(vit->toVector()))
+	  out << mid2int[vit->toVector()] << " "; 
+      out <<")\n";
+    }
   
   out << ");; end profile for node " << treeNode << "\n";
 
@@ -88,6 +98,7 @@ void AbsorbingTransducer::add_delete_state(ostream& out, int stateIndex)
   out << "(state \n";   
   add_tag_value_pair(out, "type", "delete"); 
   add_tag_value_pair(out, "name", stateIndex); 
+  add_tag_value_pair(out, "postprob", stored_sampled_profile->post_prob(state2mid[stateIndex])); 
 
   // Absorption weights
   if (verboseAbsorb)

@@ -306,7 +306,7 @@ AbsorbingTransducer::AbsorbingTransducer(Profile *sampled_profile)
 	 the left or right profiles) .  
   */
   bool logging =false;
-  
+  stored_sampled_profile = sampled_profile; 
   h_start = "h_start";
   h_left_internal = "left_internal";
   h_right_internal = "right_internal";
@@ -2613,7 +2613,7 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 		  outgoing[start_state.toVector()].push_back(mPrime); 
 		  transitionPair.first = start_state.toVector(); transitionPair.second = mPrimeVec; 
 		  transition_weight[transitionPair] = toAdd / emissionWeight; 
-		  if (1) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
+		  //if (1) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
 		}
 
 
@@ -2898,9 +2898,24 @@ void Profile::fill_backward_DP(int logging)
     }
 }
 
+bfloat Profile::post_prob(M_id state)
+{
+  bfloat fw,bw;
+  fw = get_DP_cell (state); 
+  if (! fw > 0.0)
+    return 0.0; 
+  else
+    {
+      bw = get_backward_DP_cell (state); 
+      if (! bw > 0.0)
+	return 0.0;
+      else 
+	return bw*fw / (forward_prob*compute_emission_weight(state)); 
+    }
+}
+
 void Profile::fill_DP(int logging, bool inLog)
 {
-  inLog = false; 
   // top -level DP function - traverse over all states in M_n (in the proper order) and call
   // up sum_paths_to for each of them. 
   M_id mPrime, m;
@@ -2925,7 +2940,8 @@ void Profile::fill_DP(int logging, bool inLog)
 	}
   add_to_DP_cell(mPrime, 1);  
   // bLog
-  //  backward_states.push_back(mPrime); 
+  if (inLog)
+    backward_states.push_back(mPrime); 
   if (logging>=2) 
 	{
 	  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2951,7 +2967,8 @@ void Profile::fill_DP(int logging, bool inLog)
 			}
 		  sum_paths_to(mPrime, inLog, logging>=2);
 		  // bLog
-		  //		  backward_states.push_back(mPrime); 
+		  if (inLog)
+		    backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2982,7 +2999,8 @@ void Profile::fill_DP(int logging, bool inLog)
 			  
 			  sum_paths_to(mPrime, inLog, logging>=2);
 			  // bLog
-			  //			  backward_states.push_back(mPrime); 
+			  if (inLog)
+			    backward_states.push_back(mPrime); 
 			  if (logging>=2) 
 			    {
 			      std::cerr<<"\tForward value of state matching: "<< el_Prime << " and " << er_Prime << " : " << get_DP_cell(mPrime)<<endl;
@@ -3008,7 +3026,8 @@ void Profile::fill_DP(int logging, bool inLog)
 			  
 			  sum_paths_to(mPrime, inLog, logging>=2);
 			  // bLog
-			  //			  backward_states.push_back(mPrime); 
+			  if (inLog)
+			    backward_states.push_back(mPrime); 
 			  if (logging>=2) 
 			    {
 			      std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -3042,7 +3061,8 @@ void Profile::fill_DP(int logging, bool inLog)
 			  
 			  sum_paths_to(mPrime, inLog, logging>=2);
 			  // bLog
-			  //			  backward_states.push_back(mPrime); 
+			  if (inLog)
+			    backward_states.push_back(mPrime); 
 			  if (logging>=2) 
 			    {
 			      std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -3081,7 +3101,8 @@ void Profile::fill_DP(int logging, bool inLog)
 
 		  sum_paths_to(mPrime, inLog, logging>=2);
 		  // bLog
-		  //		  backward_states.push_back(mPrime); 
+		  if (inLog)
+		    backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -3121,7 +3142,8 @@ void Profile::fill_DP(int logging, bool inLog)
 
 		  sum_paths_to(mPrime, inLog, logging>=2);
 		  // bLog
-		  //		  backward_states.push_back(mPrime); 
+		  if (inLog)
+		    backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -3149,7 +3171,8 @@ void Profile::fill_DP(int logging, bool inLog)
 
 	  sum_paths_to(mPrime, inLog,logging>=2); //log for now, debugging
 	  // bLog
-	  //	  backward_states.push_back(mPrime); 
+	  if (inLog)
+	    backward_states.push_back(mPrime); 
 	  if (logging>=2) 
 		{
 		  std::cerr<<"\tForward value of wait/pre-end state: "<< get_DP_cell(mPrime)<<endl;
@@ -3167,7 +3190,8 @@ void Profile::fill_DP(int logging, bool inLog)
   //  Z[mPrime.toVector()] = 0;
   add_to_DP_cell(mPrime, 0.0 ); 
   // bLog
-  //  backward_states.push_back(mPrime); 
+  if (inLog)
+    backward_states.push_back(mPrime); 
   
   // Fill the end state cell
   // for left_pre_end in left_profile.pre_end_states:

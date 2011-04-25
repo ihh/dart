@@ -98,10 +98,9 @@ class AbsorbingTransducer
   AbsorbingTransducer(ExactMatch *EM_in);
   AbsorbingTransducer(const char*, vector<string> alphabet, PHYLIP_tree& tree);   
   AbsorbingTransducer(void);   
-  
-  bool test_equality(AbsorbingTransducer&, bool, bool); 
 
-  
+  Profile* stored_sampled_profile; 
+  bool test_equality(AbsorbingTransducer&, bool, bool); 
   //Basic info about the transducer
   node treeNode; 
   vector<node> subtreeNodes; 
@@ -117,6 +116,8 @@ class AbsorbingTransducer
   //vector<state> pre_end_states;
   // Index to M-id map
   MyMap<state, M_id> state2mid; 
+  // The reverse: 
+  MyMap<vector<int>, int> mid2int;
   
   // accessor for incoming states
   vector<state> get_incoming(state);
@@ -127,7 +128,7 @@ class AbsorbingTransducer
   //displaying states, transitions, absorption weights
   void display(bool states, bool transitions, bool absorptions);
   void show_DOT(ostream&, string name ="MyGraph");
-  MyMap<vector<int>, int> mid2int;                                                                                                                                    
+
 
 
   // Transition/absorbing accessor functions
@@ -158,7 +159,7 @@ class AbsorbingTransducer
   void test_transitions(void);
 
   // I/O stuff
-  void write_profile(ostream& out);  
+  void write_profile(ostream& out, state_path& viterbi_path);  
   void add_tag_value_pair(ostream& out, string tag, string value, bool newline=true);  
   void add_tag_value_pair(ostream& out, string tag, bfloat value, bool newline=true);  
   void add_tag_value_pair(ostream& out, string tag, int value, bool newline=true);  
@@ -239,6 +240,7 @@ class Profile
   Profile(void); 
   // Initiate and fill forward-like DP matrix
   void fill_DP(int, bool inLog=false);
+  bfloat post_prob(M_id); 
   MyMap< vector<int>, vector<M_id> > incoming; // this is filled only if the backward algorithm is requested
   MyMap< vector<int>, vector<M_id> > outgoing; // this is filled only if the backward algorithm is requested
   MyMap< pair<vector<int>, vector<int> >, bfloat > transition_weight; // this is filled only if the backward algorithm is requested

@@ -430,7 +430,7 @@ IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in)
       if ( tree->is_leaf(n) )
 	sequence =  stk.get_row_as_string(seq->second);
       else
-	sequence = stk.gr_annot[seq->first]["ancrec_CYK_MAP"];
+	sequence = stk.gr_annot[seq->first]["ancrec_CYK_MAP"]; //toCheck
       rows[n] = string(sequence.c_str()); 
     }
 

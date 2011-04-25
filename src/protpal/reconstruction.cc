@@ -57,6 +57,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called).  Default is a compact Stockholm form. ");
   opts.add("fo -fasta-output", fasta_output=false, "Display final alignment in FASTA format");
   opts.add("wrp -write-root-profile", root_profile_filename="None", "Sample from the ancestral distribution at the root, then store the resulting profile in the specified file. ");
+  opts.add("rvp -root-viterbi-path", root_viterbi_path=true, "Include the Viterbi alignment at the root when saving the root profile (useful for visualization). ");
   opts.add("gpc -gap-char", gap_char="-", "Gap character - for use in importing guide alignments\n");
   
   opts.newline(); 
