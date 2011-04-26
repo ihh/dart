@@ -2122,7 +2122,7 @@ void Profile::fill_backward_DP(int logging)
 	  if (get_backward_DP_cell(*m_iter) > 0.0 && transition_weight.count(transitionPair) > 0)
 	    {
 	      toAdd += compute_emission_weight(m) * get_backward_DP_cell(*m_iter) * transition_weight[transitionPair]; 
-	      if (!toAdd > 0.0)
+	      if (0) //!toAdd > 0.0) // we don't need to check this, since the backward states are logged
 		{
 		  std::cerr<< "Taking the product of: "<< compute_emission_weight(m) << " " << get_backward_DP_cell(*m_iter) << " " << transition_weight[transitionPair] <<endl; 
 		  std::cerr<<"their product: " << toAdd <<endl; 
@@ -2132,7 +2132,7 @@ void Profile::fill_backward_DP(int logging)
 		}
 	    }
 	}
-      if(toAdd >0.0)
+      if(1) // toAdd >0.0) // we don't need to check this, since the backward states are logged
 	add_to_backward_DP(m, toAdd);
       if (debug)
 	std::cout<<"The current state has DP bits:  " << -log(get_backward_DP_cell(m))/log(2) << endl; 
