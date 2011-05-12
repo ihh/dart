@@ -754,7 +754,7 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 	      int ml_chain_state = -1;
 	      Prob ml_chain_state_prob = 0.;
 	      const EM_matrix_base& matrix (chain.matrix ? *chain.matrix : *lineage_matrix[info.matrix][*n]);
-	      for (int chain_state = 0; chain_state < chain.matrix->m(); ++chain_state)
+	      for (int chain_state = 0; chain_state < matrix.m(); ++chain_state)
 		{
 		  const Prob chain_state_prob = colmat[ecfg_state].node_post_prob (*n, chain_state, tree, matrix);
 		  if (ml_chain_state < 0 || chain_state_prob > ml_chain_state_prob)
