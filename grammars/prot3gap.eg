@@ -1203,6 +1203,7 @@
  (extend (to x) (from a) (from r) (from n) (from d) (from c) (from q) (from e) (from g) (from h) (from i) (from l) (from k) (from m) (from f) (from p) (from s) (from t) (from w) (from y) (from v))
  (extend (to b) (from n) (from d))
  (extend (to z) (from q) (from e))
- (wildcard *)
+ (extend (to *) (from a) (from r) (from n) (from d) (from c) (from q) (from e) (from g) (from h) (from i) (from l) (from k) (from m) (from f) (from p) (from s) (from t) (from w) (from y) (from v))
+;; (wildcard *)
 )  ;; end alphabet Protein
 

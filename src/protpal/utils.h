@@ -54,6 +54,7 @@ int index(string query, vector<string> in );
 int index(sstring query, vector<sstring> in );
 int index(int query, vector<int> in );
 int index(float query, vector<float> in );
+int index(bfloat query, vector<bfloat> in );
 
 
 bool in(string query, string in );

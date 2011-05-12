@@ -159,6 +159,7 @@ class AbsorbingTransducer
   void test_transitions(void);
 
   // I/O stuff
+  // Output - internal
   void write_profile(ostream& out, state_path& viterbi_path);  
   void add_tag_value_pair(ostream& out, string tag, string value, bool newline=true);  
   void add_tag_value_pair(ostream& out, string tag, bfloat value, bool newline=true);  
@@ -167,10 +168,11 @@ class AbsorbingTransducer
   void add_delete_state(ostream& out, int stateIndex);  
   void add_transition(ostream& out, int fromState, int toState, bfloat weight); 
 
+  // Input - internal
   void read_profile(const char* profile_filename, bool logging=false); 
   void parse_state(SExpr* s); 
   void parse_transition(SExpr* s); 
-  void verify(bool  logging); 
+  void verify(bool logging); 
 
  private:
   // Constructor uses the following private functions to transform profile -> absorbing :

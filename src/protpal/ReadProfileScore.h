@@ -14,6 +14,8 @@ class Read : public list<sstring>
   void set(sstring); 
 };
 
+typedef pair<state, state> compositeState; 
+
 class ReadProfileModel
 {
  public:
@@ -44,6 +46,7 @@ class ReadProfileModel
   
   // Emission weight - the likelihood of emitting a read character matched to a profile state
   bfloat get_emission_weight(int readCharIndex, state profileState, state hmmState); 
+  bfloat get_emission_weight_by_alphabet_index(int alphIndex, state profileState, state hmmState); 
 
   // Non-special states, not start or end
   list<state> non_special_states; 
@@ -64,6 +67,10 @@ class ReadProfileScore
   // Main wrapper function - get the likelihood score of a read to a profile, and print it to an ostream
   void score_and_print(const Read& read, ostream& out, bool viterbi=false);
   Read read; 
+  void HMMoC_adapter(const char* filename, bool precompute=true); 
+
+  // Extra variables
+  int profSize, readSize; 
 
  private:
   // Profile - one emission side
@@ -89,7 +96,7 @@ class ReadProfileScore
   void write_read_info(ostream& out, const Read& read, bfloat value); 
 
   // Manage the dynamic programming matrix
-  void fill_DP_matrix(const Read& read, bool backPointers=false, bool logging=false); 
+  void fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmmoc_only, bool backPointers=false, bool logging=false); 
   void clear_DP_matrix(void);
   inline bfloat get_DP_cell(int,int,int); 
   inline void set_DP_cell(int,int,int, bfloat); 
@@ -103,8 +110,19 @@ class ReadProfileScore
   inline list<state> get_possible_HMM_states(state readState, state profileState);
   bfloat hmm_transition_weight; 
 
-  // Extra variables
-  int profSize, readSize; 
+
+
+  // HMMoC adapter stuff
+  void add_state_to_HMMoC(ostream&, state toProfile, state toHMM, state fromProfile, state fromHMM, bool logging=true ); 
+  vector<compositeState > states_added; 
+  vector<pair<compositeState, compositeState > > transitions_added; 
+  vector<vector<compositeState> > cliques; 
+  string composite2string(compositeState);
+  vector<string> start_clique, mainClique, end_clique;
+  stringstream transitionStream; 
+  vector<bfloat> probValues; 
+  string alphabet; 
   };
+
 
 #endif

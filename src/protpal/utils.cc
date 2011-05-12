@@ -238,6 +238,16 @@ int index(float query, vector<float> in )
   return(-1);
 }
 
+int index(bfloat query, vector<bfloat> in )
+{
+  for (int i=0; i<in.size(); i++)
+	{
+	  if (in[i] == query) return(i);
+	}
+  return(-1);
+}
+
+
 
 bool in(string query, string in )
 {

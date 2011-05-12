@@ -153,6 +153,7 @@ void AbsorbingTransducer::add_transition(ostream& out, int fromState, int toStat
 
 
 
+
 /// Reading functions 
 
 void AbsorbingTransducer::read_profile(const char* profile_filename, bool logging)
@@ -408,9 +409,7 @@ bool AbsorbingTransducer::test_equality(AbsorbingTransducer& other, bool logging
 	cerr<< "The two transducers differ in their incoming transitions \n"; 
       same =  false; 
     }
-
-
-
   return same; 
-
 }
+
+

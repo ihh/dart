@@ -287,7 +287,7 @@ int main(int argc, char* argv[])
 	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
 	  if(reconstruction.loggingLevel>=1)
 	    std::cerr<<"\tFilling forward dynamic programming matrix..."; 
-	  if (treeNode != reconstruction.tree.root || reconstruction.root_profile_filename == "None")) 
+	  if (treeNode != reconstruction.tree.root || reconstruction.root_profile_filename == "None")
 	    profile.fill_DP(reconstruction.loggingLevel, false); // do not store incoming/outgoing information.  
 	  else if (reconstruction.root_profile_filename != "None")
 	    {
@@ -360,7 +360,9 @@ int main(int argc, char* argv[])
 
 // 	      time_t readStart,readEnd;
 // 	      time (&readStart);
-// 	      ReadProfileScore testScore(&absorbTrans); 
+ 	      ReadProfileScore testScore(&absorbTrans); 
+ 	      testScore.HMMoC_adapter("testHMMoC.xml"); 
+ 	      exit(0); 
 // 	      Read read; 
 // 	      for (int i=0; i<1000; i++)
 // 		{
