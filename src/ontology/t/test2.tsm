@@ -1,0 +1,32 @@
+(terminatrix
+ (pgroup ((p1 .25) (p2 .25) (p3 .25) (p4 .25)))
+ (rate (r 1.33))
+
+ ;; test for ontology term evolution
+ (chain
+  (update-policy parametric)
+  (terminal (TERM))
+
+  ;; initial probability distribution
+  (initial (state (term1)) (prob p1))
+  (initial (state (term2)) (prob p2))
+  (initial (state (term3)) (prob p3))
+  (initial (state (term4)) (prob p4))
+
+  ;; mutation rates
+  (mutate (from (term1)) (to (term2)) (rate p2 * r))
+  (mutate (from (term1)) (to (term3)) (rate p3 * r))
+  (mutate (from (term1)) (to (term4)) (rate p4 * r))
+  (mutate (from (term2)) (to (term1)) (rate p1 * r))
+  (mutate (from (term2)) (to (term3)) (rate p3 * r))
+  (mutate (from (term2)) (to (term4)) (rate p4 * r))
+  (mutate (from (term3)) (to (term1)) (rate p1 * r))
+  (mutate (from (term3)) (to (term2)) (rate p2 * r))
+  (mutate (from (term3)) (to (term4)) (rate p4 * r))
+  (mutate (from (term4)) (to (term1)) (rate p1 * r))
+  (mutate (from (term4)) (to (term2)) (rate p2 * r))
+  (mutate (from (term4)) (to (term3)) (rate p3 * r)))
+
+ (alphabet
+  (name GO)
+  (token (term1 term2 term3 term4))))

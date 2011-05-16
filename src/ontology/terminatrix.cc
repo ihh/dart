@@ -61,6 +61,7 @@ int main (int argc, char** argv)
       // init the Terminatrix
       Terminatrix term;
       Terminatrix_builder::init_terminatrix (term, sexpr);
+      term.eval_funcs();
 
       // convert alphabet symbols to state indices
       const int src_state = tok2int (term.alph, src_tok, "Source");

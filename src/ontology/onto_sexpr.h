@@ -17,6 +17,9 @@ struct Terminatrix
   // constructor
   Terminatrix();
 
+  // helpers
+  void eval_funcs();
+
   // accessors
   ECFG_chain& chain();
   EM_matrix_base& rate_matrix();

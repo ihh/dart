@@ -61,6 +61,9 @@ struct ECFG_matrix_set : ECFG_enum
   int total_states (int chain_idx) const;
   int observed_states (int chain_idx) const;
   int observed_states_by_word_len (int word_len) const;
+
+  // helpers
+  void eval_funcs (PScores& pscores);  // prepare parametric chains
 };
 
 // state type info for an emit state of an Evolutionary CFG

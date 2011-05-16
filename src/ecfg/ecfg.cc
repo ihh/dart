@@ -121,6 +121,56 @@ int ECFG_matrix_set::observed_states_by_word_len (int word_len) const
   return s;
 }
 
+void ECFG_matrix_set::eval_funcs (PScores& pscores)
+{
+  for_contents (vector<ECFG_chain>, this->chain, chain)
+    if (chain->is_parametric)
+      {
+	const int chain_states = chain->matrix->m();
+	for (int s = 0; s < chain_states; ++s)
+	  {
+	    const PFunc& pi_pfunc = chain->matrix_funcs->pi[s];
+	    chain->matrix->pi[s] = pi_pfunc.is_null() ? 0. : Score2Prob (pi_pfunc.eval_sc (pscores));
+
+	    if (CTAGGING(-3,ECFG_SCORES))
+	      {
+		CL << "Initial probability for state (";
+		ECFG_builder::print_state (CL, s, chain->word_len, alphabet, chain->class_labels);
+		CL << ") = (";
+		ECFG_builder::pfunc2stream (CL, pscores, pi_pfunc);
+		CL << ") evaluates to " << chain->matrix->pi[s] << "\n";
+	      }
+
+	    chain->matrix->X[0] (s, s) = 0.;
+	    for (int d = 0; d < chain_states; ++d)
+	      if (s != d)
+		{
+		  const PFunc& rate_pfunc = chain->matrix_funcs->X[0] (s, d);
+		  const double rate = rate_pfunc.is_null() ? 0. : Score2Prob (rate_pfunc.eval_sc (pscores));
+		  chain->matrix->X[0] (s, d) = rate;
+		  chain->matrix->X[0] (s, s) -= rate;
+
+		  if (CTAGGING(-3,ECFG_SCORES))
+		    {
+		      CL << "Rate from (";
+		      ECFG_builder::print_state (CL, s, chain->word_len, alphabet, chain->class_labels);
+		      CL << ") to (";
+		      ECFG_builder::print_state (CL, d, chain->word_len, alphabet, chain->class_labels);
+		      CL << ") = (";
+		      ECFG_builder::pfunc2stream (CL, pscores, rate_pfunc);
+		      CL << ") evaluates to " << rate << "\n";
+		    }
+		}
+	  }
+	if (CTAGGING(-2,ECFG_SCORES))
+	  {
+	    CL << "Chain (terminal " << chain->state << ") evaluated from PFunc's:\n";
+	    chain->matrix->write (CL);
+	  }
+	chain->matrix->update();
+      }
+}
+
 // Do not change default initial values for ECFG_state_info - subclasses depend on these
 ECFG_state_info::ECFG_state_info()
   : bifurc (false),
@@ -723,52 +773,7 @@ void ECFG_scores::eval_funcs()
 	    transition (s, d) = pfunc.is_null() ? -InfinityScore : pfunc.eval_sc (pscores);
 	  }
 
-  for_contents (vector<ECFG_chain>, matrix_set.chain, chain)
-    if (chain->is_parametric)
-      {
-	const int chain_states = chain->matrix->m();
-	for (int s = 0; s < chain_states; ++s)
-	  {
-	    const PFunc& pi_pfunc = chain->matrix_funcs->pi[s];
-	    chain->matrix->pi[s] = pi_pfunc.is_null() ? 0. : Score2Prob (pi_pfunc.eval_sc (pscores));
-
-	    if (CTAGGING(-3,ECFG_SCORES))
-	      {
-		CL << "Initial probability for state (";
-		ECFG_builder::print_state (CL, s, chain->word_len, alphabet, chain->class_labels);
-		CL << ") = (";
-		ECFG_builder::pfunc2stream (CL, pscores, pi_pfunc);
-		CL << ") evaluates to " << chain->matrix->pi[s] << "\n";
-	      }
-
-	    chain->matrix->X[0] (s, s) = 0.;
-	    for (int d = 0; d < chain_states; ++d)
-	      if (s != d)
-		{
-		  const PFunc& rate_pfunc = chain->matrix_funcs->X[0] (s, d);
-		  const double rate = rate_pfunc.is_null() ? 0. : Score2Prob (rate_pfunc.eval_sc (pscores));
-		  chain->matrix->X[0] (s, d) = rate;
-		  chain->matrix->X[0] (s, s) -= rate;
-
-		  if (CTAGGING(-3,ECFG_SCORES))
-		    {
-		      CL << "Rate from (";
-		      ECFG_builder::print_state (CL, s, chain->word_len, alphabet, chain->class_labels);
-		      CL << ") to (";
-		      ECFG_builder::print_state (CL, d, chain->word_len, alphabet, chain->class_labels);
-		      CL << ") = (";
-		      ECFG_builder::pfunc2stream (CL, pscores, rate_pfunc);
-		      CL << ") evaluates to " << rate << "\n";
-		    }
-		}
-	  }
-	if (CTAGGING(-2,ECFG_SCORES))
-	  {
-	    CL << "Chain (terminal " << chain->state << ") evaluated from PFunc's:\n";
-	    chain->matrix->write (CL);
-	  }
-	chain->matrix->update();
-      }
+  matrix_set.eval_funcs (pscores);
 
   if (CTAGGING(-3,ECFG_TRANS_SCORES))
     {

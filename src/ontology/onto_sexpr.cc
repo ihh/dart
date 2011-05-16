@@ -1,4 +1,5 @@
 #include "ontology/onto_sexpr.h"
+#include "ontology/onto_keywords.h"
 #include "seq/pkeywords.h"
 
 Terminatrix::Terminatrix()
@@ -21,8 +22,14 @@ ECFG_chain& Terminatrix::chain()
   return matrix_set.chain[0];
 }
 
-void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& terminatrix_sexpr)
+void Terminatrix::eval_funcs()
 {
+  matrix_set.eval_funcs (pscores);
+}
+
+void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& sexpr)
+{
+  SExpr terminatrix_sexpr = sexpr.find_or_die (TERMINATRIX);
   SymPVar sym2pvar;
   SymIndex term2chain;
   // initialise PScores
@@ -38,10 +45,12 @@ void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& terminatri
 
 void Terminatrix_builder::terminatrix2stream (ostream& out, const Terminatrix& term)
 {
+  out << '(' << TERMINATRIX << '\n';
   pscores2stream (out, term.pscores, term.mutable_pgroups, &term.var_counts);
   pcounts2stream (out, term.pcounts, EG_PSEUDOCOUNTS, (const PCounts*) 0, true, false);
   if (term.got_counts)
     pcounts2stream (out, term.var_counts, EG_EXPECTED_COUNTS, &term.pcounts, true, true);
   chain2stream (out, term.alph, term.pscores, ((Terminatrix&)term).chain(), term.got_counts ? &term.stats : NULL);
   alphabet2stream (out, term.alph);
+  out << ')';
 }

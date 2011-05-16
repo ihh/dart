@@ -1,4 +1,5 @@
  ;; test for ontology term evolution
+(terminatrix
  (chain
   (update-policy rev)
   (terminal (TERM))
@@ -23,6 +24,6 @@
   (mutate (from (term4)) (to (term2)) (rate .33))
   (mutate (from (term4)) (to (term3)) (rate .33)))
 
-(alphabet
- (name GO)
- (token (term1 term2 term3 term4)))
+ (alphabet
+  (name GO)
+  (token (term1 term2 term3 term4))))	

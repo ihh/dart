@@ -1,0 +1,7 @@
+#ifndef ONTO_KEYWORDS_INCLUDED
+#define ONTO_KEYWORDS_INCLUDED
+
+#define TERMINATRIX "terminatrix"
+
+#endif /* ONTO_KEYWORDS_INCLUDED */
+
