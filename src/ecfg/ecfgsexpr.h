@@ -13,6 +13,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
 {
   // output methods
   static void ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_scores& ecfg, const ECFG_counts* counts = 0);
+  static void chain2stream (ostream& out, const Alphabet& alph, const PScores& pscores, const ECFG_chain& chain, const Update_statistics* stats = 0, const ECFG_matrix_set* ems = 0);
   static void chain_counts2stream (ostream& out, const Alphabet& alph, const ECFG_scores& ecfg, const ECFG_counts& counts);
 
   static void grammars2stream (ostream& out, const Alphabet& alph, const vector<ECFG_scores*>& grammars);

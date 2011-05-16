@@ -27,10 +27,13 @@ int main (int argc, char** argv)
   sstring default_chain_filename;
   default_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE;
 
-  sstring chain_filename, src_tok, dest_tok;
+  sstring chain_filename, write_filename, src_tok, dest_tok;
   double time;
 
-  opts.add ("c -chain-filename", chain_filename = default_chain_filename, "chain file");
+  opts.print_title ("Modeling options");
+
+  opts.add ("c -chain-filename", chain_filename = default_chain_filename, "file to load model from");
+  opts.add ("w -write-filename", write_filename = "", "file to save model to", false);
   opts.add ("s -source-state", src_tok = DEFAULT_TERM_ID, "source term");
   opts.add ("d -dest-state", dest_tok = DEFAULT_TERM_ID, "destination term");
   opts.add ("t -time", time = 1., "rate matrix multiplier");
@@ -80,6 +83,13 @@ int main (int argc, char** argv)
 
       // print required element
       cout << "exp(R*" << time << ")_{" << src_tok << ',' << dest_tok << "} = " << result << '\n';
+
+      // save
+      if (write_filename.size())
+	{
+	  ofstream write_file (write_filename.c_str());
+	  Terminatrix_builder::terminatrix2stream (write_file, term);
+	}
     }
   catch (const Dart_exception& e)
     {

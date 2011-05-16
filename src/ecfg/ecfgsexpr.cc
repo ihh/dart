@@ -1623,122 +1623,129 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
   for (int n_chain = 0; n_chain < (int) ecfg.matrix_set.chain.size(); ++n_chain)
     {
       const ECFG_chain& chain = ecfg.matrix_set.chain[n_chain];
-      if (chain.type == Hybrid)
-	{
-	  // hybrid-chain
-	  out << "\n (" << EG_HYBRID_CHAIN << '\n';
-	  out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
-	  if (chain.classes > 1)
-	    {
-	      out << "  (" << EG_CHAIN_CLASS << "\n";
-	      out << "   (" << EG_TRANSFORM_ROW << ' ' << SExpr_atom(chain.class_row) << ")\n";
-	      out << "   (" << EG_TRANSFORM_LABEL << " (" << SExpr_atom::from_vector(chain.class_labels) << ")))\n";
-	    }
-	  out << "  (" << EG_TRANSFORM_ROW << ' ' << SExpr_atom(chain.gs_tag) << ")\n";
-
-	  out << "  (" << EG_HYBRID_COMPONENTS << '\n';
-	  for_const_contents (vector<sstring>, chain.gs_values, gs_value)
-	    out << "   ((" << EG_TRANSFORM_LABEL << ' ' << SExpr_atom(*gs_value)
-		<< ") (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(ecfg.matrix_set.chain[((map<sstring,int>&) chain.gs_tag_value_chain_index)[*gs_value]].state)  // cast away const
-		<< ")))\n";
-
-	  out << "  )\n";
-	  out << " )  ;; end hybrid chain " << chain.state << "\n";
-	}
-      else
-	{
-	  // regular chain
-	  const Update_statistics* stats = counts ? &counts->stats[n_chain] : (const Update_statistics*) 0;
-
-	  if (chain.matrix->C > 1)
-	    THROWEXPR ("Don't know how to display EM_matrix objects with hidden states");
-	  out << "\n (" << EG_CHAIN << '\n';
-	  out << "  (" << EG_CHAIN_POLICY << ' ' << chain.matrix->update_policy() << ")\n";
-	  out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
-	  if (chain.classes > 1)
-	    {
-	      out << "  (" << EG_CHAIN_CLASS << "\n";
-	      out << "   (" << EG_TRANSFORM_ROW << ' ' << SExpr_atom(chain.class_row) << ")\n";
-	      out << "   (" << EG_TRANSFORM_LABEL << " (" << SExpr_atom::from_vector(chain.class_labels) << ")))\n";
-	    }
-
-	  out << "\n  ;; initial probability distribution\n";
-	  for (int s = 0; s < chain.matrix->m(); ++s)
-	    {
-	      const bool print_pi =
-		chain.is_parametric
-		? !chain.matrix_funcs->pi[s].is_null()
-		: chain.matrix->pi[s] > 0.;
-	  
-	      if (print_pi)
-		{
-		  out << "  (" << EG_CHAIN_INITIAL << " (" << EG_CHAIN_STATE << " ";
-		  print_state (out, s, chain.word_len, alph, chain.class_labels);
-		  out << ") (" << EG_PROB << ' ';
-
-		  if (chain.is_parametric)
-		    pfunc2stream (out, ecfg.pscores, chain.matrix_funcs->pi[s]);
-		  else
-		    out << chain.matrix->pi[s];
-		  out << ')';
-
-		  if (stats)
-		    print_count (out, stats->s[s]);
-
-		  out << ")\n";
-		}
-	    }
-
-	  out << "\n  ;; mutation rates\n";
-	  for (int s = 0; s < chain.matrix->m(); ++s)
-	    {
-	      // commented out due to clutter...
-#if 0
-	      if (stats)
-		{
-		  out << "  (" << EG_WAIT << " (" << EG_CHAIN_STATE << ' ';
-		  print_state (out, s, chain.word_len, alph, chain.class_labels);
-		  out << ')';
-		  print_time (out, stats->w[s]);
-		  out << ")\n";
-		}
-#endif
-
-	      for (int d = 0; d < chain.matrix->m(); ++d)
-		{
-		  const bool print_rate =
-		    chain.is_parametric
-		    ? !chain.matrix_funcs->X[0](s,d).is_null()
-		    : (s != d && chain.matrix->X[0](s,d) > 0.);
-
-		  if (print_rate)
-		    {
-		      out << "  (" << EG_CHAIN_MUTATE << " (" << EG_FROM << " ";
-		      print_state (out, s, chain.word_len, alph, chain.class_labels);
-		      out << ") (" << EG_TO << " ";
-		      print_state (out, d, chain.word_len, alph, chain.class_labels);
-		      out << ") (" << EG_RATE << ' ';
-
-		      if (chain.is_parametric)
-			pfunc2stream (out, ecfg.pscores, chain.matrix_funcs->X[0](s,d));
-		      else
-			out << chain.matrix->X[0](s,d);
-
-		      out << ')';
-
-		      if (stats && s != d)
-			print_count (out, stats->u(s,d));
-
-		      out << ")\n";
-		    }
-		}
-	    }
-	  out << " )  ;; end chain " << chain.state << "\n";
-	}
+      const Update_statistics* stats = counts ? &counts->stats[n_chain] : (const Update_statistics*) 0;
+      chain2stream (out, alph, ecfg.pscores, chain, stats, &ecfg.matrix_set);
     }
 
   // close grammar block
   out << "\n)  ;; end grammar " << ecfg.name << "\n\n";
+}
+
+void ECFG_builder::chain2stream (ostream& out, const Alphabet& alph, const PScores& pscores, const ECFG_chain& chain, const Update_statistics* stats, const ECFG_matrix_set* ems)
+{
+  if (chain.type == Hybrid)
+    {
+      // hybrid-chain
+      if (!ems)
+	THROWEXPR ("Hybrid chain encountered, with no ECFG_matrix_set to dereference the component chains");
+
+      out << "\n (" << EG_HYBRID_CHAIN << '\n';
+      out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
+      if (chain.classes > 1)
+	{
+	  out << "  (" << EG_CHAIN_CLASS << "\n";
+	  out << "   (" << EG_TRANSFORM_ROW << ' ' << SExpr_atom(chain.class_row) << ")\n";
+	  out << "   (" << EG_TRANSFORM_LABEL << " (" << SExpr_atom::from_vector(chain.class_labels) << ")))\n";
+	}
+      out << "  (" << EG_TRANSFORM_ROW << ' ' << SExpr_atom(chain.gs_tag) << ")\n";
+
+      out << "  (" << EG_HYBRID_COMPONENTS << '\n';
+      for_const_contents (vector<sstring>, chain.gs_values, gs_value)
+	out << "   ((" << EG_TRANSFORM_LABEL << ' ' << SExpr_atom(*gs_value)
+	    << ") (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(ems->chain[((map<sstring,int>&) chain.gs_tag_value_chain_index)[*gs_value]].state)  // cast away const
+	    << ")))\n";
+
+      out << "  )\n";
+      out << " )  ;; end hybrid chain " << chain.state << "\n";
+    }
+  else
+    {
+      // regular chain
+      if (chain.matrix->C > 1)
+	THROWEXPR ("Don't know how to display EM_matrix objects with hidden states");
+      out << "\n (" << EG_CHAIN << '\n';
+      out << "  (" << EG_CHAIN_POLICY << ' ' << chain.matrix->update_policy() << ")\n";
+      out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
+      if (chain.classes > 1)
+	{
+	  out << "  (" << EG_CHAIN_CLASS << "\n";
+	  out << "   (" << EG_TRANSFORM_ROW << ' ' << SExpr_atom(chain.class_row) << ")\n";
+	  out << "   (" << EG_TRANSFORM_LABEL << " (" << SExpr_atom::from_vector(chain.class_labels) << ")))\n";
+	}
+
+      out << "\n  ;; initial probability distribution\n";
+      for (int s = 0; s < chain.matrix->m(); ++s)
+	{
+	  const bool print_pi =
+	    chain.is_parametric
+	    ? !chain.matrix_funcs->pi[s].is_null()
+	    : chain.matrix->pi[s] > 0.;
+	  
+	  if (print_pi)
+	    {
+	      out << "  (" << EG_CHAIN_INITIAL << " (" << EG_CHAIN_STATE << " ";
+	      print_state (out, s, chain.word_len, alph, chain.class_labels);
+	      out << ") (" << EG_PROB << ' ';
+
+	      if (chain.is_parametric)
+		pfunc2stream (out, pscores, chain.matrix_funcs->pi[s]);
+	      else
+		out << chain.matrix->pi[s];
+	      out << ')';
+
+	      if (stats)
+		print_count (out, stats->s[s]);
+
+	      out << ")\n";
+	    }
+	}
+
+      out << "\n  ;; mutation rates\n";
+      for (int s = 0; s < chain.matrix->m(); ++s)
+	{
+	  // commented out due to clutter...
+#if 0
+	  if (stats)
+	    {
+	      out << "  (" << EG_WAIT << " (" << EG_CHAIN_STATE << ' ';
+	      print_state (out, s, chain.word_len, alph, chain.class_labels);
+	      out << ')';
+	      print_time (out, stats->w[s]);
+	      out << ")\n";
+	    }
+#endif
+
+	  for (int d = 0; d < chain.matrix->m(); ++d)
+	    {
+	      const bool print_rate =
+		chain.is_parametric
+		? !chain.matrix_funcs->X[0](s,d).is_null()
+		: (s != d && chain.matrix->X[0](s,d) > 0.);
+
+	      if (print_rate)
+		{
+		  out << "  (" << EG_CHAIN_MUTATE << " (" << EG_FROM << " ";
+		  print_state (out, s, chain.word_len, alph, chain.class_labels);
+		  out << ") (" << EG_TO << " ";
+		  print_state (out, d, chain.word_len, alph, chain.class_labels);
+		  out << ") (" << EG_RATE << ' ';
+
+		  if (chain.is_parametric)
+		    pfunc2stream (out, pscores, chain.matrix_funcs->X[0](s,d));
+		  else
+		    out << chain.matrix->X[0](s,d);
+
+		  out << ')';
+
+		  if (stats && s != d)
+		    print_count (out, stats->u(s,d));
+
+		  out << ")\n";
+		}
+	    }
+	}
+      out << " )  ;; end chain " << chain.state << "\n";
+    }
 }
 
 void ECFG_builder::print_state (ostream& out, int state, int wordlen, const Alphabet& alph, const vector<sstring>& class_alph)
@@ -1749,7 +1756,7 @@ void ECFG_builder::print_state (ostream& out, int state, int wordlen, const Alph
     {
       if (pos > 0)
 	out << ' ';
-      out << alph.int2char ((state / mul) % alph.size());
+      out << alph.int2token ((state / mul) % alph.size());
     }
   if (class_alph.size() > 1)
     out << ' ' << SExpr_atom(class_alph[(state / mul) % class_alph.size()]);

@@ -291,7 +291,7 @@ class Alphabet
   }
 
   inline const sstring& int2token (int i) const {
-    if (i <= 0 || i >= alphabet_size)
+    if (i < 0 || i >= alphabet_size)
       THROWEXPR ("Bad alphabet symbol index in int2token");
     if (i >= (int) tok.size())
       THROWEXPR ("In int2token: tokens uninitialized");

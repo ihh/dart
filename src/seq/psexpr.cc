@@ -29,7 +29,7 @@ void PFunc_builder::alphabet2stream (ostream& out, const Alphabet& alph)
     {
       if (i > 0)
 	out << ' ';
-      out << alph.int2char (i);
+      out << alph.int2token (i);
     }
   out << "))\n";
   if (alph.has_complement())
@@ -39,7 +39,7 @@ void PFunc_builder::alphabet2stream (ostream& out, const Alphabet& alph)
 	{
 	  if (i > 0)
 	    out << ' ';
-	  out << alph.int2char (alph.complement (i));
+	  out << alph.int2token (alph.complement (i));
 	}
       out << "))\n";
     }
@@ -52,10 +52,11 @@ void PFunc_builder::alphabet2stream (ostream& out, const Alphabet& alph)
 	out << " (" << PK_ALPHABET_EXTEND << " (" << PK_TO << ' ' << deg[i] << ')';
 	const Symbol_weight_map& swm = alph.char2weight (deg[i]);
 	for_const_contents (Symbol_weight_map, swm, sw)
-	  out << " (" << PK_FROM << ' ' << alph.int2char (sw->first) << ')';
+	  out << " (" << PK_FROM << ' ' << alph.int2token (sw->first) << ')';
 	out << ")\n";
       }
-  out << " (" << PK_ALPHABET_WILDCARD << ' ' << wildcard_char << ")\n";
+  if (deg.size())
+    out << " (" << PK_ALPHABET_WILDCARD << ' ' << wildcard_char << ")\n";
   out << ")  ;; end alphabet " << alph.name << "\n\n";
 }
 
