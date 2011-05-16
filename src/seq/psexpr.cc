@@ -361,6 +361,15 @@ void PFunc_builder::init_pgroups (PScores& pscores, SymPVar& sym2pvar, SExpr& gr
     }
 }
 
+void PFunc_builder::init_pgroups_and_rates (PScores& pscores, SymPVar& sym2pvar, SExpr& sexpr, set<int>* mutable_pgroups, bool use_bitscores)
+{
+  // now the new style (pgroup, rate, const-pgroup, const-rate)
+  init_pgroups (pscores, sym2pvar, sexpr, PK_PGROUP, mutable_pgroups, false, true, use_bitscores);
+  init_pgroups (pscores, sym2pvar, sexpr, PK_RATE, mutable_pgroups, true, false, use_bitscores);
+  init_pgroups (pscores, sym2pvar, sexpr, PK_CONST_PGROUP, (set<int>*) 0, false, true, use_bitscores);
+  init_pgroups (pscores, sym2pvar, sexpr, PK_CONST_RATE, (set<int>*) 0, true, false, use_bitscores);
+}
+
 PGroup PFunc_builder::init_pgroup (PScores& pscores, SymPVar& sym2pvar, SExpr& pgroup_sexpr, set<int>* mutable_pgroups, bool force_rate, bool disallow_rate, bool use_bitscores)
 {
   // get all param names & values

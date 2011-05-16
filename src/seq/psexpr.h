@@ -47,6 +47,8 @@ struct PFunc_builder
   static PGroup init_pgroup (PScores& pscores, SymPVar& sym2pvar, SExpr& pgroup_sexpr, set<int>* mutable_pgroups = 0, bool force_rate = false, bool disallow_rate = false, bool use_bitscores = false);
   // init_pgroups: mutable_pgroups can be used to record indices of all PGroup's with this tag. Typically this is used to distinguish mutable from constant pgroups (e.g. in xrate)
   static void init_pgroups (PScores& pscores, SymPVar& sym2pvar, SExpr& grammar_sexpr, const char* tag, set<int>* mutable_pgroups = 0, bool force_rate = false, bool disallow_rate = false, bool use_bitscores = false);
+  // wrapper method for const/mutable probs/rates
+  static void init_pgroups_and_rates (PScores& pscores, SymPVar& sym2pvar, SExpr& sexpr, set<int>* mutable_pgroups = 0, bool use_bitscores = false);
 
   // initialise an Alphabet (alph) from an EG_ALPHABET expression (alphabet_sexpr)
   static void init_alphabet (Alphabet& alph, SExpr& alphabet_sexpr, bool allow_multi_char_tokens = false);

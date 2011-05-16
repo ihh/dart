@@ -1,4 +1,4 @@
-#include "ecfg/ecfgsexpr.h"
+#include "ontology/onto_sexpr.h"
 #include "util/unixenv.h"
 
 // path to default chain file, from dart root
@@ -55,26 +55,25 @@ int main (int argc, char** argv)
       SExpr_file sexpr_file (chain_filename.c_str());
       SExpr& sexpr = sexpr_file.sexpr;
 
-      // init alphabet, rate matrix
-      Alphabet alphabet ("uninitialized", 1);  // dummy init of alphabet (from seq/biosequence.h)
-      Irrev_EM_matrix rate_matrix (1, 1);  // dummy init of rate_matrix (from irrev/irrev_em_matrix.h)
-      ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, sexpr, true);
+      // init the Terminatrix
+      Terminatrix term;
+      Terminatrix_builder::init_terminatrix (term, sexpr);
 
       // convert alphabet symbols to state indices
-      const int src_state = tok2int (alphabet, src_tok, "Source");
-      const int dest_state = tok2int (alphabet, dest_tok, "Destination");
+      const int src_state = tok2int (term.alph, src_tok, "Source");
+      const int dest_state = tok2int (term.alph, dest_tok, "Destination");
 
       // exponentiate matrix
-      const array2d<double> cond_submat = rate_matrix.create_conditional_substitution_matrix (time);
+      const array2d<double> cond_submat = term.rate_matrix().create_conditional_substitution_matrix (time);
 
       // get equilibrium distribution
-      const vector<double> eqm_prob = rate_matrix.create_prior();
+      const vector<double> eqm_prob = term.rate_matrix().create_prior();
 
       // extract required element
       const double result = cond_submat (src_state, dest_state);
 
       // print alphabet tokens, in order
-      cout << "Alphabet symbols: " << alphabet.tokens() << '\n';
+      cout << "Alphabet symbols: " << term.alph.tokens() << '\n';
 
       // print equilibrium distribution
       cout << "Equilibrium distribution: " << eqm_prob << '\n';

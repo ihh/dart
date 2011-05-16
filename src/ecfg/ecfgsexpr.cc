@@ -744,6 +744,35 @@ void ECFG_builder::init_gaps (ECFG_state_info& info, const SymPVar& sym2pvar, SE
     }
 }
 
+void ECFG_builder::init_pseudocounts (PCounts& pcounts, const PScores& pscores, SymPVar& sym2pvar, SExpr& sexpr)
+{
+  const vector<SExpr*> all_pc_sexpr = sexpr.find_all (EG_PSEUDOCOUNTS, 1);
+  if (all_pc_sexpr.size())
+    pcounts = PCounts (pscores);   // zero the pseudocounts initially
+  for_const_contents (vector<SExpr*>, all_pc_sexpr, pseudocounts_sexpr)
+    {
+      const vector<SExpr*> all_pseudocounts_sexpr = (*pseudocounts_sexpr)->values();
+      for_const_contents (vector<SExpr*>, all_pseudocounts_sexpr, pcount_sexpr)
+	{
+	  const sstring& pvar_name = (*pcount_sexpr)->tag();
+	  if (sym2pvar.find (pvar_name) != sym2pvar.end())
+	    {
+	      const PVar& pv = sym2pvar[pvar_name];
+	      if ((**pcount_sexpr).child.size() < 2)
+		THROWEXPR("In (" << **pcount_sexpr << "):\nPseudocounts for rate and probability parameters need an event count");
+	      pcounts[pv] = (**pcount_sexpr)[1].get_atom().to_nonneg_double_strict();
+	      if (pscores.group_size (pv.group_idx) == 1) {  // rate parameter?
+		if ((**pcount_sexpr).child.size() < 3)
+		  THROWEXPR("In (" << **pcount_sexpr << "):\nPseudocounts for rate parameters comprise both an event count and a time period");
+		pcounts.wait[pv.group_idx] = (**pcount_sexpr)[2].get_atom().to_nonneg_double_strict();
+	      }
+	    }
+	  else
+	    CLOGERR << "Warning: a pseudocount is specified for parameter " << pvar_name << " but there is no corresponding parameter definition\n";
+	}
+    }
+}
+
 ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr, double tres)
 {
   // create & run the validator
@@ -843,37 +872,10 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
       init_pgroups (ecfg->pscores, sym2pvar, grammar_sexpr, EG_CONST, (set<int>*) 0, false, false);
 
       // now the new style (pgroup, rate, const-pgroup, const-rate)
-      init_pgroups (ecfg->pscores, sym2pvar, grammar_sexpr, PK_PGROUP, &ecfg->mutable_pgroups, false, true);
-      init_pgroups (ecfg->pscores, sym2pvar, grammar_sexpr, PK_RATE, &ecfg->mutable_pgroups, true, false);
-      init_pgroups (ecfg->pscores, sym2pvar, grammar_sexpr, PK_CONST_PGROUP, (set<int>*) 0, false, true);
-      init_pgroups (ecfg->pscores, sym2pvar, grammar_sexpr, PK_CONST_RATE, (set<int>*) 0, true, false);
+      init_pgroups_and_rates (ecfg->pscores, sym2pvar, grammar_sexpr, &ecfg->mutable_pgroups);
 
       // initialise PCounts
-      const vector<SExpr*> all_pc_sexpr = grammar_sexpr.find_all (EG_PSEUDOCOUNTS, 1);
-      if (all_pc_sexpr.size())
-	ecfg->pcounts = PCounts (ecfg->pscores);   // zero the pseudocounts initially
-      for_const_contents (vector<SExpr*>, all_pc_sexpr, pseudocounts_sexpr)
-	{
-	  const vector<SExpr*> all_pseudocounts_sexpr = (*pseudocounts_sexpr)->values();
-	  for_const_contents (vector<SExpr*>, all_pseudocounts_sexpr, pcount_sexpr)
-	    {
-	      const sstring& pvar_name = (*pcount_sexpr)->tag();
-	      if (sym2pvar.find (pvar_name) != sym2pvar.end())
-		{
-		  const PVar& pv = sym2pvar[pvar_name];
-		  if ((**pcount_sexpr).child.size() < 2)
-		    THROWEXPR("In (" << **pcount_sexpr << "):\nPseudocounts for rate and probability parameters need an event count");
-		  ecfg->pcounts[pv] = (**pcount_sexpr)[1].get_atom().to_nonneg_double_strict();
-		  if (ecfg->pscores.group_size (pv.group_idx) == 1) {  // rate parameter?
-		    if ((**pcount_sexpr).child.size() < 3)
-		      THROWEXPR("In (" << **pcount_sexpr << "):\nPseudocounts for rate parameters comprise both an event count and a time period");
-		    ecfg->pcounts.wait[pv.group_idx] = (**pcount_sexpr)[2].get_atom().to_nonneg_double_strict();
-		  }
-		}
-	      else
-		CLOGERR << "Warning: a pseudocount is specified for parameter " << pvar_name << " but there is no corresponding parameter definition\n";
-	    }
-	}
+      init_pseudocounts (ecfg->pcounts, ecfg->pscores, sym2pvar, grammar_sexpr);
 
       // initialise chains
       term2chain.clear();

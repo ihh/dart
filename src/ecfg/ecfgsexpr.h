@@ -44,6 +44,9 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   // initialise a chain given an alphabet. Used by evoldoer
   static void init_chain_given_alphabet (EM_matrix_base& hsm, const Alphabet& alph, SExpr& chain_sexpr, int required_pseudoterms = 1);
 
+  // initialise pseudocounts
+  static void init_pseudocounts (PCounts& pseudocounts, const PScores& pscores, SymPVar& sym2pvar, SExpr& sexpr);
+
   // initialise nonterminal symbols
   static SymIndex init_nonterm2state (const SymIndex& term2chain, SExpr& grammar_sexpr);
 
