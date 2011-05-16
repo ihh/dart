@@ -49,7 +49,7 @@ struct PFunc_builder
   static void init_pgroups (PScores& pscores, SymPVar& sym2pvar, SExpr& grammar_sexpr, const char* tag, set<int>* mutable_pgroups = 0, bool force_rate = false, bool disallow_rate = false, bool use_bitscores = false);
 
   // initialise an Alphabet (alph) from an EG_ALPHABET expression (alphabet_sexpr)
-  static void init_alphabet (Alphabet& alph, SExpr& alphabet_sexpr);
+  static void init_alphabet (Alphabet& alph, SExpr& alphabet_sexpr, bool allow_multi_char_tokens = false);
 
   // helpers
   static int get_state_class (const sstring& atom, const vector<sstring>& class_alph);

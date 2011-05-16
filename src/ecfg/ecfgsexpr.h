@@ -30,7 +30,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
 
   // initialise an ECFG_chain in an ECFG_matrix_set (ems) from an EG_CHAIN expression (chain_sexpr),
   // updating a symbol-to-chain-index map (term2chain)
-  static void init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres = DEFAULT_TIMEPOINT_RES);
+  static void init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres = DEFAULT_TIMEPOINT_RES, bool allow_multi_char_tokens = false);
 
   // initialize hidden class labels for a hybrid chain
   static void init_chain_classes (sstring& class_row, vector<sstring>& class_alph, const int n_terminals, SExpr& chain_sexpr);
@@ -39,7 +39,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   static void init_hybrid_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& hybrid_chain_sexpr);
 
   // initialise a chain and an alphabet together. This routine is used by Handel
-  static void init_chain_and_alphabet (Alphabet& alph, EM_matrix_base& hsm, SExpr& alph_chain_sexpr);
+  static void init_chain_and_alphabet (Alphabet& alph, EM_matrix_base& hsm, SExpr& alph_chain_sexpr, bool allow_multi_char_tokens = false);
 
   // initialise a chain given an alphabet. Used by evoldoer
   static void init_chain_given_alphabet (EM_matrix_base& hsm, const Alphabet& alph, SExpr& chain_sexpr, int required_pseudoterms = 1);
@@ -104,7 +104,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   };
 
   // parser helper methods
-  static int token_list_to_state (SExpr& token_list, const Alphabet& alph, int word_len, const vector<sstring>& class_alph);
+  static int token_list_to_state (SExpr& token_list, const Alphabet& alph, int word_len, const vector<sstring>& class_alph, bool allow_multi_char_tokens);
 
   static const char* policy2string (Update_policy type);
   static Update_policy string2policy (const sstring& policy_string);

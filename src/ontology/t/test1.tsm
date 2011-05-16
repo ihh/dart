@@ -1,0 +1,28 @@
+ ;; test for ontology term evolution
+ (chain
+  (update-policy rev)
+  (terminal (TERM))
+
+  ;; initial probability distribution
+  (initial (state (term1)) (prob .25))
+  (initial (state (term2)) (prob .25))
+  (initial (state (term3)) (prob .25))
+  (initial (state (term4)) (prob .25))
+
+  ;; mutation rates
+  (mutate (from (term1)) (to (term2)) (rate .33))
+  (mutate (from (term1)) (to (term3)) (rate .33))
+  (mutate (from (term1)) (to (term4)) (rate .33))
+  (mutate (from (term2)) (to (term1)) (rate .33))
+  (mutate (from (term2)) (to (term3)) (rate .33))
+  (mutate (from (term2)) (to (term4)) (rate .33))
+  (mutate (from (term3)) (to (term1)) (rate .33))
+  (mutate (from (term3)) (to (term2)) (rate .33))
+  (mutate (from (term3)) (to (term4)) (rate .33))
+  (mutate (from (term4)) (to (term1)) (rate .33))
+  (mutate (from (term4)) (to (term2)) (rate .33))
+  (mutate (from (term4)) (to (term3)) (rate .33)))
+
+(alphabet
+ (name GO)
+ (token (term1 term2 term3 term4)))

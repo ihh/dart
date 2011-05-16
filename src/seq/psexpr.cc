@@ -60,25 +60,38 @@ void PFunc_builder::alphabet2stream (ostream& out, const Alphabet& alph)
 }
 
 
-void PFunc_builder::init_alphabet (Alphabet& alph, SExpr& sexpr)
+void PFunc_builder::init_alphabet (Alphabet& alph, SExpr& sexpr, bool allow_multi_char_tokens)
 {
   sstring name, token;
 
   if (sexpr.find (PK_NAME))
     name = sexpr (PK_NAME).get_atom();
 
-  token = token_list_to_string (sexpr (PK_ALPHABET_TOKEN));
-  for_const_contents (sstring, token, c)
-    if (Alignment::is_gap_char(*c))
-      CLOGERR << "Warning: alphabet character '" << *c << "' is also a gap character and will be treated as a gap!\n";
+  SExpr& token_sexpr = sexpr (PK_ALPHABET_TOKEN);
+  if (allow_multi_char_tokens) {
+    const vector<sstring> toks = token_sexpr.atoms_to_strings();
 
-  alph.reset (name.c_str(), token.size());
-  alph.init_chars (token.c_str(), "");
+    alph.reset (name.c_str(), toks.size());
+    alph.init_tokens (toks);
+
+  } else {
+    token = token_list_to_string (token_sexpr);
+    for_const_contents (sstring, token, c)
+      if (Alignment::is_gap_char(*c))
+	CLOGERR << "Warning: alphabet character '" << *c << "' is also a gap character and will be treated as a gap!\n";
+
+    alph.reset (name.c_str(), token.size());
+    alph.init_chars (token.c_str(), "");
+  }
 
   if (sexpr.find (PK_ALPHABET_COMPLEMENT))
     {
+      if (allow_multi_char_tokens)
+	THROWEXPR ("You cannot use complemented alphabets with multi-character tokens");
+
       const vector<sstring> dummy_class_label (1, sstring());
       const sstring comp = token_list_to_string (sexpr (PK_ALPHABET_COMPLEMENT), alph, dummy_class_label);
+
       alph.reset (name.c_str(), token.size());
       alph.init_chars (token.c_str(), comp.c_str());
     }
@@ -91,6 +104,9 @@ void PFunc_builder::init_alphabet (Alphabet& alph, SExpr& sexpr)
   char wildcard = '*';
   if (sexpr.find (PK_ALPHABET_WILDCARD))
     {
+      if (allow_multi_char_tokens)
+	THROWEXPR ("You cannot use wildcarded alphabets with multi-character tokens");
+
       const sstring& tok = sexpr(PK_ALPHABET_WILDCARD).get_atom();
       assert_valid_token (tok, sexpr);
       deg.push_back (tok[0]);
@@ -98,6 +114,8 @@ void PFunc_builder::init_alphabet (Alphabet& alph, SExpr& sexpr)
     }
 
   vector<SExpr*> extend_sexpr = sexpr.find_all (PK_ALPHABET_EXTEND, 1);
+  if (allow_multi_char_tokens && extend_sexpr.size() > 0)
+    THROWEXPR ("You cannot use degenerate alphabets with multi-character tokens");
   for_const_contents (vector<SExpr*>, extend_sexpr, ex)
     {
       const sstring& to_char = (**ex) (PK_TO).get_atom();

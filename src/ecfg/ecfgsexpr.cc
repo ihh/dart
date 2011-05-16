@@ -11,7 +11,7 @@
 // dummy class label for hidden alphabets
 #define DUMMY_CLASS_LABEL "dummy_class_label"
 
-int ECFG_builder::token_list_to_state (SExpr& token_list, const Alphabet& alph, int word_len, const vector<sstring>& class_alph)
+int ECFG_builder::token_list_to_state (SExpr& token_list, const Alphabet& alph, int word_len, const vector<sstring>& class_alph, bool allow_multi_char_tokens)
 {
   vector<sstring> toks = token_list.atoms_to_strings();
   const int expected_word_len = word_len + (class_alph.size() > 1 ? 1 : 0);
@@ -26,8 +26,15 @@ int ECFG_builder::token_list_to_state (SExpr& token_list, const Alphabet& alph, 
   int mul = 1, state = 0;
   for_const_contents (vector<sstring>, toks, tok)
     {
-      assert_valid_token (*tok, alph, token_list);
-      state += mul * alph.char2int_strict ((*tok)[0]);
+      int tok_idx;
+      if (allow_multi_char_tokens)
+	tok_idx = alph.token2int ((*tok));
+      else
+	{
+	  assert_valid_token (*tok, alph, token_list);
+	  tok_idx = alph.char2int_strict ((*tok)[0]);
+	}
+      state += mul * tok_idx;
       mul *= alph.size();
     }
   state += c * mul;
@@ -85,7 +92,7 @@ void ECFG_builder::init_chain_classes (sstring& class_row, vector<sstring>& clas
     class_alph.push_back (sstring (DUMMY_CLASS_LABEL));  // add a dummy class label, so there's at least one "hidden" class
 }
 
-void ECFG_builder::init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres)
+void ECFG_builder::init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres, bool allow_multi_char_tokens)
 {
   list<SExpr>& state_list = chain_sexpr (EG_CHAIN_TERMINAL).child;
 
@@ -120,7 +127,7 @@ void ECFG_builder::init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const
   vector<SExpr*> pi_list = chain_sexpr.find_all (EG_CHAIN_INITIAL, 1);
   for_contents (vector<SExpr*>, pi_list, pi_sexpr)
     {
-      const int state = token_list_to_state ((**pi_sexpr)(EG_CHAIN_STATE), alph, chain.word_len, class_alph); 
+      const int state = token_list_to_state ((**pi_sexpr)(EG_CHAIN_STATE), alph, chain.word_len, class_alph, allow_multi_char_tokens); 
       SExpr& prob_sexpr = (*pi_sexpr)->find_or_die (EG_PROB, 1);
 
       // Default behavior for duplicated initial probs is to add them together
@@ -141,8 +148,8 @@ void ECFG_builder::init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const
   vector<SExpr*> mutate_list = chain_sexpr.find_all (EG_CHAIN_MUTATE, 1);
   for_contents (vector<SExpr*>, mutate_list, mutate_sexpr)
     {
-      const int from_state = token_list_to_state ((**mutate_sexpr) (EG_FROM), alph, chain.word_len, class_alph);
-      const int to_state = token_list_to_state ((**mutate_sexpr) (EG_TO), alph, chain.word_len, class_alph);
+      const int from_state = token_list_to_state ((**mutate_sexpr) (EG_FROM), alph, chain.word_len, class_alph, allow_multi_char_tokens);
+      const int to_state = token_list_to_state ((**mutate_sexpr) (EG_TO), alph, chain.word_len, class_alph, allow_multi_char_tokens);
       SExpr& rate_sexpr = (*mutate_sexpr)->find_or_die (EG_RATE, 1);
 
       // Default behavior for duplicated rates is to add them together
@@ -303,15 +310,15 @@ void ECFG_builder::init_chain_given_alphabet (EM_matrix_base& hsm, const Alphabe
   hsm.update();
 }
 
-void ECFG_builder::init_chain_and_alphabet (Alphabet& alph, EM_matrix_base& hsm, SExpr& alph_chain_sexpr)
+void ECFG_builder::init_chain_and_alphabet (Alphabet& alph, EM_matrix_base& hsm, SExpr& alph_chain_sexpr, bool allow_multi_char_tokens)
 {
   Alphabet base_alph ("", 1);
-  init_alphabet (base_alph, alph_chain_sexpr.find_or_die (PK_ALPHABET));
+  init_alphabet (base_alph, alph_chain_sexpr.find_or_die (PK_ALPHABET), allow_multi_char_tokens);
 
   ECFG_matrix_set ems (base_alph);
   SymIndex term2chain;
   SymPVar sym2pvar;
-  init_chain (ems, term2chain, sym2pvar, alph_chain_sexpr.find_or_die (EG_CHAIN));
+  init_chain (ems, term2chain, sym2pvar, alph_chain_sexpr.find_or_die (EG_CHAIN), DEFAULT_TIMEPOINT_RES, allow_multi_char_tokens);
 
   const ECFG_chain& chain = ems.chain[0];
   const EM_matrix_base& read_hsm = *chain.matrix;

@@ -1,7 +1,7 @@
 # Requires GNU Make
 
 TESTS      = 
-TARGETS    = $(TESTS) 
+TARGETS    = $(TESTS) terminatrix
 DIRNAME    = ontology
 
 DEPS       = ecfg @GUILE_DEPS@ scfg irrev hsm hmm tree seq util newmat randlib

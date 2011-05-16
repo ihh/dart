@@ -126,6 +126,9 @@ class Alphabet
  protected:
   int alphabet_size;  // number of nondegenerate symbols
 
+  // maps indexed by the string representation of an alphabet token
+  map<sstring,int> tok2int;
+
   // arrays indexed by the character representation of an alphabet token
   vector<int> char2int_table;     // a value of (alphabet_size) indicates unknown
   vector<double> char_aff_table;  // table of char affinities for this alphabet; used to match sequences to alphabets
@@ -168,6 +171,7 @@ class Alphabet
 
   // builder methods
   void reset (const char* name, int size);
+  void init_tokens (const vector<sstring>& tokens);  // nondegenerate tokens
   void init_chars (const char* chars, const char* comp = "");  // nondegenerate chars
   void init_degen_chars (const char* chars);  // degenerate chars
   void init_degen_complement();
@@ -275,6 +279,24 @@ class Alphabet
   }
 
   inline char unknown_char() const { return int2char (unknown_int); }
+
+  inline bool contains_tok (const sstring& token) const
+  {
+    return tok2int.find (token) != tok2int.end();
+  }
+
+  inline int token2int (const sstring& token) const {
+    map<sstring,int>::const_iterator tok2int_iter = tok2int.find (token);
+    return tok2int_iter == tok2int.end() ? unknown_int : tok2int_iter->second;
+  }
+
+  inline const sstring& int2token (int i) const {
+    if (i <= 0 || i >= alphabet_size)
+      THROWEXPR ("Bad alphabet symbol index in int2token");
+    if (i >= (int) tok.size())
+      THROWEXPR ("In int2token: tokens uninitialized");
+    return tok[i];
+  }
 
   // fancier conversion methods
 

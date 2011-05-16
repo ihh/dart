@@ -300,6 +300,7 @@ void Alphabet::reset (const char* new_name, int new_size)
   degen_comp = vector<int>();
 
   tok.clear();
+  tok2int.clear();
   chars_lc.clear();
   chars_uc.clear();
   degen_lc.clear();
@@ -340,6 +341,16 @@ void Alphabet::reset (const char* new_name, int new_size)
   warn_unknown = 1;
 }
 
+void Alphabet::init_tokens (const vector<sstring>& tokens)
+{
+  const int len = tokens.size();
+  if (len != 0 && len != alphabet_size) THROWEXPR ("Bad tokens string: '" << tokens << "'");
+  // initialise the alphabet
+  tok = tokens;
+  for (int i = 0; i < len; ++i)
+    tok2int[tok[i]] = i;
+}
+
 void Alphabet::init_chars (const char* chars, const char* comp)
 {
   const int len = strlen (chars);
@@ -363,6 +374,7 @@ void Alphabet::init_chars (const char* chars, const char* comp)
       sstring c_tok;
       c_tok << c;
       tok.push_back (c_tok);
+      tok2int[c_tok] = i;
     }
   // reset char2int_table
   if (case_sensitive)
@@ -533,6 +545,7 @@ void Alphabet::init_hidden (const Alphabet& base_alphabet, const vector<sstring>
 
       init_display (display_chars);
 
+      vector<sstring> hidden_tok;
       for (int c = 0; c < C; ++c)
 	for (int a = 0; a < A; ++a)
 	  {
@@ -544,8 +557,9 @@ void Alphabet::init_hidden (const Alphabet& base_alphabet, const vector<sstring>
 	    else
 	      ca_tok << (a + 1) << '_';
 	    ca_tok << hidden_class_labels[c];
-	    tok.push_back (ca_tok);
+	    hidden_tok.push_back (ca_tok);
 	  }
+      init_tokens (hidden_tok);
     }
 }
 
