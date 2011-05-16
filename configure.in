@@ -131,6 +131,7 @@ AC_CONFIG_FILES([Makefile
                  src/indiegram/Makefile
                  src/irrev/Makefile
                  src/newmat/Makefile
+                 src/ontology/Makefile
                  src/psw/Makefile
                  src/randlib/Makefile
                  src/scfg/Makefile
