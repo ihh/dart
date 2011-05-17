@@ -8,6 +8,28 @@
 
 #define ECFG_default_terminal "Terminal_"
 
+Alphabet_dictionary::Alphabet_dictionary (const list<Alphabet>& alph_list)
+{
+  for_const_contents (list<Alphabet>, alph_list, alph)
+    add (*alph);
+}
+
+void Alphabet_dictionary::add (const Alphabet& alph)
+{
+  (*this)[alph.name] = &alph;
+}
+
+void ECFG_chain::lookup_alphabets (const Alphabet_dictionary& alph_dict)
+{
+  for (int n = 0; n < word_len; ++n)
+    {
+      Alphabet_dictionary::const_iterator alph_iter = alph_dict.find (alph_name[n]);
+      if (alph_iter == alph_dict.end())
+	THROWEXPR ("Can't find alphabet '" << alph_name[n] << "' in dictionary");
+      alph[n] = alph_iter->second;
+    }
+}
+
 ECFG_matrix_set::ECFG_matrix_set (const ECFG_matrix_set& ems)
   : alphabet (ems.alphabet)
 {
@@ -64,6 +86,8 @@ int ECFG_matrix_set::add_matrix (int len, ECFG_enum::Update_policy type, int n_c
       state_label << ECFG_default_terminal << new_chain_index+1 << "_" << i+1;
       new_chain.state.push_back (state_label);
     }
+  new_chain.alph_name = vector<sstring> (len, alphabet.name);
+  new_chain.alph = vector<const Alphabet*> (len, &alphabet);
 
   // create appropriate EM_matrix
   switch (type)
@@ -135,7 +159,7 @@ void ECFG_matrix_set::eval_funcs (PScores& pscores)
 	    if (CTAGGING(-3,ECFG_SCORES))
 	      {
 		CL << "Initial probability for state (";
-		ECFG_builder::print_state (CL, s, chain->word_len, alphabet, chain->class_labels);
+		ECFG_builder::print_state (CL, s, chain->word_len, chain->alph, chain->class_labels);
 		CL << ") = (";
 		ECFG_builder::pfunc2stream (CL, pscores, pi_pfunc);
 		CL << ") evaluates to " << chain->matrix->pi[s] << "\n";
@@ -153,9 +177,9 @@ void ECFG_matrix_set::eval_funcs (PScores& pscores)
 		  if (CTAGGING(-3,ECFG_SCORES))
 		    {
 		      CL << "Rate from (";
-		      ECFG_builder::print_state (CL, s, chain->word_len, alphabet, chain->class_labels);
+		      ECFG_builder::print_state (CL, s, chain->word_len, chain->alph, chain->class_labels);
 		      CL << ") to (";
-		      ECFG_builder::print_state (CL, d, chain->word_len, alphabet, chain->class_labels);
+		      ECFG_builder::print_state (CL, d, chain->word_len, chain->alph, chain->class_labels);
 		      CL << ") = (";
 		      ECFG_builder::pfunc2stream (CL, pscores, rate_pfunc);
 		      CL << ") evaluates to " << rate << "\n";
@@ -169,6 +193,14 @@ void ECFG_matrix_set::eval_funcs (PScores& pscores)
 	  }
 	chain->matrix->update();
       }
+}
+
+bool ECFG_matrix_set::chain_uses_default_alphabet (const ECFG_chain& c) const
+{
+  for_const_contents (vector<const Alphabet*>, c.alph, chain_alph)
+    if (*chain_alph != &alphabet)
+      return false;
+  return true;
 }
 
 // Do not change default initial values for ECFG_state_info - subclasses depend on these

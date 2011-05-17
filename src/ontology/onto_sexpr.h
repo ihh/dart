@@ -5,7 +5,8 @@
 
 struct Terminatrix
 {
-  Alphabet alph;
+  list<Alphabet> alph_list;
+  Alphabet_dictionary alph_dict;
   PScores pscores;
   PCounts pcounts, var_counts;
   set<int> mutable_pgroups;

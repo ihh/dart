@@ -32,6 +32,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   // initialise an ECFG_chain in an ECFG_matrix_set (ems) from an EG_CHAIN expression (chain_sexpr),
   // updating a symbol-to-chain-index map (term2chain)
   static void init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres = DEFAULT_TIMEPOINT_RES, bool allow_multi_char_tokens = false);
+  static void init_chain (ECFG_matrix_set& ems, const Alphabet_dictionary& alph_by_name, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres = DEFAULT_TIMEPOINT_RES, bool allow_multi_char_tokens = false);
 
   // initialize hidden class labels for a hybrid chain
   static void init_chain_classes (sstring& class_row, vector<sstring>& class_alph, const int n_terminals, SExpr& chain_sexpr);
@@ -108,12 +109,12 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   };
 
   // parser helper methods
-  static int token_list_to_state (SExpr& token_list, const Alphabet& alph, int word_len, const vector<sstring>& class_alph, bool allow_multi_char_tokens);
+  static int token_list_to_state (SExpr& token_list, const vector<const Alphabet*>& alph, int word_len, const vector<sstring>& class_alph, bool allow_multi_char_tokens);
 
   static const char* policy2string (Update_policy type);
   static Update_policy string2policy (const sstring& policy_string);
 
-  static void print_state (ostream& out, int state, int wordlen, const Alphabet& alph, const vector<sstring>& class_alph);
+  static void print_state (ostream& out, int state, int wordlen, const vector<const Alphabet*>& alph, const vector<sstring>& class_alph);
 };
 
 

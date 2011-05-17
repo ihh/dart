@@ -10,6 +10,14 @@
 #include "ecfg/fastprune.h"
 #include "seq/gff.h"
 
+// Alphabet dictionary type
+struct Alphabet_dictionary : map<sstring,const Alphabet*>
+{
+  Alphabet_dictionary() { }
+  Alphabet_dictionary (const list<Alphabet>& alph_list);
+  void add (const Alphabet& alph);
+};
+
 // ECFG enums & typedefs
 struct ECFG_enum : Grammar_state_enum
 {
@@ -23,23 +31,28 @@ struct ECFG_chain : ECFG_enum
 {
   // data
   EM_matrix_base* matrix;  // NB lineage-dependent models: this should be null for lineage-dependent models
-  int word_len;
-  Update_policy type;
-  vector<sstring> state;  // badly named; this is actually the set of chain pseudoterminals
+  int word_len;  // number of pseudoterminals, excluding the "hidden state" pseudoterm at the end
+  Update_policy type;  // signifies the type of EM algorithm that is used, and more generally the object type of this chain (yes I know this is icky)
+  vector<sstring> state;  // names of the chain pseudoterminals, excluding the "hidden state" pseudoterm
+  vector<sstring> alph_name;  // Alphabet names for each pseudoterminal; not used by ECFG, which currently assumes that all pseudoterms represent symbols from the parent ECFG's alphabet
+  vector<const Alphabet*> alph;  // convenience Alphabet lookups; not used by ECFG
 
   // hidden classes
-  sstring class_row;
-  vector<sstring> class_labels;
-  int classes;
+  sstring class_row;  // the #=GR line to which hidden class annotations will be added in the Stockholm file
+  vector<sstring> class_labels;  // the hidden class labels
+  int classes;  // the number of hidden classes
 
   // PFunc stuff
-  bool is_parametric;
-  EM_matrix_funcs* matrix_funcs;
+  bool is_parametric;  // true if the chain is parametric
+  EM_matrix_funcs* matrix_funcs;  // the parametric 
 
   // data for hybrid chains
   string gs_tag;  // the "row" value in the grammar file
   vector<sstring> gs_values;  // the "label" values in the grammar file
-  map<sstring,int> gs_tag_value_chain_index;  // gs_tag_value_chain_index[gs_value] = index of ECFG_chain for branches to nodes labeled with "#=GS gs_tag gs_value"
+  map<sstring,int> gs_tag_value_chain_index;  // gs_tag_value_chain_index[gs_value] = ECFG_matrix_set index of ECFG_chain for all branches to nodes labeled with "#=GS gs_tag gs_value" in Stockholm file
+
+  // helper method to populate alph
+  void lookup_alphabets (const Alphabet_dictionary& alph_dict);
 };
 
 // Set of substitution matrices for an Evolutionary CFG
@@ -64,6 +77,7 @@ struct ECFG_matrix_set : ECFG_enum
 
   // helpers
   void eval_funcs (PScores& pscores);  // prepare parametric chains
+  bool chain_uses_default_alphabet (const ECFG_chain& chain) const;  // true if all the chain's Alphabet pointers resolve to ours
 };
 
 // state type info for an emit state of an Evolutionary CFG
