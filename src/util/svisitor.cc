@@ -453,7 +453,7 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
 	  if (op == SEXPR_EVAL)
 	    {
 	      // evaluate &scheme arguments as Scheme expression, splice results into sexpr.child before c
-	      SExpr result = evaluate(*c);
+	      SExpr result = evaluate_values(*c);
 	      if (result.is_atom())
 		c->child.insert (c, result);
 	      else
@@ -463,7 +463,7 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
 	  else if (op == SEXPR_EXEC)
 	    {
 	      // evaluate &exec arguments as Scheme expressions, discard results
-	      evaluate(*c);
+	      evaluate_values(*c);
 	      is_scheme = true;
 	    }
 	}
@@ -478,24 +478,37 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
     sexpr.child.erase (*erase_iter);
 }
 
-SExpr SExpr_Scheme_evaluator::evaluate (SExpr& sexpr) const
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
+SCM SExpr_Scheme_evaluator::evaluate_SCM (SExpr& sexpr) const
 {
   if (sexpr.is_atom())
-    THROWEXPR("SExpr_Scheme_evaluator::evaluate called on an atom");
+    THROWEXPR("SExpr_Scheme_evaluator::evaluate_SCM called on an atom");
   if (sexpr.is_empty_list())
-    THROWEXPR("SExpr_Scheme_evaluator::evaluate called on an empty list");
+    THROWEXPR("SExpr_Scheme_evaluator::evaluate_SCM called on an empty list");
+
+  const sstring sexpr_string = sexpr.to_parenthesized_string();
+  // evaluate; convert to C string
+  CTAG(3,GUILE) << "Evaluating Scheme expression: " << sexpr_string << '\n';
+  SCM result_scm = scm_c_eval_string (sexpr_string.c_str());
+  return result_scm;
+}
+#endif /* GUILE_INCLUDED */
+
+SExpr SExpr_Scheme_evaluator::evaluate_values (SExpr& sexpr) const
+{
+  if (sexpr.is_atom())
+    THROWEXPR("SExpr_Scheme_evaluator::evaluate_values called on an atom");
+  if (sexpr.is_empty_list())
+    THROWEXPR("SExpr_Scheme_evaluator::evaluate_values called on an empty list");
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
   sstring result_string;
   // iterate over all but the first child
   SExpr::SExprIter iter = sexpr.child.begin();
   for (++iter; iter != sexpr.child.end(); ++iter)
     {
-      sstring sexpr_string = iter->to_parenthesized_string();
-      // evaluate; convert to C string
-      CTAG(3,GUILE) << "Evaluating Scheme expression: " << sexpr_string << '\n';
-      SCM result_scm = scm_c_eval_string (sexpr_string.c_str());
+      SCM result_scm = evaluate_SCM (*iter);
       SCM result_scm_string = scm_object_to_string (result_scm, write_proc);
-      const char* result_c_string = scm_to_locale_string (result_scm_string);
+      const char* result_c_string = scm_to_locale_string (result_scm_string);  // should really do this via the functions defined in util/guile-defs.h
       CTAG(3,GUILE) << "Result of Scheme evaluation: " << result_c_string << '\n';
       // catch SCM_UNSPECIFIED
       if (result_scm == SCM_UNSPECIFIED)

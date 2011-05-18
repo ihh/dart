@@ -1,7 +1,7 @@
 #ifndef NEWICK_TYPE_INCLUDED
 #define NEWICK_TYPE_INCLUDED
 
-#include "guile/guile-defs.h"
+#include "util/guile-defs.h"
 #include "tree/phylogeny.h"
 
 // guile functions

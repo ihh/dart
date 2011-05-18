@@ -1,4 +1,4 @@
-#include "guile/guile-defs.h"
+#include "util/guile-defs.h"
 
 SExpr* scm_to_new_sexpr (SCM scm)
 {

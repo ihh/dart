@@ -6,6 +6,7 @@
 
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 #include <libguile.h>
+#include "util/guile-defs.h"
 #endif /* GUILE_INCLUDED */
 
 #include "util/sexpr-keywords.h"
@@ -85,8 +86,11 @@ public:
   // method to expand all eval/exec blocks in an SExpr tree
   // will throw an exception if an eval/exec block is encountered & program was compiled without Guile
   void expand_Scheme_expressions (SExpr& sexpr) const;
-  // helper method to evaluate an SExpr as a Scheme expression using guile, then return the result encoded as another SExpr
-  SExpr evaluate (SExpr& sexpr) const;
+  // helper methods to evaluate an SExpr as a Scheme expression using guile
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
+  SCM evaluate_SCM (SExpr& sexpr) const;  // evaluates sexpr; returns a guile SCM object
+#endif /* GUILE_INCLUDED */
+  SExpr evaluate_values (SExpr& sexpr) const;  // evaluates all children of sexpr, except for the first child; returns the list of results as an SExpr
 };
 
 #endif /* SEXPR_VISITOR_INCLUDED */

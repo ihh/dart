@@ -1,7 +1,7 @@
 #ifndef STOCKHOLM_TYPE_INCLUDED
 #define STOCKHOLM_TYPE_INCLUDED
 
-#include "guile/guile-defs.h"
+#include "util/guile-defs.h"
 #include "seq/stockholm.h"
 
 // guile functions

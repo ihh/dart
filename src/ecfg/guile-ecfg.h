@@ -6,7 +6,7 @@
 #include "ecfg/ecfg.h"
 
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
-#include "guile/guile-defs.h"
+#include "util/guile-defs.h"
 #endif /* GUILE_INCLUDED */
 
 // ECFG

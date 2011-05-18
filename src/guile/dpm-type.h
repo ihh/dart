@@ -1,7 +1,7 @@
 #ifndef XRATE_DPM_TYPE_INCLUDED
 #define XRATE_DPM_TYPE_INCLUDED
 
-#include "guile/guile-defs.h"
+#include "util/guile-defs.h"
 #include "ecfg/ecfgdp.h"
 
 // guile functions
