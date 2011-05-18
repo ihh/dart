@@ -21,6 +21,8 @@ Alphabet_dictionary::Alphabet_dictionary (const list<Alphabet>& alph_list)
 
 void Alphabet_dictionary::add (const Alphabet& alph)
 {
+  if (find (alph.name) != end())
+    THROWEXPR ("Two alphabets in the alphabet dictionary have the same name '" << alph.name << "'");
   insert (pair<sstring,Alphabet> (alph.name, alph));
 }
 
