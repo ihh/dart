@@ -840,7 +840,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "ProbabilisticAnnotation->('"EG_ANNOTATE_EMIT" ProbabilisticAnnotationProperty*);"
      "ProbabilisticAnnotationProperty->AnnotationLabelList|ProbabilityExpression;"
      "HybridChainProperty->TerminalList|AnnotationRow|('"EG_HYBRID_COMPONENTS" HybridChainComponent*);"
-     "TerminalList->('"EG_TERMINAL" (Atom*));"
+     "TerminalList->('"EG_TERMINAL" (Atom*))|('"EG_TERM" (Atom*));"
      "HybridChainComponent->(HybridChainComponentProperty HybridChainComponentProperty);"
      "HybridChainComponentProperty->AnnotationLabel|TerminalList;"
      "ChainProperty->TerminalList|('"EG_CHAIN_CLASS" HiddenClassDescription)|InitialStateProbability|MutationRate|('"EG_CHAIN_POLICY" UpdatePolicy);"
