@@ -11,7 +11,7 @@
 // dummy class label for hidden alphabets
 #define DUMMY_CLASS_LABEL "dummy_class_label"
 
-int ECFG_builder::token_list_to_state (SExpr& token_list, const Alphabet_dictionary& alph_dict, const ECFG_chain& chain, bool allow_multi_char_tokens)
+int ECFG_builder::token_list_to_state (SExpr& token_list, const Alphabet_dictionary& alph_dict, const Alphabet& default_alphabet, const ECFG_chain& chain, bool allow_multi_char_tokens)
 {
   Alphabet_dictionary& ad = (Alphabet_dictionary&) alph_dict;  // cast away const
   vector<sstring> toks = token_list.atoms_to_strings();
@@ -28,8 +28,8 @@ int ECFG_builder::token_list_to_state (SExpr& token_list, const Alphabet_diction
   for (int n = 0; n < (int) toks.size(); ++n)
     {
       const sstring& tok = toks[n];
-      const Alphabet& alph = ad[chain.alph_name[n]];
       int tok_idx;
+      const Alphabet& alph = chain.uses_default_alphabet() ? default_alphabet : ad[chain.alph_name[n]];
       if (allow_multi_char_tokens)
 	tok_idx = alph.token2int ((tok));
       else
@@ -154,7 +154,7 @@ void ECFG_builder::init_chain (ECFG_matrix_set& ems, const Alphabet_dictionary& 
   vector<SExpr*> pi_list = chain_sexpr.find_all (EG_CHAIN_INITIAL, 1);
   for_contents (vector<SExpr*>, pi_list, pi_sexpr)
     {
-      const int state = token_list_to_state ((**pi_sexpr)(EG_CHAIN_STATE), alph_dict, chain, allow_multi_char_tokens);
+      const int state = token_list_to_state ((**pi_sexpr)(EG_CHAIN_STATE), alph_dict, default_alphabet, chain, allow_multi_char_tokens);
       SExpr& prob_sexpr = (*pi_sexpr)->find_or_die (EG_PROB, 1);
 
       // Default behavior for duplicated initial probs is to add them together
@@ -175,8 +175,8 @@ void ECFG_builder::init_chain (ECFG_matrix_set& ems, const Alphabet_dictionary& 
   vector<SExpr*> mutate_list = chain_sexpr.find_all (EG_CHAIN_MUTATE, 1);
   for_contents (vector<SExpr*>, mutate_list, mutate_sexpr)
     {
-      const int from_state = token_list_to_state ((**mutate_sexpr) (EG_FROM), alph_dict, chain, allow_multi_char_tokens);
-      const int to_state = token_list_to_state ((**mutate_sexpr) (EG_TO), alph_dict, chain, allow_multi_char_tokens);
+      const int from_state = token_list_to_state ((**mutate_sexpr) (EG_FROM), alph_dict, default_alphabet, chain, allow_multi_char_tokens);
+      const int to_state = token_list_to_state ((**mutate_sexpr) (EG_TO), alph_dict, default_alphabet, chain, allow_multi_char_tokens);
       SExpr& rate_sexpr = (*mutate_sexpr)->find_or_die (EG_RATE, 1);
 
       // Default behavior for duplicated rates is to add them together
@@ -1672,7 +1672,7 @@ void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECF
 	THROWEXPR ("Hybrid chain encountered, with no ECFG_matrix_set to dereference the component chains");
       out << "\n (" << EG_HYBRID_CHAIN << '\n';
       out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
-      if (ems == NULL || !ems->chain_uses_default_alphabet (chain))
+      if (!chain.uses_default_alphabet())
 	out << "  (" << PK_ALPHABET << " (" << chain.alph_name << "))\n";
 
       if (chain.classes > 1)
@@ -1700,7 +1700,7 @@ void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECF
       out << "\n (" << EG_CHAIN << '\n';
       out << "  (" << EG_CHAIN_POLICY << ' ' << chain.matrix->update_policy() << ")\n";
       out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
-      if (ems == NULL || !ems->chain_uses_default_alphabet (chain))
+      if (!chain.uses_default_alphabet())
 	out << "  (" << PK_ALPHABET << " (" << chain.alph_name << "))\n";
       if (chain.classes > 1)
 	{
@@ -1782,7 +1782,7 @@ void ECFG_builder::print_state (ostream& out, int state, const Alphabet_dictiona
       const int tok_idx = (state / mul) % chain.alph_size[pos];
       if (pos > 0)
 	out << ' ';
-      if (alph_dict.size())
+      if (chain.alph_name.size())
 	out << ad[chain.alph_name[pos]].int2token (tok_idx);
       else
 	out << tok_idx;

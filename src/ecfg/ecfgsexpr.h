@@ -109,7 +109,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   };
 
   // parser helper methods
-  static int token_list_to_state (SExpr& token_list, const Alphabet_dictionary& alph_dict, const ECFG_chain& chain, bool allow_multi_char_tokens);
+  static int token_list_to_state (SExpr& token_list, const Alphabet_dictionary& alph_dict, const Alphabet& default_alphabet, const ECFG_chain& chain, bool allow_multi_char_tokens);
 
   static const char* policy2string (Update_policy type);
   static Update_policy string2policy (const sstring& policy_string);

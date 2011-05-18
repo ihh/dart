@@ -26,6 +26,11 @@ void Alphabet_dictionary::add (const Alphabet& alph)
   insert (pair<sstring,Alphabet> (alph.name, alph));
 }
 
+bool ECFG_chain::uses_default_alphabet() const
+{
+  return alph_name.size() == 0;
+}
+
 ECFG_matrix_set::ECFG_matrix_set (const ECFG_matrix_set& ems)
   : alphabet (ems.alphabet)
 {
@@ -76,9 +81,7 @@ int ECFG_matrix_set::add_matrix (const vector<sstring>& alph_name, const Alphabe
 int ECFG_matrix_set::add_matrix (int len, const Alphabet& alph, ECFG_enum::Update_policy type, int n_classes, double tres)
 {
   const vector<int> alph_size (len, alph.size());
-  const int chain_idx = add_matrix (alph_size, type, n_classes, tres);
-  chain[chain_idx].alph_name = vector<sstring> (len, alph.name);
-  return chain_idx;
+  return add_matrix (alph_size, type, n_classes, tres);
 }
 
 int ECFG_matrix_set::add_matrix (int len, ECFG_enum::Update_policy type, int n_classes, double tres)
@@ -112,7 +115,6 @@ int ECFG_matrix_set::add_matrix (const vector<int>& alph_size, ECFG_enum::Update
       state_label << ECFG_default_terminal << new_chain_index+1 << "_" << i+1;
       new_chain.state.push_back (state_label);
     }
-  new_chain.alph_name = vector<sstring> (len);
   new_chain.alph_size = alph_size;
 
   // create appropriate EM_matrix
@@ -222,18 +224,10 @@ void ECFG_matrix_set::eval_funcs (PScores& pscores)
       }
 }
 
-bool ECFG_matrix_set::chain_uses_default_alphabet (const ECFG_chain& c) const
-{
-  for_const_contents (vector<sstring>, c.alph_name, chain_alph_name)
-    if (*chain_alph_name != alphabet.name)
-      return false;
-  return true;
-}
-
 bool ECFG_matrix_set::all_chains_use_default_alphabet() const
 {
   for_const_contents (vector<ECFG_chain>, chain, c)
-    if (!chain_uses_default_alphabet (*c))
+    if (!c->uses_default_alphabet())
       return false;
   return true;
 }
