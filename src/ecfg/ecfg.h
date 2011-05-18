@@ -11,10 +11,11 @@
 #include "seq/gff.h"
 
 // Alphabet dictionary type
-struct Alphabet_dictionary : map<sstring,const Alphabet*>
+struct Alphabet_dictionary : map<sstring,Alphabet>
 {
   Alphabet_dictionary() { }
-  Alphabet_dictionary (const list<Alphabet>& alph_list);
+  Alphabet_dictionary (const Alphabet& alph);
+  Alphabet_dictionary (const list<Alphabet>& alph);
   void add (const Alphabet& alph);
 };
 
@@ -35,7 +36,7 @@ struct ECFG_chain : ECFG_enum
   Update_policy type;  // signifies the type of EM algorithm that is used, and more generally the object type of this chain (yes I know this is icky)
   vector<sstring> state;  // names of the chain pseudoterminals, excluding the "hidden state" pseudoterm
   vector<sstring> alph_name;  // Alphabet names for each pseudoterminal; not used by ECFG, which currently assumes that all pseudoterms represent symbols from the parent ECFG's alphabet
-  vector<const Alphabet*> alph;  // convenience Alphabet lookups; not used by ECFG
+  vector<int> alph_size;  // Alphabet sizes for each pseudoterminal; not used by ECFG, which currently assumes that all pseudoterms represent symbols from the parent ECFG's alphabet
 
   // hidden classes
   sstring class_row;  // the #=GR line to which hidden class annotations will be added in the Stockholm file
@@ -51,8 +52,8 @@ struct ECFG_chain : ECFG_enum
   vector<sstring> gs_values;  // the "label" values in the grammar file
   map<sstring,int> gs_tag_value_chain_index;  // gs_tag_value_chain_index[gs_value] = ECFG_matrix_set index of ECFG_chain for all branches to nodes labeled with "#=GS gs_tag gs_value" in Stockholm file
 
-  // helper method to populate alph
-  void lookup_alphabets (const Alphabet_dictionary& alph_dict);
+  // helpers
+  void init_alph_size (const Alphabet_dictionary& alph_dict);
 };
 
 // Set of substitution matrices for an Evolutionary CFG
@@ -69,15 +70,19 @@ struct ECFG_matrix_set : ECFG_enum
   ~ECFG_matrix_set();
   // builder method
   int add_matrix (int wordlen, Update_policy = Rev, int n_classes = 1, double tres = DEFAULT_TIMEPOINT_RES);  // returns index of new matrix
+  int add_matrix (int wordlen, const Alphabet& alph, Update_policy = Rev, int n_classes = 1, double tres = DEFAULT_TIMEPOINT_RES);  // returns index of new matrix
+  int add_matrix (const vector<int>& alph_size, Update_policy = Rev, int n_classes = 1, double tres = DEFAULT_TIMEPOINT_RES);  // returns index of new matrix
+  int add_matrix (const vector<sstring>& alph_name, const Alphabet_dictionary& alph_dict, Update_policy = Rev, int n_classes = 1, double tres = DEFAULT_TIMEPOINT_RES);  // returns index of new matrix
 
   // accessors
   int total_states (int chain_idx) const;
   int observed_states (int chain_idx) const;
-  int observed_states_by_word_len (int word_len) const;
+  int observed_states_by_alph_size (const vector<int>& alph_size) const;
 
   // helpers
   void eval_funcs (PScores& pscores);  // prepare parametric chains
   bool chain_uses_default_alphabet (const ECFG_chain& chain) const;  // true if all the chain's Alphabet pointers resolve to ours
+  bool all_chains_use_default_alphabet() const;  // true if chain_uses_default_alphabet is true for all chains
 };
 
 // state type info for an emit state of an Evolutionary CFG

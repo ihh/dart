@@ -19,6 +19,8 @@
 
 #define Alphabet_nonsense_char '?'
 
+#define UNINITIALIZED_ALPHABET_NAME "Uninitialized"
+
 // a Biosequence is a text representation of a sequence
 //
 typedef sstring Biosequence;
@@ -190,7 +192,7 @@ class Alphabet
   void init_hidden (const Alphabet& base_alphabet, const vector<sstring>& hidden_class_labels);
 
   // constructor
-  Alphabet (const char* name, int size);
+  Alphabet (const char* name = UNINITIALIZED_ALPHABET_NAME, int size = 1);
 
   // methods
   int size() const { return alphabet_size; }
@@ -279,6 +281,7 @@ class Alphabet
   }
 
   inline char unknown_char() const { return int2char (unknown_int); }
+  inline int unknown_symbol_index() const { return unknown_int; }
 
   inline bool contains_tok (const sstring& token) const
   {

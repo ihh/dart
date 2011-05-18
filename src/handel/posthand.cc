@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
 
       // read alphabet & substitution matrix
       SExpr_file param_sexpr (subst_model_filename.c_str());
-      Alphabet alph ("uninitialized", 1);
+      Alphabet alph;
       ECFG_builder::init_chain_and_alphabet (alph, trans.subst_model, param_sexpr.sexpr);
       trans.update_seq_scores();
 

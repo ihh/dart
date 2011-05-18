@@ -60,7 +60,7 @@ int main (int argc, char** argv)
       SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
 
       // init alphabet, rate matrix
-      Alphabet alphabet ("uninitialized", 1);  // dummy init of alphabet (from seq/biosequence.h)
+      Alphabet alphabet;  // dummy init of alphabet (from seq/biosequence.h)
       Irrev_EM_matrix rate_matrix (1, 1);  // dummy init of rate_matrix (from irrev/irrev_em_matrix.h)
       ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
 

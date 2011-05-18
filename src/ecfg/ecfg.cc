@@ -8,6 +8,11 @@
 
 #define ECFG_default_terminal "Terminal_"
 
+Alphabet_dictionary::Alphabet_dictionary (const Alphabet& alph)
+{
+  add (alph);
+}
+
 Alphabet_dictionary::Alphabet_dictionary (const list<Alphabet>& alph_list)
 {
   for_const_contents (list<Alphabet>, alph_list, alph)
@@ -16,18 +21,7 @@ Alphabet_dictionary::Alphabet_dictionary (const list<Alphabet>& alph_list)
 
 void Alphabet_dictionary::add (const Alphabet& alph)
 {
-  (*this)[alph.name] = &alph;
-}
-
-void ECFG_chain::lookup_alphabets (const Alphabet_dictionary& alph_dict)
-{
-  for (int n = 0; n < word_len; ++n)
-    {
-      Alphabet_dictionary::const_iterator alph_iter = alph_dict.find (alph_name[n]);
-      if (alph_iter == alph_dict.end())
-	THROWEXPR ("Can't find alphabet '" << alph_name[n] << "' in dictionary");
-      alph[n] = alph_iter->second;
-    }
+  insert (pair<sstring,Alphabet> (alph.name, alph));
 }
 
 ECFG_matrix_set::ECFG_matrix_set (const ECFG_matrix_set& ems)
@@ -35,7 +29,7 @@ ECFG_matrix_set::ECFG_matrix_set (const ECFG_matrix_set& ems)
 {
   for_const_contents (vector<ECFG_chain>, ems.chain, ec)
     {
-      ECFG_chain& new_chain = chain[add_matrix (ec->word_len, ec->type, ec->classes)];
+      ECFG_chain& new_chain = chain[add_matrix (ec->word_len, ems.alphabet, ec->type, ec->classes)];
       new_chain.state = ec->state;
       new_chain.class_labels = ec->class_labels;
       new_chain.classes = ec->classes;
@@ -61,15 +55,45 @@ ECFG_matrix_set::~ECFG_matrix_set()
       delete c->matrix;
 }
 
+
+int ECFG_matrix_set::add_matrix (const vector<sstring>& alph_name, const Alphabet_dictionary& alph_dict, ECFG_enum::Update_policy type, int n_classes, double tres)
+{
+  vector<int> alph_size (alph_name.size());
+  for (int n = 0; n < (int) alph_name.size(); ++n)
+    {
+      const Alphabet_dictionary::const_iterator alph_dict_iter = alph_dict.find (alph_name[n]);
+      if (alph_dict_iter == alph_dict.end())
+	THROWEXPR ("Alphabet not found: " << alph_name[n]);
+      alph_size[n] = alph_dict_iter->second.size();
+    }
+  const int chain_idx = add_matrix (alph_size, type, n_classes, tres);
+  chain[chain_idx].alph_name = alph_name;
+  return chain_idx;
+}
+
+int ECFG_matrix_set::add_matrix (int len, const Alphabet& alph, ECFG_enum::Update_policy type, int n_classes, double tres)
+{
+  const vector<int> alph_size (len, alph.size());
+  const int chain_idx = add_matrix (alph_size, type, n_classes, tres);
+  chain[chain_idx].alph_name = vector<sstring> (len, alph.name);
+  return chain_idx;
+}
+
 int ECFG_matrix_set::add_matrix (int len, ECFG_enum::Update_policy type, int n_classes, double tres)
+{
+  return add_matrix (len, alphabet, type, n_classes, tres);
+}
+
+int ECFG_matrix_set::add_matrix (const vector<int>& alph_size, ECFG_enum::Update_policy type, int n_classes, double tres)
 {
   // get new chain index
   const int new_chain_index = chain.size();
 
   // figure out number of states
+  const int len = alph_size.size();
   if (n_classes < 1)
     n_classes = 1;
-  const int A = n_classes * observed_states_by_word_len (len);
+  const int A = n_classes * observed_states_by_alph_size (alph_size);
 
   // create new chain
   ECFG_chain new_chain;
@@ -86,8 +110,8 @@ int ECFG_matrix_set::add_matrix (int len, ECFG_enum::Update_policy type, int n_c
       state_label << ECFG_default_terminal << new_chain_index+1 << "_" << i+1;
       new_chain.state.push_back (state_label);
     }
-  new_chain.alph_name = vector<sstring> (len, alphabet.name);
-  new_chain.alph = vector<const Alphabet*> (len, &alphabet);
+  new_chain.alph_name = vector<sstring> (len);
+  new_chain.alph_size = alph_size;
 
   // create appropriate EM_matrix
   switch (type)
@@ -134,19 +158,20 @@ int ECFG_matrix_set::total_states (int chain_idx) const
 
 int ECFG_matrix_set::observed_states (int chain_idx) const
 {
-  return observed_states_by_word_len (chain[chain_idx].word_len);
+  return observed_states_by_alph_size (chain[chain_idx].alph_size);
 }
 
-int ECFG_matrix_set::observed_states_by_word_len (int word_len) const
+int ECFG_matrix_set::observed_states_by_alph_size (const vector<int>& alph_size) const
 {
   int s = 1;
-  for (int i = 0; i < word_len; ++i)
-    s *= alphabet.size();
+  for (int i = 0; i < (int) alph_size.size(); ++i)
+    s *= alph_size[i];
   return s;
 }
 
 void ECFG_matrix_set::eval_funcs (PScores& pscores)
 {
+  const Alphabet_dictionary dummy_alph_dict;  // passing an empty Alphabet_dictionary to print_state will result in token indices being printed, instead of token strings
   for_contents (vector<ECFG_chain>, this->chain, chain)
     if (chain->is_parametric)
       {
@@ -159,7 +184,7 @@ void ECFG_matrix_set::eval_funcs (PScores& pscores)
 	    if (CTAGGING(-3,ECFG_SCORES))
 	      {
 		CL << "Initial probability for state (";
-		ECFG_builder::print_state (CL, s, chain->word_len, chain->alph, chain->class_labels);
+		ECFG_builder::print_state (CL, s, dummy_alph_dict, *chain);
 		CL << ") = (";
 		ECFG_builder::pfunc2stream (CL, pscores, pi_pfunc);
 		CL << ") evaluates to " << chain->matrix->pi[s] << "\n";
@@ -177,9 +202,9 @@ void ECFG_matrix_set::eval_funcs (PScores& pscores)
 		  if (CTAGGING(-3,ECFG_SCORES))
 		    {
 		      CL << "Rate from (";
-		      ECFG_builder::print_state (CL, s, chain->word_len, chain->alph, chain->class_labels);
+		      ECFG_builder::print_state (CL, s, dummy_alph_dict, *chain);
 		      CL << ") to (";
-		      ECFG_builder::print_state (CL, d, chain->word_len, chain->alph, chain->class_labels);
+		      ECFG_builder::print_state (CL, d, dummy_alph_dict, *chain);
 		      CL << ") = (";
 		      ECFG_builder::pfunc2stream (CL, pscores, rate_pfunc);
 		      CL << ") evaluates to " << rate << "\n";
@@ -197,8 +222,16 @@ void ECFG_matrix_set::eval_funcs (PScores& pscores)
 
 bool ECFG_matrix_set::chain_uses_default_alphabet (const ECFG_chain& c) const
 {
-  for_const_contents (vector<const Alphabet*>, c.alph, chain_alph)
-    if (*chain_alph != &alphabet)
+  for_const_contents (vector<sstring>, c.alph_name, chain_alph_name)
+    if (*chain_alph_name != alphabet.name)
+      return false;
+  return true;
+}
+
+bool ECFG_matrix_set::all_chains_use_default_alphabet() const
+{
+  for_const_contents (vector<ECFG_chain>, chain, c)
+    if (!chain_uses_default_alphabet (*c))
       return false;
   return true;
 }

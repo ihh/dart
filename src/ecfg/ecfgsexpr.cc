@@ -11,23 +11,24 @@
 // dummy class label for hidden alphabets
 #define DUMMY_CLASS_LABEL "dummy_class_label"
 
-int ECFG_builder::token_list_to_state (SExpr& token_list, const vector<const Alphabet*>& alph_vec, int word_len, const vector<sstring>& class_alph, bool allow_multi_char_tokens)
+int ECFG_builder::token_list_to_state (SExpr& token_list, const Alphabet_dictionary& alph_dict, const ECFG_chain& chain, bool allow_multi_char_tokens)
 {
+  Alphabet_dictionary& ad = (Alphabet_dictionary&) alph_dict;  // cast away const
   vector<sstring> toks = token_list.atoms_to_strings();
-  const int expected_word_len = word_len + (class_alph.size() > 1 ? 1 : 0);
+  const int expected_word_len = chain.word_len + (chain.class_labels.size() > 1 ? 1 : 0);
   if ((int) toks.size() != expected_word_len)
     THROWEXPR ("In (" << token_list << "):\nList contains " << toks.size() << " tokens; expected " << expected_word_len);
   int c = 0;
-  if (class_alph.size() > 1)
+  if (chain.class_labels.size() > 1)
     {
-      c = get_state_class (toks.back(), class_alph);
+      c = get_state_class (toks.back(), chain.class_labels);
       toks.pop_back();
     }
   int mul = 1, state = 0;
   for (int n = 0; n < (int) toks.size(); ++n)
     {
       const sstring& tok = toks[n];
-      const Alphabet& alph = *alph_vec[n];
+      const Alphabet& alph = ad[chain.alph_name[n]];
       int tok_idx;
       if (allow_multi_char_tokens)
 	tok_idx = alph.token2int ((tok));
@@ -36,6 +37,8 @@ int ECFG_builder::token_list_to_state (SExpr& token_list, const vector<const Alp
 	  assert_valid_token (tok, alph, token_list);
 	  tok_idx = alph.char2int_strict (tok[0]);
 	}
+      if (tok_idx == alph.unknown_symbol_index())
+	THROWEXPR ("Token " << tok << " not recognized in alphabet " << alph.name);
       state += mul * tok_idx;
       mul *= alph.size();
     }
@@ -96,12 +99,11 @@ void ECFG_builder::init_chain_classes (sstring& class_row, vector<sstring>& clas
 
 void ECFG_builder::init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres, bool allow_multi_char_tokens)
 {
-  Alphabet_dictionary alph_by_name;
-  alph_by_name[ems.alphabet.name] = &ems.alphabet;
-  init_chain (ems, alph_by_name, term2chain, sym2pvar, chain_sexpr, tres, allow_multi_char_tokens);
+  Alphabet_dictionary alph_dict (ems.alphabet);
+  init_chain (ems, alph_dict, ems.alphabet, term2chain, sym2pvar, chain_sexpr, tres, allow_multi_char_tokens);
 }
 
-void ECFG_builder::init_chain (ECFG_matrix_set& ems, const Alphabet_dictionary& alph_by_name, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres, bool allow_multi_char_tokens)
+void ECFG_builder::init_chain (ECFG_matrix_set& ems, const Alphabet_dictionary& alph_dict, const Alphabet& default_alphabet, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres, bool allow_multi_char_tokens)
 {
   list<SExpr>& state_list = chain_sexpr (EG_CHAIN_TERMINAL).child;
 
@@ -109,22 +111,29 @@ void ECFG_builder::init_chain (ECFG_matrix_set& ems, const Alphabet_dictionary& 
   vector<sstring> class_alph;
   init_chain_classes (class_row, class_alph, state_list.size(), chain_sexpr);
 
-  const int chain_index = ems.add_matrix (state_list.size(),
-					  string2policy (chain_sexpr (EG_CHAIN_POLICY).get_atom()),
-					  class_alph.size(),
-					  tres);
-
-  ECFG_chain& chain = ems.chain[chain_index];
+  const Update_policy update_policy = string2policy (chain_sexpr (EG_CHAIN_POLICY).get_atom());
 
   SExpr *alph_sexpr = chain_sexpr.find (PK_ALPHABET);
+  int chain_index = -1;
   if (alph_sexpr)
     {
-      chain.alph_name = alph_sexpr->atoms_to_strings();
-      if (chain.word_len != (int) chain.alph_name.size())
-	THROWEXPR ("In ECFG_chain: expected '" << PK_ALPHABET << "' parameter to be a list containing " << chain.word_len << " alphabet(s), but found " << chain.alph_name.size());
-      chain.lookup_alphabets (alph_by_name);
+      const vector<sstring> alph_name = alph_sexpr->value().atoms_to_strings();
+      if (state_list.size() != alph_name.size())
+	THROWEXPR ("In ECFG_chain: expected '" << PK_ALPHABET << "' parameter to be a list containing " << state_list.size() << " alphabet(s), but found " << alph_name.size());
+      chain_index = ems.add_matrix (alph_name,
+				    alph_dict,
+				    update_policy,
+				    class_alph.size(),
+				    tres);
     }
+  else
+    chain_index = ems.add_matrix (state_list.size(),
+				  default_alphabet,
+				  update_policy,
+				  class_alph.size(),
+				  tres);
 
+  ECFG_chain& chain = ems.chain[chain_index];
   chain.class_labels = class_alph;
   chain.class_row = class_row;
 
@@ -145,7 +154,7 @@ void ECFG_builder::init_chain (ECFG_matrix_set& ems, const Alphabet_dictionary& 
   vector<SExpr*> pi_list = chain_sexpr.find_all (EG_CHAIN_INITIAL, 1);
   for_contents (vector<SExpr*>, pi_list, pi_sexpr)
     {
-      const int state = token_list_to_state ((**pi_sexpr)(EG_CHAIN_STATE), chain.alph, chain.word_len, class_alph, allow_multi_char_tokens); 
+      const int state = token_list_to_state ((**pi_sexpr)(EG_CHAIN_STATE), alph_dict, chain, allow_multi_char_tokens);
       SExpr& prob_sexpr = (*pi_sexpr)->find_or_die (EG_PROB, 1);
 
       // Default behavior for duplicated initial probs is to add them together
@@ -166,8 +175,8 @@ void ECFG_builder::init_chain (ECFG_matrix_set& ems, const Alphabet_dictionary& 
   vector<SExpr*> mutate_list = chain_sexpr.find_all (EG_CHAIN_MUTATE, 1);
   for_contents (vector<SExpr*>, mutate_list, mutate_sexpr)
     {
-      const int from_state = token_list_to_state ((**mutate_sexpr) (EG_FROM), chain.alph, chain.word_len, class_alph, allow_multi_char_tokens);
-      const int to_state = token_list_to_state ((**mutate_sexpr) (EG_TO), chain.alph, chain.word_len, class_alph, allow_multi_char_tokens);
+      const int from_state = token_list_to_state ((**mutate_sexpr) (EG_FROM), alph_dict, chain, allow_multi_char_tokens);
+      const int to_state = token_list_to_state ((**mutate_sexpr) (EG_TO), alph_dict, chain, allow_multi_char_tokens);
       SExpr& rate_sexpr = (*mutate_sexpr)->find_or_die (EG_RATE, 1);
 
       // Default behavior for duplicated rates is to add them together
@@ -207,7 +216,7 @@ void ECFG_builder::init_hybrid_chain (ECFG_matrix_set& ems, SymIndex& term2chain
   vector<sstring> class_alph;
   init_chain_classes (class_row, class_alph, state_list.size(), hybrid_chain_sexpr);
 
-  const int chain_index = ems.add_matrix (state_list.size(), Hybrid, class_alph.size());
+  const int chain_index = ems.add_matrix (state_list.size(), ems.alphabet, Hybrid, class_alph.size());
 
   ECFG_chain& chain = ems.chain[chain_index];
   chain.class_labels = class_alph;
@@ -905,6 +914,10 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
       const vector<SExpr*> all_hybrid_chain_sexpr = grammar_sexpr.find_all (EG_HYBRID_CHAIN, 1);
       for_const_contents (vector<SExpr*>, all_hybrid_chain_sexpr, hybrid_chain_sexpr)
 	init_hybrid_chain (ecfg->matrix_set, term2chain, sym2pvar, **hybrid_chain_sexpr);
+
+      // check that all chains use the same alphabet
+      if (!ecfg->matrix_set.all_chains_use_default_alphabet())
+	THROWEXPR ("In (" << grammar_sexpr << "):\nAll chains must use the same alphabet");
 
       // initialise nonterminals
       nonterm2state = init_nonterm2state (term2chain, grammar_sexpr);
@@ -1638,28 +1651,29 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
 
   // print chains
   out << "\n ;; Markov chain substitution models\n";
+  const Alphabet_dictionary alph_dict (ecfg.alphabet);
   for (int n_chain = 0; n_chain < (int) ecfg.matrix_set.chain.size(); ++n_chain)
     {
       const ECFG_chain& chain = ecfg.matrix_set.chain[n_chain];
       const Update_statistics* stats = counts ? &counts->stats[n_chain] : (const Update_statistics*) 0;
-      chain2stream (out, alph, ecfg.pscores, chain, stats, &ecfg.matrix_set);
+      chain2stream (out, ecfg.pscores, chain, alph_dict, stats, &ecfg.matrix_set);
     }
 
   // close grammar block
   out << "\n)  ;; end grammar " << ecfg.name << "\n\n";
 }
 
-void ECFG_builder::chain2stream (ostream& out, const Alphabet& alph, const PScores& pscores, const ECFG_chain& chain, const Update_statistics* stats, const ECFG_matrix_set* ems)
+void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECFG_chain& chain, const Alphabet_dictionary& alph_dict, const Update_statistics* stats, const ECFG_matrix_set* ems)
 {
   if (chain.type == Hybrid)
     {
       // hybrid-chain
       if (!ems)
 	THROWEXPR ("Hybrid chain encountered, with no ECFG_matrix_set to dereference the component chains");
-      if (ems == NULL || !ems->chain_uses_default_alphabet (chain))
-	out << "\n (" << PK_ALPHABET << " (" << chain.alph_name << ')';
       out << "\n (" << EG_HYBRID_CHAIN << '\n';
       out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
+      if (ems == NULL || !ems->chain_uses_default_alphabet (chain))
+	out << "  (" << PK_ALPHABET << " (" << chain.alph_name << "))\n";
 
       if (chain.classes > 1)
 	{
@@ -1686,6 +1700,8 @@ void ECFG_builder::chain2stream (ostream& out, const Alphabet& alph, const PScor
       out << "\n (" << EG_CHAIN << '\n';
       out << "  (" << EG_CHAIN_POLICY << ' ' << chain.matrix->update_policy() << ")\n";
       out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
+      if (ems == NULL || !ems->chain_uses_default_alphabet (chain))
+	out << "  (" << PK_ALPHABET << " (" << chain.alph_name << "))\n";
       if (chain.classes > 1)
 	{
 	  out << "  (" << EG_CHAIN_CLASS << "\n";
@@ -1704,7 +1720,7 @@ void ECFG_builder::chain2stream (ostream& out, const Alphabet& alph, const PScor
 	  if (print_pi)
 	    {
 	      out << "  (" << EG_CHAIN_INITIAL << " (" << EG_CHAIN_STATE << " ";
-	      print_state (out, s, chain.word_len, chain.alph, chain.class_labels);
+	      print_state (out, s, alph_dict, chain);
 	      out << ") (" << EG_PROB << ' ';
 
 	      if (chain.is_parametric)
@@ -1723,18 +1739,6 @@ void ECFG_builder::chain2stream (ostream& out, const Alphabet& alph, const PScor
       out << "\n  ;; mutation rates\n";
       for (int s = 0; s < chain.matrix->m(); ++s)
 	{
-	  // commented out due to clutter...
-#if 0
-	  if (stats)
-	    {
-	      out << "  (" << EG_WAIT << " (" << EG_CHAIN_STATE << ' ';
-	      print_state (out, s, chain.word_len, alph, chain.class_labels);
-	      out << ')';
-	      print_time (out, stats->w[s]);
-	      out << ")\n";
-	    }
-#endif
-
 	  for (int d = 0; d < chain.matrix->m(); ++d)
 	    {
 	      const bool print_rate =
@@ -1745,9 +1749,9 @@ void ECFG_builder::chain2stream (ostream& out, const Alphabet& alph, const PScor
 	      if (print_rate)
 		{
 		  out << "  (" << EG_CHAIN_MUTATE << " (" << EG_FROM << " ";
-		  print_state (out, s, chain.word_len, chain.alph, chain.class_labels);
+		  print_state (out, s, alph_dict, chain);
 		  out << ") (" << EG_TO << " ";
-		  print_state (out, d, chain.word_len, chain.alph, chain.class_labels);
+		  print_state (out, d, alph_dict, chain);
 		  out << ") (" << EG_RATE << ' ';
 
 		  if (chain.is_parametric)
@@ -1768,18 +1772,23 @@ void ECFG_builder::chain2stream (ostream& out, const Alphabet& alph, const PScor
     }
 }
 
-void ECFG_builder::print_state (ostream& out, int state, int wordlen, const vector<const Alphabet*>& alph, const vector<sstring>& class_alph)
+void ECFG_builder::print_state (ostream& out, int state, const Alphabet_dictionary& alph_dict, const ECFG_chain& chain)
 {
+  Alphabet_dictionary& ad = (Alphabet_dictionary&) alph_dict;  // cast away const
   out << '(';
   int mul, pos;
-  for (mul = 1, pos = 0; pos < wordlen; mul *= alph[pos]->size(), ++pos)
+  for (mul = 1, pos = 0; pos < chain.word_len; mul *= chain.alph_size[pos], ++pos)
     {
+      const int tok_idx = (state / mul) % chain.alph_size[pos];
       if (pos > 0)
 	out << ' ';
-      out << alph[pos]->int2token ((state / mul) % alph[pos]->size());
+      if (alph_dict.size())
+	out << ad[chain.alph_name[pos]].int2token (tok_idx);
+      else
+	out << tok_idx;
     }
-  if (class_alph.size() > 1)
-    out << ' ' << SExpr_atom(class_alph[(state / mul) % class_alph.size()]);
+  if (chain.class_labels.size() > 1)
+    out << ' ' << SExpr_atom(chain.class_labels[(state / mul) % chain.class_labels.size()]);
   out << ')';
 }
 
@@ -1798,6 +1807,7 @@ void ECFG_builder::grammars2stream (ostream& out, const Alphabet& alph, const ve
 
 void ECFG_builder::chain_counts2stream (ostream& out, const Alphabet& alph, const ECFG_scores& ecfg, const ECFG_counts& counts)
 {
+  Alphabet_dictionary alph_dict (alph);
   for (int n_chain = 0; n_chain < (int) ecfg.matrix_set.chain.size(); ++n_chain)
     {
       const ECFG_chain& chain = ecfg.matrix_set.chain[n_chain];
@@ -1811,23 +1821,23 @@ void ECFG_builder::chain_counts2stream (ostream& out, const Alphabet& alph, cons
 	    for (int s = 0; s < chain.matrix->m(); ++s)
 	      {
 		out << "   (" << EG_CHAIN_INITIAL << " (" << EG_CHAIN_STATE << " ";
-		print_state (out, s, chain.word_len, chain.alph, chain.class_labels);
+		print_state (out, s, alph_dict, chain);
 		out << ") (" << PK_COUNT << ' ' << stats.s[s] << "))\n";
 	      }
 
 	    for (int s = 0; s < chain.matrix->m(); ++s)
 	      {
 		out << "   (" << EG_WAIT << " (" << EG_CHAIN_STATE << ' ';
-		print_state (out, s, chain.word_len, chain.alph, chain.class_labels);
+		print_state (out, s, alph_dict, chain);
 		out << ") (" << PK_TIME << ' ' << stats.w[s] << "))\n";
 
 		for (int d = 0; d < chain.matrix->m(); ++d)
 		  if (s != d)
 		    {
 		      out << "   (" << EG_CHAIN_MUTATE << " (" << EG_FROM << " ";
-		      print_state (out, s, chain.word_len, chain.alph, chain.class_labels);
+		      print_state (out, s, alph_dict, chain);
 		      out << ") (" << EG_TO << " ";
-		      print_state (out, d, chain.word_len, chain.alph, chain.class_labels);
+		      print_state (out, d, alph_dict, chain);
 		      out << ") (" << PK_COUNT << ' ' << stats.u(s,d) << "))\n";
 		    }
 	      }

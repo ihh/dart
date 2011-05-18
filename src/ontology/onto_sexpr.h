@@ -5,6 +5,7 @@
 
 struct Terminatrix
 {
+  const Alphabet dummy_alph;
   list<Alphabet> alph_list;
   Alphabet_dictionary alph_dict;
   PScores pscores;

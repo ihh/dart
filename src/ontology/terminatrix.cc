@@ -63,27 +63,33 @@ int main (int argc, char** argv)
       Terminatrix_builder::init_terminatrix (term, sexpr);
       term.eval_funcs();
 
-      // convert alphabet symbols to state indices
-      const int src_state = tok2int (term.alph, src_tok, "Source");
-      const int dest_state = tok2int (term.alph, dest_tok, "Destination");
+      // only bother with the state lookup if chain has one pseudoterm
+      if (term.chain().word_len > 1 || term.chain().classes > 1)
+	CLOGERR << "[skipping the matrix exponentiation]\n";
+      else
+	{
+	  // convert alphabet symbols to state indices
+	  const int src_state = tok2int (term.alph_list.front(), src_tok, "Source");
+	  const int dest_state = tok2int (term.alph_list.front(), dest_tok, "Destination");
 
-      // exponentiate matrix
-      const array2d<double> cond_submat = term.rate_matrix().create_conditional_substitution_matrix (time);
+	  // exponentiate matrix
+	  const array2d<double> cond_submat = term.rate_matrix().create_conditional_substitution_matrix (time);
 
-      // get equilibrium distribution
-      const vector<double> eqm_prob = term.rate_matrix().create_prior();
+	  // get equilibrium distribution
+	  const vector<double> eqm_prob = term.rate_matrix().create_prior();
 
-      // extract required element
-      const double result = cond_submat (src_state, dest_state);
+	  // extract required element
+	  const double result = cond_submat (src_state, dest_state);
 
-      // print alphabet tokens, in order
-      cout << "Alphabet symbols: " << term.alph.tokens() << '\n';
+	  // print alphabet tokens, in order
+	  cout << "Alphabet symbols: " << term.alph_list.front().tokens() << '\n';
 
-      // print equilibrium distribution
-      cout << "Equilibrium distribution: " << eqm_prob << '\n';
+	  // print equilibrium distribution
+	  cout << "Equilibrium distribution: " << eqm_prob << '\n';
 
-      // print required element
-      cout << "exp(R*" << time << ")_{" << src_tok << ',' << dest_tok << "} = " << result << '\n';
+	  // print required element
+	  cout << "exp(R*" << time << ")_{" << src_tok << ',' << dest_tok << "} = " << result << '\n';
+	}
 
       // save
       if (write_filename.size())
