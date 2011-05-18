@@ -58,8 +58,11 @@ int main (int argc, char** argv)
       SExpr_file sexpr_file (chain_filename.c_str());
       SExpr& sexpr = sexpr_file.sexpr;
 
+      // create Scheme context
+      SExpr_Scheme_evaluator scheme;
+
       // init the Terminatrix
-      Terminatrix term;
+      Terminatrix term (scheme);
       Terminatrix_builder::init_terminatrix (term, sexpr);
       term.eval_funcs();
 

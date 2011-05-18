@@ -2,8 +2,9 @@
 #include "ontology/onto_keywords.h"
 #include "seq/pkeywords.h"
 
-Terminatrix::Terminatrix()
-  : dummy_alph(),
+Terminatrix::Terminatrix (SExpr_Scheme_evaluator& scheme)
+  : scheme(scheme),
+    dummy_alph(),
     matrix_set(dummy_alph),
     got_counts(false)
 { }
