@@ -1,0 +1,39 @@
+ ;; test for ontology term evolution
+(terminatrix
+ (model
+  (chain
+   (update-policy irrev)
+   (terminal (termvar1 termvar2))
+   (alphabet (ontology1 ontology2))
+
+   ;; initial probability distribution
+   (initial (state (term1 term5)) (prob .25))
+   (initial (state (term2 term5)) (prob .25))
+   (initial (state (term3 term5)) (prob .25))
+   (initial (state (term4 term5)) (prob .25))
+
+   ;; mutation rates
+   (mutate (from (term1 term5)) (to (term2 term5)) (rate .33))
+   (mutate (from (term1 term5)) (to (term3 term5)) (rate .33))
+   (mutate (from (term1 term5)) (to (term4 term5)) (rate .33))
+   (mutate (from (term2 term5)) (to (term1 term5)) (rate .33))
+   (mutate (from (term2 term5)) (to (term3 term5)) (rate .33))
+   (mutate (from (term2 term5)) (to (term4 term5)) (rate .33))
+   (mutate (from (term3 term5)) (to (term1 term5)) (rate .33))
+   (mutate (from (term3 term5)) (to (term2 term5)) (rate .33))
+   (mutate (from (term3 term5)) (to (term4 term5)) (rate .33))
+   (mutate (from (term4 term5)) (to (term1 term5)) (rate .33))
+   (mutate (from (term4 term5)) (to (term2 term5)) (rate .33))
+   (mutate (from (term4 term5)) (to (term3 term5)) (rate .33)))
+
+  (alphabet
+   (name ontology1)
+   (token (term1 term2 term3 term4)))
+
+  (alphabet
+   (name ontology1)  ;; should cause an error
+   (token (term5 term6 term7 term8)))
+
+  (alphabet
+   (name ontology2)  ;; should cause an error
+   (token (term5 term6 term7 term8)))))
