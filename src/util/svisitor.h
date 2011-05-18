@@ -8,7 +8,7 @@
 #include <libguile.h>
 #endif /* GUILE_INCLUDED */
 
-#include "util/scheme_keywords.h"
+#include "util/sexpr-keywords.h"
 
 // singleton shorthand map
 struct SExpr_macro_aliases
