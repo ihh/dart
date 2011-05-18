@@ -437,7 +437,7 @@ void SExpr_Scheme_evaluator::mark_guile_initialized()
   initialized = true;
 }
 
-void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
+void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr, const char* eval_keyword, const char* eval_discard_keyword) const
 {
   if (!initialized)
     THROWEXPR ("SExpr_Scheme_evaluator::expand_Scheme_expressions: guile not initialized");
@@ -450,7 +450,7 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
       if (c->is_list() && !c->child.empty() && (*c)[0].is_atom())
 	{
 	  const SExpr_atom& op ((*c)[0].get_atom());
-	  if (op == SEXPR_EVAL)
+	  if (op == eval_keyword)
 	    {
 	      // evaluate &scheme arguments as Scheme expression, splice results into sexpr.child before c
 	      SExpr result = evaluate_values(*c);
@@ -460,7 +460,7 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr) const
 		c->child.insert (c, result.child.begin(), result.child.end());
 	      is_scheme = true;
 	    }
-	  else if (op == SEXPR_EXEC)
+	  else if (op == eval_discard_keyword)
 	    {
 	      // evaluate &exec arguments as Scheme expressions, discard results
 	      evaluate_values(*c);

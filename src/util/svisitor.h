@@ -6,9 +6,9 @@
 
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 #include <libguile.h>
-#include "util/guile-defs.h"
 #endif /* GUILE_INCLUDED */
 
+#include "util/guile-defs.h"
 #include "util/sexpr-keywords.h"
 
 // singleton shorthand map
@@ -79,13 +79,14 @@ public:
   // constructor - sets register_functions and data to dummy values (override in subclasses)
   SExpr_Scheme_evaluator();
   // initialize() - initializes Guile, sets write_proc
-  // you must call this method before expand_Scheme_expressions
+  // you must call this method before expand_Scheme_expressions.
+  // calling it more than once will have no effect.
   void initialize();
   // mark_guile_initialized() - call this if you are intializing guile elsewhere and don't want to do it here
   static void mark_guile_initialized();
   // method to expand all eval/exec blocks in an SExpr tree
   // will throw an exception if an eval/exec block is encountered & program was compiled without Guile
-  void expand_Scheme_expressions (SExpr& sexpr) const;
+  void expand_Scheme_expressions (SExpr& sexpr, const char* eval_keyword = SEXPR_EVAL, const char* eval_discard_keyword = SEXPR_EXEC) const;
   // helper methods to evaluate an SExpr as a Scheme expression using guile
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
   SCM evaluate_SCM (SExpr& sexpr) const;  // evaluates sexpr; returns a guile SCM object
