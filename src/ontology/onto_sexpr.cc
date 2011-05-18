@@ -30,15 +30,16 @@ void Terminatrix::eval_funcs()
 void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& sexpr)
 {
   SExpr terminatrix_sexpr = sexpr.find_or_die (TERMINATRIX);
+  SExpr model_sexpr = terminatrix_sexpr.find_or_die (TERMINATRIX_MODEL);
   SymPVar sym2pvar;
   SymIndex term2chain;
   // initialise PScores
-  init_pgroups_and_rates (term.pscores, sym2pvar, terminatrix_sexpr, &term.mutable_pgroups);
+  init_pgroups_and_rates (term.pscores, sym2pvar, model_sexpr, &term.mutable_pgroups);
   // initialise PCounts
-  init_pseudocounts (term.pcounts, term.pscores, sym2pvar, terminatrix_sexpr);
+  init_pseudocounts (term.pcounts, term.pscores, sym2pvar, model_sexpr);
   term.var_counts = PCounts (term.pscores);
   // initialise alphabet(s)
-  const vector<SExpr*> alph_sexprs = terminatrix_sexpr.find_all (PK_ALPHABET);
+  const vector<SExpr*> alph_sexprs = model_sexpr.find_all (PK_ALPHABET);
   if (alph_sexprs.size() == 0)
     THROWEXPR ("You need at least one alphabet");
   for_const_contents (vector<SExpr*>, alph_sexprs, alph_sexpr)
@@ -49,12 +50,13 @@ void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& sexpr)
       term.alph_dict.add (alph);
     }
   // initialise chain
-  init_chain (term.matrix_set, term.alph_dict, term.alph_list.front(), term2chain, sym2pvar, terminatrix_sexpr.find_or_die (EG_CHAIN), DEFAULT_TIMEPOINT_RES, true);
+  init_chain (term.matrix_set, term.alph_dict, term.alph_list.front(), term2chain, sym2pvar, model_sexpr.find_or_die (EG_CHAIN), DEFAULT_TIMEPOINT_RES, true);
 }
 
 void Terminatrix_builder::terminatrix2stream (ostream& out, const Terminatrix& term)
 {
   out << '(' << TERMINATRIX << '\n';
+  out << " (" << TERMINATRIX_MODEL << '\n';
   pscores2stream (out, term.pscores, term.mutable_pgroups, &term.var_counts);
   pcounts2stream (out, term.pcounts, EG_PSEUDOCOUNTS, (const PCounts*) 0, true, false);
   if (term.got_counts)
@@ -62,5 +64,5 @@ void Terminatrix_builder::terminatrix2stream (ostream& out, const Terminatrix& t
   chain2stream (out, term.pscores, ((Terminatrix&)term).chain(), term.alph_dict, term.got_counts ? &term.stats : NULL);
   for_const_contents (list<Alphabet>, term.alph_list, alph)
     alphabet2stream (out, *alph);
-  out << ')';
+  out << "))\n";
 }

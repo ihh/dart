@@ -3,5 +3,7 @@
 
 #define TERMINATRIX "terminatrix"
 
+#define TERMINATRIX_MODEL "model"
+
 #endif /* ONTO_KEYWORDS_INCLUDED */
 
