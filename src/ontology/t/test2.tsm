@@ -1,8 +1,9 @@
 (terminatrix
- (model
+ (params
   (pgroup ((p1 .25) (p2 .25) (p3 .25) (p4 .25)))
-  (rate (r 1.32))
+  (rate (r 1.32)))
 
+ (model
   ;; test for ontology term evolution
   (chain
    (update-policy parametric)

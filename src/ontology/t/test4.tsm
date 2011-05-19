@@ -7,7 +7,7 @@
   (quote
    (model
     (chain
-     (update-policy rev)
+     (update-policy parametric)
      (terminal (TERM))
 
      ;; initial probability distribution
