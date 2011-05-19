@@ -494,6 +494,16 @@ SCM SExpr_Scheme_evaluator::evaluate_SCM (SExpr& sexpr) const
 }
 #endif /* GUILE_INCLUDED */
 
+SExpr SExpr_Scheme_evaluator::evaluate_sexpr (SExpr& sexpr) const
+{
+  SCM result_scm = evaluate_SCM (sexpr);
+  SExpr *result_sexpr = scm_to_new_sexpr (result_scm);
+  SExpr return_sexpr;
+  return_sexpr.swap (*result_sexpr);
+  delete result_sexpr;
+  return return_sexpr;
+}
+
 SExpr SExpr_Scheme_evaluator::evaluate_values (SExpr& sexpr) const
 {
   if (sexpr.is_atom())

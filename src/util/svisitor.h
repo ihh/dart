@@ -91,6 +91,7 @@ public:
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
   SCM evaluate_SCM (SExpr& sexpr) const;  // evaluates sexpr; returns a guile SCM object
 #endif /* GUILE_INCLUDED */
+  SExpr evaluate_sexpr (SExpr& sexpr) const;  // evaluates sexpr; returns result as an SExpr
   SExpr evaluate_values (SExpr& sexpr) const;  // evaluates all children of sexpr, except for the first child; returns the list of results as an SExpr
 };
 
