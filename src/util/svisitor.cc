@@ -481,11 +481,6 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr, const char
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 SCM SExpr_Scheme_evaluator::evaluate_SCM (SExpr& sexpr) const
 {
-  if (sexpr.is_atom())
-    THROWEXPR("SExpr_Scheme_evaluator::evaluate_SCM called on an atom");
-  if (sexpr.is_empty_list())
-    THROWEXPR("SExpr_Scheme_evaluator::evaluate_SCM called on an empty list");
-
   const sstring sexpr_string = sexpr.to_parenthesized_string();
   // evaluate; convert to C string
   CTAG(3,GUILE) << "Evaluating Scheme expression: " << sexpr_string << '\n';
@@ -498,8 +493,13 @@ SExpr SExpr_Scheme_evaluator::evaluate_sexpr (SExpr& sexpr) const
 {
   SCM result_scm = evaluate_SCM (sexpr);
   SExpr *result_sexpr = scm_to_new_sexpr (result_scm);
+  if (!result_sexpr)
+    THROWEXPR ("In SExpr_Scheme_evaluator::evaluate_sexpr: scm_to_new_sexpr returned null");
+  CTAG(3,GUILE) << "Result of Scheme evaluation: " << result_sexpr->to_string() << '\n';
+  if (!(result_sexpr->is_list() && result_sexpr->child.size() == 1))
+    THROWEXPR ("In SExpr_Scheme_evaluator::evaluate_sexpr: scm_to_new_sexpr should return a list with one element");
   SExpr return_sexpr;
-  return_sexpr.swap (*result_sexpr);
+  return_sexpr.swap ((*result_sexpr)[0]);
   delete result_sexpr;
   return return_sexpr;
 }

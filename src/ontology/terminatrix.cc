@@ -60,6 +60,7 @@ int main (int argc, char** argv)
 
       // create Scheme context
       SExpr_Scheme_evaluator scheme;
+      scheme.initialize();
 
       // init the Terminatrix
       Terminatrix term (scheme);

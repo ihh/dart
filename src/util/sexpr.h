@@ -36,7 +36,7 @@ struct SExpr
 
   // constructors
   // (default copy constructor automatically does a deep copy)
-  SExpr();  // creates an empty SExpr
+  SExpr();  // default constructor, creates an empty SExpr: is_empty_list() == true
   SExpr (Ptr begin, Ptr end, bool allow_quotes = true);  // parses a text block into an SExpr
   SExpr (const char* atom);  // creates an atomic SExpr
 
@@ -51,7 +51,7 @@ struct SExpr
   inline bool is_empty_list() const;
   inline bool is_atom() const;
 
-  inline bool has_tag();  // true if there are exactly two children and the first child is an atom
+  inline bool has_tag();  // true if there are at least two children and the first child is an atom
   inline bool has_value();  // true if there are exactly two children
 
   // tag() returns the atom of the first child, or an error if that doesn't exist
