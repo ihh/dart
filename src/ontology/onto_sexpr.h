@@ -54,6 +54,7 @@ struct Terminatrix
   // accessors
   ECFG_chain& chain();
   EM_matrix_base& rate_matrix();
+  const Alphabet& default_alphabet();
 };
 
 // Terminatrix I/O adapter
@@ -107,8 +108,9 @@ struct Terminatrix_family_visitor
   virtual scm_t_bits reduce (scm_t_bits previous) { return previous; }  // guaranteed to be called after map_current(). "Combine your internal state with the results so far"
   virtual SCM finalize (scm_t_bits result) { return SCM_PACK (result); }  // guaranteed to be called after all families visited. "Convert the results to a SCM object"
 
-  // map-reduce method
-  SCM map_reduce();
+  // map-reduce methods
+  SCM map_reduce_scm();
+  SExpr map_reduce_sexpr() { return scm_to_sexpr (map_reduce_scm()); }
 };
 
 struct Terminatrix_concatenator
@@ -125,12 +127,14 @@ struct Terminatrix_EM_visitor : Terminatrix_family_visitor
   // info on the current family
   Column_matrix current_colmat;
   // methods
+  Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term) { }
   void map_current() { initialize_current_colmat(); }
   void initialize_current_colmat();
 };
 
 struct Terminatrix_log_evidence : Terminatrix_EM_visitor, Terminatrix_concatenator
 {
+  Terminatrix_log_evidence (Terminatrix& term) : Terminatrix_EM_visitor(term) { }
   SCM current_mapped_scm()
   {
     Terminatrix_EM_visitor::current_colmat.fill_up (Terminatrix_family_visitor::terminatrix.rate_matrix(), *(Terminatrix_family_visitor::current_tree));

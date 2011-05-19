@@ -31,6 +31,42 @@ bool ECFG_chain::uses_default_alphabet() const
   return alph_name.size() == 0;
 }
 
+void ECFG_chain::get_symbol_indices (int state, vector<int>& symbol_idx) const
+{
+  symbol_idx.clear();
+  symbol_idx.reserve (word_len + 1);
+
+  int mul, pos;
+  for (mul = 1, pos = 0; pos < word_len; mul *= alph_size[pos], ++pos)
+    symbol_idx.push_back ((state / mul) % alph_size[pos]);
+
+  symbol_idx.push_back (class_labels.size() ? (int) ((state / mul) % class_labels.size()) : (int) 0);
+}
+
+vector<sstring> ECFG_chain::get_symbol_tokens (int state, const Alphabet_dictionary& alph_dict, const Alphabet& default_alph) const
+{
+  vector<sstring> tok (word_len + 1);
+  vector<int> tok_idx;
+  get_symbol_indices (state, tok_idx);
+
+  for (int pos = 0; pos < word_len; ++pos)
+    {
+      const Alphabet* alph = &default_alph;
+      if (alph_name.size())
+	{
+	  const Alphabet_dictionary::const_iterator alph_dict_iter = alph_dict.find (alph_name[pos]);
+	  if (alph_dict_iter != alph_dict.end())
+	    alph = &alph_dict_iter->second;
+	}
+      tok[pos] = alph->int2token (tok_idx[pos]);
+    }
+
+  if (class_labels.size())
+    tok.back() = class_labels[tok_idx.back()];
+
+  return tok;
+}
+
 ECFG_matrix_set::ECFG_matrix_set (const ECFG_matrix_set& ems)
   : alphabet (ems.alphabet)
 {
@@ -188,7 +224,7 @@ void ECFG_matrix_set::eval_funcs (PScores& pscores)
 	    if (CTAGGING(-3,ECFG_SCORES))
 	      {
 		CL << "Initial probability for state (";
-		ECFG_builder::print_state (CL, s, dummy_alph_dict, *chain);
+		ECFG_builder::print_state (CL, s, dummy_alph_dict, Dummy_alphabet, *chain);
 		CL << ") = (";
 		ECFG_builder::pfunc2stream (CL, pscores, pi_pfunc);
 		CL << ") evaluates to " << chain->matrix->pi[s] << "\n";
@@ -206,9 +242,9 @@ void ECFG_matrix_set::eval_funcs (PScores& pscores)
 		  if (CTAGGING(-3,ECFG_SCORES))
 		    {
 		      CL << "Rate from (";
-		      ECFG_builder::print_state (CL, s, dummy_alph_dict, *chain);
+		      ECFG_builder::print_state (CL, s, dummy_alph_dict, Dummy_alphabet, *chain);
 		      CL << ") to (";
-		      ECFG_builder::print_state (CL, d, dummy_alph_dict, *chain);
+		      ECFG_builder::print_state (CL, d, dummy_alph_dict, Dummy_alphabet, *chain);
 		      CL << ") = (";
 		      ECFG_builder::pfunc2stream (CL, pscores, rate_pfunc);
 		      CL << ") evaluates to " << rate << "\n";

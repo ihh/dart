@@ -27,16 +27,14 @@ int main (int argc, char** argv)
   sstring default_chain_filename;
   default_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE;
 
-  sstring chain_filename, write_filename, src_tok, dest_tok;
-  double time;
+  sstring chain_filename, write_filename;
+  bool compute_evidence;
 
   opts.print_title ("Modeling options");
 
   opts.add ("c -chain-filename", chain_filename = default_chain_filename, "file to load model from");
   opts.add ("w -write-filename", write_filename = "", "file to save model to", false);
-  opts.add ("s -source-state", src_tok = DEFAULT_TERM_ID, "source term");
-  opts.add ("d -dest-state", dest_tok = DEFAULT_TERM_ID, "destination term");
-  opts.add ("t -time", time = 1., "rate matrix multiplier");
+  opts.add ("e -evidence", compute_evidence = false, "compute log-evidences");
 
   // parse the command line & do stuff
   try
@@ -67,32 +65,13 @@ int main (int argc, char** argv)
       Terminatrix_builder::init_terminatrix (term, sexpr);
       term.eval_funcs();
 
-      // only bother with the state lookup if chain has one pseudoterm
-      if (term.chain().word_len > 1 || term.chain().classes > 1)
-	CLOGERR << "[skipping the matrix exponentiation]\n";
-      else
+      // calculate evidences, if asked
+      if (compute_evidence)
 	{
-	  // convert alphabet symbols to state indices
-	  const int src_state = tok2int (term.alph_list.front(), src_tok, "Source");
-	  const int dest_state = tok2int (term.alph_list.front(), dest_tok, "Destination");
-
-	  // exponentiate matrix
-	  const array2d<double> cond_submat = term.rate_matrix().create_conditional_substitution_matrix (time);
-
-	  // get equilibrium distribution
-	  const vector<double> eqm_prob = term.rate_matrix().create_prior();
-
-	  // extract required element
-	  const double result = cond_submat (src_state, dest_state);
-
-	  // print alphabet tokens, in order
-	  cout << "Alphabet symbols: " << term.alph_list.front().tokens() << '\n';
-
-	  // print equilibrium distribution
-	  cout << "Equilibrium distribution: " << eqm_prob << '\n';
-
-	  // print required element
-	  cout << "exp(R*" << time << ")_{" << src_tok << ',' << dest_tok << "} = " << result << '\n';
+	  Terminatrix_log_evidence log_ev (term);
+	  SExpr log_ev_sexpr = log_ev.map_reduce_sexpr();
+	  cout << ";; log-evidence\n";
+	  cout << log_ev_sexpr.to_parenthesized_string() << '\n';
 	}
 
       // save

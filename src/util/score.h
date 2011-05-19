@@ -24,11 +24,14 @@ typedef double Log2;    // a Log2 is a log-probability in base 2
 // the only guaranteed relationship between the infinity's is:    Score2Nats(InfinityScore) <= InfinityLoge
 // i.e. they are NOT necessarily equal!
 
-#define Loge2         0.693147180559945
-#define InfinityScore 987654321
-#define InfinityLoge  9.87654321e+99
-#define InfinityProb  1e+300
-#define ZeroProb      1e-300
+#define Loge2         ((Loge) 0.693147180559945)
+#define InfinityScore ((Score) 987654321)
+#define InfinityLoge  ((Loge) 9.87654321e+99)
+#define InfinityProb  ((Prob) 1e+300)
+#define ZeroProb      ((Prob) 1e-300)
+
+#define ScoreOfProb1  ((Score) 0)
+#define ScoreOfProb0  (-InfinityScore)
 
 // private global constant macros
 // DartScore2BitsRatio is assumed to be a power of 10 by string display routines

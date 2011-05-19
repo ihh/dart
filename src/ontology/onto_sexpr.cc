@@ -21,8 +21,15 @@ EM_matrix_base& Terminatrix::rate_matrix()
 ECFG_chain& Terminatrix::chain()
 {
   if (matrix_set.chain.size() != 1)
-    THROWEXPR ("Oops -- no rate matrix in Terminatrix");
+    THROWEXPR ("Oops -- no chain in Terminatrix");
   return matrix_set.chain[0];
+}
+
+const Alphabet& Terminatrix::default_alphabet()
+{
+  if (alph_list.empty())
+    THROWEXPR ("Oops -- no alphabet in Terminatrix");
+  return alph_list.front();
 }
 
 void Terminatrix::eval_funcs()
@@ -94,7 +101,7 @@ void Terminatrix_builder::init_terminatrix_model (Terminatrix& term, SExpr& mode
       term.alph_dict.add (alph);
     }
   // initialise chain
-  init_chain (term.matrix_set, term.alph_dict, term.alph_list.front(), term.term2chain, term.sym2pvar, model_sexpr.find_or_die (EG_CHAIN), DEFAULT_TIMEPOINT_RES, true);
+  init_chain (term.matrix_set, term.alph_dict, term.default_alphabet(), term.term2chain, term.sym2pvar, model_sexpr.find_or_die (EG_CHAIN), DEFAULT_TIMEPOINT_RES, true);
 }
 
 void Terminatrix_builder::terminatrix2stream (ostream& out, Terminatrix& term)
@@ -112,35 +119,35 @@ void Terminatrix_builder::terminatrix2stream (ostream& out, Terminatrix& term)
 
   terminatrix_params2stream (out, term);
 
-  out << ")\n";
+  out << ") ;; end " TERMINATRIX "\n";
 }
 
 void Terminatrix_builder::terminatrix_member_sexpr2stream (ostream& out, SExpr& member_sexpr)
 {
   if (!member_sexpr.is_empty_list())
-    out << ' ' << member_sexpr.to_parenthesized_string() << '\n';
+    out << " " << member_sexpr.to_parenthesized_string() << "\n";
 }
 
 void Terminatrix_builder::terminatrix_model2stream (ostream& out, Terminatrix& term)
 {
   out << " (" << TERMINATRIX_MODEL << '\n';
-  chain2stream (out, term.pscores, ((Terminatrix&)term).chain(), term.alph_dict, term.got_counts ? &term.stats : NULL);
+  chain2stream (out, term.pscores, ((Terminatrix&)term).chain(), term.alph_dict, term.default_alphabet(), term.got_counts ? &term.stats : NULL);
   for_const_contents (list<Alphabet>, term.alph_list, alph)
     alphabet2stream (out, *alph);
-  out << ')';
+  out << " ) ;; end " TERMINATRIX_MODEL "\n";
 }
 
 void Terminatrix_builder::terminatrix_params2stream (ostream& out, Terminatrix& term)
 {
-  out << " (" << TERMINATRIX_PARAMS << '\n';
+  out << "\n (" << TERMINATRIX_PARAMS << '\n';
   pscores2stream (out, term.pscores, term.mutable_pgroups, &term.var_counts);
   pcounts2stream (out, term.pcounts, EG_PSEUDOCOUNTS, (const PCounts*) 0, true, false);
   if (term.got_counts)
     pcounts2stream (out, term.var_counts, EG_EXPECTED_COUNTS, &term.pcounts, true, true);
-  out << ')';
+  out << " ) ;; end " TERMINATRIX_PARAMS "\n";
 }
 
-SCM Terminatrix_family_visitor::map_reduce()
+SCM Terminatrix_family_visitor::map_reduce_scm()
 {
   SCM tree_db_list_scm = terminatrix.scheme.evaluate_SCM (terminatrix.tree_db_sexpr.value());
   if (!scm_list_p(tree_db_list_scm))
@@ -181,12 +188,29 @@ void Terminatrix_EM_visitor::initialize_current_colmat()
 {
   map<sstring,Symbol_score_map> named_node_scores;
   // fill named_node_scores by calling knowledge function
+  SCM knowledge_function_scm = terminatrix.scheme.evaluate_SCM (terminatrix.knowledge_sexpr);
   for (Phylogeny::Node n = 0; n < current_tree->nodes(); ++n)
     if (current_tree->node_name[n].size())
     {
       const sstring& node_name = current_tree->node_name[n];
+      SCM node_name_scm = scm_from_locale_string (node_name.c_str());
       Symbol_score_map node_ssm;
-      // loop over states, creating state tuples and calling knowledge function
+      // loop over states, creating state tuples and calling knowledge function as follows:
+      // (knowledge familyName geneName (term1 term2 ... hiddenState))
+      for (int state = 0; state < terminatrix.rate_matrix().number_of_states(); ++state)
+	{
+	  const vector<sstring> state_tokens = terminatrix.chain().get_symbol_tokens (state, terminatrix.alph_dict, terminatrix.default_alphabet());
+
+	  SCM state_tuple_scm = scm_list_n (SCM_UNDEFINED);
+	  for_const_reverse_contents (vector<sstring>, state_tokens, tok)
+	    state_tuple_scm = scm_cons (scm_from_locale_string (tok->c_str()), state_tuple_scm);
+
+	  SCM knowledge_result_scm = scm_call_3 (knowledge_function_scm, current_name_scm, node_name_scm, state_tuple_scm);
+	  if (!scm_boolean_p (knowledge_result_scm))
+	    THROWEXPR ("(" TERMINATRIX_MODEL << " (" TERMINATRIX_KNOWLEDGE_SCM " func) ...)  means  (func " << current_name << " " << node_name << " (" << state_tokens << ")) should return #t or #f, but it didn't");
+	  if (knowledge_result_scm == SCM_BOOL_T)
+	    node_ssm.insert (Symbol_score (state, ScoreOfProb1));
+	}
 
       // copy into named_node_scores
       named_node_scores[node_name] = node_ssm;

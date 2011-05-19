@@ -54,6 +54,8 @@ struct ECFG_chain : ECFG_enum
 
   // helpers
   bool uses_default_alphabet() const;
+  void get_symbol_indices (int state, vector<int>& symbol_idx) const;  // convert a state index to a vector of symbol indices (the last of which is the hidden state index, which will be zero if there is only one "hidden" class)
+  vector<sstring> get_symbol_tokens (int state, const Alphabet_dictionary& alph_dict, const Alphabet& default_alph) const;  // convert a state index to a vector of symbol tokens (the last of which is the hidden state token, which will be the empty string if there is only one "hidden" class)
 };
 
 // Set of substitution matrices for an Evolutionary CFG

@@ -13,7 +13,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
 {
   // output methods
   static void ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_scores& ecfg, const ECFG_counts* counts = 0);
-  static void chain2stream (ostream& out, const PScores& pscores, const ECFG_chain& chain, const Alphabet_dictionary& alph_dict, const Update_statistics* stats = 0, const ECFG_matrix_set* ems = 0);
+  static void chain2stream (ostream& out, const PScores& pscores, const ECFG_chain& chain, const Alphabet_dictionary& alph_dict, const Alphabet& default_alphabet, const Update_statistics* stats = 0, const ECFG_matrix_set* ems = 0);
   static void chain_counts2stream (ostream& out, const Alphabet& alph, const ECFG_scores& ecfg, const ECFG_counts& counts);
 
   static void grammars2stream (ostream& out, const Alphabet& alph, const vector<ECFG_scores*>& grammars);
@@ -114,7 +114,7 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   static const char* policy2string (Update_policy type);
   static Update_policy string2policy (const sstring& policy_string);
 
-  static void print_state (ostream& out, int state, const Alphabet_dictionary& alph_dict, const ECFG_chain& chain);
+  static void print_state (ostream& out, int state, const Alphabet_dictionary& alph_dict, const Alphabet& default_alphabet, const ECFG_chain& chain);
 };
 
 

@@ -1656,14 +1656,14 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
     {
       const ECFG_chain& chain = ecfg.matrix_set.chain[n_chain];
       const Update_statistics* stats = counts ? &counts->stats[n_chain] : (const Update_statistics*) 0;
-      chain2stream (out, ecfg.pscores, chain, alph_dict, stats, &ecfg.matrix_set);
+      chain2stream (out, ecfg.pscores, chain, alph_dict, ecfg.alphabet, stats, &ecfg.matrix_set);
     }
 
   // close grammar block
   out << "\n)  ;; end grammar " << ecfg.name << "\n\n";
 }
 
-void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECFG_chain& chain, const Alphabet_dictionary& alph_dict, const Update_statistics* stats, const ECFG_matrix_set* ems)
+void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECFG_chain& chain, const Alphabet_dictionary& alph_dict, const Alphabet& default_alphabet, const Update_statistics* stats, const ECFG_matrix_set* ems)
 {
   if (chain.type == Hybrid)
     {
@@ -1720,7 +1720,7 @@ void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECF
 	  if (print_pi)
 	    {
 	      out << "  (" << EG_CHAIN_INITIAL << " (" << EG_CHAIN_STATE << " ";
-	      print_state (out, s, alph_dict, chain);
+	      print_state (out, s, alph_dict, default_alphabet, chain);
 	      out << ") (" << EG_PROB << ' ';
 
 	      if (chain.is_parametric)
@@ -1749,9 +1749,9 @@ void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECF
 	      if (print_rate)
 		{
 		  out << "  (" << EG_CHAIN_MUTATE << " (" << EG_FROM << " ";
-		  print_state (out, s, alph_dict, chain);
+		  print_state (out, s, alph_dict, default_alphabet, chain);
 		  out << ") (" << EG_TO << " ";
-		  print_state (out, d, alph_dict, chain);
+		  print_state (out, d, alph_dict, default_alphabet, chain);
 		  out << ") (" << EG_RATE << ' ';
 
 		  if (chain.is_parametric)
@@ -1772,24 +1772,23 @@ void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECF
     }
 }
 
-void ECFG_builder::print_state (ostream& out, int state, const Alphabet_dictionary& alph_dict, const ECFG_chain& chain)
+void ECFG_builder::print_state (ostream& out, int state, const Alphabet_dictionary& alph_dict, const Alphabet& default_alphabet, const ECFG_chain& chain)
 {
-  Alphabet_dictionary& ad = (Alphabet_dictionary&) alph_dict;  // cast away const
-  out << '(';
-  int mul, pos;
-  for (mul = 1, pos = 0; pos < chain.word_len; mul *= chain.alph_size[pos], ++pos)
+  if (alph_dict.size())
     {
-      const int tok_idx = (state / mul) % chain.alph_size[pos];
-      if (pos > 0)
-	out << ' ';
-      if (chain.alph_name.size())
-	out << ad[chain.alph_name[pos]].int2token (tok_idx);
-      else
-	out << tok_idx;
+      vector<sstring> toks = chain.get_symbol_tokens (state, alph_dict, default_alphabet);
+      if (chain.classes <= 1)
+	toks.pop_back();
+      out << '(' << toks << ')';
     }
-  if (chain.class_labels.size() > 1)
-    out << ' ' << SExpr_atom(chain.class_labels[(state / mul) % chain.class_labels.size()]);
-  out << ')';
+  else
+    {
+      vector<int> tok_idx;
+      chain.get_symbol_indices (state, tok_idx);
+      if (chain.classes <= 1)
+	tok_idx.pop_back();
+      out << '(' << tok_idx << ')';
+    }
 }
 
 void ECFG_builder::grammars2stream (ostream& out, const Alphabet& alph, const vector<ECFG_scores*>& grammars)
@@ -1821,23 +1820,23 @@ void ECFG_builder::chain_counts2stream (ostream& out, const Alphabet& alph, cons
 	    for (int s = 0; s < chain.matrix->m(); ++s)
 	      {
 		out << "   (" << EG_CHAIN_INITIAL << " (" << EG_CHAIN_STATE << " ";
-		print_state (out, s, alph_dict, chain);
+		print_state (out, s, alph_dict, alph, chain);
 		out << ") (" << PK_COUNT << ' ' << stats.s[s] << "))\n";
 	      }
 
 	    for (int s = 0; s < chain.matrix->m(); ++s)
 	      {
 		out << "   (" << EG_WAIT << " (" << EG_CHAIN_STATE << ' ';
-		print_state (out, s, alph_dict, chain);
+		print_state (out, s, alph_dict, alph, chain);
 		out << ") (" << PK_TIME << ' ' << stats.w[s] << "))\n";
 
 		for (int d = 0; d < chain.matrix->m(); ++d)
 		  if (s != d)
 		    {
 		      out << "   (" << EG_CHAIN_MUTATE << " (" << EG_FROM << " ";
-		      print_state (out, s, alph_dict, chain);
+		      print_state (out, s, alph_dict, alph, chain);
 		      out << ") (" << EG_TO << " ";
-		      print_state (out, d, alph_dict, chain);
+		      print_state (out, d, alph_dict, alph, chain);
 		      out << ") (" << PK_COUNT << ' ' << stats.u(s,d) << "))\n";
 		    }
 	      }

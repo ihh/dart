@@ -492,16 +492,7 @@ SCM SExpr_Scheme_evaluator::evaluate_SCM (SExpr& sexpr) const
 SExpr SExpr_Scheme_evaluator::evaluate_sexpr (SExpr& sexpr) const
 {
   SCM result_scm = evaluate_SCM (sexpr);
-  SExpr *result_sexpr = scm_to_new_sexpr (result_scm);
-  if (!result_sexpr)
-    THROWEXPR ("In SExpr_Scheme_evaluator::evaluate_sexpr: scm_to_new_sexpr returned null");
-  CTAG(3,GUILE) << "Result of Scheme evaluation: " << result_sexpr->to_string() << '\n';
-  if (!(result_sexpr->is_list() && result_sexpr->child.size() == 1))
-    THROWEXPR ("In SExpr_Scheme_evaluator::evaluate_sexpr: scm_to_new_sexpr should return a list with one element");
-  SExpr return_sexpr;
-  return_sexpr.swap ((*result_sexpr)[0]);
-  delete result_sexpr;
-  return return_sexpr;
+  return scm_to_sexpr (result_scm);
 }
 
 SExpr SExpr_Scheme_evaluator::evaluate_values (SExpr& sexpr) const
