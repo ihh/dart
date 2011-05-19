@@ -134,6 +134,7 @@ struct EM_matrix_base : Irrev_diagonalised_matrix_factory, EM_matrix_params, Pip
   // trivial methods
   inline int ca (int c, int a) const { return c * A + a; }  // index of state for class c, residue a
   inline int m() const { return C*A; }  // total number of states
+  inline int number_of_states() const { return m(); }  // long-form syntax
   inline int state_class (int i) const { return i / A; }
   inline int state_residue (int i) const { return i % A; }
 
@@ -196,7 +197,8 @@ struct EM_matrix_base : Irrev_diagonalised_matrix_factory, EM_matrix_params, Pip
   // returns a matrix whose on-diagonal elements correspond to wait times, and off-diagonals are usage counts.
   array2d<double> clean_phylo_EM (int src, int dest, double T) const;
 
-  // up/down algorithm for a single column
+  // up/down algorithm for a single column.
+  // it is the creator's responsibility to call alloc() and initialise()
   struct Column_matrix
   {
     // The "signposts" for the Column_matrix.

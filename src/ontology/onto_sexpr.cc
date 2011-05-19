@@ -1,6 +1,7 @@
 #include "ontology/onto_sexpr.h"
 #include "ontology/onto_keywords.h"
 #include "seq/pkeywords.h"
+#include "guile/newick-type.h"
 
 Terminatrix::Terminatrix (SExpr_Scheme_evaluator& scheme)
   : scheme(scheme),
@@ -137,4 +138,70 @@ void Terminatrix_builder::terminatrix_params2stream (ostream& out, Terminatrix& 
   if (term.got_counts)
     pcounts2stream (out, term.var_counts, EG_EXPECTED_COUNTS, &term.pcounts, true, true);
   out << ')';
+}
+
+SCM Terminatrix_family_visitor::map_reduce()
+{
+  SCM tree_db_list_scm = terminatrix.scheme.evaluate_SCM (terminatrix.tree_db_sexpr.value());
+  if (!scm_list_p(tree_db_list_scm))
+    THROWEXPR (TERMINATRIX_TREE_DB_SCM " function must return a list");
+
+  scm_t_bits accumulant = zero();
+
+  current_family_index = 0;
+  while (!scm_is_null(tree_db_list_scm))
+    {
+      SCM tree_db_entry_scm = scm_car (tree_db_list_scm);
+      if (!(scm_list_p(tree_db_entry_scm) && scm_to_uintmax(scm_length(tree_db_entry_scm)) == 2))
+	THROWEXPR (TERMINATRIX_TREE_DB_SCM " function must return a list of (name newick) lists");
+
+      current_name_scm = scm_car (tree_db_entry_scm);
+      current_newick_scm = scm_cdar (tree_db_entry_scm);
+
+      if (!scm_is_string(current_name_scm))
+	THROWEXPR (TERMINATRIX_TREE_DB_SCM " function must return a list of (name newick) lists");
+
+      char* current_name_cstr = scm_to_locale_string (current_name_scm);
+      current_name = current_name_cstr;  // duplicate the string to our own member variable, just to guard against dangling pointers in subclasses (ugh)
+      free (current_name_cstr);
+
+      current_tree = newick_cast_from_scm (current_newick_scm);
+
+      map_current();
+      accumulant = reduce (accumulant);
+
+      tree_db_list_scm = scm_cdr (tree_db_list_scm);
+      ++current_family_index;
+    }
+
+  return finalize (accumulant);
+}
+
+void Terminatrix_EM_visitor::initialize_current_colmat()
+{
+  map<sstring,Symbol_score_map> named_node_scores;
+  // fill named_node_scores by calling knowledge function
+  for (Phylogeny::Node n = 0; n < current_tree->nodes(); ++n)
+    if (current_tree->node_name[n].size())
+    {
+      const sstring& node_name = current_tree->node_name[n];
+      Symbol_score_map node_ssm;
+      // loop over states, creating state tuples and calling knowledge function
+
+      // copy into named_node_scores
+      named_node_scores[node_name] = node_ssm;
+    }
+
+  vector<const Symbol_score_map*> node_scores;
+  const Symbol_score_map& wild_ssm = terminatrix.rate_matrix().alphabet().wild_ssm;
+  // fill node_scores by looking up named nodes in named_node_scores, and using wildcards for unnamed nodes
+  for (Phylogeny::Node n = 0; n < current_tree->nodes(); ++n)
+    if (current_tree->node_name[n].size())
+      node_scores[n] = &named_node_scores[current_tree->node_name[n]];
+    else
+      node_scores[n] = &wild_ssm;
+
+  // initialise Column_matrix
+  current_colmat.alloc (current_tree->nodes(), terminatrix.rate_matrix().number_of_states());
+  current_colmat.initialise (*current_tree, node_scores);
 }

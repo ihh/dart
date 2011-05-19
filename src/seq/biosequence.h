@@ -192,7 +192,7 @@ class Alphabet
   void init_hidden (const Alphabet& base_alphabet, const vector<sstring>& hidden_class_labels);
 
   // constructor
-  Alphabet (const char* name = UNINITIALIZED_ALPHABET_NAME, int size = 1);
+  Alphabet (const char* name = UNINITIALIZED_ALPHABET_NAME, int size = 0);
 
   // methods
   int size() const { return alphabet_size; }
