@@ -3,7 +3,7 @@
 #include "seq/pkeywords.h"
 #include "guile/newick-type.h"
 
-Terminatrix::Terminatrix (SExpr_Scheme_evaluator& scheme)
+Terminatrix::Terminatrix (ECFG_Scheme_evaluator& scheme)
   : scheme(scheme),
     var_counts(pscores),
     dummy_alph(),

@@ -1,6 +1,5 @@
 #include "ontology/onto_sexpr.h"
 #include "util/unixenv.h"
-#include "ecfg/guile-ecfg.h"
 
 // path to default chain file, from dart root
 #define DEFAULT_CHAIN_FILE "src/ontology/t/test1.tsm"
