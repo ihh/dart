@@ -75,11 +75,12 @@ struct Terminatrix
 };
 
 // Terminatrix family visitor
-// This class and its subclasses form a sort of bastard map-reduce.
+// This class and its subclasses form a sort of bastard map-reduce framework.
+// The input is a list of "families" (named phylogenetic trees).
 // For efficiency, the base class (Terminatrix_family_visitor) does reduction in place, i.e. a left-fold.
 // Default behavior of this class is to return #f, discarding values in the reduction.
-// To get closer to a true map-reduce, override reduce() and current_mapped_scm() methods in derived class (Terminatrix_concatenator).
-// The "idealized" map-reduce functions would be as follows
+// To get closer to a true map-reduce, override current_mapped_scm() and reduce_scm() methods in derived class (Terminatrix_concatenator).
+// The idealized, "pure" map-reduce functions would be as follows
 //     map : (string current_name, PHYLIP_tree current_tree) -> SCM
 //  reduce : (SCM, SCM) -> SCM
 struct Terminatrix_family_visitor
@@ -107,10 +108,14 @@ struct Terminatrix_family_visitor
   virtual ~Terminatrix_family_visitor() { }
 
   // map-reduce virtual methods
-  // the result of the map operation is not explicitly represented; it is assumed to be described by the current state of the subclass
+  // the result of the map operation is not explicitly represented; it is assumed to be held by the current state of the subclass,
+  // since reduce() is called immediately after init_current().
+  // the results of the fold are represented as the integral type, scm_t_bits, rather than the guile internal type SCM,
+  // to allow derived classes to pass other types instead of a Scheme object.
+  // practically, this just means a few calls to SCM_PACK and SCM_UNPACK.
   virtual scm_t_bits zero() { return SCM_UNPACK (SCM_BOOL_F); }  // guaranteed to be called before any families are visited. "What result will you get if there are zero families?"
-  virtual void map_current() { }  // guaranteed to be called exactly once for every family, right before reduce(). "Prepare your internal state to reflect the current family"
-  virtual scm_t_bits reduce (scm_t_bits previous) { return previous; }  // guaranteed to be called after map_current(). "Combine your internal state with the results so far"
+  virtual void init_current() { }  // guaranteed to be called exactly once for every family, right before reduce(). "Prepare your internal state to reflect the current family"
+  virtual scm_t_bits reduce (scm_t_bits previous) { return previous; }  // guaranteed to be called after init_current(). "Combine your internal state with the results so far"
   virtual SCM finalize (scm_t_bits result) { return SCM_PACK (result); }  // guaranteed to be called after all families visited. "Convert the results to a SCM object"
 
   // map-reduce methods
@@ -120,14 +125,17 @@ struct Terminatrix_family_visitor
 
 // Terminatrix_concatenator
 // A virtual class returning a cons of the map results.
+// This class also commits the map-reduction to passing SCM objects.
 // Overrides the zero() and reduce(previous) methods.
-// Introduces a new virtual method, current_mapped_scm().
+// Introduces new virtual methods current_mapped_scm(), reduce_scm(), zero_scm()
 struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
 {
   Terminatrix_concatenator (Terminatrix& term) : Terminatrix_family_visitor(term) { }
-  scm_t_bits reduce (scm_t_bits previous) { SCM cons = scm_cons (current_mapped_scm(), SCM_PACK(previous)); return SCM_UNPACK(cons); }
-  scm_t_bits zero() { return SCM_UNPACK (scm_list_n (SCM_UNDEFINED)); }  // creates an empty list
-  virtual SCM current_mapped_scm() = 0;  // guaranteed to be called after map_current()
+  scm_t_bits reduce (scm_t_bits previous) { SCM reduction = reduce_scm (current_mapped_scm(), SCM_PACK(previous)); return SCM_UNPACK(reduction); }  // delegate to reduce_scm(). intended final
+  scm_t_bits zero() { return SCM_UNPACK (zero_scm()); }  // delegate to zero_scm(). intended final
+  virtual SCM current_mapped_scm() = 0;  // guaranteed to be called after init_current()
+  virtual SCM reduce_scm (SCM a, SCM b) { return scm_cons (a, b); }  // does a cons
+  virtual SCM zero_scm() { return scm_list_n (SCM_UNDEFINED); }  // creates an empty list
 };
 
 // Terminatrix_EM_visitor
@@ -141,7 +149,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
   Column_matrix current_colmat;
   // methods
   Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term) { }
-  void map_current() { initialize_current_colmat(); }
+  void init_current() { initialize_current_colmat(); }  // intended final
   void initialize_current_colmat();
 };
 

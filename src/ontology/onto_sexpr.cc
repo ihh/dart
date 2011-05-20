@@ -179,7 +179,7 @@ SCM Terminatrix_family_visitor::map_reduce_scm()
 
       CTAG(5,TERMINATRIX) << "Family #" << (current_family_index + 1) << ": " << current_name << "\n";
 
-      map_current();
+      init_current();
       accumulant = reduce (accumulant);
 
       tree_db_list_scm = scm_cdr (tree_db_list_scm);
