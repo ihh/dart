@@ -71,6 +71,7 @@ void SExpr::init (Ptr begin, Ptr end, bool allow_quotes)
 	  //	  CLOGERR << "InQuotes " << *ptr << '\n';
 	  if (!allow_quotes)
 	    THROWEXPR ("SExpr: This program uses a limited S-expression format in which quoted atoms are not allowed.\nContext '" << get_context (ptr, begin) << "'");
+	  current.atom.is_quoted = true;
 	  switch (*ptr)
 	    {
 	    case '\\':
@@ -259,10 +260,9 @@ ostream& operator<< (ostream& out, const SExpr& sexpr)
   return out;
 }
 
-Regexp special_char_regexp("[ \t\r\n;\"\\(\\)]");
 ostream& operator<< (ostream& out, const SExpr_atom& atom)
 {
-  if (special_char_regexp.Match(atom.c_str()))
+  if (atom.is_quoted)
     {
       out << '"';
       for_const_contents (sstring, atom, chr)

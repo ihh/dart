@@ -113,14 +113,15 @@ struct Terminatrix_family_visitor
   SExpr map_reduce_sexpr() { return scm_to_sexpr (map_reduce_scm()); }
 };
 
-struct Terminatrix_concatenator
+struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
 {
+  Terminatrix_concatenator (Terminatrix& term) : Terminatrix_family_visitor(term) { }
   scm_t_bits reduce (scm_t_bits previous) { SCM cons = scm_cons (current_mapped_scm(), SCM_PACK(previous)); return SCM_UNPACK(cons); }
   scm_t_bits zero() { return SCM_UNPACK (scm_list_n (SCM_UNDEFINED)); }  // creates an empty list
   virtual SCM current_mapped_scm() = 0;  // guaranteed to be called after map_current()
 };
 
-struct Terminatrix_EM_visitor : Terminatrix_family_visitor
+struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
 {
   // global info
   Update_statistics stats;  // uses these in preference to Terminatrix's; copy across if needed
@@ -134,7 +135,7 @@ struct Terminatrix_EM_visitor : Terminatrix_family_visitor
 
 struct Terminatrix_log_evidence : Terminatrix_EM_visitor, Terminatrix_concatenator
 {
-  Terminatrix_log_evidence (Terminatrix& term) : Terminatrix_EM_visitor(term) { }
+  Terminatrix_log_evidence (Terminatrix& term) : Terminatrix_family_visitor(term), Terminatrix_EM_visitor(term), Terminatrix_concatenator(term) { }
   SCM current_mapped_scm()
   {
     Terminatrix_EM_visitor::current_colmat.fill_up (Terminatrix_family_visitor::terminatrix.rate_matrix(), *(Terminatrix_family_visitor::current_tree));

@@ -12,11 +12,13 @@
 
 struct SExpr_atom : sstring
 {
+  // data
+  bool is_quoted;  // if true, then the atom is in double quotes, i.e. a Scheme string
   // constructors
-  SExpr_atom() : sstring() { }
-  SExpr_atom(const sstring& s) : sstring(s) { }
-  SExpr_atom(const char* s) : sstring(s) { }
-  SExpr_atom(const SExpr_atom& s) : sstring(s) { }
+  SExpr_atom() : sstring(), is_quoted(false) { }
+  SExpr_atom(const sstring& s) : sstring(s), is_quoted(false) { }
+  SExpr_atom(const char* s) : sstring(s), is_quoted(false) { }
+  SExpr_atom(const SExpr_atom& s) : sstring(s), is_quoted(s.is_quoted) { }
   // vector of strings
   static vector<SExpr_atom> from_vector (const vector<sstring>& s);
   // quoted output

@@ -1,5 +1,6 @@
 #include "ontology/onto_sexpr.h"
 #include "util/unixenv.h"
+#include "ecfg/guile-ecfg.h"
 
 // path to default chain file, from dart root
 #define DEFAULT_CHAIN_FILE "src/ontology/t/test1.tsm"
@@ -57,7 +58,7 @@ int main (int argc, char** argv)
       SExpr& sexpr = sexpr_file.sexpr;
 
       // create Scheme context
-      SExpr_Scheme_evaluator scheme;
+      ECFG_Scheme_evaluator scheme;
       scheme.initialize();
 
       // init the Terminatrix
