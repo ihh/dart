@@ -108,11 +108,17 @@ struct Terminatrix_family_visitor
   virtual ~Terminatrix_family_visitor() { }
 
   // map-reduce virtual methods
-  // the result of the map operation is not explicitly represented; it is assumed to be held by the current state of the subclass,
-  // since reduce() is called immediately after init_current().
-  // the intermediate results of the fold are represented as the integral type, scm_t_bits, rather than the guile internal type SCM,
+  // the order of calls is as follows:
+  //  - zero();
+  //  - for each family:
+  //     - init_current();
+  //     - reduce().
+  //  - finalize().
+  // the result of the map operation is not explicitly represented by this class; for that, use the derived class Terminatrix_concatenator.
+  // in this class, the intermediate results of the fold are represented as the integral type, scm_t_bits, rather than the guile internal type SCM,
   // to allow derived classes to pass other types instead of a Scheme object.
   // practically, this just means a few calls to SCM_PACK and SCM_UNPACK.
+  // the derived class Terminatrix_concatenator overrides this behavior too, passing everything as SCM.
   virtual scm_t_bits zero() { return SCM_UNPACK (SCM_BOOL_F); }  // guaranteed to be called before any families are visited. "What result will you get if there are zero families?"
   virtual void init_current() { }  // guaranteed to be called exactly once for every family, right before reduce(). "Prepare your internal state to reflect the current family"
   virtual scm_t_bits reduce (scm_t_bits previous) { return previous; }  // guaranteed to be called after init_current(). "Combine your internal state with the results so far"
