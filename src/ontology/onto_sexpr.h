@@ -17,10 +17,11 @@
 // this C++/Scheme hybrid, and its helper classes, propagate knowledge from an ontological knowledge base
 // over a particular kind of graphical model: a continuous-time Markov chain over a phylogenetic tree.
 // the class is documented below with reference to
+//  "families" (the trees)
 //  "genes" (the things at the nodes of the tree)
-//  "terms" (the members of the ontology)
-// however these are somewhat arbitrary labels for the values that the variables can take
-// (it works perfectly well as a substitution model for nucleotides, codons, amino acids etc.)
+//  "terms" (the members of the ontology, that can be associated with the genes)
+// however these are somewhat arbitrary labels for the values that the random variables can take
+// (e.g. it works perfectly well as a substitution model for nucleotides, codons, amino acids, other discrete characters)
 // With a view to future parallelization, the core map-reduce operation common to all the usual
 // variations on the sum-product algorithm (evidence, posteriors, EM, etc) has been abstracted out.
 struct Terminatrix
