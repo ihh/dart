@@ -173,10 +173,7 @@ SCM Terminatrix_family_visitor::map_reduce_scm()
       if (!scm_is_string(current_name_scm))
 	CLOGERR << TERMINATRIX_TREE_DB_SCM " function must return a list of (name newick) lists, where the name is a string\n";
 
-      char* current_name_cstr = scm_to_locale_string (current_name_scm);
-      current_name = current_name_cstr;  // duplicate the string to our own member variable, just to guard against dangling pointers in subclasses (ugh)
-      free (current_name_cstr);
-
+      current_name = scm_to_string (current_name_scm);
       current_tree = newick_cast_from_scm (current_newick_scm);
 
       CTAG(5,TERMINATRIX) << "Family #" << (current_family_index + 1) << ": " << current_name << "\n";
