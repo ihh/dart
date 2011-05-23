@@ -63,9 +63,9 @@ Ass_map::Ass_map (SExpr& sexpr, int offset)
 	  if (++n > offset)
 	    {
 	      // be forgiving: accept (tag value) or (tag . value)
-	      if (child->has_tag() && child->has_value())
+	      if (child->has_tag() && child->has_value())  // looks like a (tag value) list?
 		(*this) [child->tag()] = sexpr_to_scm (&child->value());
-	      else if (child->has_tag() && child->child.size() == 3 && (*child)[1].is_atom() && (*child)[1].get_atom() == ".")  // looks like a Scheme pair
+	      else if (child->has_tag() && child->is_scheme_pair())  // looks like a Scheme (tag . value) pair?
 		(*this) [child->tag()] = sexpr_to_scm (&((*child)[2]));
 	      else
 		CLOGERR << "Discarding " << child->to_parenthesized_string() << "\n";

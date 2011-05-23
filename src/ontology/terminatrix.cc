@@ -79,14 +79,14 @@ int main (int argc, char** argv)
 	{
 	  Terminatrix_log_evidence log_ev (term);
 	  SExpr log_ev_sexpr = log_ev.map_reduce_sexpr();
-	  cout << ";; log-evidence\n";
+	  cout << ";; log-evidence by family\n";
 	  cout << log_ev_sexpr.to_parenthesized_string() << '\n';
 	}
 
       // calculate posteriors, if asked
       if (compute_posteriors)
 	{
-	  cout << ";; log-posteriors by gene and family\n";
+	  cout << ";; log-posteriors by family and gene\n";
 	  THROWEXPR ("Unimplemented");
 	}
 

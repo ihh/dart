@@ -147,7 +147,7 @@ struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
 
 // Terminatrix_keyed_concatenator
 // A virtual class similar to Terminatrix_concatenator,
-// but returning an assocation list of the form ((family1-id . family1-results) (family2-id . family2-results) ...)
+// but returning a list of the form ((family1-id family1-results) (family2-id family2-results) ...)
 // rather than a list of the form (family1-results family2-results ...)
 struct Terminatrix_keyed_concatenator : virtual Terminatrix_concatenator
 {
@@ -155,7 +155,7 @@ struct Terminatrix_keyed_concatenator : virtual Terminatrix_concatenator
   scm_t_bits reduce (scm_t_bits previous)  // delegate to reduce_scm(). intended final
   {
     SCM previous_scm = SCM_PACK(previous);
-    SCM current_scm = scm_cons (current_name_scm, current_mapped_scm());
+    SCM current_scm = scm_list_2 (current_name_scm, current_mapped_scm());
     SCM reduced_scm = reduce_scm (current_scm, previous_scm);
     return SCM_UNPACK(reduced_scm);
   }
@@ -194,8 +194,8 @@ struct Terminatrix_log_evidence : Terminatrix_keyed_concatenator, Terminatrix_EM
   SCM finalize_scm (SCM result)
   {
     return scm_list_2 (string_to_scm (TERMINATRIX_TERMINATRIX),
-		       scm_list_2 (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
-				   result));
+		       scm_cons (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
+				 result));
   }
 };
 
