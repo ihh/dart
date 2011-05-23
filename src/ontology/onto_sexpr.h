@@ -27,10 +27,10 @@
 struct Terminatrix
 {
   // Scheme functions that are used to create & initialize the knowledge-base
-  SExpr init_sexpr,  // a function that is called when the Terminatrix is initialized. Return result is discarded
-    model_sexpr,     // a function that is called to generate the model. Must return a quoted S-expression of the form (model (alphabet ...)+ (chain ...))
-    tree_db_sexpr,   // a function that is called to generate the phylogenetic tree database. Must return a Scheme association list mapping names (i.e. strings) to trees (i.e. newick smobs)
-    knowledge_sexpr; // a function that is called like (knowledge familyName geneName termTuple) and must return #t (gene-term association allowed) or #f (gene-term association disallowed)
+  SCM init_scm,  // a function that is called when the Terminatrix is initialized. Return result is discarded
+    model_scm,     // a function that is called to generate the model. Must return a quoted S-expression of the form (model (alphabet ...)+ (chain ...))
+    tree_db_scm,   // a function that is called to generate the phylogenetic tree database. Must return a Scheme association list mapping names (i.e. strings) to trees (i.e. newick smobs)
+    knowledge_scm; // a function that is called like (knowledge familyName geneName termTuple) and must return #t (gene-term association allowed) or #f (gene-term association disallowed)
 
   // symbol tables (only really used by Terminatrix_builder class; should probably move them there)
   PFunc_builder::SymPVar sym2pvar;  // numerical parameters
@@ -181,12 +181,12 @@ struct Terminatrix_builder : ECFG_builder
   // input helpers
   static void init_terminatrix_params (Terminatrix& terminatrix, SExpr& terminatrix_params_sexpr);
   static void init_terminatrix_model (Terminatrix& terminatrix, SExpr& terminatrix_model_sexpr);
-  static void init_terminatrix_member_sexpr (SExpr& member_sexpr, SExpr& parent_sexpr, const char* tag);
+  static void init_terminatrix_member_scm (SCM& member_scm, SExpr& parent_sexpr, const char* tag);
 
   // output helpers
   static void terminatrix_params2stream (ostream& out, Terminatrix& terminatrix);
   static void terminatrix_model2stream (ostream& out, Terminatrix& terminatrix);
-  static void terminatrix_member_sexpr2stream (ostream& out, SExpr& member_sexpr);
+  static void terminatrix_member_scm2stream (ostream& out, SCM& member_scm, const char* tag);
 };
 
 #endif /* ONTO_SEXPR_INCLUDED */

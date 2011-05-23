@@ -1,25 +1,31 @@
 #include "util/guile-defs.h"
 #include "util/logfile.h"
 
-SExpr* scm_to_new_sexpr (SCM scm)
+sstring scm_to_string (SCM scm)
 {
-  // four guile API calls to get an SCM as a char* string? feel like I'm doing something the hard way here
   const char *s = scm_to_locale_string (scm_object_to_string (scm, scm_variable_ref (scm_c_lookup ("write"))));
   sstring str (s);
-  SExpr* sexpr = new SExpr (str.begin(), str.end());
   free((void*) s);
+  return str;
+}
+
+SExpr* scm_to_parent_sexpr (SCM scm)
+{
+  // four guile API calls to get an SCM as a char* string? feel like I'm doing something the hard way here
+  sstring str = scm_to_string (scm);
+  SExpr* sexpr = new SExpr (str.begin(), str.end());
   return sexpr;
 }
 
 SExpr scm_to_sexpr (SCM scm)
 {
   SExpr return_sexpr;
-  SExpr *result_sexpr = scm_to_new_sexpr (scm);
+  SExpr *result_sexpr = scm_to_parent_sexpr (scm);
   if (!result_sexpr)
-    THROWEXPR ("In scm_to_sexpr: scm_to_new_sexpr returned null");
+    THROWEXPR ("In scm_to_sexpr: scm_to_parent_sexpr returned null");
   CTAG(3,GUILE) << "In scm_to_sexpr: " << result_sexpr->to_string() << '\n';
   if (!(result_sexpr->is_list() && result_sexpr->child.size() == 1))
-    THROWEXPR ("In scm_to_sexpr: scm_to_new_sexpr should return a list with one element");
+    THROWEXPR ("In scm_to_sexpr: scm_to_parent_sexpr should return a list with one element");
   return_sexpr.swap ((*result_sexpr)[0]);
   delete result_sexpr;
   return return_sexpr;
@@ -36,7 +42,7 @@ SCM string_to_scm (const char* s)
 SCM sexpr_to_scm (SExpr* sexpr)
 {
   sstring str;
-  str << *sexpr;
+  str << sexpr->to_parenthesized_string();
   SCM scm = string_to_scm(str.c_str());
   return scm;
 }

@@ -2,10 +2,7 @@
 #include "util/unixenv.h"
 
 // path to default chain file, from dart root
-#define DEFAULT_CHAIN_FILE "src/ontology/t/test1.tsm"
-
-// default term identifier
-#define DEFAULT_TERM_ID "term1"
+#define DEFAULT_CHAIN_FILE "src/ontology/t/test5.tsm"
 
 // wrapper for Alphabet::tok2int
 int tok2int (const Alphabet& alphabet, const sstring& s, const char* desc)

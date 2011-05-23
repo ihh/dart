@@ -20,7 +20,7 @@ static void get_alphgram_sexpr (SCM alphabet_and_grammar_scm,
 			       SExpr*& top_level_sexpr,
 			       SExpr*& alphabet_and_grammar_sxpr)
 {
-  top_level_sexpr = scm_to_new_sexpr (alphabet_and_grammar_scm);
+  top_level_sexpr = scm_to_parent_sexpr (alphabet_and_grammar_scm);
   alphabet_and_grammar_sxpr = &(*top_level_sexpr)[0];
 }
 

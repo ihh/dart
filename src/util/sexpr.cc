@@ -307,22 +307,22 @@ vector<SExpr_atom> SExpr_atom::from_vector (const vector<sstring>& s)
 SExpr_atom& SExpr::tag()
 {
   if (is_atom())
-    THROWEXPR ("In SExpr (" << *this << "):\nAn atom was encountered where I expected to find a (tag value) pair");
+    THROWEXPR ("In SExpr (" << *this << "):\nAn atom was encountered where I expected to find a two-element (tag value) list");
   if (is_empty_list())
-    THROWEXPR ("In SExpr (" << *this << "):\nAn empty list was encountered where I expected to find a (tag value) pair");
+    THROWEXPR ("In SExpr (" << *this << "):\nAn empty list was encountered where I expected to find a two-element (tag value) list");
   if (!(*this)[0].is_atom())
-    THROWEXPR ("In SExpr (" << *this << "):\nAn atom was encountered where I expected to find the tag of a (tag value) pair");
+    THROWEXPR ("In SExpr (" << *this << "):\nAn atom was encountered where I expected to find the tag of a two-element (tag value) list");
   return (*this)[0].atom;
 }
 
 SExpr& SExpr::value()
 {
   if (is_atom())
-    THROWEXPR ("In SExpr (" << *this << "):\nAn atom was encountered where I expected to find a (tag value) pair");
+    THROWEXPR ("In SExpr (" << *this << "):\nAn atom was encountered where I expected to find a two-element (tag value) list");
   if (is_empty_list())
-    THROWEXPR ("In SExpr (" << *this << "):\nAn empty list was encountered where I expected to find a (tag value) pair");
+    THROWEXPR ("In SExpr (" << *this << "):\nAn empty list was encountered where I expected to find a two-element (tag value) list");
   if (!has_value())
-    THROWEXPR ("In SExpr (" << *this << "):\nA list of more than two elements was encountered where I expected to find a (tag value) pair");
+    THROWEXPR ("In SExpr (" << *this << "):\nA list of more than two elements was encountered where I expected to find a two-element (tag value) list");
   return (*this)[1];
 }
 
@@ -358,7 +358,7 @@ SExpr& SExpr::find_or_die (const sstring& child_tag, int offset)
 {
   SExpr* sexpr = find (child_tag, offset);
   if (!sexpr)
-    THROWEXPR ("In (" << *this << "):\nI was looking for a (tag value) pair where the tag was '" << child_tag << "', but I couldn't find it");
+    THROWEXPR ("In (" << *this << "):\nI was looking for a two-element (tag value) list where the tag was '" << child_tag << "', but I couldn't find it");
   return *sexpr;
 }
 
@@ -449,11 +449,11 @@ SExpr& SExpr::operator() (const sstring& child_tag, int offset)
 {
   SExpr* c = find (child_tag, offset);
   if (!c)
-    THROWEXPR ("In SExpr (" << *this << "):\nI was looking for a (tag value) pair where the tag is " << child_tag << " but I can't find it");
+    THROWEXPR ("In SExpr (" << *this << "):\nI was looking for a two-element (tag value) list where the tag is " << child_tag << " but I can't find it");
   if (c->child.size() < 2)
-    THROWEXPR ("In SExpr (" << *this << "):\nI was looking for a (tag value) pair where the tag is " << child_tag << " but all I found was a (" << child_tag << ") with no value");
+    THROWEXPR ("In SExpr (" << *this << "):\nI was looking for a two-element (tag value) list where the tag is " << child_tag << " but all I found was a (" << child_tag << ") with no value");
   if (c->child.size() > 2)
-    CLOGERR << "WARNING -- in SExpr (" << *this << "):\nWARNING -- I was looking for a (tag value) pair where the tag was '" << child_tag << "' but instead I found a list with multiple values (tag value1 value2...) so I'm just looking at value1\n";
+    CLOGERR << "WARNING -- in SExpr (" << *this << "):\nWARNING -- I was looking for a two-element (tag value) list where the tag was '" << child_tag << "' but instead I found a list with >2 elements and multiple values (tag value1 value2...) so I'm just looking at value1\n";
   return c->value();
 }
 
