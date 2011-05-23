@@ -9,5 +9,7 @@
 #define TERMINATRIX_TREE_DB_SCM   "tree-db-scheme"
 #define TERMINATRIX_KNOWLEDGE_SCM "knowledge-scheme"
 
+#define TERMINATRIX_LOG_EVIDENCE  "log-evidence"
+
 #endif /* ONTO_KEYWORDS_INCLUDED */
 

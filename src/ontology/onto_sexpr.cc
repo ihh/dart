@@ -36,21 +36,35 @@ void Terminatrix::eval_funcs()
   matrix_set.eval_funcs (pscores);
 }
 
-void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& sexpr)
+void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& wrapper_sexpr)
 {
-  SExpr& terminatrix_sexpr = sexpr.find_or_die (TERMINATRIX_TERMINATRIX);
+  SExpr& terminatrix_sexpr = wrapper_sexpr.find_or_die (TERMINATRIX_TERMINATRIX);
+  const Ass_map ass_map (terminatrix_sexpr, 1);
+  init_terminatrix (term, ass_map);
+}
 
-  init_terminatrix_member_scm (term.init_scm, terminatrix_sexpr, TERMINATRIX_INIT_SCM);
-  init_terminatrix_member_scm (term.model_scm, terminatrix_sexpr, TERMINATRIX_MODEL_SCM);
-  init_terminatrix_member_scm (term.tree_db_scm, terminatrix_sexpr, TERMINATRIX_TREE_DB_SCM);
-  init_terminatrix_member_scm (term.knowledge_scm, terminatrix_sexpr, TERMINATRIX_KNOWLEDGE_SCM);
+void Terminatrix_builder::init_terminatrix (Terminatrix& term, SCM args_scm)
+{
+  const Ass_map ass_map (args_scm);
+  init_terminatrix (term, ass_map);
+}
+
+void Terminatrix_builder::init_terminatrix (Terminatrix& term, const Ass_map& ass_map)
+{
+  init_terminatrix_member_scm (term.init_scm, ass_map, TERMINATRIX_INIT_SCM);
+  init_terminatrix_member_scm (term.model_scm, ass_map, TERMINATRIX_MODEL_SCM);
+  init_terminatrix_member_scm (term.tree_db_scm, ass_map, TERMINATRIX_TREE_DB_SCM);
+  init_terminatrix_member_scm (term.knowledge_scm, ass_map, TERMINATRIX_KNOWLEDGE_SCM);
 
   if (!scm_is_false (term.init_scm))
     (void) scm_primitive_eval (term.init_scm);
 
-  SExpr* params_sexpr = terminatrix_sexpr.find (TERMINATRIX_PARAMS);
+  SExpr* params_sexpr = ass_map.new_sexpr_value_or_null (TERMINATRIX_PARAMS);
   if (params_sexpr)
-    init_terminatrix_params (term, *params_sexpr);
+    {
+      init_terminatrix_params (term, *params_sexpr);
+      delete params_sexpr;
+    }
 
   SExpr model_sexpr;
   if (!scm_is_false (term.model_scm))
@@ -63,18 +77,14 @@ void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& sexpr)
     }
   else
     {
-      model_sexpr = terminatrix_sexpr.find_or_die (TERMINATRIX_MODEL);
+      model_sexpr = ass_map.sexpr_value_or_die (TERMINATRIX_MODEL);
       init_terminatrix_model (term, model_sexpr);
     }
 }
 
-void Terminatrix_builder::init_terminatrix_member_scm (SCM& member_scm, SExpr& parent_sexpr, const char* tag)
+void Terminatrix_builder::init_terminatrix_member_scm (SCM& member_scm, const Ass_map& parent_ass_map, const char* tag)
 {
-  SExpr *sexpr_ptr = parent_sexpr.find (tag);
-  if (sexpr_ptr)
-    member_scm = sexpr_to_scm (&sexpr_ptr->value());
-  else
-    member_scm = SCM_BOOL_F;
+  member_scm = parent_ass_map.scm_value_or_false (tag);
 }
 
 void Terminatrix_builder::init_terminatrix_params (Terminatrix& term, SExpr& model_sexpr)
@@ -156,7 +166,7 @@ SCM Terminatrix_family_visitor::map_reduce_scm()
     THROWEXPR (TERMINATRIX_TREE_DB_SCM " function must return a list");
 
   CTAG(5,TERMINATRIX) << "Beginning iteration over families\n";
-  scm_t_bits accumulant = zero();
+  scm_t_bits accumulator = zero();
 
   current_family_index = 0;
   while (!scm_is_null(tree_db_list_scm))
@@ -179,14 +189,14 @@ SCM Terminatrix_family_visitor::map_reduce_scm()
       CTAG(5,TERMINATRIX) << "Family #" << (current_family_index + 1) << ": " << current_name << "\n";
 
       init_current();
-      accumulant = reduce (accumulant);
+      accumulator = reduce (accumulator);
 
       tree_db_list_scm = scm_cdr (tree_db_list_scm);
       ++current_family_index;
     }
 
   CTAG(5,TERMINATRIX) << "All families done; finalizing...\n";
-  return finalize (accumulant);
+  return finalize (accumulator);
 }
 
 void Terminatrix_EM_visitor::initialize_current_colmat()

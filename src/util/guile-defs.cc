@@ -31,6 +31,14 @@ SExpr scm_to_sexpr (SCM scm)
   return return_sexpr;
 }
 
+SExpr* scm_to_new_sexpr (SCM scm)
+{
+  SExpr* new_sexpr = new SExpr();
+  SExpr result_sexpr = scm_to_sexpr (scm);
+  new_sexpr->swap (result_sexpr);
+  return new_sexpr;
+}
+
 SCM string_to_scm (const char* s)
 {
   sstring str;

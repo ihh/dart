@@ -11,6 +11,8 @@
 #include "ecfg/guile-ecfg.h"
 #include "seq/psexpr.h"
 #include "util/svisitor.h"
+#include "guile/assmap.h"
+#include "ontology/onto_keywords.h"
 
 
 // Terminatrix class
@@ -130,15 +132,33 @@ struct Terminatrix_family_visitor
 // A virtual class returning a cons of the map results.
 // This class also commits the map-reduction to passing SCM objects.
 // Overrides the zero() and reduce(previous) methods.
-// Introduces new virtual methods current_mapped_scm(), reduce_scm(), zero_scm()
+// Introduces new virtual methods current_mapped_scm(), reduce_scm(), zero_scm(), finalize_scm
 struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
 {
   Terminatrix_concatenator (Terminatrix& term) : Terminatrix_family_visitor(term) { }
   scm_t_bits reduce (scm_t_bits previous) { SCM reduction = reduce_scm (current_mapped_scm(), SCM_PACK(previous)); return SCM_UNPACK(reduction); }  // delegate to reduce_scm(). intended final
   scm_t_bits zero() { return SCM_UNPACK (zero_scm()); }  // delegate to zero_scm(). intended final
+  virtual SCM finalize (scm_t_bits result) { return finalize_scm (Terminatrix_family_visitor::finalize (result)); }
   virtual SCM current_mapped_scm() = 0;  // guaranteed to be called after init_current()
   virtual SCM reduce_scm (SCM a, SCM b) { return scm_cons (a, b); }  // does a cons
   virtual SCM zero_scm() { return scm_list_n (SCM_UNDEFINED); }  // creates an empty list
+  virtual SCM finalize_scm (SCM result) { return result; }  // does nothing
+};
+
+// Terminatrix_keyed_concatenator
+// A virtual class similar to Terminatrix_concatenator,
+// but returning an assocation list of the form ((family1-id . family1-results) (family2-id . family2-results) ...)
+// rather than a list of the form (family1-results family2-results ...)
+struct Terminatrix_keyed_concatenator : virtual Terminatrix_concatenator
+{
+  Terminatrix_keyed_concatenator (Terminatrix& term) : Terminatrix_family_visitor(term), Terminatrix_concatenator(term) { }
+  scm_t_bits reduce (scm_t_bits previous)  // delegate to reduce_scm(). intended final
+  {
+    SCM previous_scm = SCM_PACK(previous);
+    SCM current_scm = scm_cons (current_name_scm, current_mapped_scm());
+    SCM reduced_scm = reduce_scm (current_scm, previous_scm);
+    return SCM_UNPACK(reduced_scm);
+  }
 };
 
 // Terminatrix_EM_visitor
@@ -158,13 +178,24 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
 
 // Terminatrix_log_evidence
 // The current_mapped_scm function runs the Column_matrix implementation of Felsenstein's algorithm.
-struct Terminatrix_log_evidence : Terminatrix_EM_visitor, Terminatrix_concatenator
+struct Terminatrix_log_evidence : Terminatrix_keyed_concatenator, Terminatrix_EM_visitor
 {
-  Terminatrix_log_evidence (Terminatrix& term) : Terminatrix_family_visitor(term), Terminatrix_EM_visitor(term), Terminatrix_concatenator(term) { }
+  Terminatrix_log_evidence (Terminatrix& term)
+    : Terminatrix_family_visitor(term),
+      Terminatrix_concatenator(term),
+      Terminatrix_keyed_concatenator(term),
+      Terminatrix_EM_visitor(term)
+  { }
   SCM current_mapped_scm()
   {
     Terminatrix_EM_visitor::current_colmat.fill_up (Terminatrix_family_visitor::terminatrix.rate_matrix(), *(Terminatrix_family_visitor::current_tree));
     return scm_from_double (Terminatrix_EM_visitor::current_colmat.total_log_likelihood());
+  }
+  SCM finalize_scm (SCM result)
+  {
+    return scm_list_2 (string_to_scm (TERMINATRIX_TERMINATRIX),
+		       scm_list_2 (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
+				   result));
   }
 };
 
@@ -174,14 +205,16 @@ struct Terminatrix_log_evidence : Terminatrix_EM_visitor, Terminatrix_concatenat
 struct Terminatrix_builder : ECFG_builder
 {
   // load
-  static void init_terminatrix (Terminatrix& terminatrix, SExpr& terminatrix_sexpr);
+  static void init_terminatrix (Terminatrix& terminatrix, SExpr& terminatrix_wrapper_sexpr);
+  static void init_terminatrix (Terminatrix& terminatrix, SCM terminatrix_args_scm);
+  static void init_terminatrix (Terminatrix& terminatrix, const Ass_map& ass_map);
   // save
   static void terminatrix2stream (ostream& out, Terminatrix& terminatrix);
 
   // input helpers
   static void init_terminatrix_params (Terminatrix& terminatrix, SExpr& terminatrix_params_sexpr);
   static void init_terminatrix_model (Terminatrix& terminatrix, SExpr& terminatrix_model_sexpr);
-  static void init_terminatrix_member_scm (SCM& member_scm, SExpr& parent_sexpr, const char* tag);
+  static void init_terminatrix_member_scm (SCM& member_scm, const Ass_map& parent_ass_map, const char* tag);
 
   // output helpers
   static void terminatrix_params2stream (ostream& out, Terminatrix& terminatrix);
