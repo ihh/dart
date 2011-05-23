@@ -425,7 +425,6 @@ void SExpr_Scheme_evaluator::initialize()
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
   if (!initialized)
     scm_with_guile (register_functions, data);
-  write_proc = scm_variable_ref (scm_c_lookup("write"));
 #endif /* GUILE_INCLUDED */
   initialized = true;
 }
@@ -479,7 +478,7 @@ void SExpr_Scheme_evaluator::expand_Scheme_expressions (SExpr& sexpr, const char
 }
 
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
-SCM SExpr_Scheme_evaluator::evaluate_SCM (SExpr& sexpr) const
+SCM SExpr_Scheme_evaluator::evaluate_SCM (SExpr& sexpr)
 {
   const sstring sexpr_string = sexpr.to_parenthesized_string();
   // evaluate; convert to C string
@@ -489,13 +488,13 @@ SCM SExpr_Scheme_evaluator::evaluate_SCM (SExpr& sexpr) const
 }
 #endif /* GUILE_INCLUDED */
 
-SExpr SExpr_Scheme_evaluator::evaluate_sexpr (SExpr& sexpr) const
+SExpr SExpr_Scheme_evaluator::evaluate_sexpr (SExpr& sexpr)
 {
   SCM result_scm = evaluate_SCM (sexpr);
   return scm_to_sexpr (result_scm);
 }
 
-SExpr SExpr_Scheme_evaluator::evaluate_values (SExpr& sexpr) const
+SExpr SExpr_Scheme_evaluator::evaluate_values (SExpr& sexpr)
 {
   if (sexpr.is_atom())
     THROWEXPR("SExpr_Scheme_evaluator::evaluate_values called on an atom");
@@ -508,7 +507,7 @@ SExpr SExpr_Scheme_evaluator::evaluate_values (SExpr& sexpr) const
   for (++iter; iter != sexpr.child.end(); ++iter)
     {
       SCM result_scm = evaluate_SCM (*iter);
-      SCM result_scm_string = scm_object_to_string (result_scm, write_proc);
+      SCM result_scm_string = scm_object_to_string (result_scm, scm_variable_ref (scm_c_lookup("write")));
       const char* result_c_string = scm_to_locale_string (result_scm_string);  // should really do this via the functions defined in util/guile-defs.h
       CTAG(3,GUILE) << "Result of Scheme evaluation: " << result_c_string << '\n';
       // catch SCM_UNSPECIFIED

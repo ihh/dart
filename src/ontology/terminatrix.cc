@@ -28,13 +28,16 @@ int main (int argc, char** argv)
   default_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE;
 
   sstring chain_filename, write_filename;
-  bool compute_evidence;
+  bool compute_evidence, compute_posteriors, compute_summaries, learn_params;
 
   opts.print_title ("Modeling options");
 
-  opts.add ("c -chain-filename", chain_filename = default_chain_filename, "file to load model from");
-  opts.add ("w -write-filename", write_filename = "", "file to save model to", false);
+  opts.add ("r -read", chain_filename = default_chain_filename, "file to load model from");
+  opts.add ("w -write", write_filename = "", "file to save model to", false);
   opts.add ("e -evidence", compute_evidence = false, "compute log-evidences");
+  opts.add ("p -predict", compute_posteriors = false, "compute posterior probabilities over missing data");
+  opts.add ("s -summarize", compute_summaries = false, "compute summary statistics");
+  opts.add ("l -learn", learn_params = false, "learn parameters by EM");
 
   // parse the command line & do stuff
   try
@@ -56,14 +59,23 @@ int main (int argc, char** argv)
       SExpr_file sexpr_file (chain_filename.c_str());
       SExpr& sexpr = sexpr_file.sexpr;
 
-      // create Scheme context
+      // initialize guile & define the newick smob, the quick & hacky way (by calling xrate's init code)
       ECFG_Scheme_evaluator scheme;
       scheme.initialize();
 
       // init the Terminatrix
-      Terminatrix term (scheme);
+      Terminatrix term;
       Terminatrix_builder::init_terminatrix (term, sexpr);
+
+      // evaluate all initial probability & mutation rate functions
       term.eval_funcs();
+
+      // do EM, if asked
+      if (learn_params)
+	{
+	  cout << ";; EM results\n";
+	  THROWEXPR ("Unimplemented");
+	}
 
       // calculate evidences, if asked
       if (compute_evidence)
@@ -72,6 +84,20 @@ int main (int argc, char** argv)
 	  SExpr log_ev_sexpr = log_ev.map_reduce_sexpr();
 	  cout << ";; log-evidence\n";
 	  cout << log_ev_sexpr.to_parenthesized_string() << '\n';
+	}
+
+      // calculate posteriors, if asked
+      if (compute_posteriors)
+	{
+	  cout << ";; log-posteriors by gene and family\n";
+	  THROWEXPR ("Unimplemented");
+	}
+
+      // calculate summaries, if asked
+      if (compute_summaries)
+	{
+	  cout << ";; summary statistics by parameter\n";
+	  THROWEXPR ("Unimplemented");
 	}
 
       // save

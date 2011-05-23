@@ -72,13 +72,10 @@ protected:
   void* (*register_functions)(void *);  // pointer to function that registers functions
   void* data;  // data that will be passed to *register_functions
   static bool initialized;
-#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
-  SCM write_proc;
-#endif /* GUILE_INCLUDED */
 public:
   // constructor - sets register_functions and data to dummy values (override in subclasses)
   SExpr_Scheme_evaluator();
-  // initialize() - initializes Guile, sets write_proc
+  // initialize() - initializes Guile
   // you must call this method before expand_Scheme_expressions.
   // calling it more than once will have no effect.
   void initialize();
@@ -89,10 +86,10 @@ public:
   void expand_Scheme_expressions (SExpr& sexpr, const char* eval_keyword = SEXPR_EVAL, const char* eval_discard_keyword = SEXPR_EXEC) const;
   // helper methods to evaluate an SExpr as a Scheme expression using guile
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
-  SCM evaluate_SCM (SExpr& sexpr) const;  // evaluates sexpr; returns a guile SCM object
+  static SCM evaluate_SCM (SExpr& sexpr);  // evaluates sexpr; returns a guile SCM object
 #endif /* GUILE_INCLUDED */
-  SExpr evaluate_sexpr (SExpr& sexpr) const;  // evaluates sexpr; returns result as an SExpr
-  SExpr evaluate_values (SExpr& sexpr) const;  // evaluates all children of sexpr, except for the first child; returns the list of results as an SExpr
+  static SExpr evaluate_sexpr (SExpr& sexpr);  // evaluates sexpr; returns result as an SExpr
+  static SExpr evaluate_values (SExpr& sexpr);  // evaluates all children of sexpr, except for the first child; returns the list of results as an SExpr
 };
 
 #endif /* SEXPR_VISITOR_INCLUDED */

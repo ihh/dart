@@ -26,10 +26,6 @@
 // variations on the sum-product algorithm (evidence, posteriors, EM, etc) has been abstracted out.
 struct Terminatrix
 {
-  // ECFG_Scheme_evaluator: a general Scheme helper class
-  // wraps some calls to guile library (initialization, smob definitions, SExpr->SCM->eval, expansion of &scheme macros, ...)
-  ECFG_Scheme_evaluator& scheme;
-
   // Scheme functions that are used to create & initialize the knowledge-base
   SExpr init_sexpr,  // a function that is called when the Terminatrix is initialized. Return result is discarded
     model_sexpr,     // a function that is called to generate the model. Must return a quoted S-expression of the form (model (alphabet ...)+ (chain ...))
@@ -63,8 +59,8 @@ struct Terminatrix
   bool got_counts;  // true if pcounts have been populated
 
   // constructor
-  // the ECFG_Scheme_evaluator's initialize() method needs to be called before passing to the Terminatrix.
-  Terminatrix (ECFG_Scheme_evaluator& scheme);
+  // Assumes Guile has been initialized, and the Newick smob added.
+  Terminatrix();
 
   // helpers
   void eval_funcs();  // populates the ECFG_chain (owned by the ECFG_matrix_set) with numeric values, by evaluating PFunc's (parsed algebraic functions)

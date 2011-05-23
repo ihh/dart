@@ -36,6 +36,7 @@ sstring Opts_list::short_help() const
 Regexp help_tab_re ("^([^\t]+)\t+([^\t].*)$");
 sstring Opts_list::help() const
 {
+  const bool right_justify = false;  // could store this as a preference somewhere, hmmm....
   sstring h = program_name;
   if (short_description.size()) h << " - " << short_description << '\n';
   if (syntax.size()) h << "Usage: " << program_name << " " << syntax << '\n';
@@ -94,7 +95,7 @@ sstring Opts_list::help() const
 		      }
 		    else
 		      {
-			if (word_buf.size() > 1)
+			if (right_justify && word_buf.size() > 1)
 			  for (int i = 0; word_buf_len < avail_cols; i = (i + 1) % (word_buf.size() - 1))
 			    {
 			      word_buf[i] << ' ';
