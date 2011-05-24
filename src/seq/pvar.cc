@@ -149,6 +149,13 @@ void PCounts::optimise_group (int group_idx, PScores& var_scores) const
       CLOGERR << "Warning: insufficient data to optimize rate variable #" << group_idx << "\n";
 }
 
+void PCounts::optimise (PScores& scores) const
+{
+  assert_same_dimensions (scores);
+  for (int group = 0; group < groups(); ++group)
+    optimise_group (group, scores);
+}
+
 void PCounts_like::clear()
 {
   log_likelihood = 0.0;

@@ -400,6 +400,7 @@ public:
 
   // helpers
   void optimise_group (int group_idx, PScores& scores) const;    // uses these counts to optimise scores for a parameter group
+  void optimise (PScores& scores) const;    // uses these counts to optimise scores for all parameter groups
 
   // output
   void show (ostream&o) const;

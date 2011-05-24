@@ -174,12 +174,12 @@ struct Terminatrix_keyed_concatenator : virtual Terminatrix_concatenator
 struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
 {
   // global info
-  Update_statistics stats;  // uses these in preference to Terminatrix's; copy across if needed
-  PCounts pcounts;  // uses these in preference to Terminatrix's; copy across if needed
+  Update_statistics stats;  // used by this class in preference to Terminatrix's; copy across if needed
+  PCounts var_counts;  // initialized to pseudocounts; used by this class in preference to Terminatrix's; copy across if needed
   // info on the current family
   Column_matrix current_colmat;
   // methods
-  Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term) { }
+  Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term), var_counts(term.pcounts) { }
   void init_current() { initialize_current_colmat(); }  // intended final
   void initialize_current_colmat();  // called by init_current()
   SCM node_name_scm (int node) {
@@ -218,7 +218,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
 					  Terminatrix_family_visitor::rate_matrix());
   }
   void inc_var_counts() {
-    Terminatrix_family_visitor::chain().inc_var_counts (stats, pcounts, terminatrix.pscores);
+    Terminatrix_family_visitor::chain().inc_var_counts (stats, var_counts, terminatrix.pscores);
   }
 };
 
