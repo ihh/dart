@@ -145,7 +145,10 @@ struct Terminatrix_family_visitor
 struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
 {
   Terminatrix_concatenator (Terminatrix& term) : Terminatrix_family_visitor(term) { }
-  scm_t_bits reduce (scm_t_bits previous) { SCM reduction = reduce_scm (current_mapped_scm(), SCM_PACK(previous)); return SCM_UNPACK(reduction); }  // delegate to reduce_scm(). intended final
+  scm_t_bits reduce (scm_t_bits previous) {  // delegate to reduce_scm(). intended final
+    SCM reduction = reduce_scm (current_mapped_scm(), SCM_PACK(previous));
+    return SCM_UNPACK(reduction);
+  }
   scm_t_bits zero() { return SCM_UNPACK (zero_scm()); }  // delegate to zero_scm(). intended final
   virtual SCM finalize (scm_t_bits result) { return finalize_scm (Terminatrix_family_visitor::finalize (result)); }
   virtual SCM current_mapped_scm() = 0;  // guaranteed to be called after init_current()
@@ -164,7 +167,8 @@ struct Terminatrix_keyed_concatenator : virtual Terminatrix_concatenator
   scm_t_bits reduce (scm_t_bits previous)  // delegate to reduce_scm(). intended final
   {
     SCM previous_scm = SCM_PACK(previous);
-    SCM current_scm = scm_list_2 (current_name_scm, current_mapped_scm());
+    SCM current_value_scm = current_mapped_scm();
+    SCM current_scm = scm_cons (current_name_scm, current_value_scm);
     SCM reduced_scm = reduce_scm (current_scm, previous_scm);
     return SCM_UNPACK(reduced_scm);
   }
@@ -271,7 +275,7 @@ struct Terminatrix_log_evidence : Terminatrix_keyed_concatenator, Terminatrix_EM
   SCM current_mapped_scm()
   {
     Terminatrix_EM_visitor::fill_up();
-    return scm_from_double (Terminatrix_EM_visitor::current_log_evidence());
+    return scm_list_1 (scm_from_double (Terminatrix_EM_visitor::current_log_evidence()));
   }
   SCM finalize_scm (SCM result)
   {
@@ -381,7 +385,7 @@ struct Terminatrix_trainer
 	  }
 	else
 	  break;
-	CTAG(5,GUILE) << "EM iteration #" << (n_step + 1) << ": log-evidence " << max_total_log_ev << '\n';
+	CTAG(6,TERMINATRIX) << "EM iteration #" << (n_step + 1) << ": log-evidence " << max_total_log_ev << '\n';
 	// Commented out this line as it is not working
 	log_scm = scm_cons (step_log_scm, log_scm);
 	term.pscores = step.next_pscores;
