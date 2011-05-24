@@ -60,7 +60,7 @@ struct Terminatrix
   Update_statistics stats;
 
   // status variables, used to throttle output
-  bool got_counts;  // true if pcounts have been populated
+  bool got_counts;  // true if var_counts have been populated
 
   // constructor
   // Assumes Guile has been initialized, and the Newick smob added.
@@ -179,7 +179,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
   // info on the current family
   Column_matrix current_colmat;
   // methods
-  Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term) { clear(); }
+  Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term) { }
   void init_current() { initialize_current_colmat(); }  // intended final
   void initialize_current_colmat();  // called by init_current()
   SCM node_name_scm (int node) {
@@ -217,10 +217,13 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
 					  *(Terminatrix_family_visitor::current_tree),
 					  Terminatrix_family_visitor::rate_matrix());
   }
-  void inc_var_counts() {
+  void inc_pseudocounts() {
+    var_counts += terminatrix.pcounts;
+  }
+  void inc_chain_counts() {
     Terminatrix_family_visitor::chain().inc_var_counts (stats, var_counts, terminatrix.pscores);
   }
-  void clear() { stats.clear(); var_counts = terminatrix.pcounts; }
+  void clear() { stats.clear(); var_counts.clear(); }
 };
 
 // Terminatrix_log_evidence

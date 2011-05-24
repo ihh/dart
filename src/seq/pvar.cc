@@ -156,6 +156,16 @@ void PCounts::optimise (PScores& scores) const
     optimise_group (group, scores);
 }
 
+PCounts& PCounts::operator+= (const PCounts& counts)
+{
+  assert_same_dimensions (counts);
+  PVar pv;
+  for (pv.group_idx = 0; pv.group_idx < groups(); ++pv.group_idx)
+    for (pv.var_idx = 0; pv.var_idx < group_size(pv.group_idx); ++pv.var_idx)
+      (*this) [pv] += counts [pv];
+  return *this;
+}
+
 void PCounts_like::clear()
 {
   log_likelihood = 0.0;
