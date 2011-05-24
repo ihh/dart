@@ -238,7 +238,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
     PFunc_builder::pscores2stream (pscores_str, pscores);
     pscores_str << ')';
     SExpr pscores_sexpr (pscores_str.begin(), pscores_str.end());
-    CTAG(1,TERMINATRIX) << "In pscores_to_scm: " << pscores_sexpr.to_parenthesized_string() << '\n';
+    CTAG(1,TERMINATRIX) << "In pscores_to_scm: " << pscores_sexpr.to_string() << '\n';
     return sexpr_to_scm (&pscores_sexpr);
   }
   static PScores pscores_from_scm (SCM scm) {
@@ -252,7 +252,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
     sstring pcounts_str;
     PFunc_builder::pcounts2stream (pcounts_str, pcounts, tag);
     SExpr pcounts_sexpr (pcounts_str.begin(), pcounts_str.end());
-    CTAG(1,TERMINATRIX) << "In pcounts_to_scm: " << pcounts_sexpr.to_parenthesized_string() << '\n';
+    CTAG(1,TERMINATRIX) << "In pcounts_to_scm: " << pcounts_sexpr.to_string() << '\n';
     return sexpr_to_scm (&pcounts_sexpr);
   }
 };
