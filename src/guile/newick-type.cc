@@ -3,7 +3,6 @@
 
 #include "guile/guile-keywords.h"
 #include "guile/newick-type.h"
-#include "guile/stockholm-type.h"
 #include "tree/tree_alignment.h"
 
 // Smob tag
@@ -61,19 +60,6 @@ static SCM newick_from_string (SCM s_string)
 
   // Return
   return smob;
-}
-
-static SCM newick_from_stockholm (SCM stock_smob)
-{
-  SCM scm = SCM_BOOL_F;
-  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
-  try {
-    Stockholm_tree tree (*stock->stock);
-    scm = make_newick_smob (tree);
-  } catch (Dart_exception& e) {
-    CLOGERR << e.what();
-  }
-  return scm;
 }
 
 static SCM newick_to_file (SCM tree_smob, SCM s_filename)
@@ -196,7 +182,6 @@ void init_newick_type (void)
   // read/write primitives
   scm_c_define_gsubr (GUILE_NEWICK_FROM_STRING, 1, 0, 0, (SCM (*)()) newick_from_string);
   scm_c_define_gsubr (GUILE_NEWICK_FROM_FILE, 1, 0, 0, (SCM (*)()) newick_from_file);
-  scm_c_define_gsubr (GUILE_NEWICK_FROM_STOCKHOLM, 1, 0, 0, (SCM (*)()) newick_from_stockholm);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
   scm_c_define_gsubr (GUILE_NEWICK_TO_FILE, 2, 0, 0, (SCM (*)()) newick_to_file);
   // primitives to ease migration from xrate macro format
   scm_c_define_gsubr (GUILE_NEWICK_ANCESTOR_LIST, 1, 0, 0, (SCM (*)()) newick_ancestor_list);  // returns list of internal node names (including the root, even if it is a tip node)

@@ -3,6 +3,7 @@
 
 #include "guile/guile-keywords.h"
 #include "guile/stockholm-type.h"
+#include "guile/newick-type.h"
 #include "tree/tree_alignment.h"
 
 // Smob tag
@@ -143,6 +144,19 @@ Stockholm_smob* Stockholm_smob::cast_from_scm (SCM stock_smob)
   return (Stockholm_smob *) SCM_SMOB_DATA (stock_smob);
 }
 
+static SCM newick_from_stockholm (SCM stock_smob)
+{
+  SCM scm = SCM_BOOL_F;
+  Stockholm_smob *stock = Stockholm_smob::cast_from_scm (stock_smob);
+  try {
+    Stockholm_tree tree (*stock->stock);
+    scm = make_newick_smob (tree);
+  } catch (Dart_exception& e) {
+    CLOGERR << e.what();
+  }
+  return scm;
+}
+
 // main guile initialization routine
 void init_stockholm_type (void)
 {
@@ -166,5 +180,8 @@ void init_stockholm_type (void)
   //     GS => (TAGVAL)
   //     GR => (TAGVAL)
   scm_c_define_gsubr (GUILE_STOCKHOLM_UNPACK, 1, 0, 0, (SCM (*)()) stockholm_unpack);  // returns a Scheme data structure very similar to the Stockholm file format: (GF GC (seq GS row GR) (seq GS row GR) ...)
+
+  // newick smob method
+  scm_c_define_gsubr (GUILE_NEWICK_FROM_STOCKHOLM, 1, 0, 0, (SCM (*)()) newick_from_stockholm);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
 
 }
