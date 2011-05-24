@@ -180,7 +180,7 @@ struct EM_matrix_base : Irrev_diagonalised_matrix_factory, EM_matrix_params, Pip
     void clear (double pseud_init = 0., double pseud_mutate = 0., double pseud_wait = 0.);  // resets all counts
     void clear_DJU();  // clears DJU only
     void transform (const EM_matrix_base& hsm, bool symmetrise);  // transforms from DJU-space into u-space
-    void check_waits_transitions (const EM_matrix_base& hsm);	// check for negative or zero waits, transitions
+    void check_waits_transitions (const EM_matrix_base& hsm);	// called by transform(). Rounds up transition counts to zero, and wait times to HSM_MINIMUM_WAIT_TIME
     friend ostream& operator<< (ostream& o, const Update_statistics& stats);
     void send (ostream& out) const;
     void receive (istream& in);

@@ -226,11 +226,12 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
 					  *(Terminatrix_family_visitor::current_tree),
 					  Terminatrix_family_visitor::rate_matrix());
   }
+  void accumulate_chain_counts() {
+    stats.transform (Terminatrix_family_visitor::rate_matrix(), false);
+    Terminatrix_family_visitor::chain().inc_var_counts (stats, var_counts, terminatrix.pscores);
+  }
   void accumulate_pseudocounts() {
     var_counts += terminatrix.pcounts;
-  }
-  void accumulate_chain_counts() {
-    Terminatrix_family_visitor::chain().inc_var_counts (stats, var_counts, terminatrix.pscores);
   }
   static SCM pscores_to_scm (const PScores& pscores, const char* tag = TERMINATRIX_PARAMS) {
     sstring pscores_str;
@@ -390,8 +391,8 @@ struct Terminatrix_trainer
   // accessors
   SCM final_scm() {
     SCM pscores_scm = Terminatrix_EM_visitor::pscores_to_scm (argmax_total_log_ev);
-    return scm_list_2 (string_to_scm (TERMINATRIX_TERMINATRIX),
-		       pscores_scm);
+    return scm_cons (string_to_scm (TERMINATRIX_TERMINATRIX),
+		     pscores_scm);
     /*
     return scm_list_3 (string_to_scm (TERMINATRIX_TERMINATRIX),
 		       pscores_scm,
