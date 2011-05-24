@@ -83,6 +83,8 @@ void Terminatrix_builder::init_terminatrix (Terminatrix& term, const Ass_map& as
       model_sexpr = ass_map.sexpr_value_or_die (TERMINATRIX_MODEL);
       init_terminatrix_model (term, model_sexpr);
     }
+
+  term.knowledge_func_scm = scm_primitive_eval (term.knowledge_scm);
 }
 
 void Terminatrix_builder::init_terminatrix_member_scm (SCM& member_scm, const Ass_map& parent_ass_map, const char* tag)
@@ -186,7 +188,7 @@ SCM Terminatrix_family_visitor::map_reduce_scm()
       if (!scm_is_string(current_name_scm))
 	CLOGERR << TERMINATRIX_TREE_DB_SCM " function must return a list of (name newick) lists, where the name is a string\n";
 
-      current_name = scm_to_string (current_name_scm);
+      current_name = scm_to_string_unquoted (current_name_scm);
       current_tree = newick_cast_from_scm (current_newick_scm);
 
       CTAG(5,TERMINATRIX) << "Family #" << (current_family_index + 1) << ": " << current_name << "\n";
@@ -206,29 +208,18 @@ void Terminatrix_EM_visitor::initialize_current_colmat()
 {
   map<sstring,Symbol_score_map> named_node_scores;
   // fill named_node_scores by calling knowledge function
-  SCM knowledge_func_scm = scm_primitive_eval (terminatrix.knowledge_scm);
   for (Phylogeny::Node n = 0; n < current_tree->nodes(); ++n)
     if (current_tree->node_name[n].size())
     {
       const sstring& node_name = current_tree->node_name[n];
-      SCM node_name_scm = scm_from_locale_string (node_name.c_str());
       Symbol_score_map node_ssm;
       // loop over states, creating state tuples and calling knowledge function as follows:
       // (knowledge familyName geneName (term1 term2 ... hiddenState))
       for (int state = 0; state < terminatrix.rate_matrix().number_of_states(); ++state)
 	{
-	  const vector<sstring> state_tokens = terminatrix.chain().get_symbol_tokens (state, terminatrix.alph_dict, terminatrix.default_alphabet());
-
-	  SCM state_tuple_scm = scm_list_n (SCM_UNDEFINED);
-	  for_const_reverse_contents (vector<sstring>, state_tokens, tok)
-	    state_tuple_scm = scm_cons (scm_from_locale_string (tok->c_str()), state_tuple_scm);
-
-	  SCM knowledge_result_scm = scm_call_3 (knowledge_func_scm, current_name_scm, node_name_scm, state_tuple_scm);
-	  if (!scm_boolean_p (knowledge_result_scm))
-	    THROWEXPR ("(" TERMINATRIX_MODEL << " (" TERMINATRIX_KNOWLEDGE_SCM " func) ...)  means  (func " << current_name << " " << node_name << " (" << state_tokens << ")) should return #t or #f, but it didn't");
-	  const bool knowledge_result_true = knowledge_result_scm == SCM_BOOL_T;
+	  const bool knowledge_result_true = knowledge_func (n, state);
 	  if (CTAGGING(3,TERMINATRIX))
-	    CL << "(" TERMINATRIX_KNOWLEDGE_SCM " " << current_name << " " << node_name << " (" << state_tokens << "))  =  " << (knowledge_result_true ? "#t" : "#f") << '\n';
+	    CL << "(" TERMINATRIX_KNOWLEDGE_SCM " " << current_name << " " << node_name << " (" << state_tuple(state) << "))  =  " << (knowledge_result_true ? "#t" : "#f") << '\n';
 	  const Score knowledge_result_score = knowledge_result_true ? ScoreOfProb1 : ScoreOfProb0;
 	  node_ssm.insert (Symbol_score (state, knowledge_result_score));
 	}
@@ -261,7 +252,18 @@ SCM terminatrix_evidence (SCM terminatrix_scm)
   return log_ev_scm;
 }
 
+SCM terminatrix_prediction (SCM terminatrix_scm)
+{
+  Terminatrix term;
+  Terminatrix_builder::init_terminatrix (term, terminatrix_scm);
+  term.eval_funcs();
+  Terminatrix_prediction prediction (term);
+  SCM prediction_scm = prediction.map_reduce_scm();
+  return prediction_scm;
+}
+
 void init_terminatrix_primitives (void)
 {
   scm_c_define_gsubr (GUILE_TERMINATRIX_EVIDENCE, 1, 0, 0, (SCM (*)()) terminatrix_evidence);
+  scm_c_define_gsubr (GUILE_TERMINATRIX_PREDICTION, 1, 0, 0, (SCM (*)()) terminatrix_prediction);
 }

@@ -55,3 +55,11 @@
     (knowledge-scheme my_knowledge)
     (tree-db-scheme my_tree_db)
     (model-scheme my_model)))))
+
+(write
+ (terminatrix-predict
+  (quote
+   (terminatrix
+    (knowledge-scheme my_knowledge)
+    (tree-db-scheme my_tree_db)
+    (model-scheme my_model)))))

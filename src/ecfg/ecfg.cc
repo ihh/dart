@@ -40,14 +40,17 @@ void ECFG_chain::get_symbol_indices (int state, vector<int>& symbol_idx) const
   for (mul = 1, pos = 0; pos < word_len; mul *= alph_size[pos], ++pos)
     symbol_idx.push_back ((state / mul) % alph_size[pos]);
 
-  symbol_idx.push_back (class_labels.size() ? (int) ((state / mul) % class_labels.size()) : (int) 0);
+  if (class_labels.size())
+    symbol_idx.push_back ((state / mul) % class_labels.size());
 }
 
 vector<sstring> ECFG_chain::get_symbol_tokens (int state, const Alphabet_dictionary& alph_dict, const Alphabet& default_alph) const
 {
-  vector<sstring> tok (word_len + 1);
   vector<int> tok_idx;
   get_symbol_indices (state, tok_idx);
+
+  vector<sstring> tok;
+  tok.reserve (word_len + 1);
 
   for (int pos = 0; pos < word_len; ++pos)
     {
@@ -58,11 +61,11 @@ vector<sstring> ECFG_chain::get_symbol_tokens (int state, const Alphabet_diction
 	  if (alph_dict_iter != alph_dict.end())
 	    alph = &alph_dict_iter->second;
 	}
-      tok[pos] = alph->int2token (tok_idx[pos]);
+      tok.push_back (alph->int2token (tok_idx[pos]));
     }
 
   if (class_labels.size())
-    tok.back() = class_labels[tok_idx.back()];
+    tok.push_back (class_labels[tok_idx.back()]);
 
   return tok;
 }

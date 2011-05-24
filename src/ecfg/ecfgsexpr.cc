@@ -93,8 +93,6 @@ void ECFG_builder::init_chain_classes (sstring& class_row, vector<sstring>& clas
 	    THROWEXPR ("In '" << *class_sexpr << "':\nChain has " << terms << " terminals, but class label '" << *cl << "' has " << cl->size() << " characters");
 	}
     }
-  else
-    class_alph.push_back (sstring (DUMMY_CLASS_LABEL));  // add a dummy class label, so there's at least one "hidden" class
 }
 
 void ECFG_builder::init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres, bool allow_multi_char_tokens)
@@ -350,7 +348,10 @@ void ECFG_builder::init_chain_and_alphabet (Alphabet& alph, EM_matrix_base& hsm,
   const ECFG_chain& chain = ems.chain[0];
   const EM_matrix_base& read_hsm = *chain.matrix;
 
-  alph.init_hidden (base_alph, chain.class_labels);
+  vector<sstring> class_labels = chain.class_labels;
+  if (class_labels.size() == 0)
+    class_labels.push_back (sstring (DUMMY_CLASS_LABEL));  // add a dummy class label, so there's at least one "hidden" class for Alphabet::init_hidden
+  alph.init_hidden (base_alph, class_labels);
 
   hsm.init_matrix (read_hsm.C, read_hsm.A);
   hsm.assign_matrix_params (read_hsm);

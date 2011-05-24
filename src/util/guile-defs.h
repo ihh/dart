@@ -13,6 +13,8 @@ SExpr scm_to_sexpr (SCM scm);  // calls scm_to_parent_sexpr, returns first eleme
 sstring scm_to_string (SCM scm);  // quotes included
 sstring scm_to_string_unquoted (SCM scm);  // strings only, quotes not included
 SCM string_to_scm (const char* s);
+SCM string_to_scm (const sstring& s);
+SCM vector_to_scm (const vector<sstring>& sv);
 SCM sexpr_to_scm (SExpr* sexpr);  // NOTE: this does **not** currently convert lists of the form (A . B) to SCM pairs!
 
 // logging

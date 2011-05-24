@@ -29,10 +29,12 @@
 struct Terminatrix
 {
   // Scheme functions that are used to create & initialize the knowledge-base
-  SCM init_scm,  // a function that is called when the Terminatrix is initialized. Return result is discarded
-    model_scm,     // a function that is called to generate the model. Must return a quoted S-expression of the form (model (alphabet ...)+ (chain ...))
-    tree_db_scm,   // a function that is called to generate the phylogenetic tree database. Must return a Scheme association list mapping names (i.e. strings) to trees (i.e. newick smobs)
-    knowledge_scm; // a function that is called like (knowledge familyName geneName termTuple) and must return #t (gene-term association allowed) or #f (gene-term association disallowed)
+  SCM init_scm,  // called when the Terminatrix is initialized. Return result is discarded
+    model_scm,     // use to generate the model. Must return a quoted S-expression of the form (model (alphabet ...)+ (chain ...))
+    tree_db_scm,   // use to generate the phylogenetic tree database. Must return a Scheme association list mapping names (i.e. strings) to trees (i.e. newick smobs)
+    knowledge_scm; // must return a function that will be called like (knowledge familyName geneName termTuple) and must return #t (gene-term association allowed) or #f (gene-term association disallowed)
+
+  SCM knowledge_func_scm;  // return value of knowledge_scm
 
   // symbol tables (only really used by Terminatrix_builder class; should probably move them there)
   PFunc_builder::SymPVar sym2pvar;  // numerical parameters
@@ -126,6 +128,11 @@ struct Terminatrix_family_visitor
   // map-reduce methods
   SCM map_reduce_scm();
   SExpr map_reduce_sexpr() { return scm_to_sexpr (map_reduce_scm()); }
+
+  // Terminatrix convenience wrappers
+  EM_matrix_base& rate_matrix() { return terminatrix.rate_matrix(); }
+  ECFG_chain& chain() { return terminatrix.chain(); }
+  int number_of_states() { return terminatrix.rate_matrix().number_of_states(); }
 };
 
 // Terminatrix_concatenator
@@ -173,7 +180,42 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
   // methods
   Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term) { }
   void init_current() { initialize_current_colmat(); }  // intended final
-  void initialize_current_colmat();
+  void initialize_current_colmat();  // called by init_current()
+  SCM node_name_scm (int node) {
+      const sstring& node_name = current_tree->node_name[node];
+      return scm_from_locale_string (node_name.c_str());
+  }
+  bool knowledge_func (int node, int state) {
+    SCM knowledge_result_scm = scm_call_3 (terminatrix.knowledge_func_scm, current_name_scm, node_name_scm (node), state_tuple_scm (state));
+    if (!scm_boolean_p (knowledge_result_scm))
+      THROWEXPR ("(" TERMINATRIX_KNOWLEDGE_SCM " " << current_name << " " << current_tree->node_name[state] << " (" << state_tuple(state) << ")) should return #t or #f, but it didn't");
+    return knowledge_result_scm == SCM_BOOL_T;
+  }
+  vector<sstring> state_tuple (int state) {
+    return terminatrix.chain().get_symbol_tokens (state, terminatrix.alph_dict, terminatrix.default_alphabet());
+  }
+  SCM state_tuple_scm (int state) {
+    const vector<sstring> tuple = state_tuple(state);
+    return vector_to_scm (tuple);
+  }
+  // Column_matrix wrappers
+  void fill_up() {
+    current_colmat.fill_up (Terminatrix_family_visitor::rate_matrix(),
+			    *(Terminatrix_family_visitor::current_tree));
+  }
+  void fill_down() {
+    current_colmat.fill_down (Terminatrix_family_visitor::rate_matrix(),
+			      *(Terminatrix_family_visitor::current_tree),
+			      stats);
+  }
+  Loge total_log_likelihood() {
+    return current_colmat.total_log_likelihood();
+  }
+  Prob node_post_prob (int node, int state) {
+    return current_colmat.node_post_prob (node, state,
+					  *(Terminatrix_family_visitor::current_tree),
+					  Terminatrix_family_visitor::rate_matrix());
+  }
 };
 
 // Terminatrix_log_evidence
@@ -188,13 +230,53 @@ struct Terminatrix_log_evidence : Terminatrix_keyed_concatenator, Terminatrix_EM
   { }
   SCM current_mapped_scm()
   {
-    Terminatrix_EM_visitor::current_colmat.fill_up (Terminatrix_family_visitor::terminatrix.rate_matrix(), *(Terminatrix_family_visitor::current_tree));
-    return scm_from_double (Terminatrix_EM_visitor::current_colmat.total_log_likelihood());
+    Terminatrix_EM_visitor::fill_up();
+    return scm_from_double (Terminatrix_EM_visitor::total_log_likelihood());
   }
   SCM finalize_scm (SCM result)
   {
     return scm_list_2 (string_to_scm (TERMINATRIX_TERMINATRIX),
 		       scm_cons (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
+				 result));
+  }
+};
+
+// Terminatrix_prediction
+// The current_mapped_scm function runs the Column_matrix implementations of the sum-product message-passing algorithms
+// (Felsenstein's pruning algorithm, then Elston & Stewart's peeling algorithm, or however you want to think about it),
+// and returns a table of posterior probabilities for the possible states at the various nodes.
+struct Terminatrix_prediction : Terminatrix_keyed_concatenator, Terminatrix_EM_visitor
+{
+  Terminatrix_prediction (Terminatrix& term)
+    : Terminatrix_family_visitor(term),
+      Terminatrix_concatenator(term),
+      Terminatrix_keyed_concatenator(term),
+      Terminatrix_EM_visitor(term)
+  { }
+  SCM current_mapped_scm()
+  {
+    Terminatrix_EM_visitor::fill_up();
+    Terminatrix_EM_visitor::fill_down();
+    SCM by_node = scm_list_n (SCM_UNDEFINED);  // empty list
+    for (Phylogeny::Node node = 0; node < current_tree->nodes(); ++node)
+      if (current_tree->node_name[node].size())
+	{
+	  SCM by_state = scm_list_n (SCM_UNDEFINED);  // empty list
+	  for (int state = 0; state < Terminatrix_family_visitor::number_of_states(); ++state)
+	    if (knowledge_func (node, state))
+	      by_state = scm_cons (scm_list_2 (state_tuple_scm (state),
+					       scm_from_double (Terminatrix_EM_visitor::node_post_prob (node, state))),
+				   by_state);
+	  by_node = scm_cons (scm_list_2 (string_to_scm (current_tree->node_name[node]),
+					  by_state),
+			      by_node);
+	}
+    return by_node;
+  }
+  SCM finalize_scm (SCM result)
+  {
+    return scm_list_2 (string_to_scm (TERMINATRIX_TERMINATRIX),
+		       scm_cons (string_to_scm (TERMINATRIX_POSTERIOR),
 				 result));
   }
 };
@@ -222,6 +304,7 @@ struct Terminatrix_builder : ECFG_builder
 
 // guile methods
 SCM terminatrix_evidence (SCM terminatrix_scm);
+SCM terminatrix_prediction (SCM terminatrix_scm);
 void init_terminatrix_primitives (void);
 
 #endif /* ONTO_SEXPR_INCLUDED */

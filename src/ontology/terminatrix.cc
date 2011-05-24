@@ -86,8 +86,10 @@ int main (int argc, char** argv)
       // calculate posteriors, if asked
       if (compute_posteriors)
 	{
-	  cout << ";; log-posteriors by family and gene\n";
-	  THROWEXPR ("Unimplemented");
+	  Terminatrix_prediction prediction (term);
+	  SExpr prediction_sexpr = prediction.map_reduce_sexpr();
+	  cout << ";; posteriors by family, gene and state\n";
+	  cout << prediction_sexpr.to_parenthesized_string() << '\n';
 	}
 
       // calculate summaries, if asked

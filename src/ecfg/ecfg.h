@@ -40,8 +40,8 @@ struct ECFG_chain : ECFG_enum
 
   // hidden classes
   sstring class_row;  // the #=GR line to which hidden class annotations will be added in the Stockholm file
-  vector<sstring> class_labels;  // the hidden class labels
-  int classes;  // the number of hidden classes
+  vector<sstring> class_labels;  // the hidden class labels, or an empty vector if there is just one (dummy) hidden class and it's not to be printed
+  int classes;  // the number of hidden classes; this is always >= 1, even if class_labels is empty
 
   // PFunc stuff
   bool is_parametric;  // true if the chain is parametric
@@ -54,8 +54,8 @@ struct ECFG_chain : ECFG_enum
 
   // helpers
   bool uses_default_alphabet() const;
-  void get_symbol_indices (int state, vector<int>& symbol_idx) const;  // convert a state index to a vector of symbol indices (the last of which is the hidden state index, which will be zero if there is only one "hidden" class)
-  vector<sstring> get_symbol_tokens (int state, const Alphabet_dictionary& alph_dict, const Alphabet& default_alph) const;  // convert a state index to a vector of symbol tokens (the last of which is the hidden state token, which will be the empty string if there is only one "hidden" class)
+  void get_symbol_indices (int state, vector<int>& symbol_idx) const;  // convert a state index to a vector of symbol indices (the last of which is the hidden state index, unless class_labels is empty in which case it is omitted)
+  vector<sstring> get_symbol_tokens (int state, const Alphabet_dictionary& alph_dict, const Alphabet& default_alph) const;  // convert a state index to a vector of symbol tokens (the last of which is the hidden state token, unless class_labels is empty in which case it is omitted)
 };
 
 // Set of substitution matrices for an Evolutionary CFG
