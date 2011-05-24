@@ -156,6 +156,12 @@ void PCounts::optimise (PScores& scores) const
     optimise_group (group, scores);
 }
 
+void PCounts::optimise (PScores& scores, const set<int>& mutable_groups) const
+{
+  for_const_contents (set<int>, mutable_groups, g)
+    optimise_group (*g, scores);
+}
+
 PCounts& PCounts::operator+= (const PCounts& counts)
 {
   assert_same_dimensions (counts);

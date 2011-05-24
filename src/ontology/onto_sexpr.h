@@ -62,12 +62,14 @@ struct Terminatrix
   // status variables, used to throttle output
   bool got_counts;  // true if var_counts have been populated
 
-  // constructor
-  // Assumes Guile has been initialized, and the Newick smob added.
+  // constructors
+  // These assume Guile has been initialized, and the Newick smob added.
   Terminatrix();
+  Terminatrix (SCM scm);
+  Terminatrix (const SExpr& sexpr);
 
   // helpers
-  void eval_funcs();  // populates the ECFG_chain (owned by the ECFG_matrix_set) with numeric values, by evaluating PFunc's (parsed algebraic functions)
+  void eval_funcs();  // populates the ECFG_chain with numeric values, by evaluating PFunc's (parsed algebraic functions); also resets stats
 
   // accessors
   ECFG_chain& chain();
@@ -179,7 +181,14 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
   // info on the current family
   Column_matrix current_colmat;
   // methods
-  Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term) { }
+  Terminatrix_EM_visitor (Terminatrix& term)
+    : Terminatrix_family_visitor(term),
+      stats(term.rate_matrix().number_of_states()),
+      var_counts(term.pscores)
+  {
+    // evaluate all initial probability & mutation rate functions
+    term.eval_funcs();
+  }
   void init_current() { initialize_current_colmat(); }  // intended final
   void initialize_current_colmat();  // called by init_current()
   SCM node_name_scm (int node) {
@@ -209,7 +218,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
 			      *(Terminatrix_family_visitor::current_tree),
 			      stats);
   }
-  Loge total_log_likelihood() {
+  Loge current_log_evidence() {
     return current_colmat.total_log_likelihood();
   }
   Prob node_post_prob (int node, int state) {
@@ -217,13 +226,35 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
 					  *(Terminatrix_family_visitor::current_tree),
 					  Terminatrix_family_visitor::rate_matrix());
   }
-  void inc_pseudocounts() {
+  void accumulate_pseudocounts() {
     var_counts += terminatrix.pcounts;
   }
-  void inc_chain_counts() {
+  void accumulate_chain_counts() {
     Terminatrix_family_visitor::chain().inc_var_counts (stats, var_counts, terminatrix.pscores);
   }
-  void clear() { stats.clear(); var_counts.clear(); }
+  static SCM pscores_to_scm (const PScores& pscores, const char* tag = TERMINATRIX_PARAMS) {
+    sstring pscores_str;
+    pscores_str << '(' << tag << ' ';
+    PFunc_builder::pscores2stream (pscores_str, pscores);
+    pscores_str << ')';
+    SExpr pscores_sexpr (pscores_str.begin(), pscores_str.end());
+    CTAG(1,TERMINATRIX) << "In pscores_to_scm: " << pscores_sexpr.to_parenthesized_string() << '\n';
+    return sexpr_to_scm (&pscores_sexpr);
+  }
+  static PScores pscores_from_scm (SCM scm) {
+    SExpr sexpr = scm_to_sexpr (scm);
+    PScores pscores;
+    PFunc_builder::SymPVar sym2pvar;
+    PFunc_builder::init_pgroups_and_rates (pscores, sym2pvar, sexpr(TERMINATRIX_PARAMS));
+    return pscores;
+  }
+  static SCM pcounts_to_scm (const PScores& pcounts, const char* tag = TERMINATRIX_PARAM_COUNTS) {
+    sstring pcounts_str;
+    PFunc_builder::pcounts2stream (pcounts_str, pcounts, tag);
+    SExpr pcounts_sexpr (pcounts_str.begin(), pcounts_str.end());
+    CTAG(1,TERMINATRIX) << "In pcounts_to_scm: " << pcounts_sexpr.to_parenthesized_string() << '\n';
+    return sexpr_to_scm (&pcounts_sexpr);
+  }
 };
 
 // Terminatrix_log_evidence
@@ -239,7 +270,7 @@ struct Terminatrix_log_evidence : Terminatrix_keyed_concatenator, Terminatrix_EM
   SCM current_mapped_scm()
   {
     Terminatrix_EM_visitor::fill_up();
-    return scm_from_double (Terminatrix_EM_visitor::total_log_likelihood());
+    return scm_from_double (Terminatrix_EM_visitor::current_log_evidence());
   }
   SCM finalize_scm (SCM result)
   {
@@ -289,6 +320,91 @@ struct Terminatrix_prediction : Terminatrix_keyed_concatenator, Terminatrix_EM_v
   }
 };
 
+// Terminatrix_learning_step
+struct Terminatrix_learning_step : Terminatrix_EM_visitor
+{
+  // data
+  PScores next_pscores;
+  Loge total_log_ev;
+  // constructor
+  Terminatrix_learning_step (Terminatrix& term)
+    : Terminatrix_family_visitor(term),
+      Terminatrix_EM_visitor(term),
+      next_pscores (term.pscores),
+      total_log_ev (0.)
+  { }
+  // overrides
+  scm_t_bits reduce (scm_t_bits previous) {  // intended final
+    Terminatrix_EM_visitor::fill_up();
+    Terminatrix_EM_visitor::fill_down();
+    NatsPMulAcc (total_log_ev, current_log_evidence());
+    return Terminatrix_family_visitor::reduce (previous);
+  }
+  SCM finalize (scm_t_bits result) {  // intended final
+    Terminatrix_EM_visitor::accumulate_chain_counts();
+    Terminatrix_EM_visitor::accumulate_pseudocounts();
+    var_counts.optimise (next_pscores, Terminatrix_family_visitor::terminatrix.mutable_pgroups);
+    /*
+    return scm_list_2 (string_to_scm (TERMINATRIX_TRAINING_STEP),
+		       scm_list_2 (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
+				   scm_from_double (total_log_ev)));
+    */
+    return scm_list_5 (string_to_scm (TERMINATRIX_TRAINING_STEP),
+		       scm_list_2 (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
+				   scm_from_double (total_log_ev)),
+		       pscores_to_scm (Terminatrix_family_visitor::terminatrix.pscores, TERMINATRIX_PARAMS),
+		       pcounts_to_scm (Terminatrix_family_visitor::terminatrix.pscores, TERMINATRIX_PARAM_COUNTS),
+		       pscores_to_scm (next_pscores, TERMINATRIX_NEXT_PARAMS));
+  }
+};
+
+// Terminatrix_trainer
+struct Terminatrix_trainer
+{
+  // data
+  Loge max_total_log_ev;
+  PScores argmax_total_log_ev;
+  SCM log_scm;
+  // constructor (everything happens in here)
+  Terminatrix_trainer (Terminatrix& term, int max_learning_steps)
+  {
+    log_scm = scm_list_n (SCM_UNDEFINED);  // empty list
+    for (int n_step = 0; n_step < max_learning_steps; ++n_step)
+      {
+	Terminatrix_learning_step step (term);
+	SCM step_log_scm = step.map_reduce_scm();  // must call map_reduce_scm() to ensure step.next_pscores is set correctly
+	if (n_step == 0 || step.total_log_ev > max_total_log_ev)
+	  {
+	    max_total_log_ev = step.total_log_ev;
+	    argmax_total_log_ev = step.next_pscores;
+	  }
+	else
+	  break;
+	CTAG(5,GUILE) << "EM iteration #" << (n_step + 1) << ": log-evidence " << max_total_log_ev << '\n';
+	// Commented out this line as it is not working
+	log_scm = scm_cons (step_log_scm, log_scm);
+	term.pscores = step.next_pscores;
+      }
+    term.pscores = argmax_total_log_ev;
+  }
+  // accessors
+  SCM final_scm() {
+    SCM pscores_scm = Terminatrix_EM_visitor::pscores_to_scm (argmax_total_log_ev);
+    return scm_list_2 (string_to_scm (TERMINATRIX_TERMINATRIX),
+		       pscores_scm);
+    /*
+    return scm_list_3 (string_to_scm (TERMINATRIX_TERMINATRIX),
+		       pscores_scm,
+		       scm_list_2 (string_to_scm (TERMINATRIX_TRAINING_LOG),
+				   log_scm));
+    */
+  }
+  SExpr final_sexpr() {
+    SCM scm = final_scm();
+    return scm_to_sexpr (scm);
+  }
+};
+
 // Terminatrix I/O adapter
 struct Terminatrix_builder : ECFG_builder
 {
@@ -313,6 +429,8 @@ struct Terminatrix_builder : ECFG_builder
 // guile methods
 SCM terminatrix_evidence (SCM terminatrix_scm);
 SCM terminatrix_prediction (SCM terminatrix_scm);
+SCM terminatrix_learn (SCM max_steps_scm, SCM terminatrix_scm);
+
 void init_terminatrix_primitives (void);
 
 #endif /* ONTO_SEXPR_INCLUDED */

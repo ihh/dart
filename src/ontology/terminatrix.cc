@@ -4,6 +4,9 @@
 // path to default chain file, from dart root
 #define DEFAULT_CHAIN_FILE "src/ontology/t/test5.tsm"
 
+// default max number of steps during EM
+#define MAX_EM_STEPS 99
+
 // wrapper for Alphabet::tok2int
 int tok2int (const Alphabet& alphabet, const sstring& s, const char* desc)
 {
@@ -26,6 +29,7 @@ int main (int argc, char** argv)
 
   sstring chain_filename, write_filename;
   bool compute_evidence, compute_posteriors, compute_summaries, learn_params;
+  int max_steps;
 
   opts.print_title ("Modeling options");
 
@@ -35,6 +39,9 @@ int main (int argc, char** argv)
   opts.add ("p -predict", compute_posteriors = false, "compute posterior probabilities over missing data");
   opts.add ("s -summarize", compute_summaries = false, "compute summary statistics");
   opts.add ("l -learn", learn_params = false, "learn parameters by EM");
+
+  opts.newline();
+  opts.add ("ms -max-steps", max_steps = MAX_EM_STEPS, "max number of steps during EM learning");
 
   // parse the command line & do stuff
   try
@@ -64,14 +71,12 @@ int main (int argc, char** argv)
       Terminatrix term;
       Terminatrix_builder::init_terminatrix (term, sexpr);
 
-      // evaluate all initial probability & mutation rate functions
-      term.eval_funcs();
-
       // do EM, if asked
       if (learn_params)
 	{
+	  Terminatrix_trainer trainer (term, max_steps);
 	  cout << ";; EM results\n";
-	  THROWEXPR ("Unimplemented");
+	  cout << trainer.final_sexpr().to_parenthesized_string() << '\n';
 	}
 
       // calculate evidences, if asked

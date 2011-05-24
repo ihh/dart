@@ -10,6 +10,24 @@ Terminatrix::Terminatrix()
     got_counts(false)
 { }
 
+Terminatrix::Terminatrix (SCM scm)
+  : var_counts(pscores),
+    dummy_alph(),
+    matrix_set(dummy_alph),
+    got_counts(false)
+{
+  Terminatrix_builder::init_terminatrix (*this, scm);
+}
+
+Terminatrix::Terminatrix (const SExpr& sexpr)
+  : var_counts(pscores),
+    dummy_alph(),
+    matrix_set(dummy_alph),
+    got_counts(false)
+{
+  Terminatrix_builder::init_terminatrix (*this, (SExpr&) sexpr);
+}
+
 EM_matrix_base& Terminatrix::rate_matrix()
 {
   if (matrix_set.chain.size() != 1 || matrix_set.chain[0].matrix == NULL)
@@ -34,6 +52,7 @@ const Alphabet& Terminatrix::default_alphabet()
 void Terminatrix::eval_funcs()
 {
   matrix_set.eval_funcs (pscores);
+  stats = Update_statistics (rate_matrix().number_of_states());
 }
 
 void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& wrapper_sexpr)
@@ -62,12 +81,8 @@ void Terminatrix_builder::init_terminatrix (Terminatrix& term, const Ass_map& as
   if (!scm_is_false (term.init_scm))
     (void) scm_primitive_eval (term.init_scm);
 
-  SExpr* params_sexpr = ass_map.new_sexpr_value_or_null (TERMINATRIX_PARAMS);
-  if (params_sexpr)
-    {
-      init_terminatrix_params (term, *params_sexpr);
-      delete params_sexpr;
-    }
+  SExpr params_sexpr = ass_map.sexpr_parent_or_empty_list (TERMINATRIX_PARAMS);
+  init_terminatrix_params (term, params_sexpr);
 
   SExpr model_sexpr;
   if (!scm_is_false (term.model_scm))
@@ -80,7 +95,7 @@ void Terminatrix_builder::init_terminatrix (Terminatrix& term, const Ass_map& as
     }
   else
     {
-      model_sexpr = ass_map.sexpr_value_or_die (TERMINATRIX_MODEL);
+      model_sexpr = ass_map.sexpr_values_list (TERMINATRIX_MODEL);
       init_terminatrix_model (term, model_sexpr);
     }
 
@@ -97,6 +112,7 @@ void Terminatrix_builder::init_terminatrix_params (Terminatrix& term, SExpr& mod
   // initialise PScores
   init_pgroups_and_rates (term.pscores, term.sym2pvar, model_sexpr, &term.mutable_pgroups);
   // initialise PCounts
+  term.pcounts = PCounts (term.pscores);  // sensible default
   init_pseudocounts (term.pcounts, term.pscores, term.sym2pvar, model_sexpr);
   term.var_counts = PCounts (term.pscores);
 }
@@ -244,9 +260,7 @@ void Terminatrix_EM_visitor::initialize_current_colmat()
 
 SCM terminatrix_evidence (SCM terminatrix_scm)
 {
-  Terminatrix term;
-  Terminatrix_builder::init_terminatrix (term, terminatrix_scm);
-  term.eval_funcs();
+  Terminatrix term (terminatrix_scm);
   Terminatrix_log_evidence log_ev (term);
   SCM log_ev_scm = log_ev.map_reduce_scm();
   return log_ev_scm;
@@ -254,16 +268,23 @@ SCM terminatrix_evidence (SCM terminatrix_scm)
 
 SCM terminatrix_prediction (SCM terminatrix_scm)
 {
-  Terminatrix term;
-  Terminatrix_builder::init_terminatrix (term, terminatrix_scm);
-  term.eval_funcs();
+  Terminatrix term (terminatrix_scm);
   Terminatrix_prediction prediction (term);
   SCM prediction_scm = prediction.map_reduce_scm();
   return prediction_scm;
 }
 
+SCM terminatrix_learn (SCM max_steps_scm, SCM terminatrix_scm)
+{
+  Terminatrix term (terminatrix_scm);
+  const int max_steps = scm_to_int (max_steps_scm);
+  Terminatrix_trainer trainer (term, max_steps);
+  return trainer.final_scm();
+}
+
 void init_terminatrix_primitives (void)
 {
   scm_c_define_gsubr (GUILE_TERMINATRIX_EVIDENCE, 1, 0, 0, (SCM (*)()) terminatrix_evidence);
-  scm_c_define_gsubr (GUILE_TERMINATRIX_PREDICTION, 1, 0, 0, (SCM (*)()) terminatrix_prediction);
+  scm_c_define_gsubr (GUILE_TERMINATRIX_PREDICT, 1, 0, 0, (SCM (*)()) terminatrix_prediction);
+  scm_c_define_gsubr (GUILE_TERMINATRIX_LEARN, 2, 0, 0, (SCM (*)()) terminatrix_learn);
 }

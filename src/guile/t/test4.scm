@@ -12,7 +12,7 @@
   (if
    (equal? gene "A")
    (equal? (car state-tuple) "term1")
-   #t))
+   (equal? (car state-tuple) "term2")))
 
 (define
   my_model
@@ -50,6 +50,20 @@
  (terminatrix-evidence
   (quote
    (terminatrix
-    (knowledge-scheme . my_knowledge)
-    (tree-db-scheme . my_tree_db)
-    (model-scheme . my_model)))))
+    (knowledge-scheme my_knowledge)
+    (tree-db-scheme my_tree_db)
+    (model-scheme my_model)))))
+
+(write
+ (terminatrix-learn
+  100
+  (quote
+   (terminatrix
+    (params
+     (pgroup
+      ((p1 .25) (p2 .25) (p3 .25) (p4 .25)))
+     (rate
+      (r 1.33)))
+    (knowledge-scheme my_knowledge)
+    (tree-db-scheme my_tree_db)
+    (model-scheme my_model)))))

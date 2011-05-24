@@ -15,6 +15,7 @@ SExpr* scm_to_parent_sexpr (SCM scm)
 {
   // four guile API calls to get an SCM as a char* string? feel like I'm doing something the hard way here
   sstring str = scm_to_string (scm);
+  CTAG(1,GUILE) << "In scm_to_parent_sexpr: " << str << '\n';
   SExpr* sexpr = new SExpr (str.begin(), str.end());
   return sexpr;
 }

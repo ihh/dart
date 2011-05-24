@@ -1778,16 +1778,12 @@ void ECFG_builder::print_state (ostream& out, int state, const Alphabet_dictiona
   if (alph_dict.size())
     {
       vector<sstring> toks = chain.get_symbol_tokens (state, alph_dict, default_alphabet);
-      if (chain.classes <= 1)
-	toks.pop_back();
       out << '(' << toks << ')';
     }
   else
     {
       vector<int> tok_idx;
       chain.get_symbol_indices (state, tok_idx);
-      if (chain.classes <= 1)
-	tok_idx.pop_back();
       out << '(' << tok_idx << ')';
     }
 }
