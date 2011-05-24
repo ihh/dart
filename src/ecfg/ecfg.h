@@ -23,7 +23,7 @@ struct Alphabet_dictionary : map<sstring,Alphabet>
 struct ECFG_enum : Grammar_state_enum
 {
   typedef EM_matrix::Column_matrix Column_matrix;
-  typedef EM_matrix::Update_statistics Update_statistics;
+  typedef EM_matrix_base::Update_statistics Update_statistics;
   enum Update_policy { Rev = 0, Irrev = 1, Rind = 2, Parametric = 3, Hybrid = 4, TotalPolicies = 5 };
 };
 
@@ -44,8 +44,8 @@ struct ECFG_chain : ECFG_enum
   int classes;  // the number of hidden classes; this is always >= 1, even if class_labels is empty
 
   // PFunc stuff
-  bool is_parametric;  // true if the chain is parametric
-  EM_matrix_funcs* matrix_funcs;  // the parametric 
+  bool is_parametric;  // true if the chain is parametric; this is redundant given the Update_policy (ugh) TODO: turn this into a method
+  EM_matrix_funcs* matrix_funcs;  // contains the parametric functions for initial probabilities & mutation rates
 
   // data for hybrid chains
   string gs_tag;  // the "row" value in the grammar file
@@ -56,6 +56,9 @@ struct ECFG_chain : ECFG_enum
   bool uses_default_alphabet() const;
   void get_symbol_indices (int state, vector<int>& symbol_idx) const;  // convert a state index to a vector of symbol indices (the last of which is the hidden state index, unless class_labels is empty in which case it is omitted)
   vector<sstring> get_symbol_tokens (int state, const Alphabet_dictionary& alph_dict, const Alphabet& default_alph) const;  // convert a state index to a vector of symbol tokens (the last of which is the hidden state token, unless class_labels is empty in which case it is omitted)
+
+  // transmit counts to PCounts
+  void inc_var_counts (const Update_statistics& chain_stats, PCounts& var_counts, const PScores& pscores, const Prob weight = 1.0) const;
 };
 
 // Set of substitution matrices for an Evolutionary CFG

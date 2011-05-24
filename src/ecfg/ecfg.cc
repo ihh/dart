@@ -70,6 +70,32 @@ vector<sstring> ECFG_chain::get_symbol_tokens (int state, const Alphabet_diction
   return tok;
 }
 
+void ECFG_chain::inc_var_counts (const Update_statistics& chain_stats, PCounts& var_counts, const PScores& pscores, const Prob weight) const
+{
+  if (is_parametric && type != Hybrid)
+    {
+      const int chain_states = matrix->m();
+      for (int s = 0; s < chain_states; ++s)
+	{
+	  const PFunc& pi_pfunc = matrix_funcs->pi[s];
+	  if (!pi_pfunc.is_null())
+	    pi_pfunc.inc_var_counts (var_counts, pscores, weight * chain_stats.s[s]);
+
+	  for (int d = 0; d < chain_states; ++d)
+	    {
+	      const PFunc& rate_pfunc = matrix_funcs->X[0] (s, d);
+	      if (!rate_pfunc.is_null())
+		{
+		  const double u = (s == d)
+		    ? (chain_stats.w[s] * Score2Prob (rate_pfunc.eval_sc (pscores)))
+		    : chain_stats.u(s,d);
+		  rate_pfunc.inc_var_counts (var_counts, pscores, weight * u, weight * chain_stats.w[s]);
+		}
+	    }
+	}
+    }
+}
+
 ECFG_matrix_set::ECFG_matrix_set (const ECFG_matrix_set& ems)
   : alphabet (ems.alphabet)
 {
@@ -1542,30 +1568,7 @@ void ECFG_counts::inc_var_counts (PCounts&           var_counts,
       const ECFG_chain& chain = ecfg.matrix_set.chain[c];
       if (chain.type == Hybrid)  // skip if this chain is a lineage-dependent model
 	continue;
-
-      if (chain.is_parametric)
-	{
-	  Update_statistics& chain_stats = stats[c];
-	  const int chain_states = chain.matrix->m();
-	  for (int s = 0; s < chain_states; ++s)
-	    {
-	      const PFunc& pi_pfunc = chain.matrix_funcs->pi[s];
-	      if (!pi_pfunc.is_null())
-		pi_pfunc.inc_var_counts (var_counts, ecfg.pscores, weight * chain_stats.s[s]);
-
-	      for (int d = 0; d < chain_states; ++d)
-		{
-		  const PFunc& rate_pfunc = chain.matrix_funcs->X[0] (s, d);
-		  if (!rate_pfunc.is_null())
-		    {
-		      const double u = (s == d)
-			? (chain_stats.w[s] * Score2Prob (rate_pfunc.eval_sc (ecfg.pscores)))
-			: chain_stats.u(s,d);
-		      rate_pfunc.inc_var_counts (var_counts, ecfg.pscores, weight * u, weight * chain_stats.w[s]);
-		    }
-		}
-	    }
-	}
+      chain.inc_var_counts (stats[c], var_counts, ecfg.pscores, weight);
     }
 
   for (int s = 0; s < states(); ++s)

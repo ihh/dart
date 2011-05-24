@@ -175,6 +175,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
 {
   // global info
   Update_statistics stats;  // uses these in preference to Terminatrix's; copy across if needed
+  PCounts pcounts;  // uses these in preference to Terminatrix's; copy across if needed
   // info on the current family
   Column_matrix current_colmat;
   // methods
@@ -215,6 +216,9 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
     return current_colmat.node_post_prob (node, state,
 					  *(Terminatrix_family_visitor::current_tree),
 					  Terminatrix_family_visitor::rate_matrix());
+  }
+  void inc_var_counts() {
+    Terminatrix_family_visitor::chain().inc_var_counts (stats, pcounts, terminatrix.pscores);
   }
 };
 
