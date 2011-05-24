@@ -10,10 +10,8 @@
 (define
   (my_knowledge family gene state-tuple)
   (if
-   (and
-    (equal? gene "A")
-    (not (equal? (car state-tuple) "term1")))
-   #f
+   (equal? gene "A")
+   (equal? (car state-tuple) "term1")
    #t))
 
 (define
