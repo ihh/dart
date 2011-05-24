@@ -179,7 +179,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
   // info on the current family
   Column_matrix current_colmat;
   // methods
-  Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term), var_counts(term.pcounts) { }
+  Terminatrix_EM_visitor (Terminatrix& term) : Terminatrix_family_visitor(term) { clear(); }
   void init_current() { initialize_current_colmat(); }  // intended final
   void initialize_current_colmat();  // called by init_current()
   SCM node_name_scm (int node) {
@@ -220,6 +220,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
   void inc_var_counts() {
     Terminatrix_family_visitor::chain().inc_var_counts (stats, var_counts, terminatrix.pscores);
   }
+  void clear() { stats.clear(); var_counts = terminatrix.pcounts; }
 };
 
 // Terminatrix_log_evidence
