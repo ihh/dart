@@ -257,6 +257,7 @@ class Log_stream : public ostream, public Log_stream_vars
   static bool clog_to_stderr (Opts_list* ol);
   static bool clog_everywhere (Opts_list* ol);
   static bool clog_directive (Opts_list* ol);
+  static bool clog_directive (const sstring& directive_string);
   static bool clog_negated_directive (Opts_list* ol);
 
   static void add_opts (Opts_list& ol);

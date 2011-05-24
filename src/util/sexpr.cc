@@ -323,7 +323,7 @@ SExpr& SExpr::value()
     THROWEXPR ("In SExpr (" << *this << "):\nAn empty list was encountered where I expected to find a two-element (tag value) list");
   if (!has_value())
     THROWEXPR ("In SExpr (" << *this << "):\nA list of more than two elements was encountered where I expected to find a two-element (tag value) list");
-  return (*this)[1];
+  return (*this) [is_scheme_pair() ? 2 : 1];
 }
 
 vector<SExpr*> SExpr::values()
@@ -331,10 +331,15 @@ vector<SExpr*> SExpr::values()
   tag();  // as a validation step perform the same tests, and generate the same error messages on failure, as if we had tried to access the tag
 
   vector<SExpr*> vals;
-  for (SExpr::SExprIter child_iter = ++child.begin();
-       child_iter != child.end();
-       ++child_iter)
-    vals.push_back (&*child_iter);
+  SExpr::SExprIter child_iter = child.begin();
+  ++child_iter;
+  if (is_scheme_pair())
+    ++child_iter;
+  while (child_iter != child.end())
+    {
+      vals.push_back (&*child_iter);
+      ++child_iter;
+    }
 
   return vals;
 }

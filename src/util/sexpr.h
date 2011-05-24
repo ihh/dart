@@ -54,14 +54,13 @@ struct SExpr
   inline bool is_atom() const;
 
   inline bool has_tag();  // true if there are at least two children and the first child is an atom
-  inline bool has_value();  // true if there are exactly two children
-
+  inline bool has_value();  // true if there are exactly two children, or is_scheme_pair()
   inline bool is_scheme_pair();  // true if there are exactly three children and the middle one is the atom "."
 
   // tag() returns the atom of the first child, or an error if that doesn't exist
   SExpr_atom& tag();
 
-  // value() returns the second child, or an error if there aren't exactly two children
+  // value() returns the second child (if there are exactly 2 children), third child (if is_scheme_pair), or an error
   SExpr& value();
 
   // values() returns all children but the first, or an error if there are no children
@@ -180,7 +179,7 @@ bool SExpr::has_tag()
 
 bool SExpr::has_value()
 {
-  return child.size() == 2;
+  return child.size() == 2 || is_scheme_pair();
 }
 
 bool SExpr::is_scheme_pair()

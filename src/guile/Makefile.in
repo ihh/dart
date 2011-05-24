@@ -1,9 +1,12 @@
 
+INTERPRETER = darts
+TESTSCRIPT  = t/test.scm
+
 TESTS      = 
 TARGETS    = $(TESTS) $(INTERPRETER)
 DIRNAME    = guile
 
-DEPS       = ecfg scfg hmm hsm irrev tree seq util newmat randlib
+DEPS       = ontology ecfg scfg hmm hsm irrev tree seq util newmat randlib
 
 CCDIR      = $(shell pwd)
 SRCDIR     = $(CCDIR)/..
@@ -14,9 +17,13 @@ override PPFLAGS += $(shell guile-config compile)
 override CCFLAGS += $(shell guile-config compile)
 override LDFLAGS += $(shell guile-config link)
 
-# Targets to print the set of extended Scheme primitives and types
+# Pseudotargets to print the set of extended Scheme primitives and types
 primitives:
 	grep scm_c_define_gsubr ../*/*.cc
 
 types:
 	grep scm_make_smob_type ../*/*.cc
+
+# Load the test script and drop into a read-evaluate-print loop
+darts-test-repl: $(INTERPRETER)
+	$(BINDIR)/$(INTERPRETER) -l $(TESTSCRIPT)

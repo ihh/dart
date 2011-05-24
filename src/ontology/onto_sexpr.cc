@@ -43,8 +43,11 @@ void Terminatrix_builder::init_terminatrix (Terminatrix& term, SExpr& wrapper_se
   init_terminatrix (term, ass_map);
 }
 
-void Terminatrix_builder::init_terminatrix (Terminatrix& term, SCM args_scm)
+void Terminatrix_builder::init_terminatrix (Terminatrix& term, SCM terminatrix_scm)
 {
+  THROWASSERT (SCM_NFALSEP(scm_list_p(terminatrix_scm)));
+  // TODO: check that car of list is either "terminatrix" string or terminatrix symbol
+  SCM args_scm = scm_cdr (terminatrix_scm);
   const Ass_map ass_map (args_scm);
   init_terminatrix (term, ass_map);
 }
@@ -162,7 +165,7 @@ void Terminatrix_builder::terminatrix_params2stream (ostream& out, Terminatrix& 
 SCM Terminatrix_family_visitor::map_reduce_scm()
 {
   SCM tree_db_list_scm = scm_primitive_eval (terminatrix.tree_db_scm);
-  if (!scm_list_p(tree_db_list_scm))
+  if (SCM_FALSEP(scm_list_p(tree_db_list_scm)))
     THROWEXPR (TERMINATRIX_TREE_DB_SCM " function must return a list");
 
   CTAG(5,TERMINATRIX) << "Beginning iteration over families\n";
@@ -174,7 +177,7 @@ SCM Terminatrix_family_visitor::map_reduce_scm()
       CTAG(5,TERMINATRIX) << "Visiting family #" << (current_family_index + 1) << "\n";
 
       SCM tree_db_entry_scm = scm_car (tree_db_list_scm);
-      if (!(scm_list_p(tree_db_entry_scm) && scm_to_uintmax(scm_length(tree_db_entry_scm)) == 2))
+      if (SCM_FALSEP(scm_list_p(tree_db_entry_scm)) || scm_to_uintmax(scm_length(tree_db_entry_scm)) != 2)
 	THROWEXPR (TERMINATRIX_TREE_DB_SCM " function must return a list");
 
       current_name_scm = scm_car (tree_db_entry_scm);
@@ -246,4 +249,19 @@ void Terminatrix_EM_visitor::initialize_current_colmat()
   // initialise Column_matrix
   current_colmat.alloc (current_tree->nodes(), terminatrix.rate_matrix().number_of_states());
   current_colmat.initialise (*current_tree, node_scores);
+}
+
+SCM terminatrix_evidence (SCM terminatrix_scm)
+{
+  Terminatrix term;
+  Terminatrix_builder::init_terminatrix (term, terminatrix_scm);
+  term.eval_funcs();
+  Terminatrix_log_evidence log_ev (term);
+  SCM log_ev_scm = log_ev.map_reduce_scm();
+  return log_ev_scm;
+}
+
+void init_terminatrix_primitives (void)
+{
+  scm_c_define_gsubr (GUILE_TERMINATRIX_EVIDENCE, 1, 0, 0, (SCM (*)()) terminatrix_evidence);
 }

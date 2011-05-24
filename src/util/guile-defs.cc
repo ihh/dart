@@ -1,6 +1,8 @@
 #include "util/guile-defs.h"
 #include "util/logfile.h"
 
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
+
 sstring scm_to_string (SCM scm)
 {
   const char *s = scm_to_locale_string (scm_object_to_string (scm, scm_variable_ref (scm_c_lookup ("write"))));
@@ -54,3 +56,26 @@ SCM sexpr_to_scm (SExpr* sexpr)
   SCM scm = string_to_scm(str.c_str());
   return scm;
 }
+
+SCM scm_log_directive (SCM scm)
+{
+  const sstring log_dir (scm_to_string_unquoted (scm));
+  const bool ok = clog_stream.clog_directive (log_dir);
+  return ok ? SCM_BOOL_T : SCM_BOOL_F;
+}
+
+sstring scm_to_string_unquoted (SCM scm)
+{
+  THROWASSERT (scm_is_string(scm));
+  char* cstr = scm_to_locale_string (scm);
+  const sstring str (cstr);
+  free (cstr);
+  return str;
+}
+
+void init_dart_primitives (void)
+{
+  scm_c_define_gsubr (GUILE_LOG_DIRECTIVE, 1, 0, 0, (SCM (*)()) scm_log_directive);
+}
+
+#endif /* GUILE_INCLUDED */

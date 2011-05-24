@@ -29,14 +29,21 @@ Ass_map::Ass_map (SCM scm_list)
 	    else
 	      CLOGERR << "Discarding " << scm_to_string(head) << "\n";
 
-	  // get the string
-	  if (!scm_is_string(tag))
-	    CTAG(3,GUILE) << "In association-list wrapper: Scheme expression is not a string\n";
-
-	  const sstring tag_str = scm_to_string (tag);
+	  // get the tag string
+	  sstring tag_str;
+	  if (scm_is_string(tag))
+	    tag_str = scm_to_string_unquoted (tag);
+	  else if (scm_is_symbol(tag))
+	    tag_str = scm_to_string_unquoted (scm_symbol_to_string (tag));
+	  else
+	    CTAG(3,GUILE) << "In association-list wrapper: Scheme expression " << scm_to_string(tag) << " is not a string or a symbol\n";
 
 	  /* Add it to the map */
-	  (*this) [tag_str] = value;
+	  if (tag_str.size())
+	    {
+	      CTAG(1,GUILE) << "Parsed parameter " << tag_str << '\n';
+	      (*this) [tag_str] = value;
+	    }
 
 	  /* Discard the head of the list */
 	  scm_list = SCM_CDR(scm_list);

@@ -303,7 +303,12 @@ bool Log_stream::clog_everywhere (Opts_list* ol)
 
 bool Log_stream::clog_directive (Opts_list* ol)
 {
-  sstring directive_string (ol->next_string());
+  const sstring directive_string (ol->next_string());
+  return clog_directive (directive_string);
+}
+
+bool Log_stream::clog_directive (const sstring& directive_string)
+{
   Regexp numeric_re ("^-?[0123456789]+$");
   if (numeric_re.Match (directive_string.c_str())) clog_stream.lowest_log_level = atoi (directive_string.c_str());
   else clog_stream.directives.push_back (Log_directive (directive_string));

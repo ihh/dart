@@ -199,14 +199,12 @@ struct Terminatrix_log_evidence : Terminatrix_keyed_concatenator, Terminatrix_EM
   }
 };
 
-
-
 // Terminatrix I/O adapter
 struct Terminatrix_builder : ECFG_builder
 {
   // load
-  static void init_terminatrix (Terminatrix& terminatrix, SExpr& terminatrix_wrapper_sexpr);
-  static void init_terminatrix (Terminatrix& terminatrix, SCM terminatrix_args_scm);
+  static void init_terminatrix (Terminatrix& terminatrix, SExpr& terminatrix_sexpr);
+  static void init_terminatrix (Terminatrix& terminatrix, SCM terminatrix_scm);
   static void init_terminatrix (Terminatrix& terminatrix, const Ass_map& ass_map);
   // save
   static void terminatrix2stream (ostream& out, Terminatrix& terminatrix);
@@ -221,5 +219,9 @@ struct Terminatrix_builder : ECFG_builder
   static void terminatrix_model2stream (ostream& out, Terminatrix& terminatrix);
   static void terminatrix_member_scm2stream (ostream& out, SCM& member_scm, const char* tag);
 };
+
+// guile methods
+SCM terminatrix_evidence (SCM terminatrix_scm);
+void init_terminatrix_primitives (void);
 
 #endif /* ONTO_SEXPR_INCLUDED */
