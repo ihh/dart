@@ -130,13 +130,15 @@ void Terminatrix_builder::init_terminatrix (Terminatrix& term, const Ass_map& as
     }
 
   term.knowledge_func_scm = scm_primitive_eval (term.knowledge_scm);
-  scm_gc_protect_object (term.knowledge_func_scm);
+  if (SCM_NFALSEP(term.knowledge_func_scm))
+    scm_gc_protect_object (term.knowledge_func_scm);
 }
 
 void Terminatrix_builder::init_terminatrix_member_scm (SCM& member_scm, const Ass_map& parent_ass_map, const char* tag)
 {
   member_scm = parent_ass_map.scm_value_or_false (tag);
-  scm_gc_protect_object (member_scm);
+  if (SCM_NFALSEP(member_scm))
+    scm_gc_protect_object (member_scm);
 }
 
 void Terminatrix_builder::init_terminatrix_params (Terminatrix& term, SExpr& model_sexpr)
@@ -297,7 +299,6 @@ SCM terminatrix_evidence (SCM terminatrix_scm)
   Terminatrix term (terminatrix_scm);
   Terminatrix_log_evidence log_ev (term);
   SCM log_ev_scm = log_ev.map_reduce_scm();
-  scm_gc_unprotect_object (log_ev_scm);
   return log_ev_scm;
 }
 
@@ -306,7 +307,6 @@ SCM terminatrix_prediction (SCM terminatrix_scm)
   Terminatrix term (terminatrix_scm);
   Terminatrix_prediction prediction (term);
   SCM prediction_scm = prediction.map_reduce_scm();
-  scm_gc_unprotect_object (prediction_scm);
   return prediction_scm;
 }
 

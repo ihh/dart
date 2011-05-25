@@ -144,7 +144,6 @@ struct Terminatrix_family_visitor
 // Terminatrix_concatenator
 // A virtual class returning a cons of the map results.
 // This class also commits the map-reduction to passing SCM objects.
-// The returned list is protected from the Guile garbage collector, using scm_gc_protect_object.
 // Overrides the zero() and reduce(previous) methods.
 // Introduces new virtual methods current_mapped_scm(), reduce_scm(), zero_scm(), finalize_scm
 struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
@@ -153,18 +152,14 @@ struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
   scm_t_bits reduce (scm_t_bits previous) {  // delegate to reduce_scm(). intended final
     SCM previous_scm = SCM_PACK(previous);
     SCM reduced_scm = reduce_scm (current_mapped_scm(), previous_scm);
-    scm_gc_unprotect_object (previous_scm);
-    scm_gc_protect_object (reduced_scm);
     return SCM_UNPACK(reduced_scm);
   }
   scm_t_bits zero() {  // delegate to zero_scm(). intended final
     SCM z_scm = zero_scm();
-    scm_gc_protect_object (z_scm);
     return SCM_UNPACK (z_scm);
   }
   virtual SCM finalize (scm_t_bits result) {
     SCM final_scm = Terminatrix_family_visitor::finalize (result);
-    scm_gc_unprotect_object (final_scm);
     return finalize_scm (final_scm);
   }
   virtual SCM current_mapped_scm() = 0;  // guaranteed to be called after init_current()
