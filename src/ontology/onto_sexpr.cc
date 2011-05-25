@@ -4,14 +4,24 @@
 #include "guile/newick-type.h"
 
 Terminatrix::Terminatrix()
-  : var_counts(pscores),
+  : init_scm (SCM_BOOL_F),
+    model_scm (SCM_BOOL_F),
+    tree_db_scm (SCM_BOOL_F),
+    knowledge_scm (SCM_BOOL_F),
+    knowledge_func_scm (SCM_BOOL_F),
+    var_counts(pscores),
     dummy_alph(),
     matrix_set(dummy_alph),
     got_counts(false)
 { }
 
 Terminatrix::Terminatrix (SCM scm)
-  : var_counts(pscores),
+  : init_scm (SCM_BOOL_F),
+    model_scm (SCM_BOOL_F),
+    tree_db_scm (SCM_BOOL_F),
+    knowledge_scm (SCM_BOOL_F),
+    knowledge_func_scm (SCM_BOOL_F),
+    var_counts(pscores),
     dummy_alph(),
     matrix_set(dummy_alph),
     got_counts(false)
@@ -20,12 +30,32 @@ Terminatrix::Terminatrix (SCM scm)
 }
 
 Terminatrix::Terminatrix (const SExpr& sexpr)
-  : var_counts(pscores),
+  : init_scm (SCM_BOOL_F),
+    model_scm (SCM_BOOL_F),
+    tree_db_scm (SCM_BOOL_F),
+    knowledge_scm (SCM_BOOL_F),
+    knowledge_func_scm (SCM_BOOL_F),
+    var_counts(pscores),
     dummy_alph(),
     matrix_set(dummy_alph),
     got_counts(false)
 {
   Terminatrix_builder::init_terminatrix (*this, (SExpr&) sexpr);
+}
+
+Terminatrix::~Terminatrix()
+{
+  unprotect (init_scm);
+  unprotect (model_scm);
+  unprotect (tree_db_scm);
+  unprotect (knowledge_scm);
+  unprotect (knowledge_func_scm);
+}
+
+void Terminatrix::unprotect (SCM scm)
+{
+  if (SCM_NFALSEP(scm))
+    scm_gc_unprotect_object (scm);
 }
 
 EM_matrix_base& Terminatrix::rate_matrix()
@@ -100,11 +130,13 @@ void Terminatrix_builder::init_terminatrix (Terminatrix& term, const Ass_map& as
     }
 
   term.knowledge_func_scm = scm_primitive_eval (term.knowledge_scm);
+  scm_gc_protect_object (term.knowledge_func_scm);
 }
 
 void Terminatrix_builder::init_terminatrix_member_scm (SCM& member_scm, const Ass_map& parent_ass_map, const char* tag)
 {
   member_scm = parent_ass_map.scm_value_or_false (tag);
+  scm_gc_protect_object (member_scm);
 }
 
 void Terminatrix_builder::init_terminatrix_params (Terminatrix& term, SExpr& model_sexpr)
@@ -211,6 +243,8 @@ SCM Terminatrix_family_visitor::map_reduce_scm()
 
       init_current();
       accumulator = reduce (accumulator);
+
+      scm_remember_upto_here_2 (current_name_scm, current_newick_scm);
 
       tree_db_list_scm = scm_cdr (tree_db_list_scm);
       ++current_family_index;

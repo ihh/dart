@@ -68,6 +68,10 @@ struct Terminatrix
   Terminatrix (SCM scm);
   Terminatrix (const SExpr& sexpr);
 
+  // destructor
+  ~Terminatrix();
+  void unprotect (SCM scm);  // destructor helper
+
   // helpers
   void eval_funcs();  // populates the ECFG_chain with numeric values, by evaluating PFunc's (parsed algebraic functions); also resets stats
 
@@ -140,16 +144,24 @@ struct Terminatrix_family_visitor
 // Terminatrix_concatenator
 // A virtual class returning a cons of the map results.
 // This class also commits the map-reduction to passing SCM objects.
+// The returned list is protected from the Guile garbage collector, using scm_gc_protect_object.
 // Overrides the zero() and reduce(previous) methods.
 // Introduces new virtual methods current_mapped_scm(), reduce_scm(), zero_scm(), finalize_scm
 struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
 {
   Terminatrix_concatenator (Terminatrix& term) : Terminatrix_family_visitor(term) { }
   scm_t_bits reduce (scm_t_bits previous) {  // delegate to reduce_scm(). intended final
-    SCM reduction = reduce_scm (current_mapped_scm(), SCM_PACK(previous));
-    return SCM_UNPACK(reduction);
+    SCM previous_scm = SCM_PACK(previous);
+    SCM reduced_scm = reduce_scm (current_mapped_scm(), previous_scm);
+    scm_gc_unprotect_object (previous_scm);
+    scm_gc_protect_object (reduced_scm);
+    return SCM_UNPACK(reduced_scm);
   }
-  scm_t_bits zero() { return SCM_UNPACK (zero_scm()); }  // delegate to zero_scm(). intended final
+  scm_t_bits zero() {  // delegate to zero_scm(). intended final
+    SCM z_scm = zero_scm();
+    scm_gc_protect_object (z_scm);
+    return SCM_UNPACK (z_scm);
+  }
   virtual SCM finalize (scm_t_bits result) { return finalize_scm (Terminatrix_family_visitor::finalize (result)); }
   virtual SCM current_mapped_scm() = 0;  // guaranteed to be called after init_current()
   virtual SCM reduce_scm (SCM a, SCM b) { return scm_cons (a, b); }  // does a cons
@@ -253,7 +265,7 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
     PFunc_builder::init_pgroups_and_rates (pscores, sym2pvar, sexpr(TERMINATRIX_PARAMS));
     return pscores;
   }
-  static SCM pcounts_to_scm (const PScores& pcounts, const char* tag = TERMINATRIX_PARAM_COUNTS) {
+  static SCM pcounts_to_scm (const PCounts& pcounts, const char* tag = TERMINATRIX_PARAM_COUNTS) {
     sstring pcounts_str;
     PFunc_builder::pcounts2stream (pcounts_str, pcounts, tag);
     SExpr pcounts_sexpr (pcounts_str.begin(), pcounts_str.end());
@@ -358,7 +370,7 @@ struct Terminatrix_learning_step : Terminatrix_EM_visitor
 		       scm_list_2 (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
 				   scm_from_double (total_log_ev)),
 		       pscores_to_scm (Terminatrix_family_visitor::terminatrix.pscores, TERMINATRIX_PARAMS),
-		       pcounts_to_scm (Terminatrix_family_visitor::terminatrix.pscores, TERMINATRIX_PARAM_COUNTS),
+		       pcounts_to_scm (Terminatrix_EM_visitor::var_counts, TERMINATRIX_PARAM_COUNTS),
 		       pscores_to_scm (next_pscores, TERMINATRIX_NEXT_PARAMS));
   }
 };
@@ -386,23 +398,21 @@ struct Terminatrix_trainer
 	else
 	  break;
 	CTAG(6,TERMINATRIX) << "EM iteration #" << (n_step + 1) << ": log-evidence " << max_total_log_ev << '\n';
-	// Commented out this line as it is not working
 	log_scm = scm_cons (step_log_scm, log_scm);
 	term.pscores = step.next_pscores;
       }
     term.pscores = argmax_total_log_ev;
+    scm_gc_protect_object (log_scm);
+  }
+  ~Terminatrix_trainer() {
+    scm_gc_unprotect_object (log_scm);
   }
   // accessors
   SCM final_scm() {
     SCM pscores_scm = Terminatrix_EM_visitor::pscores_to_scm (argmax_total_log_ev);
+    // TODO: optionally include training log
     return scm_cons (string_to_scm (TERMINATRIX_TERMINATRIX),
 		     pscores_scm);
-    /*
-    return scm_list_3 (string_to_scm (TERMINATRIX_TERMINATRIX),
-		       pscores_scm,
-		       scm_list_2 (string_to_scm (TERMINATRIX_TRAINING_LOG),
-				   log_scm));
-    */
   }
   SExpr final_sexpr() {
     SCM scm = final_scm();
