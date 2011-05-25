@@ -297,6 +297,7 @@ SCM terminatrix_evidence (SCM terminatrix_scm)
   Terminatrix term (terminatrix_scm);
   Terminatrix_log_evidence log_ev (term);
   SCM log_ev_scm = log_ev.map_reduce_scm();
+  scm_gc_unprotect_object (log_ev_scm);
   return log_ev_scm;
 }
 
@@ -305,6 +306,7 @@ SCM terminatrix_prediction (SCM terminatrix_scm)
   Terminatrix term (terminatrix_scm);
   Terminatrix_prediction prediction (term);
   SCM prediction_scm = prediction.map_reduce_scm();
+  scm_gc_unprotect_object (prediction_scm);
   return prediction_scm;
 }
 

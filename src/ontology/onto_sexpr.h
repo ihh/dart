@@ -162,7 +162,11 @@ struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
     scm_gc_protect_object (z_scm);
     return SCM_UNPACK (z_scm);
   }
-  virtual SCM finalize (scm_t_bits result) { return finalize_scm (Terminatrix_family_visitor::finalize (result)); }
+  virtual SCM finalize (scm_t_bits result) {
+    SCM final_scm = Terminatrix_family_visitor::finalize (result);
+    scm_gc_unprotect_object (final_scm);
+    return finalize_scm (final_scm);
+  }
   virtual SCM current_mapped_scm() = 0;  // guaranteed to be called after init_current()
   virtual SCM reduce_scm (SCM a, SCM b) { return scm_cons (a, b); }  // does a cons
   virtual SCM zero_scm() { return scm_list_n (SCM_UNDEFINED); }  // creates an empty list

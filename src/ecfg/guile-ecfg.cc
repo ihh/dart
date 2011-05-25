@@ -35,6 +35,8 @@ static SCM xrate_estimate_tree (SCM stock_smob, SCM alphabet_and_grammar)
     ECFG_main xrate;
     Stockholm stock_with_tree = xrate.run_tree_estimation (*stock->stock, *stock->seqdb, *alphgram);
 
+    scm_remember_upto_here_2 (stock_smob, alphabet_and_grammar);
+
     // make return expression
     scm = make_stockholm_smob (stock_with_tree);
 
@@ -59,6 +61,8 @@ static SCM xrate_annotate_alignment (SCM stock_smob, SCM alphabet_and_grammar)
 
     ECFG_main xrate;
     Stockholm stock_with_annotation = xrate.run_alignment_annotation (*stock->stock, *alphgram);
+
+    scm_remember_upto_here_2 (stock_smob, alphabet_and_grammar);
 
     // make return expression
     scm = make_stockholm_smob (stock_with_annotation);
@@ -110,6 +114,8 @@ static SCM xrate_train_grammar (SCM list_of_stock_smobs, SCM alphabet_and_gramma
     // make return expression
     scm = ecfg_to_scm (*trained_grammar, trained_counts);
 
+    scm_remember_upto_here_2 (list_of_stock_smobs, alphabet_and_grammar);
+
   } catch (Dart_exception& e) {
     CLOGERR << e.what();
   }
@@ -135,6 +141,8 @@ static SCM xrate_validate_grammar_with_alignment (SCM stock_smob, SCM alphabet_a
     // make return expression
     scm = ecfg_to_scm (*ecfg, 0);
 
+    scm_remember_upto_here_2 (stock_smob, alphabet_and_grammar);
+
   } catch (Dart_exception& e) {
     CLOGERR << e.what();
   }
@@ -158,6 +166,8 @@ static SCM xrate_validate_grammar (SCM alphabet_and_grammar)
 
     // make return expression
     scm = ecfg_to_scm (*ecfg, 0);
+
+    scm_remember_upto_here_1 (alphabet_and_grammar);
 
   } catch (Dart_exception& e) {
     CLOGERR << e.what();
