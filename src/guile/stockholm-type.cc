@@ -60,6 +60,8 @@ static SCM stockholm_to_file (SCM stock_smob, SCM s_filename)
   stock->write_to_file(filename);
   free(filename);
 
+  scm_remember_upto_here_1 (stock_smob);
+
   // Return
   return SCM_UNSPECIFIED;
 }
@@ -114,6 +116,8 @@ static SCM stockholm_unpack (SCM stock_smob)
     CLOGERR << e.what();
   }
 
+  scm_remember_upto_here_1 (stock_smob);
+
   return row_list;
 }
 
@@ -133,6 +137,8 @@ static int print_stockholm (SCM stock_smob, SCM port, scm_print_state *pstate)
   sstring stock_quoted;
   stock_quoted << stock_string;
   scm_puts (stock_quoted.c_str(), port);
+
+  scm_remember_upto_here_1 (stock_smob);
 
   /* non-zero means success */
   return 1;
@@ -154,6 +160,9 @@ static SCM newick_from_stockholm (SCM stock_smob)
   } catch (Dart_exception& e) {
     CLOGERR << e.what();
   }
+
+  scm_remember_upto_here_1 (stock_smob);
+
   return scm;
 }
 

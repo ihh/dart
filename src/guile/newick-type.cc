@@ -88,6 +88,8 @@ static SCM newick_node_list (SCM tree_smob, vector<Phylogeny::Node> (PHYLIP_tree
       tree_node_list = scm_append(scm_list_2(tree_node_list,single_element_list));
   }
 
+  scm_remember_upto_here_1 (tree_smob);
+
   // Return
   return tree_node_list;
 }
@@ -119,6 +121,8 @@ static SCM newick_branch_list (SCM tree_smob)
     tree_branch_list = scm_append(scm_list_2(tree_branch_list,single_element_list));
   }
 
+  scm_remember_upto_here_1 (tree_smob);
+
   // Return
   return tree_branch_list;
 }
@@ -141,6 +145,8 @@ static SCM newick_unpack (SCM tree_smob)
 							 parent < 0 || length < 0 ? SCM_BOOL_F : scm_from_double(length))));
   }
 
+  scm_remember_upto_here_1 (tree_smob);
+
   // Return
   return node_scm[tree.root];
 }
@@ -161,6 +167,8 @@ static int print_newick (SCM tree_smob, SCM port, scm_print_state *pstate)
   sstring tree_quoted;
   tree_quoted << tree_string;
   scm_puts (tree_quoted.c_str(), port);
+
+  scm_remember_upto_here_1 (tree_smob);
 
   /* non-zero means success */
   return 1;
