@@ -492,10 +492,7 @@ void Alphabet::init_hidden (const Alphabet& base_alphabet, int hidden_classes)
 void Alphabet::init_hidden (const Alphabet& base_alphabet, const vector<sstring>& hidden_class_labels)
 {
   const int A = base_alphabet.size();
-  const int C = hidden_class_labels.size();
-
-  if (C == 0)
-    THROWEXPR ("Alphabet::init_hidden called with zero hidden classes (at least one is needed). Complain loudly to your nearest dartcoder!");
+  const int C = max (1, (int) hidden_class_labels.size());
 
   if (C == 1)
     *this = base_alphabet;
@@ -556,7 +553,8 @@ void Alphabet::init_hidden (const Alphabet& base_alphabet, const vector<sstring>
 	      ca_tok << nd_chars[a];
 	    else
 	      ca_tok << (a + 1) << '_';
-	    ca_tok << hidden_class_labels[c];
+	    if (hidden_class_labels.size())
+	      ca_tok << hidden_class_labels[c];
 	    hidden_tok.push_back (ca_tok);
 	  }
       init_tokens (hidden_tok);

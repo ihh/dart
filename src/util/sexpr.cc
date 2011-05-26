@@ -417,6 +417,22 @@ vector<SExpr*> SExpr::find_all (const char* child_tag, int offset)
   return find_all (sstring (child_tag), offset);
 }
 
+SExpr* SExpr::find_any (const vector<sstring>& child_tags, int offset)
+{
+  SExpr *ret = NULL;
+  for_const_contents (vector<sstring>, child_tags, tag)
+    if ((ret = find (*tag)))
+      break;
+  return ret;
+}
+
+SExpr* SExpr::find_any (const char* child_tag_str, int offset)
+{
+  const sstring child_tag_s (child_tag_str);
+  const vector<sstring> child_tag_v = child_tag_s.split();
+  return find_any (child_tag_v, offset);
+}
+
 const SExpr_atom& SExpr::get_atom() const
 {
   if (!is_atom())

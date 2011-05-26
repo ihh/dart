@@ -103,7 +103,10 @@ void ECFG_builder::init_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const
 
 void ECFG_builder::init_chain (ECFG_matrix_set& ems, const Alphabet_dictionary& alph_dict, const Alphabet& default_alphabet, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& chain_sexpr, double tres, bool allow_multi_char_tokens)
 {
-  list<SExpr>& state_list = chain_sexpr (EG_CHAIN_TERMINAL).child;
+  SExpr *state_list_parent_ptr = chain_sexpr.find_any(EG_CHAIN_TERM " " EG_CHAIN_TERMINAL);
+  if (state_list_parent_ptr == NULL)
+    THROWEXPR (EG_CHAIN_TERM " not found");
+  list<SExpr>& state_list (state_list_parent_ptr->value().child);
 
   sstring class_row;
   vector<sstring> class_alph;
@@ -208,7 +211,10 @@ void ECFG_builder::init_hybrid_chain (ECFG_matrix_set& ems, SymIndex& term2chain
   // Note that all submodels in a hybrid chain MUST have the same update-policy (& hence the same basis-projection subclass of EM_matrix_base)
   // See dart/src/hsm/em_matrix_base.h for a discussion of why this is so.
 
-  list<SExpr>& state_list = hybrid_chain_sexpr (EG_CHAIN_TERMINAL).child;
+  SExpr *state_list_parent_ptr = hybrid_chain_sexpr.find_any(EG_CHAIN_TERM " " EG_CHAIN_TERMINAL);
+  if (state_list_parent_ptr == NULL)
+    THROWEXPR (EG_CHAIN_TERM " not found");
+  list<SExpr>& state_list (state_list_parent_ptr->value().child);
 
   sstring class_row;
   vector<sstring> class_alph;
@@ -243,7 +249,10 @@ void ECFG_builder::init_hybrid_chain (ECFG_matrix_set& ems, SymIndex& term2chain
   vector<int> component_chain_indices;
   for_const_contents (vector<SExpr*>, components, component_sexpr)
     {
-      const vector<sstring> component_terminals = (**component_sexpr) (EG_CHAIN_TERMINAL).atoms_to_strings();
+      SExpr *cpt_term_parent_ptr = (**component_sexpr).find_any(EG_CHAIN_TERM " " EG_CHAIN_TERMINAL);
+      if (cpt_term_parent_ptr == NULL)
+	THROWEXPR ("In (" << **component_sexpr << "): " EG_CHAIN_TERM " not found");
+      const vector<sstring> component_terminals = cpt_term_parent_ptr->atoms_to_strings();
       if (component_terminals.size() == 0)
 	THROWEXPR ("In (" << **component_sexpr << "): component terminal list empty");
 
@@ -459,7 +468,9 @@ ECFG_builder::SymIndex ECFG_builder::init_nonterm2state (const SymIndex& term2ch
   SymIndex nonterm2state;
   int n = 0;
 
-  const vector<SExpr*> nonterm = grammar_sexpr.find_all (EG_NONTERMINAL, 1);
+  vector<SExpr*> nonterm = grammar_sexpr.find_all (EG_NONTERM, 1);
+  vector<SExpr*> nonterminal = grammar_sexpr.find_all (EG_NONTERMINAL, 1);
+  nonterm.insert (nonterm.end(), nonterminal.begin(), nonterminal.end());
   for_const_contents (vector<SExpr*>, nonterm, nt)
     {
       const sstring nt_name = (**nt) (EG_NAME).get_atom();
@@ -806,10 +817,10 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   // create & run the validator
   SExpr_validator ecfg_validator
     ("Grammar->('"EG_GRAMMAR" GrammarProperty*);"
-     "GrammarProperty->Name|GFFAnnotation|('"EG_WIGGLE" WiggleProperty*)|('"EG_FOLD_STRING_TAG" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_EXPECTED_COUNTS" Wild)|('"EG_CHAIN_COUNTS" Wild)|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
+     "GrammarProperty->Name|GFFAnnotation|('"EG_WIGGLE" WiggleProperty*)|('"EG_FOLD_STRING_TAG" Atom)|('"EG_META" Wild)|('"EG_TRANSIENT_META" Wild)|('"EG_UPDATE_RULES" Atom)|('"EG_UPDATE_RATES" Atom)|ParametricFlag|('"EG_EXPECTED_COUNTS" Wild)|('"EG_CHAIN_COUNTS" Wild)|('"EG_PSEUDOCOUNTS" Count*)|('"PK_RATE" ParameterValue*)|('"PK_PGROUP" ParameterGroup*)|('"PK_CONST_RATE" ParameterValue*)|('"PK_CONST_PGROUP" ParameterGroup*)|('"EG_PARAMS" ParameterGroup*)|('"EG_CONST" ParameterGroup*)|('"EG_NONTERM" NontermProperty*)|('"EG_NONTERMINAL" NontermProperty*)|QualifiedSummationDirective|('"EG_HYBRID_CHAIN" HybridChainProperty*)|('"EG_CHAIN" ChainProperty*)|('"EG_TRANSFORM" RuleProperty*);"
      "Name->('"EG_NAME" Atom);"
      "WiggleProperty->WiggleComponentProperty|('"EG_WIGGLE_NAME" Atom)|('"EG_WIGGLE_COMPONENT" WiggleComponentProperty*);"
-     "WiggleComponentProperty->('"EG_WIGGLE_WEIGHT" Atom)|('"EG_WIGGLE_TERM" Atom)|('"EG_WIGGLE_NONTERM" Atom);"
+     "WiggleComponentProperty->('"EG_WIGGLE_WEIGHT" Atom)|('"EG_WIGGLE_TERM" Atom)|('"EG_WIGGLE_NONTERM" Atom)|('"EG_WIGGLE_TERMINAL" Atom)|('"EG_WIGGLE_NONTERMINAL" Atom);"
      "ParametricFlag->('"EG_PARAMETRIC" End);"
      "MinimumLength->('"EG_TRANSFORM_MINLEN" Atom);"
      "MaximumLength->('"EG_TRANSFORM_MAXLEN" Atom);"
@@ -829,7 +840,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "Count->ParameterValue|ParameterValuePair;"
      "NontermProperty->Name|MinimumLength|MaximumLength|SummationDirective|PrefixConstraint|SuffixConstraint|InfixConstraint|GFFAnnotation;"
      "GFFAnnotation->('"EG_GFF" GFFAnnotationProperty*);"
-     "GFFAnnotationProperty->('"EG_GFF_NONTERM" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_TYPE" Atom)|('"EG_GFF_STRAND" Atom)|('"EG_GFF_FRAME" Atom)|('"EG_GFF_GROUP" GFFAttribute*);"
+     "GFFAnnotationProperty->('"EG_GFF_NONTERM" Atom)|('"EG_GFF_NONTERMINAL" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_SOURCE" Atom)|('"EG_GFF_TYPE" Atom)|('"EG_GFF_STRAND" Atom)|('"EG_GFF_FRAME" Atom)|('"EG_GFF_GROUP" GFFAttribute*);"
      "GFFAttribute->Atom|(Atom Atom)|(Atom GFFAttributeValueList);"
      "GFFAttributeValueList->(Atom*);"
      "RuleProperty->SourceStateList|DestinationStateList|ProbabilityExpression|GFFAnnotation|('"EG_TRANSFORM_ANNOTATE" AnnotationProperty*)|MinimumLength|MaximumLength|InfixConstraint|PrefixConstraint|SuffixConstraint|SummationDirective|('"EG_TRANSFORM_NO_GAPS" End)|('"EG_TRANSFORM_STRICT_GAPS" End)|('"EG_TRANSFORM_IGNORE_GAPS" End);"
@@ -841,7 +852,7 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
      "ProbabilisticAnnotation->('"EG_ANNOTATE_EMIT" ProbabilisticAnnotationProperty*);"
      "ProbabilisticAnnotationProperty->AnnotationLabelList|ProbabilityExpression;"
      "HybridChainProperty->TerminalList|AnnotationRow|('"EG_HYBRID_COMPONENTS" HybridChainComponent*);"
-     "TerminalList->('"EG_TERMINAL" (Atom*));"
+     "TerminalList->('"EG_TERM" (Atom*))|('"EG_TERMINAL" (Atom*));"
      "HybridChainComponent->(HybridChainComponentProperty HybridChainComponentProperty);"
      "HybridChainComponentProperty->AnnotationLabel|TerminalList;"
      "ChainProperty->TerminalList|('"EG_CHAIN_CLASS" HiddenClassDescription)|InitialStateProbability|MutationRate|('"EG_CHAIN_POLICY" UpdatePolicy);"
@@ -957,7 +968,9 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
       }
 
   // look for "nonterminal" blocks containing "sum-from", "minlen", "maxlen", "infix", "prefix", "suffix" modifiers
-  const vector<SExpr*> nonterm_blocks = grammar_sexpr.find_all (EG_NONTERMINAL, 1);
+  vector<SExpr*> nonterm_blocks = grammar_sexpr.find_all (EG_NONTERM, 1);
+  vector<SExpr*> nonterminal_blocks = grammar_sexpr.find_all (EG_NONTERMINAL, 1);
+  nonterm_blocks.insert (nonterm_blocks.end(), nonterminal_blocks.begin(), nonterminal_blocks.end());
   for_const_contents (vector<SExpr*>, nonterm_blocks, nt_ptr)
     {
       SExpr& nt_sexpr = **nt_ptr;
@@ -1001,7 +1014,10 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
   const vector<SExpr*> all_gff_sexpr = grammar_sexpr.find_all (EG_GFF, 1);
   for_const_contents (vector<SExpr*>, all_gff_sexpr, gff_sexpr)
     {
-      const sstring& nonterm_name = (**gff_sexpr) (EG_GFF_NONTERM).get_atom();
+      SExpr* nonterm_name_parent_ptr = (**gff_sexpr).find_any (EG_GFF_NONTERM " " EG_GFF_NONTERMINAL);
+      if (nonterm_name_parent_ptr == NULL)
+	THROWEXPR ("In " << *gff_sexpr << ": " EG_GFF_NONTERM " not found");
+      const sstring& nonterm_name = nonterm_name_parent_ptr->get_atom();
       if (nonterm2state.find (nonterm_name) == nonterm2state.end())
 	THROWEXPR ("In " << *gff_sexpr << ": nonterminal " << nonterm_name << " not found");
       ECFG_state_info& info = ecfg->state_info[nonterm2state[nonterm_name]];
@@ -1021,8 +1037,8 @@ ECFG_scores* ECFG_builder::init_ecfg (const Alphabet& alph, SExpr& grammar_sexpr
       for_const_contents (vector<SExpr*>, all_wiggle_component_sexpr, wiggle_component_sexpr)
 	{
 	  SExpr* wiggle_weight_sexpr = (*wiggle_component_sexpr)->find(EG_WIGGLE_WEIGHT);
-	  SExpr* wiggle_term_sexpr = (*wiggle_component_sexpr)->find(EG_WIGGLE_TERM);
-	  SExpr* wiggle_nonterm_sexpr = (*wiggle_component_sexpr)->find(EG_WIGGLE_NONTERM);
+	  SExpr* wiggle_term_sexpr = (*wiggle_component_sexpr)->find_any(EG_WIGGLE_TERM " " EG_WIGGLE_TERMINAL);
+	  SExpr* wiggle_nonterm_sexpr = (*wiggle_component_sexpr)->find_any(EG_WIGGLE_NONTERM " " EG_WIGGLE_NONTERMINAL);
 
 	  const PFunc weight = wiggle_weight_sexpr ? init_pfunc(sym2pvar,*wiggle_weight_sexpr,1) : PFunc(1.);
 
@@ -1434,7 +1450,7 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
       // right now we assume there is no other state named ECFG_default_start_nonterminal.
       // this is pretty fragile...
       const sstring start_name (ECFG_default_start_nonterminal);  // could do a bit more work here, to ensure name is unique
-      out << " (" << EG_NONTERMINAL << " (" << EG_NAME << ' ' << start_name << "))\n";
+      out << " (" << EG_NONTERM << " (" << EG_NAME << ' ' << start_name << "))\n";
       trans_block << "\n ;; Nonterminal " << SExpr_atom(start_name) << "\n ;;\n";
       if (start_to_end)
 	starts.push_back (End);
@@ -1460,7 +1476,7 @@ void ECFG_builder::ecfg2stream (ostream& out, const Alphabet& alph, const ECFG_s
       const int s = *s_iter;
       const ECFG_state_info& info = ecfg.state_info[s];
 
-      out << " (" << EG_NONTERMINAL << " (" << EG_NAME << ' ' << SExpr_atom(info.name) << ')';
+      out << " (" << EG_NONTERM << " (" << EG_NAME << ' ' << SExpr_atom(info.name) << ')';
       if (info.min_len > info.emit_size())
 	out << " (" << EG_TRANSFORM_MINLEN << ' ' << info.min_len << ')';
       if (info.infix)
@@ -1672,7 +1688,7 @@ void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECF
       if (!ems)
 	THROWEXPR ("Hybrid chain encountered, with no ECFG_matrix_set to dereference the component chains");
       out << "\n (" << EG_HYBRID_CHAIN << '\n';
-      out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
+      out << "  (" << EG_CHAIN_TERM << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
       if (!chain.uses_default_alphabet())
 	out << "  (" << PK_ALPHABET << " (" << chain.alph_name << "))\n";
 
@@ -1687,7 +1703,7 @@ void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECF
       out << "  (" << EG_HYBRID_COMPONENTS << '\n';
       for_const_contents (vector<sstring>, chain.gs_values, gs_value)
 	out << "   ((" << EG_TRANSFORM_LABEL << ' ' << SExpr_atom(*gs_value)
-	    << ") (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(ems->chain[((map<sstring,int>&) chain.gs_tag_value_chain_index)[*gs_value]].state)  // cast away const
+	    << ") (" << EG_CHAIN_TERM << " (" << SExpr_atom::from_vector(ems->chain[((map<sstring,int>&) chain.gs_tag_value_chain_index)[*gs_value]].state)  // cast away const
 	    << ")))\n";
 
       out << "  )\n";
@@ -1700,7 +1716,7 @@ void ECFG_builder::chain2stream (ostream& out, const PScores& pscores, const ECF
 	THROWEXPR ("Don't know how to display EM_matrix objects with hidden states");
       out << "\n (" << EG_CHAIN << '\n';
       out << "  (" << EG_CHAIN_POLICY << ' ' << chain.matrix->update_policy() << ")\n";
-      out << "  (" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
+      out << "  (" << EG_CHAIN_TERM << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
       if (!chain.uses_default_alphabet())
 	out << "  (" << PK_ALPHABET << " (" << chain.alph_name << "))\n";
       if (chain.classes > 1)
@@ -1812,7 +1828,7 @@ void ECFG_builder::chain_counts2stream (ostream& out, const Alphabet& alph, cons
 	  {
 	    const Update_statistics& stats = counts.stats[n_chain];
 
-	    out << "  ((" << EG_CHAIN_TERMINAL << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
+	    out << "  ((" << EG_CHAIN_TERM << " (" << SExpr_atom::from_vector(chain.state) << "))\n";
 
 	    for (int s = 0; s < chain.matrix->m(); ++s)
 	      {

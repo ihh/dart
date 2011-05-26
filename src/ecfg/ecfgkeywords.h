@@ -11,10 +11,13 @@
 #define EG_PROB    "prob"
 #define EG_RATE    "rate"
 
+#define EG_NONTERM     "nonterm"
 #define EG_NONTERMINAL "nonterminal"
+#define EG_TERM        "term"
 #define EG_TERMINAL    "terminal"
 
 #define EG_CHAIN            "chain"
+#define EG_CHAIN_TERM       EG_TERM
 #define EG_CHAIN_TERMINAL   EG_TERMINAL
 #define EG_CHAIN_POLICY     "update-policy"
 #define EG_CHAIN_CLASS      "hidden-class"
@@ -74,7 +77,8 @@
 
 // GFF output
 #define EG_GFF         "gff"
-#define EG_GFF_NONTERM EG_NONTERMINAL
+#define EG_GFF_NONTERM     EG_NONTERM
+#define EG_GFF_NONTERMINAL EG_NONTERMINAL
 #define EG_GFF_SOURCE  "source"
 #define EG_GFF_TYPE    "type"
 #define EG_GFF_STRAND  "strand"
@@ -86,8 +90,10 @@
 #define EG_WIGGLE_NAME      EG_NAME
 #define EG_WIGGLE_COMPONENT "component"
 #define EG_WIGGLE_WEIGHT    "weight"
-#define EG_WIGGLE_TERM      EG_TERMINAL
-#define EG_WIGGLE_NONTERM   EG_NONTERMINAL
+#define EG_WIGGLE_TERM        EG_TERM
+#define EG_WIGGLE_TERMINAL    EG_TERMINAL
+#define EG_WIGGLE_NONTERM     EG_NONTERM
+#define EG_WIGGLE_NONTERMINAL EG_NONTERMINAL
 
 // macros
 // iterator macros

@@ -66,9 +66,13 @@ struct SExpr
   // values() returns all children but the first, or an error if there are no children
   vector<SExpr*> values();
 
-  // find() returns iterator for first child past offset with a given tag, or null if not found
+  // find() returns iterator for first child past offset with a given tag (or tags), or null if not found
   SExpr* find (const sstring& child_tag, int offset = 0);
   SExpr* find (const char* child_tag, int offset = 0);
+
+  // find_any() allows multiple tags
+  SExpr* find_any (const vector<sstring>& child_tags, int offset = 0);
+  SExpr* find_any (const char* child_tag_string, int offset = 0);  // child_tag_string is space-separated
 
   // find_all() returns a vector of iterators for all children past offset with a given name
   vector<SExpr*> find_all (const sstring& child_tag, int offset = 0);
