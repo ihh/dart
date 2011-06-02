@@ -4,7 +4,7 @@
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 #include <libguile.h>
 #else
-#error Terminatrix requires guile! Please install guile from http://www.gnu.org/software/guile/ and re-run the configure script.
+#error Termx requires guile! Please install guile from http://www.gnu.org/software/guile/ and re-run the configure script.
 #endif
 
 #include "ecfg/ecfgsexpr.h"
@@ -15,7 +15,7 @@
 #include "ontology/onto_keywords.h"
 
 
-// Terminatrix class
+// Termx class
 // this C++/Scheme hybrid, and its helper classes, propagate knowledge from an ontological knowledge base
 // over a particular kind of graphical model: a continuous-time Markov chain over a phylogenetic tree.
 // the class is documented below with reference to
@@ -26,17 +26,17 @@
 // (e.g. it works perfectly well as a substitution model for nucleotides, codons, amino acids, other discrete characters)
 // With a view to future parallelization, the core map-reduce operation common to all the usual
 // variations on the sum-product algorithm (evidence, posteriors, EM, etc) has been abstracted out.
-struct Terminatrix
+struct Termx
 {
   // Scheme functions that are used to create & initialize the knowledge-base
-  SCM init_scm,  // called when the Terminatrix is initialized. Return result is discarded
+  SCM init_scm,  // called when the Termx is initialized. Return result is discarded
     model_scm,     // use to generate the model. Must return a quoted S-expression of the form (model (alphabet ...)+ (chain ...))
     tree_db_scm,   // use to generate the phylogenetic tree database. Must return a Scheme association list mapping names (i.e. strings) to trees (i.e. newick smobs)
     knowledge_scm; // must return a function that will be called like (knowledge familyName geneName termTuple) and must return #t (gene-term association allowed) or #f (gene-term association disallowed)
 
   SCM knowledge_func_scm;  // return value of knowledge_scm
 
-  // symbol tables (only really used by Terminatrix_builder class; should probably move them there)
+  // symbol tables (only really used by Termx_builder class; should probably move them there)
   PFunc_builder::SymPVar sym2pvar;  // numerical parameters
   PFunc_builder::SymIndex term2chain;  // term variables in the Markov chain
 
@@ -64,12 +64,12 @@ struct Terminatrix
 
   // constructors
   // These assume Guile has been initialized, and the Newick smob added.
-  Terminatrix();
-  Terminatrix (SCM scm);
-  Terminatrix (const SExpr& sexpr);
+  Termx();
+  Termx (SCM scm);
+  Termx (const SExpr& sexpr);
 
   // destructor
-  ~Terminatrix();
+  ~Termx();
   void unprotect (SCM scm);  // destructor helper
 
   // helpers
@@ -81,19 +81,19 @@ struct Terminatrix
   const Alphabet& default_alphabet();
 };
 
-// Terminatrix family visitor
+// Termx family visitor
 // This class and its subclasses form a sort of bastard map-reduce framework.
 // The input is a list of "families" (named phylogenetic trees).
-// For efficiency, the base class (Terminatrix_family_visitor) does reduction in place, i.e. a left-fold.
+// For efficiency, the base class (Termx_family_visitor) does reduction in place, i.e. a left-fold.
 // Default behavior of this class is to return #f, discarding values in the reduction.
-// To get closer to a true map-reduce, override current_mapped_scm() and reduce_scm() methods in derived class (Terminatrix_concatenator).
+// To get closer to a true map-reduce, override current_mapped_scm() and reduce_scm() methods in derived class (Termx_concatenator).
 // The idealized, "pure" map-reduce functions would be as follows
 //     map : (string current_name, PHYLIP_tree current_tree) -> SCM
 //  reduce : (SCM, SCM) -> SCM
-struct Terminatrix_family_visitor
+struct Termx_family_visitor
 {
   // global info
-  Terminatrix& terminatrix;
+  Termx& termx;
 
   // info on the current family
   int current_family_index;
@@ -102,8 +102,8 @@ struct Terminatrix_family_visitor
   PHYLIP_tree *current_tree;
 
   // constructor
-  Terminatrix_family_visitor (Terminatrix& term)
-    : terminatrix(term),
+  Termx_family_visitor (Termx& term)
+    : termx(term),
       current_family_index(-1),
       current_name_scm(SCM_BOOL_F),
       current_newick_scm(SCM_BOOL_F),
@@ -112,7 +112,7 @@ struct Terminatrix_family_visitor
 
   // virtual methods
   // destructor
-  virtual ~Terminatrix_family_visitor() { }
+  virtual ~Termx_family_visitor() { }
 
   // map-reduce virtual methods
   // the order of calls is as follows:
@@ -121,11 +121,11 @@ struct Terminatrix_family_visitor
   //     - init_current();
   //     - reduce().
   //  - finalize().
-  // the result of the map operation is not explicitly represented by this class; for that, use the derived class Terminatrix_concatenator.
+  // the result of the map operation is not explicitly represented by this class; for that, use the derived class Termx_concatenator.
   // in this class, the intermediate results of the fold are represented as the integral type, scm_t_bits, rather than the guile internal type SCM,
   // to allow derived classes to pass other types instead of a Scheme object.
   // practically, this just means a few calls to SCM_PACK and SCM_UNPACK.
-  // the derived class Terminatrix_concatenator overrides this behavior too, passing everything as SCM.
+  // the derived class Termx_concatenator overrides this behavior too, passing everything as SCM.
   virtual scm_t_bits zero() { return SCM_UNPACK (SCM_BOOL_F); }  // guaranteed to be called before any families are visited. "What result will you get if there are zero families?"
   virtual void init_current() { }  // guaranteed to be called exactly once for every family, right before reduce(). "Prepare your internal state to reflect the current family"
   virtual scm_t_bits reduce (scm_t_bits previous) { return previous; }  // guaranteed to be called after init_current(). "Combine your internal state with the results so far"
@@ -135,20 +135,20 @@ struct Terminatrix_family_visitor
   SCM map_reduce_scm();
   SExpr map_reduce_sexpr() { return scm_to_sexpr (map_reduce_scm()); }
 
-  // Terminatrix convenience wrappers
-  EM_matrix_base& rate_matrix() { return terminatrix.rate_matrix(); }
-  ECFG_chain& chain() { return terminatrix.chain(); }
-  int number_of_states() { return terminatrix.rate_matrix().number_of_states(); }
+  // Termx convenience wrappers
+  EM_matrix_base& rate_matrix() { return termx.rate_matrix(); }
+  ECFG_chain& chain() { return termx.chain(); }
+  int number_of_states() { return termx.rate_matrix().number_of_states(); }
 };
 
-// Terminatrix_concatenator
+// Termx_concatenator
 // A virtual class returning a cons of the map results.
 // This class also commits the map-reduction to passing SCM objects.
 // Overrides the zero() and reduce(previous) methods.
 // Introduces new virtual methods current_mapped_scm(), reduce_scm(), zero_scm(), finalize_scm
-struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
+struct Termx_concatenator : virtual Termx_family_visitor
 {
-  Terminatrix_concatenator (Terminatrix& term) : Terminatrix_family_visitor(term) { }
+  Termx_concatenator (Termx& term) : Termx_family_visitor(term) { }
   scm_t_bits reduce (scm_t_bits previous) {  // delegate to reduce_scm(). intended final
     SCM previous_scm = SCM_PACK(previous);
     SCM reduced_scm = reduce_scm (current_mapped_scm(), previous_scm);
@@ -159,7 +159,7 @@ struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
     return SCM_UNPACK (z_scm);
   }
   virtual SCM finalize (scm_t_bits result) {
-    SCM final_scm = Terminatrix_family_visitor::finalize (result);
+    SCM final_scm = Termx_family_visitor::finalize (result);
     return finalize_scm (final_scm);
   }
   virtual SCM current_mapped_scm() = 0;  // guaranteed to be called after init_current()
@@ -168,13 +168,13 @@ struct Terminatrix_concatenator : virtual Terminatrix_family_visitor
   virtual SCM finalize_scm (SCM result) { return result; }  // does nothing
 };
 
-// Terminatrix_keyed_concatenator
-// A virtual class similar to Terminatrix_concatenator,
+// Termx_keyed_concatenator
+// A virtual class similar to Termx_concatenator,
 // but returning a list of the form ((family1-id family1-results) (family2-id family2-results) ...)
 // rather than a list of the form (family1-results family2-results ...)
-struct Terminatrix_keyed_concatenator : virtual Terminatrix_concatenator
+struct Termx_keyed_concatenator : virtual Termx_concatenator
 {
-  Terminatrix_keyed_concatenator (Terminatrix& term) : Terminatrix_family_visitor(term), Terminatrix_concatenator(term) { }
+  Termx_keyed_concatenator (Termx& term) : Termx_family_visitor(term), Termx_concatenator(term) { }
   scm_t_bits reduce (scm_t_bits previous)  // delegate to reduce_scm(). intended final
   {
     SCM previous_scm = SCM_PACK(previous);
@@ -185,19 +185,19 @@ struct Terminatrix_keyed_concatenator : virtual Terminatrix_concatenator
   }
 };
 
-// Terminatrix_EM_visitor
+// Termx_EM_visitor
 // A class that initializes a Column_matrix (DP matrix for a phylogenetic continuous-time Markov chain)
-// by querying the Terminatrix "knowledge function".
-struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
+// by querying the Termx "knowledge function".
+struct Termx_EM_visitor : virtual Termx_family_visitor
 {
   // global info
-  Update_statistics stats;  // used by this class in preference to Terminatrix's; copy across if needed
-  PCounts var_counts;  // initialized to pseudocounts; used by this class in preference to Terminatrix's; copy across if needed
+  Update_statistics stats;  // used by this class in preference to Termx's; copy across if needed
+  PCounts var_counts;  // initialized to pseudocounts; used by this class in preference to Termx's; copy across if needed
   // info on the current family
   Column_matrix current_colmat;
   // methods
-  Terminatrix_EM_visitor (Terminatrix& term)
-    : Terminatrix_family_visitor(term),
+  Termx_EM_visitor (Termx& term)
+    : Termx_family_visitor(term),
       stats(term.rate_matrix().number_of_states()),
       var_counts(term.pscores)
   {
@@ -211,13 +211,13 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
       return scm_from_locale_string (node_name.c_str());
   }
   bool knowledge_func (int node, int state) {
-    SCM knowledge_result_scm = scm_call_3 (terminatrix.knowledge_func_scm, current_name_scm, node_name_scm (node), state_tuple_scm (state));
+    SCM knowledge_result_scm = scm_call_3 (termx.knowledge_func_scm, current_name_scm, node_name_scm (node), state_tuple_scm (state));
     if (!scm_boolean_p (knowledge_result_scm))
-      THROWEXPR ("(" TERMINATRIX_KNOWLEDGE_SCM " " << current_name << " " << current_tree->node_name[state] << " (" << state_tuple(state) << ")) should return #t or #f, but it didn't");
+      THROWEXPR ("(" TERMX_KNOWLEDGE_SCM " " << current_name << " " << current_tree->node_name[state] << " (" << state_tuple(state) << ")) should return #t or #f, but it didn't");
     return knowledge_result_scm == SCM_BOOL_T;
   }
   vector<sstring> state_tuple (int state) {
-    return terminatrix.chain().get_symbol_tokens (state, terminatrix.alph_dict, terminatrix.default_alphabet());
+    return termx.chain().get_symbol_tokens (state, termx.alph_dict, termx.default_alphabet());
   }
   SCM state_tuple_scm (int state) {
     const vector<sstring> tuple = state_tuple(state);
@@ -225,12 +225,12 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
   }
   // Column_matrix wrappers
   void fill_up() {
-    current_colmat.fill_up (Terminatrix_family_visitor::rate_matrix(),
-			    *(Terminatrix_family_visitor::current_tree));
+    current_colmat.fill_up (Termx_family_visitor::rate_matrix(),
+			    *(Termx_family_visitor::current_tree));
   }
   void fill_down() {
-    current_colmat.fill_down (Terminatrix_family_visitor::rate_matrix(),
-			      *(Terminatrix_family_visitor::current_tree),
+    current_colmat.fill_down (Termx_family_visitor::rate_matrix(),
+			      *(Termx_family_visitor::current_tree),
 			      stats);
   }
   Loge current_log_evidence() {
@@ -238,89 +238,89 @@ struct Terminatrix_EM_visitor : virtual Terminatrix_family_visitor
   }
   Prob node_post_prob (int node, int state) {
     return current_colmat.node_post_prob (node, state,
-					  *(Terminatrix_family_visitor::current_tree),
-					  Terminatrix_family_visitor::rate_matrix());
+					  *(Termx_family_visitor::current_tree),
+					  Termx_family_visitor::rate_matrix());
   }
   void accumulate_chain_counts() {
-    stats.transform (Terminatrix_family_visitor::rate_matrix(), false);
-    Terminatrix_family_visitor::chain().inc_var_counts (stats, var_counts, terminatrix.pscores);
+    stats.transform (Termx_family_visitor::rate_matrix(), false);
+    Termx_family_visitor::chain().inc_var_counts (stats, var_counts, termx.pscores);
   }
   void accumulate_pseudocounts() {
-    var_counts += terminatrix.pcounts;
+    var_counts += termx.pcounts;
   }
-  static SCM pscores_to_scm (const PScores& pscores, const char* tag = TERMINATRIX_PARAMS) {
+  static SCM pscores_to_scm (const PScores& pscores, const char* tag = TERMX_PARAMS) {
     sstring pscores_str;
     pscores_str << '(' << tag << ' ';
     PFunc_builder::pscores2stream (pscores_str, pscores);
     pscores_str << ')';
     SExpr pscores_sexpr (pscores_str.begin(), pscores_str.end());
-    CTAG(1,TERMINATRIX) << "In pscores_to_scm: " << pscores_sexpr.to_string() << '\n';
+    CTAG(1,TERMX) << "In pscores_to_scm: " << pscores_sexpr.to_string() << '\n';
     return sexpr_to_scm (&pscores_sexpr);
   }
   static PScores pscores_from_scm (SCM scm) {
     SExpr sexpr = scm_to_sexpr (scm);
     PScores pscores;
     PFunc_builder::SymPVar sym2pvar;
-    PFunc_builder::init_pgroups_and_rates (pscores, sym2pvar, sexpr(TERMINATRIX_PARAMS));
+    PFunc_builder::init_pgroups_and_rates (pscores, sym2pvar, sexpr(TERMX_PARAMS));
     return pscores;
   }
-  static SCM pcounts_to_scm (const PCounts& pcounts, const char* tag = TERMINATRIX_PARAM_COUNTS) {
+  static SCM pcounts_to_scm (const PCounts& pcounts, const char* tag = TERMX_PARAM_COUNTS) {
     sstring pcounts_str;
     PFunc_builder::pcounts2stream (pcounts_str, pcounts, tag);
     SExpr pcounts_sexpr (pcounts_str.begin(), pcounts_str.end());
-    CTAG(1,TERMINATRIX) << "In pcounts_to_scm: " << pcounts_sexpr.to_string() << '\n';
+    CTAG(1,TERMX) << "In pcounts_to_scm: " << pcounts_sexpr.to_string() << '\n';
     return sexpr_to_scm (&pcounts_sexpr);
   }
 };
 
-// Terminatrix_log_evidence
+// Termx_log_evidence
 // The current_mapped_scm function runs the Column_matrix implementation of Felsenstein's algorithm.
-struct Terminatrix_log_evidence : Terminatrix_keyed_concatenator, Terminatrix_EM_visitor
+struct Termx_log_evidence : Termx_keyed_concatenator, Termx_EM_visitor
 {
-  Terminatrix_log_evidence (Terminatrix& term)
-    : Terminatrix_family_visitor(term),
-      Terminatrix_concatenator(term),
-      Terminatrix_keyed_concatenator(term),
-      Terminatrix_EM_visitor(term)
+  Termx_log_evidence (Termx& term)
+    : Termx_family_visitor(term),
+      Termx_concatenator(term),
+      Termx_keyed_concatenator(term),
+      Termx_EM_visitor(term)
   { }
   SCM current_mapped_scm()
   {
-    Terminatrix_EM_visitor::fill_up();
-    return scm_list_1 (scm_from_double (Terminatrix_EM_visitor::current_log_evidence()));
+    Termx_EM_visitor::fill_up();
+    return scm_list_1 (scm_from_double (Termx_EM_visitor::current_log_evidence()));
   }
   SCM finalize_scm (SCM result)
   {
-    return scm_list_2 (string_to_scm (TERMINATRIX_TERMINATRIX),
-		       scm_cons (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
+    return scm_list_2 (string_to_scm (TERMX_TERMX),
+		       scm_cons (string_to_scm (TERMX_LOG_EVIDENCE),
 				 result));
   }
 };
 
-// Terminatrix_prediction
+// Termx_prediction
 // The current_mapped_scm function runs the Column_matrix implementations of the sum-product message-passing algorithms
 // (Felsenstein's pruning algorithm, then Elston & Stewart's peeling algorithm, or however you want to think about it),
 // and returns a table of posterior probabilities for the possible states at the various nodes.
-struct Terminatrix_prediction : Terminatrix_keyed_concatenator, Terminatrix_EM_visitor
+struct Termx_prediction : Termx_keyed_concatenator, Termx_EM_visitor
 {
-  Terminatrix_prediction (Terminatrix& term)
-    : Terminatrix_family_visitor(term),
-      Terminatrix_concatenator(term),
-      Terminatrix_keyed_concatenator(term),
-      Terminatrix_EM_visitor(term)
+  Termx_prediction (Termx& term)
+    : Termx_family_visitor(term),
+      Termx_concatenator(term),
+      Termx_keyed_concatenator(term),
+      Termx_EM_visitor(term)
   { }
   SCM current_mapped_scm()
   {
-    Terminatrix_EM_visitor::fill_up();
-    Terminatrix_EM_visitor::fill_down();
+    Termx_EM_visitor::fill_up();
+    Termx_EM_visitor::fill_down();
     SCM by_node = scm_list_n (SCM_UNDEFINED);  // empty list
     for (Phylogeny::Node node = 0; node < current_tree->nodes(); ++node)
       if (current_tree->node_name[node].size())
 	{
 	  SCM by_state = scm_list_n (SCM_UNDEFINED);  // empty list
-	  for (int state = 0; state < Terminatrix_family_visitor::number_of_states(); ++state)
+	  for (int state = 0; state < Termx_family_visitor::number_of_states(); ++state)
 	    if (knowledge_func (node, state))
 	      by_state = scm_cons (scm_list_2 (state_tuple_scm (state),
-					       scm_from_double (Terminatrix_EM_visitor::node_post_prob (node, state))),
+					       scm_from_double (Termx_EM_visitor::node_post_prob (node, state))),
 				   by_state);
 	  by_node = scm_cons (scm_list_2 (string_to_scm (current_tree->node_name[node]),
 					  by_state),
@@ -330,64 +330,64 @@ struct Terminatrix_prediction : Terminatrix_keyed_concatenator, Terminatrix_EM_v
   }
   SCM finalize_scm (SCM result)
   {
-    return scm_list_2 (string_to_scm (TERMINATRIX_TERMINATRIX),
-		       scm_cons (string_to_scm (TERMINATRIX_POSTERIOR),
+    return scm_list_2 (string_to_scm (TERMX_TERMX),
+		       scm_cons (string_to_scm (TERMX_POSTERIOR),
 				 result));
   }
 };
 
-// Terminatrix_learning_step
-struct Terminatrix_learning_step : Terminatrix_EM_visitor
+// Termx_learning_step
+struct Termx_learning_step : Termx_EM_visitor
 {
   // data
   PScores next_pscores;
   Loge total_log_ev;
   // constructor
-  Terminatrix_learning_step (Terminatrix& term)
-    : Terminatrix_family_visitor(term),
-      Terminatrix_EM_visitor(term),
+  Termx_learning_step (Termx& term)
+    : Termx_family_visitor(term),
+      Termx_EM_visitor(term),
       next_pscores (term.pscores),
       total_log_ev (0.)
   { }
   // overrides
   scm_t_bits reduce (scm_t_bits previous) {  // intended final
-    Terminatrix_EM_visitor::fill_up();
-    Terminatrix_EM_visitor::fill_down();
+    Termx_EM_visitor::fill_up();
+    Termx_EM_visitor::fill_down();
     NatsPMulAcc (total_log_ev, current_log_evidence());
-    return Terminatrix_family_visitor::reduce (previous);
+    return Termx_family_visitor::reduce (previous);
   }
   SCM finalize (scm_t_bits result) {  // intended final
-    Terminatrix_EM_visitor::accumulate_chain_counts();
-    Terminatrix_EM_visitor::accumulate_pseudocounts();
-    var_counts.optimise (next_pscores, Terminatrix_family_visitor::terminatrix.mutable_pgroups);
+    Termx_EM_visitor::accumulate_chain_counts();
+    Termx_EM_visitor::accumulate_pseudocounts();
+    var_counts.optimise (next_pscores, Termx_family_visitor::termx.mutable_pgroups);
     /*
-    return scm_list_2 (string_to_scm (TERMINATRIX_TRAINING_STEP),
-		       scm_list_2 (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
+    return scm_list_2 (string_to_scm (TERMX_TRAINING_STEP),
+		       scm_list_2 (string_to_scm (TERMX_LOG_EVIDENCE),
 				   scm_from_double (total_log_ev)));
     */
-    return scm_list_5 (string_to_scm (TERMINATRIX_TRAINING_STEP),
-		       scm_list_2 (string_to_scm (TERMINATRIX_LOG_EVIDENCE),
+    return scm_list_5 (string_to_scm (TERMX_TRAINING_STEP),
+		       scm_list_2 (string_to_scm (TERMX_LOG_EVIDENCE),
 				   scm_from_double (total_log_ev)),
-		       pscores_to_scm (Terminatrix_family_visitor::terminatrix.pscores, TERMINATRIX_PARAMS),
-		       pcounts_to_scm (Terminatrix_EM_visitor::var_counts, TERMINATRIX_PARAM_COUNTS),
-		       pscores_to_scm (next_pscores, TERMINATRIX_NEXT_PARAMS));
+		       pscores_to_scm (Termx_family_visitor::termx.pscores, TERMX_PARAMS),
+		       pcounts_to_scm (Termx_EM_visitor::var_counts, TERMX_PARAM_COUNTS),
+		       pscores_to_scm (next_pscores, TERMX_NEXT_PARAMS));
   }
 };
 
-// Terminatrix_trainer
-struct Terminatrix_trainer
+// Termx_trainer
+struct Termx_trainer
 {
   // data
   Loge max_total_log_ev;
   PScores argmax_total_log_ev;
   SCM log_scm;
   // constructor (everything happens in here)
-  Terminatrix_trainer (Terminatrix& term, int max_learning_steps)
+  Termx_trainer (Termx& term, int max_learning_steps)
   {
     log_scm = scm_list_n (SCM_UNDEFINED);  // empty list
     for (int n_step = 0; n_step < max_learning_steps; ++n_step)
       {
-	Terminatrix_learning_step step (term);
+	Termx_learning_step step (term);
 	SCM step_log_scm = step.map_reduce_scm();  // must call map_reduce_scm() to ensure step.next_pscores is set correctly
 	if (n_step == 0 || step.total_log_ev > max_total_log_ev)
 	  {
@@ -396,21 +396,21 @@ struct Terminatrix_trainer
 	  }
 	else
 	  break;
-	CTAG(6,TERMINATRIX) << "EM iteration #" << (n_step + 1) << ": log-evidence " << max_total_log_ev << '\n';
+	CTAG(6,TERMX) << "EM iteration #" << (n_step + 1) << ": log-evidence " << max_total_log_ev << '\n';
 	log_scm = scm_cons (step_log_scm, log_scm);
 	term.pscores = step.next_pscores;
       }
     term.pscores = argmax_total_log_ev;
     scm_gc_protect_object (log_scm);
   }
-  ~Terminatrix_trainer() {
+  ~Termx_trainer() {
     scm_gc_unprotect_object (log_scm);
   }
   // accessors
   SCM final_scm() {
-    SCM pscores_scm = Terminatrix_EM_visitor::pscores_to_scm (argmax_total_log_ev);
+    SCM pscores_scm = Termx_EM_visitor::pscores_to_scm (argmax_total_log_ev);
     // TODO: optionally include training log
-    return scm_cons (string_to_scm (TERMINATRIX_TERMINATRIX),
+    return scm_cons (string_to_scm (TERMX_TERMX),
 		     pscores_scm);
   }
   SExpr final_sexpr() {
@@ -419,32 +419,32 @@ struct Terminatrix_trainer
   }
 };
 
-// Terminatrix I/O adapter
-struct Terminatrix_builder : ECFG_builder
+// Termx I/O adapter
+struct Termx_builder : ECFG_builder
 {
   // load
-  static void init_terminatrix (Terminatrix& terminatrix, SExpr& terminatrix_sexpr);
-  static void init_terminatrix (Terminatrix& terminatrix, SCM terminatrix_scm);
-  static void init_terminatrix (Terminatrix& terminatrix, const Ass_map& ass_map);
+  static void init_termx (Termx& termx, SExpr& termx_sexpr);
+  static void init_termx (Termx& termx, SCM termx_scm);
+  static void init_termx (Termx& termx, const Ass_map& ass_map);
   // save
-  static void terminatrix2stream (ostream& out, Terminatrix& terminatrix);
+  static void termx2stream (ostream& out, Termx& termx);
 
   // input helpers
-  static void init_terminatrix_params (Terminatrix& terminatrix, SExpr& terminatrix_params_sexpr);
-  static void init_terminatrix_model (Terminatrix& terminatrix, SExpr& terminatrix_model_sexpr);
-  static void init_terminatrix_member_scm (SCM& member_scm, const Ass_map& parent_ass_map, const char* tag);
+  static void init_termx_params (Termx& termx, SExpr& termx_params_sexpr);
+  static void init_termx_model (Termx& termx, SExpr& termx_model_sexpr);
+  static void init_termx_member_scm (SCM& member_scm, const Ass_map& parent_ass_map, const char* tag);
 
   // output helpers
-  static void terminatrix_params2stream (ostream& out, Terminatrix& terminatrix);
-  static void terminatrix_model2stream (ostream& out, Terminatrix& terminatrix);
-  static void terminatrix_member_scm2stream (ostream& out, SCM& member_scm, const char* tag);
+  static void termx_params2stream (ostream& out, Termx& termx);
+  static void termx_model2stream (ostream& out, Termx& termx);
+  static void termx_member_scm2stream (ostream& out, SCM& member_scm, const char* tag);
 };
 
 // guile methods
-SCM terminatrix_evidence (SCM terminatrix_scm);
-SCM terminatrix_prediction (SCM terminatrix_scm);
-SCM terminatrix_learn (SCM max_steps_scm, SCM terminatrix_scm);
+SCM termx_evidence (SCM termx_scm);
+SCM termx_prediction (SCM termx_scm);
+SCM termx_learn (SCM max_steps_scm, SCM termx_scm);
 
-void init_terminatrix_primitives (void);
+void init_termx_primitives (void);
 
 #endif /* ONTO_SEXPR_INCLUDED */

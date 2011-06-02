@@ -1,7 +1,7 @@
-;; Running 'darts -s <this file>' and 'terminatrix -l -r ../../ontology/t/test6.tsm' should generate identical output
+;; Running 'darts -s <this file>' and 'termx -l -r ../../ontology/t/test6.tsm' should generate identical output
 
 ;; uncomment these (dart-log...) lines for more debugging output...
-;; (dart-log "TERMINATRIX")
+;; (dart-log "TERMX")
 ;; (dart-log "GUILE")
 ;; (dart-log "5")
 
@@ -62,16 +62,16 @@
 
 (define
   results
-  (terminatrix-learn
+  (termx-learn
    100
    (quasiquote
-    (terminatrix
+    (termx
      (knowledge-scheme my_knowledge)
      (tree-db-scheme my_tree_db)
      (model-scheme my_model)
      (params (unquote-splicing (list my_pgroups my_rates)))))))
 
-;; Mimic terminatrix output
+;; Mimic termx output
 (display ";; EM results\n")
 (display results)
 (display "\n")

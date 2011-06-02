@@ -1,5 +1,5 @@
 ;; test for ontology term evolution
-(dart-log "TERMINATRIX")
+(dart-log "TERMX")
 (dart-log "GUILE")
 (dart-log "5")
 
@@ -49,17 +49,17 @@
      (token (term1 term2 term3 term4))))))
 
 (write
- (terminatrix-evidence
+ (termx-evidence
   (quote
-   (terminatrix
+   (termx
     (knowledge-scheme my_knowledge)
     (tree-db-scheme my_tree_db)
     (model-scheme my_model)))))
 
 (write
- (terminatrix-predict
+ (termx-predict
   (quote
-   (terminatrix
+   (termx
     (knowledge-scheme my_knowledge)
     (tree-db-scheme my_tree_db)
     (model-scheme my_model)))))

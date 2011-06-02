@@ -1,5 +1,5 @@
  ;; test for ontology term evolution
-(terminatrix
+(termx
  (model
   (chain
    (update-policy irrev)

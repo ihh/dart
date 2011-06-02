@@ -1,4 +1,4 @@
-(terminatrix
+(termx
  (params
   (pgroup ((p1 .25) (p2 .25) (p3 .25) (p4 .25)))
   (rate (r 1.32)))

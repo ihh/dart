@@ -1,27 +1,27 @@
 #ifndef ONTO_KEYWORDS_INCLUDED
 #define ONTO_KEYWORDS_INCLUDED
 
-// tags in the Terminatrix data structure
-#define TERMINATRIX_TERMINATRIX    "terminatrix"
-#define TERMINATRIX_PARAMS         "params"
-#define TERMINATRIX_MODEL          "model"
-#define TERMINATRIX_MODEL_SCM      "model-scheme"
-#define TERMINATRIX_INIT_SCM       "init-scheme"
-#define TERMINATRIX_TREE_DB_SCM    "tree-db-scheme"
-#define TERMINATRIX_KNOWLEDGE_SCM  "knowledge-scheme"
+// tags in the Termx data structure
+#define TERMX_TERMX    "termx"
+#define TERMX_PARAMS         "params"
+#define TERMX_MODEL          "model"
+#define TERMX_MODEL_SCM      "model-scheme"
+#define TERMX_INIT_SCM       "init-scheme"
+#define TERMX_TREE_DB_SCM    "tree-db-scheme"
+#define TERMX_KNOWLEDGE_SCM  "knowledge-scheme"
 
 // functions provided to Guile Scheme, and their return-value tags
-#define GUILE_TERMINATRIX_EVIDENCE "terminatrix-evidence"
-#define TERMINATRIX_LOG_EVIDENCE   "log-evidence"
+#define GUILE_TERMX_EVIDENCE "termx-evidence"
+#define TERMX_LOG_EVIDENCE   "log-evidence"
 
-#define GUILE_TERMINATRIX_PREDICT  "terminatrix-predict"
-#define TERMINATRIX_POSTERIOR      "posterior"
+#define GUILE_TERMX_PREDICT  "termx-predict"
+#define TERMX_POSTERIOR      "posterior"
 
-#define GUILE_TERMINATRIX_LEARN    "terminatrix-learn"
-#define TERMINATRIX_TRAINING_LOG   "training-log"
-#define TERMINATRIX_TRAINING_STEP  "training-step"
-#define TERMINATRIX_PARAM_COUNTS   "param-counts"
-#define TERMINATRIX_NEXT_PARAMS    "next-params"
+#define GUILE_TERMX_LEARN    "termx-learn"
+#define TERMX_TRAINING_LOG   "training-log"
+#define TERMX_TRAINING_STEP  "training-step"
+#define TERMX_PARAM_COUNTS   "param-counts"
+#define TERMX_NEXT_PARAMS    "next-params"
 
 #endif /* ONTO_KEYWORDS_INCLUDED */
 

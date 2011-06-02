@@ -1,6 +1,6 @@
-;; Running 'darts -s ../../guile/t/test4.tsm' and 'terminatrix -l -r <this file>' should generate identical output
+;; Running 'darts -s ../../guile/t/test4.tsm' and 'termx -l -r <this file>' should generate identical output
 
-(terminatrix
+(termx
  (init-scheme
   (list
    (define

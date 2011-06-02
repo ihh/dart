@@ -1,9 +1,9 @@
  ;; test for ontology term evolution
-(terminatrix
+(termx
  (model
   (chain
    (update-policy irrev)
-   (terminal (termvar1 termvar2))
+   (term (termvar1 termvar2))
    (alphabet (ontology1 ontology2))
 
    ;; initial probability distribution

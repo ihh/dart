@@ -67,14 +67,14 @@ int main (int argc, char** argv)
       ECFG_Scheme_evaluator scheme;
       scheme.initialize();
 
-      // init the Terminatrix
-      Terminatrix term;
-      Terminatrix_builder::init_terminatrix (term, sexpr);
+      // init the Termx
+      Termx term;
+      Termx_builder::init_termx (term, sexpr);
 
       // do EM, if asked
       if (learn_params)
 	{
-	  Terminatrix_trainer trainer (term, max_steps);
+	  Termx_trainer trainer (term, max_steps);
 	  cout << ";; EM results\n";
 	  cout << trainer.final_sexpr().to_parenthesized_string() << '\n';
 	}
@@ -82,7 +82,7 @@ int main (int argc, char** argv)
       // calculate evidences, if asked
       if (compute_evidence)
 	{
-	  Terminatrix_log_evidence log_ev (term);
+	  Termx_log_evidence log_ev (term);
 	  SExpr log_ev_sexpr = log_ev.map_reduce_sexpr();
 	  cout << ";; log-evidence by family\n";
 	  cout << log_ev_sexpr.to_parenthesized_string() << '\n';
@@ -91,7 +91,7 @@ int main (int argc, char** argv)
       // calculate posteriors, if asked
       if (compute_posteriors)
 	{
-	  Terminatrix_prediction prediction (term);
+	  Termx_prediction prediction (term);
 	  SExpr prediction_sexpr = prediction.map_reduce_sexpr();
 	  cout << ";; posteriors by family, gene and state\n";
 	  cout << prediction_sexpr.to_parenthesized_string() << '\n';
@@ -108,7 +108,7 @@ int main (int argc, char** argv)
       if (write_filename.size())
 	{
 	  ofstream write_file (write_filename.c_str());
-	  Terminatrix_builder::terminatrix2stream (write_file, term);
+	  Termx_builder::termx2stream (write_file, term);
 	}
     }
   catch (const Dart_exception& e)

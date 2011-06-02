@@ -1,5 +1,5 @@
  ;; test for ontology term evolution
-(terminatrix
+(termx
  (init-scheme (define x 3))
  (knowledge-scheme foo)
  (tree-db-scheme test)

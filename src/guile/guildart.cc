@@ -15,7 +15,7 @@ static void inner_main (void *closure, int argc, char **argv)
 
       init_dart_primitives();
       init_xrate_primitives();
-      init_terminatrix_primitives();
+      init_termx_primitives();
 
       scm_shell (argc, argv);
     }

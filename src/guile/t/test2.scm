@@ -1,11 +1,11 @@
 ;; test for ontology term evolution
-(dart-log "TERMINATRIX")
+(dart-log "TERMX")
 (dart-log "GUILE")
 (dart-log "5")
 (write
- (terminatrix-evidence
+ (termx-evidence
   (quote
-   (terminatrix
+   (termx
     (init-scheme
      (list
       (define
