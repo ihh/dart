@@ -1,10 +1,10 @@
 #ifndef GUILE_DEFS_INCLUDED
 #define GUILE_DEFS_INCLUDED
 
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
+
 #include <libguile.h>
 #include "util/sexpr.h"
-
-#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 
 // SExpr
 SExpr* scm_to_parent_sexpr (SCM scm);  // returns the "parent SExpr" (a list containing exactly one element, since we don't require enclosing parentheses, ugh)

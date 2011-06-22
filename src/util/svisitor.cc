@@ -490,8 +490,13 @@ SCM SExpr_Scheme_evaluator::evaluate_SCM (SExpr& sexpr)
 
 SExpr SExpr_Scheme_evaluator::evaluate_sexpr (SExpr& sexpr)
 {
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
   SCM result_scm = evaluate_SCM (sexpr);
   return scm_to_sexpr (result_scm);
+#else
+  THROWEXPR ("Tried to evaluate a Scheme expression, but program was not compiled with Guile support");
+  return SExpr();
+#endif /* GUILE_INCLUDED */
 }
 
 SExpr SExpr_Scheme_evaluator::evaluate_values (SExpr& sexpr)
