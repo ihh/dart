@@ -360,9 +360,9 @@ int main(int argc, char* argv[])
 
 // 	      time_t readStart,readEnd;
 // 	      time (&readStart);
- 	      ReadProfileScore testScore(&absorbTrans); 
- 	      testScore.HMMoC_adapter("testHMMoC.xml"); 
- 	      exit(0); 
+// 	      ReadProfileScore testScore(&absorbTrans); 
+// 	      testScore.HMMoC_adapter("testHMMoC.xml"); 
+// 	      exit(0); 
 // 	      Read read; 
 // 	      for (int i=0; i<1000; i++)
 // 		{
