@@ -210,9 +210,23 @@ void Reconstruction::parse_sequences(Alphabet alphabet)
 {
   // stockholm or fasta? (maybe add more later)
   if (stkFileName != "None")
-    sequences = parse_stockholm(stkFileName.c_str(), alphabet); 
+    {
+      if (!FileExists( string(stkFileName)))
+	{
+	  cerr<<"\nERROR: sequence file " << stkFileName << " does not exist. Exiting...\n\n";
+	  exit(1); 
+	}
+      sequences = parse_stockholm(stkFileName.c_str(), alphabet); 
+    }
   else if (fastaFileName != "None")
-    sequences = parse_fasta(fastaFileName.c_str(), alphabet); 
+    {
+      if (!FileExists( string(stkFileName)))
+	{
+	  cerr<<"\nERROR: sequence file " << stkFileName << " does not exist. Exiting...\n\n";
+	  exit(1); 
+	}
+      sequences = parse_fasta(fastaFileName.c_str(), alphabet); 
+    }
   if (truncate_names_char != "None")
     {
       vector<string> toErase; 
@@ -239,9 +253,45 @@ void Reconstruction::loadTreeString(const char* in)
   const sstring tree_string = in; 
   istringstream tree_input (tree_string);
   PHYLIP_tree in_tree;
-  in_tree.read (tree_input);
-  tree = in_tree; 
+
+
+  try
+    {
+      in_tree.read (tree_input);
+      tree = in_tree; 
+    }
+  catch (const Dart_exception& e)
+    {
+      cerr << "ERROR: input tree was not readable.\n"; 
+      cerr << e.what();
+      exit(1);
+    }
 }
+
+void Reconstruction::get_tree_from_file(const char* fileName)
+{
+  if (!FileExists( string(fileName)))
+    {
+      cerr<<"\nERROR: tree file " << fileName << " does not exist. Exiting...\n\n";
+      exit(1); 
+    }
+  string line;
+  ifstream treeFile(fileName);
+  string tree_tmp = ""; 
+  if (treeFile.is_open())
+    {
+      while (! treeFile.eof() )
+	{
+	  getline(treeFile,line);
+	  if (index(";", line) != -1)
+	    {
+	      const char* tree = line.c_str(); 
+	      loadTreeString(tree); 
+	    }
+	}
+    }
+}
+
 
 void Reconstruction::set_node_names(void)
 {
@@ -259,28 +309,14 @@ void Reconstruction::set_node_names(void)
 }
 
 
-void Reconstruction::get_tree_from_file(const char* fileName)
-{
-  string line;
-  ifstream treeFile(fileName);
-  string tree_tmp = ""; 
-  if (treeFile.is_open())
-    {
-      while (! treeFile.eof() )
-        {
-	  getline(treeFile,line);
-	  if (index(";", line) != -1)
-	    {
-	      const char* tree = line.c_str(); 
-	      loadTreeString(tree); 
-	    }
-	}
-    }
-
-}
 
 void Reconstruction::get_stockholm_tree(const char* fileName)
 {
+  if (!FileExists( string(fileName)))
+    {
+      cerr<<"\nERROR: sequence/tree file " << fileName << " does not exist. Exiting...\n\n";
+      exit(1); 
+    }
   string line;
   ifstream seqFile(fileName);
   string tree_tmp = ""; 
@@ -310,7 +346,7 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
     }
   else
     {
-      std::cerr << "Error: Unable to open file: "<<fileName << endl; 
+      std::cerr << "\nError: Unable to open file: "<<fileName << endl; 
       exit(1); 
     }
 }
@@ -735,7 +771,7 @@ double Reconstruction::get_root_ins_estimate(void)
 {
   if (!sequences.size())
     {
-      std::cerr<<"Error: no sequences, can't estimate root length distribution!\n";
+      std::cerr<<"\nError: no sequences, can't estimate root length distribution!\n";
       return root_insert_prob; 
     }
   else

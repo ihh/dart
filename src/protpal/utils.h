@@ -4,6 +4,7 @@
 #include<string>
 #include<vector>
 #include<map>
+#include <sys/stat.h>
 
 #include "algebras.h"
 #include "ecfg/ecfgsexpr.h"
@@ -80,5 +81,6 @@ void displayVector(vector <vector <double> > in);
 
 void displayVector(vector <vector <int> > in);
 
+bool FileExists(string); 
 
 #endif
