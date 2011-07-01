@@ -7,6 +7,7 @@
 /// Writing functions 
 void AbsorbingTransducer::write_profile(ostream& out, state_path& viterbi_path)
 {
+  // Writes a profile 
   out.setf(ios::fixed, ios::floatfield);
   out.setf(ios::showpoint);
   out.precision(2);
