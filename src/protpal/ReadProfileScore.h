@@ -5,6 +5,7 @@
 #include "protpal/utils.h"
 #include "protpal/profile.h"
 #include "util/sstring.h"
+#include "ecfg/ecfgsexpr.h" // for array2d class
 
 class Read : public list<sstring>
 {
@@ -20,8 +21,17 @@ class ReadProfileModel
 {
  public:
   // Constructor
-  ReadProfileModel(void); 
-  
+  ReadProfileModel(void);
+  // Substitution model
+  Alphabet sub_alphabet;
+  Irrev_EM_matrix rate_matrix; 
+  double branch_length; 
+
+  // Set up substitution model
+  void set_substitution_model(Alphabet&, Irrev_EM_matrix&);
+  array2d<double> conditional_sub_matrix;
+  vector<double> equilibrium_dist; 
+
   // Basic info
   int num_states; 
   state start_state, end_state; 
@@ -63,7 +73,7 @@ class ReadProfileScore
   // Main class to allow "scoring" a read to a profile, via a  "pair HMM sum-over-alignments" likelihood
  public:
   // Constructor
-  ReadProfileScore(AbsorbingTransducer *prof_in);
+  ReadProfileScore(AbsorbingTransducer *prof_in, Alphabet&, Irrev_EM_matrix&);
   // Main wrapper function - get the likelihood score of a read to a profile, and print it to an ostream
   void score_and_print(const Read& read, ostream& out, bool viterbi=false);
   Read read; 
@@ -72,6 +82,12 @@ class ReadProfileScore
   // Extra variables
   int profSize, readSize; 
 
+  // Alphabet and rate matrix
+  Alphabet sub_alphabet; 
+  Irrev_EM_matrix sub_rate_matrix; 
+
+  // public for now...
+  void fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmmoc_only=false, bool backPointers=false, bool logging=false); 
  private:
   // Profile - one emission side
   AbsorbingTransducer *profile; 
@@ -96,7 +112,7 @@ class ReadProfileScore
   void write_read_info(ostream& out, const Read& read, bfloat value); 
 
   // Manage the dynamic programming matrix
-  void fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmmoc_only, bool backPointers=false, bool logging=false); 
+
   void clear_DP_matrix(void);
   inline bfloat get_DP_cell(int,int,int); 
   inline void set_DP_cell(int,int,int, bfloat); 

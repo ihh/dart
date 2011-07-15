@@ -15,6 +15,11 @@ Irrev_EM_matrix::Irrev_EM_matrix (int C,
   : EM_matrix_base (C, A, max_fork, align_db, timepoint_res)
 { }
 
+Irrev_EM_matrix::Irrev_EM_matrix(void) // added by OW 7-15-2011
+ :EM_matrix_base (1, 1, 1, 0, DEFAULT_TIMEPOINT_RES)
+{ }
+
+
 // matrix diagonalization - S is the symmetrized version of Sb
 void Irrev_EM_matrix::diagonalize()
 {

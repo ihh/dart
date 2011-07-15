@@ -18,7 +18,7 @@ void Read::set(sstring in)
   pad(); 
 }
 
-ReadProfileScore::ReadProfileScore(AbsorbingTransducer* prof_in)
+ReadProfileScore::ReadProfileScore(AbsorbingTransducer* prof_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix_in)
 {
   profile = prof_in;
   // Collect the various types of profile states
@@ -27,6 +27,7 @@ ReadProfileScore::ReadProfileScore(AbsorbingTransducer* prof_in)
     profile_states.push_back(i); 
   profile_states.push_back(profile->pre_end_state); 
   DP_ID.resize(3); 
+  pairHMM.set_substitution_model(alphabet_in, rate_matrix_in);
 }
 
 void ReadProfileScore::score_and_print(const Read& read, ostream& out, bool viterbi)
@@ -37,12 +38,20 @@ void ReadProfileScore::score_and_print(const Read& read, ostream& out, bool vite
   if ( viterbi )
     {
       pointer_ID.resize(3); 
-      fill_DP_matrix(read, dummy_ostream, false, true, true); 
+      fill_DP_matrix(read, 
+		     dummy_ostream, // hmmoc filestream
+		     false, // only write hmmoc file, don't do actual DP
+		     true,  // keep backPointers - for finding viterbi traceback
+		     true); // display logging messages
       value = get_viterbi_value(); 
     }
   else
     {
-      fill_DP_matrix(read, dummy_ostream, false, false, false); 
+      fill_DP_matrix(read, 
+		     dummy_ostream, // hmmoc filestream
+		     false, // only write hmmoc file, don't do actual DP
+		     false,  // keep backPointers - for finding viterbi traceback
+		     false); // display logging messages
       value = get_forward_value(); 
     }
   write_read_info(out, read, value); 
@@ -89,6 +98,7 @@ inline list<state> ReadProfileScore::get_possible_HMM_states(int i, state j)
 
 void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmmoc_only, bool backPointers, bool logging)
 {
+  // The main DP recursion for scoring a read to a profile via an arbitrary pairHMM
   int i, iPrime; 
   list<int>::iterator kPrime,k; 
   vector<state>::iterator j, jPrime; 
@@ -107,12 +117,12 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
     cerr<<"Seting initial state of DP matrix\n"; 
   set_DP_cell(-1,profile->start_state, pairHMM.start_state, 1.0); 
   
-  // Range is 35 to ~500
+  // "practical" range is 35 to ~500
   for (i=0; i<readSize; ++i) 
     {
       if (logging)
 	cerr<<"\n\nProcessing position " << i  <<  " of read...\n"; 
-      // Range is 300 - 1000s
+      // practical range is 300 - 1000s
       for (j=profile_states.begin(); j<profile_states.end(); j++)
 	{
 	  if (logging)
@@ -129,11 +139,16 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 	  // Range is 5-10
 	  for (k=possible_HMM_states.begin(); k!=possible_HMM_states.end(); k++)
 	    {
-	      if (*k == pairHMM.end_state)
+	      if (logging)
 		cerr<<"Processing state " << pairHMM.state_name[*k]  <<  " of HMM...\n"; 
 	      incoming_HMM_states = pairHMM.incoming[*k]; 
-	      if (*k == pairHMM.end_state)
-		cerr<<"Summing over " << incoming_HMM_states.size() << " incoming HMM states\n"; 
+	      if (logging)
+		{
+		  cerr<<"Summing over " << incoming_HMM_states.size() << " incoming HMM states\n\t"; 
+		  for (kPrime = incoming_HMM_states.begin(); kPrime != incoming_HMM_states.end(); ++kPrime)
+		    cerr<< pairHMM.state_name[*kPrime] << "  "; 
+		  cerr<<endl; 
+		}
 	      for (kPrime = incoming_HMM_states.begin(); kPrime != incoming_HMM_states.end(); ++kPrime)
 		{
 		  iPrime = get_incoming_read_state(i, *kPrime); 
@@ -170,9 +185,9 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 			add_backPointer(i,*j,*k, iPrime, *jPrime, *kPrime); 
 		      if (logging)
 			{
-			  cerr<<"Added to DP matrix:: \n";
-			  cerr<<"\tHMM state " << pairHMM.state_name[*k] << endl; 
-			  cerr << "\tRead position " << i <<"\n\tProfile state " << *j << "\n\tValue " << toAdd << "\n\n"; 
+			  cerr<<"Added to DP matrix: \n";
+			  cerr<<"\tHMM state " << pairHMM.state_name[*kPrime] << endl; 
+			  cerr << "\tRead position " << iPrime <<"\n\tProfile state " << *jPrime << "\n\tValue " << toAdd << "\n\n"; 
 			}
 		    }
 		}
@@ -277,8 +292,12 @@ inline vector<state> ReadProfileScore::get_incoming_profile_states(state profile
 
 
 // ReadProfileModel methods.  Basic pairHMM to 'align' a read to a profile
-ReadProfileModel::ReadProfileModel(void)
+ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix_in)
 {
+  // eventually we'd like to optimize this value!
+  branch_length = 0.1; 
+  
+  // Build up the HMM 
   num_states=-1; 
   // A basic model - here for now as a placeholder
   add_state("start","start");
@@ -388,6 +407,7 @@ inline bfloat ReadProfileModel::get_transition_weight(state from, state to)
 bfloat ReadProfileModel::get_emission_weight(int readIndex, state profileState, state hmm_state)
 {
   // cerr<<"Warning: emission weight is not yet meaningful!\n"; 
+  // double result = conditional_sub_matrix(incoming_character, outgoing_character); 
   return 1.0; 
 }
 
@@ -396,6 +416,17 @@ bfloat ReadProfileModel::get_emission_weight_by_alphabet_index(int alphIndex, st
   // cerr<<"Warning: emission weight is not yet meaningful!\n"; 
   return 1.0; 
 }
+
+void ReadProfileModel::set_substitution_model(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix_in)
+{
+  
+  conditional_sub_matrix = rate_matrix_in.create_conditional_substitution_matrix(branch_length); 
+  equilibrium_dist = rate_matrix_in.create_prior(); 
+  cout <<sum(equilibrium_dist) << endl; 
+  displayVector(equilibrium_dist); 
+  exit(0);
+}
+
 
 
 

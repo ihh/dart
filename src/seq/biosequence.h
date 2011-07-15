@@ -187,7 +187,7 @@ class Alphabet
 
   // constructor
   Alphabet (const char* name, int size);
-
+  Alphabet (void); // added by OW 7-15-11
   // methods
   int size() const { return alphabet_size; }
 

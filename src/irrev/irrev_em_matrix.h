@@ -28,6 +28,9 @@ struct Irrev_EM_matrix : EM_matrix_base
 		   int max_fork = 1,
 		   const Tree_alignment_database* align_db = 0,
 		   double timepoint_res = DEFAULT_TIMEPOINT_RES);
+  // Null constructor ,added by OW 7-15-2011
+  Irrev_EM_matrix (void); 
+
 
   // descriptor
   const char* update_policy() const { return EG_POLICY_IRREV; }
