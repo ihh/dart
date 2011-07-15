@@ -363,32 +363,32 @@ int main(int argc, char* argv[])
 
 	      // TESTING / BENCHMARKING READ-PROFILE SCORING (E.G PPLACER-LIKE FUNCTIONALITY)
 
-	      time_t readStart,readEnd;
-	      time (&readStart);
+// 	      time_t readStart,readEnd;
+// 	      time (&readStart);
 
 	      
-	      // Writing to hmmoc file - not yet fully functional, but provides a 
-	      // significant speedup (~10X)
-	      //testScore.HMMoC_adapter("testHMMoC.xml"); 
-	      //exit(0); 
+// 	      // Writing to hmmoc file - not yet fully functional, but provides a 
+// 	      // significant speedup (~10X)
+// 	      //testScore.HMMoC_adapter("testHMMoC.xml"); 
+// 	      //exit(0); 
 
 
-	      unsigned int numReads = 1000;
-	      for (unsigned int i=0; i<numReads; i++)
-		{
-		  ReadProfileScore testScore(&absorbTrans, alphabet, rate_matrix); 
-		  Read read; 
-		  read.set("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); 
-		  read.identifier="oscarsRead"; 
-		  cout<<"Analyzing read number: " << i << endl; 
-		  testScore.readSize=140;
-		  testScore.fill_DP_matrix(read, cout, false, false, true);
-		  //testScore.score_and_print(read, cout, false); 
-		}
-	      time(&readEnd); 
-	      std::cout<< "Minutes used to map "<<  numReads << " reads to a profile: " << difftime (readEnd, readStart)/60.0 <<endl; 
-	      exit(0); 
-	      // END TESTING / BENCHMARKING READ-PROFILE SCORING
+// 	      unsigned int numReads = 100;
+// 	      for (unsigned int i=0; i<numReads; i++)
+// 		{
+// 		  ReadProfileScore testScore(&absorbTrans, alphabet, rate_matrix); 
+// 		  Read read; 
+// 		  read.set("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); 
+// 		  read.identifier="oscarsRead"; 
+// 		  cout<<"Analyzing read number: " << i << endl; 
+// 		  testScore.readSize=140;
+// 		  testScore.fill_DP_matrix(read, cout, false, false, true);
+// 		  //testScore.score_and_print(read, cout, false); 
+// 		}
+// 	      time(&readEnd); 
+// 	      std::cout<< "Minutes used to map "<<  numReads << " reads to a profile: " << difftime (readEnd, readStart)/60.0 <<endl; 
+// 	      exit(0); 
+// 	      // END TESTING / BENCHMARKING READ-PROFILE SCORING
 
 	      if(reconstruction.loggingLevel>=1)
 		std::cerr<<"done.\n";
