@@ -325,7 +325,10 @@ AbsorbingTransducer::AbsorbingTransducer(Profile *sampled_profile)
   */
   treeNode = sampled_profile->treeNode;
   subtreeNodes = sampled_profile->subtreeNodes;  
-  name = sampled_profile->name;
+  if (sampled_profile->name != "")
+    name = sampled_profile->name;
+  else
+    name = sampled_profile->node_names[sampled_profile->treeNode];
   alphabet = sampled_profile->alphabet; 
   alphabet_size = alphabet.size();  
 
@@ -372,6 +375,7 @@ AbsorbingTransducer::AbsorbingTransducer(ExactMatch *EM_in)
   */
 
   treeNode = EM_in->treeNode;
+
   subtreeNodes.push_back(EM_in->treeNode); 
   alphabet = EM_in->alphabet; 
   alphabet_size = alphabet.size();

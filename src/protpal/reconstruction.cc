@@ -34,7 +34,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   have_tree=false; 
   have_sequences=false; 
-  bool rndtime = true; 
+  //bool rndtime = true; 
 
   opts.program_name = "ProtPal";
   opts.short_description = "Progressive alignment and reconstruction of proteins";
@@ -126,7 +126,10 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("gc -gap-chain", gap_grammar_filename = default_gap_grammar_filename, "<grammar_filename> use this dart grammar containing a rate matrix with a 'gap' character.  This is used when reconstructing with fixed input alignment");
   opts.add("tg -train-grammar", train_grammar = false, "Use EM algorithm to estimate the character substitution model's parameters before inferring ancestral characters.  This is especially useful when using a fixed alignment, since the 'gap chain' is essentially part of the indel model");
 
-  
+  opts.newline();
+  opts.print_title("Phylogenetic read placement");
+  opts.add("p -place-reads", reads_to_place_filename="None", "Place reads in FASTA-formatted file onto tree nodes using pplacer-like algorithm\n");
+  opts.add("sp -saved-profiles", saved_profiles_directory="None", "In placing reads to nodes, use the profiles found in the specified directory (having names corresponding to tree nodes\n"); 
 
   opts.parse_or_die(); 
   string error=""; bool all_reqd_args=true; 
@@ -784,6 +787,24 @@ double Reconstruction::get_root_ins_estimate(void)
     }
 }
 
+
+map<int, string> Reconstruction::check_profile_filenames(void)
+{
+  map<int, string> filenames; 
+  for (int treeNode = 0; treeNode < tree.nodes(); ++treeNode)
+    {
+      stringstream candidateName; 
+      candidateName << saved_profiles_directory << "/" << tree.node_name[treeNode] << ".sexpr"; 
+      if ( FileExists(candidateName.str()) )
+	filenames[treeNode] = candidateName.str();
+      else
+	{
+	  cerr<<"Warning: no saved profile for tree node " << tree.node_name[treeNode] << endl; 
+	  filenames[treeNode] = "None"; 
+	}
+    }
+  return filenames; 
+}
 
 // void Reconstruction::show_indels(Stockholm stock)
 // {

@@ -6,35 +6,50 @@
 #include "protpal/profile.h"
 #include "util/sstring.h"
 #include "ecfg/ecfgsexpr.h" // for array2d class
+#include "seq/biosequence.h" // for Weight_profile
+
 
 class Read : public list<sstring>
 {
  public:
   sstring identifier; 
+  sstring sstringRep; 
   void pad(void); 
   void set(sstring); 
 };
 
 typedef pair<state, state> compositeState; 
+typedef map<string, map<string, bfloat> > ScoreMap; // map from reads to tree nodes to placement likelihoods
 
 class ReadProfileModel
 {
  public:
   // Constructor
   ReadProfileModel(void);
+
+  // Profile - one emission side
+  AbsorbingTransducer *profile; 
+
   // Substitution model
   Alphabet sub_alphabet;
+  int alphabet_size; 
   Irrev_EM_matrix rate_matrix; 
   double branch_length; 
 
   // Set up substitution model
-  void set_substitution_model(Alphabet&, Irrev_EM_matrix&);
+  void set_substitution_model(Alphabet&, Irrev_EM_matrix&, AbsorbingTransducer*);
   array2d<double> conditional_sub_matrix;
   vector<double> equilibrium_dist; 
+  
+  // Some variables particular to the emission weight function
+  bfloat emissionWeight; 
+  int alphIdx; 
+  Symbol_weight_map::iterator symbolIter; 
 
   // Basic info
   int num_states; 
   state start_state, end_state; 
+  Weight_profile read_profile; 
 
   // Map state names to indices and reverse - allows access to states by name in functions
   map<string, int> state_index; 
@@ -44,7 +59,7 @@ class ReadProfileModel
   // emits only to the profile (and not the read).  
   map<state, string> state_type; 
 
-  // Building up the HMM by its states and transitions.  Eventually this might be done by parsing an 
+  // Building up the HMM by its states and transitions.  Eventually this might be done by parsing a
   // .SExpr file, though it's built-in for now...
   void add_state(string type, string name); 
   void add_transition(string from, string to, bfloat weight); 
@@ -74,8 +89,17 @@ class ReadProfileScore
  public:
   // Constructor
   ReadProfileScore(AbsorbingTransducer *prof_in, Alphabet&, Irrev_EM_matrix&);
-  // Main wrapper function - get the likelihood score of a read to a profile, and print it to an ostream
+
+  // Main wrapper functions - get the likelihood score of a read to a profile, and print it to an ostream or store it
+  // for later calculations
   void score_and_print(const Read& read, ostream& out, bool viterbi=false);
+  void score_and_store(const Read& read , ScoreMap& scores, bool viterbi=false);
+
+  // Main workhorse function
+  bfloat get_score(const Read&, bool viterbi); 
+
+  // Name and read will change upon analyzing different reads/profiles.  
+  string name;
   Read read; 
   void HMMoC_adapter(const char* filename, bool precompute=true); 
 
@@ -91,6 +115,8 @@ class ReadProfileScore
  private:
   // Profile - one emission side
   AbsorbingTransducer *profile; 
+
+  // profile -> read maps
 
   // The states of this profile that are relevant
   vector<state> profile_states;

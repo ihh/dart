@@ -121,8 +121,16 @@ class Reconstruction
   bool viterbi_alignments; ; 
   double get_root_ins_estimate(void);  
 
+  // Placement algorithm
+  sstring reads_to_place_filename;
+  sstring saved_profiles_directory; 
+  map<int, string> check_profile_filenames(void);
+  map< pair<node, string>, bool> init_limiter(void); 
+
   // Memory management
   void clear_child(node);
+
+
  private:
   // Help message
   void display_opts(void);
@@ -136,5 +144,7 @@ class Reconstruction
   void get_tree_from_file(const char*);
   void loadTreeString(const char*);
   void get_stockholm_tree(const char*);  
+
+  
 };
 #endif

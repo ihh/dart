@@ -72,6 +72,70 @@ int main(int argc, char* argv[])
       if (reconstruction.loggingLevel >=1 )
 	std::cerr<< "Root insert probability estimated as: " << reconstruction.root_insert_prob << endl; 
     }
+
+  if ( reconstruction.reads_to_place_filename != "None" )
+    {
+      ScoreMap scores; 
+      map<int, string> profile_filenames = reconstruction.check_profile_filenames();
+      // limiter = reconstruction.init_limiter();
+
+      cerr<<"\nProfiles found for the following nodes:\n";
+      for (map<int, string>::iterator fn=profile_filenames.begin(); fn!=profile_filenames.end(); ++fn)
+	if (fn->second == "None")
+	  continue;
+	else
+	  cerr<< reconstruction.tree.node_name[fn->first] << "\t" << fn->second << endl; 
+		  
+      cerr<<"Parsing reads..."; 
+      map<string, string> reads = 
+	parse_fasta(reconstruction.reads_to_place_filename.c_str(), alphabet);
+      cerr<<"Done.\n"; 
+      Read read; 
+      for (int profileNode = 0; profileNode < reconstruction.tree.nodes(); 
+	   profileNode++)
+	{
+	  if (profile_filenames[profileNode] == "None")
+	    continue;
+	  AbsorbingTransducer ancestralProfile(profile_filenames[profileNode].c_str(),
+					       alphabetVector, reconstruction.tree);
+	  ancestralProfile.name = reconstruction.tree.node_name[profileNode]; // not written/parsed in sexpr...ugh.  Fix later
+	  ReadProfileScore profile_scorer(&ancestralProfile, alphabet, rate_matrix);
+		      
+	  for ( map<string, string>::iterator readIter = reads.begin(); 
+		readIter != reads.end(); ++readIter )
+	    {
+	      read.identifier = readIter->first; 
+	      read.set( readIter->second ); 
+	      //if ( ! limiter(profileNode, read.identifier) )
+	      //			    continue;
+	      cerr<<"Scoring read/profile pair: " << read.identifier << " - " << profile_scorer.name <<endl; 
+	      profile_scorer.score_and_store(read, scores, false);
+	    }
+		      
+	}
+
+      // Display stuff that got stored in scores
+      for (ScoreMap::iterator readIter = scores.begin(); readIter != scores.end(); 
+	   ++readIter)
+	{
+	  cout << "Read: " << readIter->first << "\n";
+	  for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	       nodeIter != (readIter->second).end(); ++nodeIter)
+	    cout << "\t" << nodeIter->first << "\t" << nodeIter->second<<endl; 
+	}
+		  
+
+      // 		  time(&readEnd); 
+      // 		  cout<< "Minutes used to map ";
+      // 		  cout << numReads << " reads to a profile: "; 
+      // 		  cout << difftime (readEnd, readStart)/60.0 <<endl; 
+      exit(0); 
+      // 	      // END TESTING / BENCHMARKING READ-PROFILE SCORING
+    }
+
+
+
+
   
   // These  transducers remain the same throughout the traversal, so we can initialize them
   // once and for all and leave them.  
@@ -160,6 +224,7 @@ int main(int argc, char* argv[])
 	  // Then, make an absorbing transducer from this, and place it in the profiles map.  
 	  AbsorbingTransducer leafAbsorb(&leaf); 
 	  reconstruction.profiles[treeNode] = leafAbsorb; 	  
+	  reconstruction.profiles[treeNode].name = reconstruction.tree.node_name[treeNode]; 	  
  	}
       if(reconstruction.loggingLevel>=1)
 	std::cerr<<"Done\n"; 
@@ -263,6 +328,7 @@ int main(int argc, char* argv[])
 			  );
 	  reconstruction.profiles.erase(children[0]); 
 	  reconstruction.profiles.erase(children[1]); 
+	  reconstruction.profiles[treeNode].name = reconstruction.tree.node_name[treeNode]; 
 	  if (reconstruction.loggingLevel>=1)
 	    {
 	      std::cerr<<"\tLeft profile has: "<<profile.left_profile.num_delete_states<< "  absorbing states.\n"; 
@@ -342,17 +408,23 @@ int main(int argc, char* argv[])
 	      AbsorbingTransducer absorbTrans(&profile);
 	      absorbTrans.test_transitions(); 
 	      reconstruction.profiles[treeNode] = absorbTrans; 
+	      if(reconstruction.loggingLevel>=1)
+		std::cerr<<"done.\n";
+	      
 	      // Dot code is a good way to investigate a strangely-behaving transducer
 	      // (e.g. if the above transitions test fails)
 	      //absorbTrans.show_DOT(cout, reconstruction.tree.node_name[treeNode]+"_absorbing"); 
 
 
 	      // TESTING CAPABILITY  TO READ/WRITE ABSORBING TRANSDUCERS
-// 	      ofstream saved_profile;
-// 	      saved_profile.open( "saved_profile.sexpr" );
-// 	      absorbTrans.write_profile(saved_profile); 
-// 	      cerr<<"Wrote profile to file: saved_profile.sexpr\n";
-// 	      saved_profile.close();
+	      ofstream saved_profile;
+	      stringstream fileToWrite;
+	      fileToWrite << "saved_profiles/" << absorbTrans.name << ".sexpr";
+	      state_path dummy_path; 
+	      saved_profile.open(fileToWrite.str().c_str()); // is there another way?
+	      absorbTrans.write_profile(saved_profile, dummy_path); 
+	      cerr<<"Wrote profile to file: " << fileToWrite.str() <<endl; 
+	      saved_profile.close();
 // 	      AbsorbingTransducer absorbTrans2("saved_profile.sexpr",
 // 					       alphabetVector, reconstruction.tree);
 	      
@@ -362,36 +434,18 @@ int main(int argc, char* argv[])
 
 
 	      // TESTING / BENCHMARKING READ-PROFILE SCORING (E.G PPLACER-LIKE FUNCTIONALITY)
-
-// 	      time_t readStart,readEnd;
-// 	      time (&readStart);
-
-	      
 // 	      // Writing to hmmoc file - not yet fully functional, but provides a 
 // 	      // significant speedup (~10X)
 // 	      //testScore.HMMoC_adapter("testHMMoC.xml"); 
 // 	      //exit(0); 
 
-
-// 	      unsigned int numReads = 100;
-// 	      for (unsigned int i=0; i<numReads; i++)
-// 		{
-// 		  ReadProfileScore testScore(&absorbTrans, alphabet, rate_matrix); 
-// 		  Read read; 
-// 		  read.set("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); 
-// 		  read.identifier="oscarsRead"; 
-// 		  cout<<"Analyzing read number: " << i << endl; 
-// 		  testScore.readSize=140;
-// 		  testScore.fill_DP_matrix(read, cout, false, false, true);
-// 		  //testScore.score_and_print(read, cout, false); 
-// 		}
-// 	      time(&readEnd); 
-// 	      std::cout<< "Minutes used to map "<<  numReads << " reads to a profile: " << difftime (readEnd, readStart)/60.0 <<endl; 
-// 	      exit(0); 
-// 	      // END TESTING / BENCHMARKING READ-PROFILE SCORING
-
-	      if(reconstruction.loggingLevel>=1)
-		std::cerr<<"done.\n";
+// Add back in later:
+/*
+              time_t readStart,readEnd;
+	      time (&readStart);
+	      unsigned int numReads = 1;
+	      cout<<"\n"; 
+*/
 	    }
 	  else
 	    {

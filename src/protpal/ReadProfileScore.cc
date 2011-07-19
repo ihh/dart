@@ -12,25 +12,36 @@ void Read::pad(void)
 
 void Read::set(sstring in)
 {
+  this->sstringRep = in;  
   this->clear(); 
   for (sstring::iterator strIter=in.begin(); strIter!=in.end(); strIter++)
     this->push_back(*strIter); 
   pad(); 
 }
 
+
+
 ReadProfileScore::ReadProfileScore(AbsorbingTransducer* prof_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix_in)
 {
   profile = prof_in;
+  if (profile->name == "")
+    {
+      cerr<<"ERROR! Input profile for matching read has no name, cannot continue\n"; 
+      exit(1); 
+    }
+  else
+    name = profile->name; 
+
   // Collect the various types of profile states
   profile_states.clear();
   for (int i=0; i<profile->num_delete_states; i++)
     profile_states.push_back(i); 
   profile_states.push_back(profile->pre_end_state); 
   DP_ID.resize(3); 
-  pairHMM.set_substitution_model(alphabet_in, rate_matrix_in);
+  pairHMM.set_substitution_model(alphabet_in, rate_matrix_in, profile);
 }
 
-void ReadProfileScore::score_and_print(const Read& read, ostream& out, bool viterbi)
+bfloat ReadProfileScore::get_score(const Read& read, bool viterbi)
 {
   bfloat value;
   ofstream dummy_ostream; 
@@ -42,7 +53,7 @@ void ReadProfileScore::score_and_print(const Read& read, ostream& out, bool vite
 		     dummy_ostream, // hmmoc filestream
 		     false, // only write hmmoc file, don't do actual DP
 		     true,  // keep backPointers - for finding viterbi traceback
-		     true); // display logging messages
+		     false); // display logging messages
       value = get_viterbi_value(); 
     }
   else
@@ -51,12 +62,26 @@ void ReadProfileScore::score_and_print(const Read& read, ostream& out, bool vite
 		     dummy_ostream, // hmmoc filestream
 		     false, // only write hmmoc file, don't do actual DP
 		     false,  // keep backPointers - for finding viterbi traceback
-		     false); // display logging messages
+		     true); // display logging messages
       value = get_forward_value(); 
     }
-  write_read_info(out, read, value); 
   clear_DP_matrix(); 
+  return value; 
 }
+
+void ReadProfileScore::score_and_print(const Read& read, ostream& out, bool viterbi)
+{
+  bfloat value = get_score(read, viterbi); 
+  write_read_info(out, read, value); 
+}
+
+void ReadProfileScore::score_and_store(const Read& read, ScoreMap& scores, bool viterbi )
+{
+  bfloat value = get_score(read, viterbi); 
+  scores[read.identifier][name] = value;
+}
+
+
 void ReadProfileScore::clear_DP_matrix(void)
 {
   map< vector<int>, bfloat> DP_tmp; 
@@ -65,11 +90,13 @@ void ReadProfileScore::clear_DP_matrix(void)
 
 void ReadProfileScore::write_read_info(ostream& out, const Read& read, bfloat value)
 {
-  out << read.identifier << "\t" << value << "\n";
+  out << read.identifier << "\t" << name << "\t" << value << endl; 
 }
 
 inline list<state> ReadProfileScore::get_possible_HMM_states(int i, state j)
 {
+  cerr<<"Error: must add start state to this function\n"; 
+  exit(1); 
   list<state> toReturn; 
   if (i == readSize-1) // pre-end "state"
     {
@@ -98,6 +125,10 @@ inline list<state> ReadProfileScore::get_possible_HMM_states(int i, state j)
 
 void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmmoc_only, bool backPointers, bool logging)
 {
+  // First, store the read as a Weight_profile in the pairHMM - the object which actually
+  // does the probability calculations
+  pairHMM.read_profile = pairHMM.sub_alphabet.new_seq2weight(read.sstringRep); 
+    
   // The main DP recursion for scoring a read to a profile via an arbitrary pairHMM
   int i, iPrime; 
   list<int>::iterator kPrime,k; 
@@ -118,10 +149,12 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
   set_DP_cell(-1,profile->start_state, pairHMM.start_state, 1.0); 
   
   // "practical" range is 35 to ~500
+
   for (i=0; i<readSize; ++i) 
     {
       if (logging)
 	cerr<<"\n\nProcessing position " << i  <<  " of read...\n"; 
+
       // practical range is 300 - 1000s
       for (j=profile_states.begin(); j<profile_states.end(); j++)
 	{
@@ -403,29 +436,51 @@ inline bfloat ReadProfileModel::get_transition_weight(state from, state to)
   else
     return tmpIter->second;
 }
-
-bfloat ReadProfileModel::get_emission_weight(int readIndex, state profileState, state hmm_state)
+inline bfloat ReadProfileModel::get_emission_weight_by_alphabet_index(int readIndex, state profileState, state hmm_state)
 {
-  // cerr<<"Warning: emission weight is not yet meaningful!\n"; 
-  // double result = conditional_sub_matrix(incoming_character, outgoing_character); 
+  // Warning: not yet meaningful!!
   return 1.0; 
 }
 
-bfloat ReadProfileModel::get_emission_weight_by_alphabet_index(int alphIndex, state profileState, state hmm_state)
+inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profileState, state hmm_state)
 {
-  // cerr<<"Warning: emission weight is not yet meaningful!\n"; 
-  return 1.0; 
-}
-
-void ReadProfileModel::set_substitution_model(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix_in)
-{
+  // emissionWeight is an attribute to avoide initializing it each time this fn is called
+  emissionWeight = 0.0;
+  //  cerr<< "Size of read profile: " << read_profile.size() << endl; 
+  //  cerr<< "Index queried: " << readIndex << endl; 
   
+  if (state_type[hmm_state]  == "match")
+    for (symbolIter = read_profile[readIndex].begin(); 
+	 symbolIter != read_profile[readIndex].end(); symbolIter++)
+      for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
+	emissionWeight += equilibrium_dist[alphIdx] * 
+	  conditional_sub_matrix(alphIdx,symbolIter->first) * symbolIter->second;
+
+  else if ( state_type[hmm_state] == "insert" )
+    for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
+      emissionWeight += profile->get_absorb_weight(profileState, alphIdx) * 
+	equilibrium_dist[alphIdx]; 
+  else if ( state_type[hmm_state] == "delete" )
+      for (symbolIter = read_profile[readIndex].begin(); 
+	   symbolIter != read_profile[readIndex].end(); symbolIter++)
+	emissionWeight += equilibrium_dist[alphIdx]; 
+
+  else
+    emissionWeight = 1.0;
+  //cerr<<"\nThe emission weight was: " << result << endl; 
+  //  cerr<<"Done\t";
+  return emissionWeight; 
+}
+
+void ReadProfileModel::set_substitution_model(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix_in, AbsorbingTransducer *profile_in)
+{
+  profile = profile_in; 
+  sub_alphabet = alphabet_in; 
+  alphabet_size = alphabet_in.size();
   conditional_sub_matrix = rate_matrix_in.create_conditional_substitution_matrix(branch_length); 
   equilibrium_dist = rate_matrix_in.create_prior(); 
-  cout <<sum(equilibrium_dist) << endl; 
-  displayVector(equilibrium_dist); 
-  exit(0);
 }
+
 
 
 

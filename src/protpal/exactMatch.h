@@ -20,6 +20,9 @@ class ExactMatch
   // The (leaf) node of the phylogeny this sequence is associated with.
   node treeNode; 
 
+  // Name 
+  string name; 
+
   //alphabet
   vector<string> alphabet;
   int alphabet_size;
