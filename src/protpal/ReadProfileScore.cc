@@ -174,6 +174,7 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 	    {
 	      if (logging)
 		cerr<<"Processing state " << pairHMM.state_name[*k]  <<  " of HMM...\n"; 
+	      // the pairHMM "changes" state at every  step, so this is a trivial lookup
 	      incoming_HMM_states = pairHMM.incoming[*k]; 
 	      if (logging)
 		{
