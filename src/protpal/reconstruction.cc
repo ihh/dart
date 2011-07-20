@@ -18,6 +18,7 @@
 
 
 #define DEFAULT_CHAIN_FILE "data/handalign/prot3.hsm"
+#define DEFAULT_DNA_CHAIN_FILE "data/handalign/hidden.hsm"
 #define DEFAULT_GRAMMAR_FILE "grammars/prot3.eg"
 #define DEFAULT_GAP_GRAMMAR_FILE "grammars/prot3gap.eg"
 
@@ -27,8 +28,9 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 {
   INIT_OPTS_LIST (opts, argc, argv, 0, "[options]",
 		  "Align and reconstruct ancestral sequences\n");
-  sstring default_chain_filename, default_gap_grammar_filename, default_grammar_filename;
+  sstring default_chain_filename, default_dna_chain_filename, default_gap_grammar_filename, default_grammar_filename;
   default_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE;
+  default_dna_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_DNA_CHAIN_FILE;
   default_grammar_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_GRAMMAR_FILE;
   default_gap_grammar_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_GAP_GRAMMAR_FILE;
 
@@ -83,7 +85,9 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.newline();
   opts.print_title("Model parameters");
 
-  opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "<rate matrix file> DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
+  opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
+  opts.add("cod -codon-model", codon_matrix_filename = "None", "Same as subst-model, but containing a rate matrix describing substitution rates between codon triplets.");
+  opts.add("dna -dna-model", use_dna = false, "Use the default DNA substitution model, rather than amino acid model", false);
   opts.add("bs -subst-scale", sub_rate = 1.0, "Substitution rate scaling parameter ");
   opts.add("mbl -max-branch-length", max_branch_length = 1.0, "Maximum allowed branch length (branches longer than this will be truncated).");
   opts.add("i -insert-rate", ins_rate=0.0025,"Insertion rate ");

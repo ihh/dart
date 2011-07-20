@@ -12,27 +12,15 @@
 using namespace std;
 
 
-ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in)
+ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in, bool codon_model)
 {
   treeNode = treeNode_in; 
   vector<string> single_alphabet;  
   vector<sstring> toks = alphabet_in.tokens(); 
   for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
 	alphabet.push_back(string(a->c_str()));
-  
-  bool hidden = false; 
-  if (alphabet[0].size() > 1)
-	{
-	  //std::cerr<<"Using hidden-state alphabet\n";
-	  hidden = true; 
-	  for (vector<string>::iterator a=alphabet.begin(); a!=alphabet.end(); a++)
-		single_alphabet.push_back(stringAt(*a,0));
-	}
-  else
-	single_alphabet = alphabet; // ugh, fix this soon, using DART's alphabet machinery
 
   alphabet_size = alphabet.size();
-  float aSize = alphabet_size;
   // for alignment envelope 
   MyMap<node, int> coordMap; 
   num_delete_states = sequence.length();
@@ -54,7 +42,8 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
   vector<int> from;
   pair<int, int> pairIdx;
 
-  for (int i=0; i<sequence.size(); i++)
+  // Initialize the fairly-trivial state structure, along with other necessary variables. 
+  for (unsigned int i=0; i<sequence.size(); i++)
 	{
 	  sequence[i] = tolower(sequence[i]);
 	  to.clear();from.clear();
@@ -70,41 +59,16 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
 	  // for alignment envelope 
 	  coordMap[treeNode] = i;
 	  leaf_seq_coords[i] = coordMap; 
-	  
-	  // eventually this ought to be able to handle degenerate characters...for now any non-alphabet symbol
-	  // assigned equal weight across the alphabet in the absorb map. 
-	  // We CAN now handle hidden alphabets, albiet in a primitive sort of way - if the alphabet is seen to have
-	  // more than 1 character per token, the 2nd character is assumed to be the 'label' and the first is what matches to 
-	  // the sequence
-	  vector<bfloat> delta; 
-  	  if (index(stringAt(sequence,i), single_alphabet) != -1)
-		{
-		  for (int charIndex = 0; charIndex < alphabet_size; charIndex++)
-			{
-			  if (hidden)
-				{
-				  if (sequence[i] == alphabet[charIndex][0]) absorb[i].push_back(0.99);
-				  else absorb[i].push_back(0.01);
-				}
-
-			  else
-				{
-				  if (stringAt(sequence,i) == alphabet[charIndex] ) absorb[i].push_back(0.99);
-				  else absorb[i].push_back(0.01);
-				}
-			}
-		}
-	  else
-		{
-		  std::cerr<<"Warning: the character "<<sequence[i]<<" is not in alphabet.  Setting weight for all characters equal\n";
-		  bfloat uniform = 1.0/aSize; 
-		  for (int charIndex = 0; charIndex!=alphabet_size; charIndex++)
-			{
-			  delta.push_back(uniform);
-			}
-		  absorb[i]  = delta;
-		}
-	}
+	}  
+  // "Better" way of initializing Felsenstein absorb matrix. OW 7/20/2011
+  Weight_profile seq_profile = alphabet_in.new_seq2weight(sequence);
+  for (unsigned int i=0; i < sequence.size(); ++i)
+    for (int charIndex = 0; charIndex < alphabet_size; charIndex++)
+      if ( seq_profile[i].count(charIndex) )
+	absorb[i].push_back( seq_profile[i][charIndex] );
+      else
+	// Small but nonzero weight for other chars
+	absorb[i].push_back(1e-10);
 
   // for alignment envelope 
   coordMap[treeNode] = num_delete_states-1;

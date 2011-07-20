@@ -56,7 +56,8 @@ int main(int argc, char* argv[])
   Irrev_EM_matrix rate_matrix(1,1);
   Alphabet alphabet ("uninitialized", 1);
   ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
-  // yeccch
+  // yeccch - I've mostly moved over to using weight_profiles, but some 
+  // hackiness still persists -OW
   vector<string> alphabetVector;
   vector<sstring> toks = alphabet.tokens(); 
   for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)

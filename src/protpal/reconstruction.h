@@ -36,6 +36,9 @@ class Reconstruction
   vector<string> alphabet; 
 
   // rate matrix and sequence import
+  bool use_dna; 
+  bool codon_model; 
+  sstring codon_matrix_filename; 
   sstring rate_matrix_filename;   
   sstring grammar_filename;   
   sstring gap_grammar_filename;   
