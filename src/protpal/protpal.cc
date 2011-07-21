@@ -44,9 +44,6 @@ int main(int argc, char* argv[])
   // create main reconstruction object
   Reconstruction reconstruction(argc, argv);
 
-  // clunky, sorry
-  for (int i=0; i< reconstruction.tree.nodes(); i++)
-	node_names.push_back(string(reconstruction.tree.node_name[i]));
 
 
   // yeccch - I've mostly moved over to using weight_profiles, but some 
@@ -138,11 +135,32 @@ int main(int argc, char* argv[])
 	  reconstruction.root_profile_filename  = reconstruction.profile_to_make + ".sexpr";
 	}
       
+      if ( reconstruction.tree.is_leaf(new_root) )
+	{
+	  //Just write the thing, and exit.  Implement an exact-match profile writer
+	  ExactMatch leaf(
+			  reconstruction.sequences[reconstruction.tree.node_name[new_root]], // sequence
+			  new_root, //tree index
+			  reconstruction.alphabet,  // sequence alphabet
+			  reconstruction.codon_model // codon model?
+			  );
+	  // Then, make an absorbing transducer from this, and write the profile from there
+	  AbsorbingTransducer leafAbsorb(&leaf); 
+	  ofstream saved_profile;
+	  saved_profile.open(reconstruction.root_profile_filename.c_str()); 
+	  state_path dummy; // dummy viterbi path
+	  leafAbsorb.write_profile(saved_profile, dummy); 
+	  saved_profile.close(); 
+	  exit(0); 
+	}
       string tmpFileName = "tree_tmp.newick"; 
       ofstream tmpTreeFile(tmpFileName.c_str());
       reconstruction.tree.write(tmpTreeFile, -1, new_root); 
-
-      reconstruction.get_tree_from_file(tmpFileName.c_str()); 
+      tmpTreeFile.close();
+      ifstream tree_file(tmpFileName.c_str());
+      reconstruction.tree.read(tree_file); //tmpFileName.c_str()); 
+      reconstruction.tree.force_binary(); 
+      system("rm -f tree_tmp.newick");
     }
 
   cout<<"The new tree:\n ";
@@ -202,6 +220,10 @@ int main(int argc, char* argv[])
       if(reconstruction.loggingLevel>=1)
 	cerr<<"\n";
       vector<Node> leaves = reconstruction.tree.leaf_vector(); 
+      // clunky, sorry
+      for (int i=0; i< reconstruction.tree.nodes(); i++)
+	node_names.push_back(string(reconstruction.tree.node_name[i]));
+
       if(reconstruction.loggingLevel>=1)
 	cerr<<"Making exact-match transducers for leaf nodes...";
 
@@ -219,6 +241,7 @@ int main(int argc, char* argv[])
 			   );
 	   // Then, make an absorbing transducer from this, and place it in the profiles map.  
 	   AbsorbingTransducer leafAbsorb(&leaf); 
+	   ofstream saved_profile;
 	   reconstruction.profiles[treeNode] = leafAbsorb; 	  
 	   reconstruction.profiles[treeNode].name = reconstruction.tree.node_name[treeNode]; 	  
 	 }
@@ -519,7 +542,7 @@ int main(int argc, char* argv[])
 				    reconstruction.viterbi // sample viterbi path (on the last time through - only really applies to null states)
 				    ); 
 		  if(reconstruction.loggingLevel>=1)
-		    cerr<<"\tTransforming sampled root profile DAG into an absorbing transducer...";
+		    cerr<<"Done.\n";
 		  state_path viterbi_path;
 		  if (reconstruction.root_viterbi_path)
 		    viterbi_path = profile.sample_DP(

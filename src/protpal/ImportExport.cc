@@ -11,7 +11,6 @@ void AbsorbingTransducer::write_profile(ostream& out, state_path& viterbi_path)
   out.setf(ios::fixed, ios::floatfield);
   out.setf(ios::showpoint);
   out.precision(2);
-
   out.precision(10); 
   // write transducer to file in a compact format
   pair<state, state> statePair; 
@@ -20,13 +19,11 @@ void AbsorbingTransducer::write_profile(ostream& out, state_path& viterbi_path)
   out << "(profile\n";
   add_tag_value_pair(out, "node", treeNode); 
   out << "\n"; 
-
   // Add the special states - their names are indices,  their types are non-delete
   out << ";; Start/pre-end/end state data\n"; 
   add_basic_state(out, "start", start_state); 
   add_basic_state(out, "wait", pre_end_state); 
   add_basic_state(out, "end", end_state); 
-
   // Loop over delete states and add them
   out << ";; Delete states' data\n\n"; 
   for (int stateIdx = 0; stateIdx < num_delete_states; stateIdx++)
@@ -34,7 +31,7 @@ void AbsorbingTransducer::write_profile(ostream& out, state_path& viterbi_path)
     //   - absorb distribution
     //   - sequence co-ordinates of leaf sequences (for alignment envelope)
     add_delete_state(out, stateIdx); 
-  
+
   // Loop over transitions and add them
   out << ";; Transition weight data\n\n"; 
   for (MyMap<state, vector<state> >::iterator e = incoming.begin(); e != incoming.end(); e++)
@@ -50,9 +47,7 @@ void AbsorbingTransducer::write_profile(ostream& out, state_path& viterbi_path)
 	  out << mid2int[vit->toVector()] << " "; 
       out <<")\n";
     }
-  
   out << ");; end profile for node " << treeNode << "\n";
-
 }
 
 void AbsorbingTransducer::add_tag_value_pair(ostream& out, string tag, string value, bool newline)
@@ -99,7 +94,7 @@ void AbsorbingTransducer::add_delete_state(ostream& out, int stateIndex)
   out << "(state \n";   
   add_tag_value_pair(out, "type", "delete"); 
   add_tag_value_pair(out, "name", stateIndex); 
-  add_tag_value_pair(out, "postprob", stored_sampled_profile->post_prob(state2mid[stateIndex])); 
+  // add_tag_value_pair(out, "postprob", stored_sampled_profile->post_prob(state2mid[stateIndex])); 
 
   // Absorption weights
   if (verboseAbsorb)

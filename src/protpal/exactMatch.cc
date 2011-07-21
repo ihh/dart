@@ -14,6 +14,9 @@ using namespace std;
 
 ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in, bool codon_model)
 {
+  vector<sstring> toks = alphabet_in.tokens(); 
+  for (vector<sstring>::iterator tokIter = toks.begin(); tokIter!=toks.end(); ++tokIter)
+    alphabet.push_back(*tokIter); 
   treeNode = treeNode_in; 
   alphabet_size = alphabet_in.size();
   // for alignment envelope 
