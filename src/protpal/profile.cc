@@ -3078,8 +3078,6 @@ void Profile::fill_DP(int logging, bool inLog)
 
   // fill left-emit and right-emit where one side is pre_end_state, wait
   // somewhat skittish about this section...
-  if (logging >=1)
-    std::cerr<<" filling boundary cases..."; 
   // Q is left-emit 
   for (el_Prime=0; el_Prime < left_profile.num_delete_states; el_Prime++)
 	{

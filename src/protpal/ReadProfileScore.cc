@@ -92,15 +92,14 @@ void ReadProfileScore::write_read_info(ostream& out, const Read& read, bfloat va
 {
   out << read.identifier << "\t" << name << "\t" << value << endl; 
 }
-
-inline list<state> ReadProfileScore::get_possible_HMM_states(int i, state j)
+//                                                                  i                   j           
+inline list<state> ReadProfileScore::get_possible_HMM_states(int readPosition, state profileState)
 {
-  cerr<<"Error: must add start state to this function\n"; 
-  exit(1); 
+  //  cerr<<"Error: must add start state to this function\n"; 
   list<state> toReturn; 
-  if (i == readSize-1) // pre-end "state"
+  if (readPosition == readSize-1) // pre-end "state"
     {
-      if (j == profile->pre_end_state)
+      if (profileState == profile->pre_end_state)
 	{
 	  toReturn.push_back(pairHMM.end_state); 
 	  return toReturn;
@@ -113,7 +112,7 @@ inline list<state> ReadProfileScore::get_possible_HMM_states(int i, state j)
     }
   else
     {
-      if (j == profile->pre_end_state)
+      if (profileState == profile->pre_end_state)
 	{
 	  toReturn.push_back(pairHMM.end_state);
 	  return toReturn; 
@@ -173,24 +172,37 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 	  for (k=possible_HMM_states.begin(); k!=possible_HMM_states.end(); k++)
 	    {
 	      if (logging)
-		cerr<<"Processing state " << pairHMM.state_name[*k]  <<  " of HMM...\n"; 
+		cerr<<"\n\nProcessing state " << pairHMM.state_name[*k]  <<  " of HMM...\n"; 
 	      // the pairHMM "changes" state at every  step, so this is a trivial lookup
 	      incoming_HMM_states = pairHMM.incoming[*k]; 
 	      if (logging)
 		{
-		  cerr<<"Summing over " << incoming_HMM_states.size() << " incoming HMM states\n\t"; 
+		  cerr<<"Summing over " << incoming_HMM_states.size() << " incoming HMM states:\t"; 
 		  for (kPrime = incoming_HMM_states.begin(); kPrime != incoming_HMM_states.end(); ++kPrime)
 		    cerr<< pairHMM.state_name[*kPrime] << "  "; 
 		  cerr<<endl; 
 		}
 	      for (kPrime = incoming_HMM_states.begin(); kPrime != incoming_HMM_states.end(); ++kPrime)
 		{
+		  if (logging)
+		    cerr<<"\tInvestigating transition from : "<< pairHMM.state_name[*kPrime] <<endl; 
 		  iPrime = get_incoming_read_state(i, *kPrime); 
 		  // We can be sure this DP cell will be -inf, so we continue
-		  if (iPrime == -1 && pairHMM.state_type[*kPrime] != "start")
-		    continue;
+		  //		  if (iPrime == -1 && pairHMM.state_type[*kPrime] != "start")
+		  //		    continue;
 		  hmm_transition_weight = pairHMM.get_transition_weight(*kPrime, *k); 
-		  incoming_profile_states = get_incoming_profile_states(*j, *k); 
+		  if (logging)
+		    cerr<<"\tTransition weight between HMM states: " << hmm_transition_weight << endl; 
+		  //                                                 (prof  hmm)
+		  incoming_profile_states = get_incoming_profile_states(*j, *kPrime); 
+		  if (logging)
+		    {
+		      cerr<<"\tDetermined that there were " << incoming_profile_states.size() << " incoming profile states:\t"; 
+		      for (vector<state>::iterator pIter=incoming_profile_states.begin(); pIter!=incoming_profile_states.end(); pIter++)
+			cerr<<*pIter<<" "; 
+		      cerr<<endl; 
+		    }
+			
 		  for (jPrime = incoming_profile_states.begin(); jPrime != incoming_profile_states.end(); ++jPrime)
 		    {
 		      // We can be sure these DP cells will be -inf, so we continue
@@ -203,13 +215,16 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 			}
 		      toAdd = get_DP_cell(iPrime, *jPrime, *kPrime); 
 		      if (! toAdd > 0.0)
-			continue;
+			{
+			  cerr<<"\tThis incoming trans had 1e-inf Forward value\n";
+			  continue;
+			}
 		      if (*j != *jPrime)
 			toAdd *= profile->get_transition_weight(*jPrime, *j); 
 		      if (pairHMM.state_type[*k] != "start" && pairHMM.state_type[*k] != "end")
 			toAdd *= pairHMM.get_emission_weight(i,*j,*k); 
 		      toAdd *= hmm_transition_weight; 
-		      // if requested, add this composite state's info (emission, transition) to the HMMoC stream
+		      // if reqested, add this composite state's info (emission, transition) to the HMMoC stream
 		      if (hmmoc_only)
 			add_state_to_HMMoC(hmmoc, *j,*k,*jPrime, *kPrime);
 		      
@@ -221,7 +236,11 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 			{
 			  cerr<<"Added to DP matrix: \n";
 			  cerr<<"\tHMM state " << pairHMM.state_name[*kPrime] << endl; 
-			  cerr << "\tRead position " << iPrime <<"\n\tProfile state " << *jPrime << "\n\tValue " << toAdd << "\n\n"; 
+			  cerr << "\tRead position " << iPrime <<"\n\tProfile state " << *jPrime << "\n\tValue " << toAdd << "\n"; 
+			  cerr<<"Forward value for this state: " << get_DP_cell(iPrime,
+										*jPrime, *kPrime) << "\n";
+			  cerr<<"Emission value for the dest. state: " << pairHMM.get_emission_weight(i,*j,*k) << endl; 
+			  cerr<< "HMM transition weight: " << hmm_transition_weight  << "\n\n"; 
 			}
 		    }
 		}
@@ -305,6 +324,9 @@ bfloat ReadProfileScore::get_viterbi_value(void)
   
 inline int ReadProfileScore::get_incoming_read_state(int readIndex, state hmm_state)
 {
+  if (readIndex == 0)
+    cerr<<"Warning: incoming on start of read called!\n";
+  
   if (pairHMM.state_type[hmm_state] == "insert")
     return readIndex; 
   else
@@ -346,6 +368,7 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   add_transition("start", "pre_read_ins", .9);
   add_transition("start", "match", .05);
   add_transition("start", "delete", .05);
+  //  add_transition("start", "read_ins", .01);
 
   // from pre_read_ins
   add_transition("pre_read_ins", "pre_read_ins", .99); 
@@ -449,7 +472,7 @@ inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profile
   emissionWeight = 0.0;
   //  cerr<< "Size of read profile: " << read_profile.size() << endl; 
   //  cerr<< "Index queried: " << readIndex << endl; 
-  
+  //  toks = sub_alphabet.tokens()
   if (state_type[hmm_state]  == "match")
     for (symbolIter = read_profile[readIndex].begin(); 
 	 symbolIter != read_profile[readIndex].end(); symbolIter++)
@@ -461,10 +484,14 @@ inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profile
     for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
       emissionWeight += profile->get_absorb_weight(profileState, alphIdx) * 
 	equilibrium_dist[alphIdx]; 
+
   else if ( state_type[hmm_state] == "delete" )
       for (symbolIter = read_profile[readIndex].begin(); 
 	   symbolIter != read_profile[readIndex].end(); symbolIter++)
-	emissionWeight += equilibrium_dist[alphIdx]; 
+	{
+	  // cerr<<toks[*symbolIter] << " has weight: " << equilibrium_dist[alphIdx] <<endl; 
+	  emissionWeight += equilibrium_dist[symbolIter->first]*symbolIter->second; 
+	}
 
   else
     emissionWeight = 1.0;

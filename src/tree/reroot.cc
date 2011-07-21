@@ -9,7 +9,9 @@ int main (int argc, char** argv)
   opts.print_title ("Output options");
 
   int maxcols;
+  bool smallBranch;
   opts.add ("mc -maxcols", maxcols = -1, "maximum columns for output", false);
+  opts.add ("sb -small-branch", smallBranch = false, "Attach the new root by a small (1e-3) branch coming off the root", true);
 
   opts.parse_or_die();  // parse the command-line options
   try
@@ -26,6 +28,13 @@ int main (int argc, char** argv)
       if (new_root < 0)
 	THROWEXPR ("Node '" << new_root_name << "' not found in tree");
 
+      if ( smallBranch )
+	{
+	  Phylogeny::Node n = tree.add_named_node("", new_root, 1e-3); 
+	  tree.node_name[new_root] = ""; 
+	  tree.node_name[n] = new_root_name; 
+	  //cout<<"new node added: " << n << " " << tree.node_name[n] << endl; 
+	}
       tree.write (cout, maxcols, new_root);
     }
   catch (const Dart_exception& e)  // exception; bail out gracefully

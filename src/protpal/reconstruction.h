@@ -33,7 +33,7 @@ class Reconstruction
 
   // not (yet) using Ian's fancy Alphabet class
   // at least this is not a string any more, but a vector of strings, allowing latent-variable models.
-  vector<string> alphabet; 
+  //  vector<string> alphabet; 
 
   // rate matrix and sequence import
   bool use_dna; 
@@ -49,7 +49,7 @@ class Reconstruction
   sstring indel_filename;   
   sstring db_filename;   
   sstring treeFileName; 
-
+  void verify_leaf_sequences(void); 
   // Alignment envelope stuff
   sstring guide_alignment_filename; 
   int guide_sausage; 
@@ -74,9 +74,9 @@ class Reconstruction
   
   // simulation
   bool simulate; 
-  void make_sexpr_file(Alphabet, Irrev_EM_matrix, ostream&);
+  void make_sexpr_file(ostream&);
   void show_branch(node, ostream&); 
-  void simulate_alignment(Alphabet, Irrev_EM_matrix);
+  void simulate_alignment(void);
   int rootLength; 
   sstring phylocomposer_filename; 
   
@@ -89,6 +89,8 @@ class Reconstruction
   
   // Reconstruction algorithm parameters
 
+  Alphabet alphabet;
+  Irrev_EM_matrix rate_matrix; 
   int num_sampled_paths;
   int max_sampled_externals; 
   bool show_alignments; 
@@ -127,12 +129,15 @@ class Reconstruction
   // Placement algorithm
   sstring reads_to_place_filename;
   sstring saved_profiles_directory; 
+  sstring saved_subtree_profiles_directory; 
   map<int, string> check_profile_filenames(void);
   map< pair<node, string>, bool> init_limiter(void); 
+  sstring profile_to_make; 
 
   // Memory management
   void clear_child(node);
 
+  void get_tree_from_file(const char*);
 
  private:
   // Help message
@@ -144,7 +149,6 @@ class Reconstruction
 
 
   void load_rate_matrix(const string);
-  void get_tree_from_file(const char*);
   void loadTreeString(const char*);
   void get_stockholm_tree(const char*);  
 

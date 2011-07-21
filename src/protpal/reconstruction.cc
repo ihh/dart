@@ -13,6 +13,7 @@
 #include "util/unixenv.h"
 #include "util/sstring.h"
 #include "util/opts_list.h"
+#include "util/sexpr.h"
 #include "seq/alignment.h"
 #include "seq/biosequence.h"
 
@@ -133,13 +134,19 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.newline();
   opts.print_title("Phylogenetic read placement");
   opts.add("p -place-reads", reads_to_place_filename="None", "Place reads in FASTA-formatted file onto tree nodes using pplacer-like algorithm\n");
-  opts.add("sp -saved-profiles", saved_profiles_directory="None", "In placing reads to nodes, use the profiles found in the specified directory (having names corresponding to tree nodes\n"); 
+  opts.add("spp -saved-posterior-profiles", saved_profiles_directory="None", "In placing reads to nodes, use the profiles found in the specified directory (having names corresponding to tree nodes\n"); 
 
+  opts.add("ssp -saved-subtree-profiles", saved_subtree_profiles_directory="None", "When building an ancestral alignment, look for and save subtree profiles in the specified directory."); 
+
+  opts.add("mpp -make-posterior-profile", profile_to_make="None", "Make a posterior profile for the specified node, storing it in the saved-posterior-profiles directory specified above", false);
+ 
   opts.parse_or_die(); 
   string error=""; bool all_reqd_args=true; 
   if (!estimate_params && num_root_alignments != 1)
     estimate_params = true; 
   viterbi = !stoch_trace;
+  
+  codon_model = (codon_matrix_filename != "None");
 
   // Make sure we have the essential data - sequences and a tree
   // First, make sure we have sequence data from somewhere
@@ -209,6 +216,19 @@ Reconstruction::Reconstruction(int argc, char* argv[])
       exit(0); 
     }
 	
+  SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
+  SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
+  //  Irrev_EM_matrix rate_matrix(1,1);
+  //  Alphabet alphabet ("uninitialized", 1);
+  ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
+  parse_sequences(alphabet); 
+  
+  if(estimate_root_insert)
+    {
+      root_insert_prob = get_root_ins_estimate();
+      if (loggingLevel >=1 )
+	cerr<< "Root insert probability estimated as: " << root_insert_prob << endl;
+    }
 
 }
 
@@ -359,7 +379,7 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
 }
 
   
-void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_matrix, ostream& out)
+void Reconstruction::make_sexpr_file(ostream& out)
 {
   MyMap<string,string> prot2pc;
   prot2pc["S"] = "start";
@@ -570,7 +590,7 @@ void Reconstruction::show_branch(node startNode, ostream& out)
   //  return out; 
 }
 
-void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_matrix)
+void Reconstruction::simulate_alignment(void)
 {
   MyMap<node, Digitized_biosequence> sequences; 
   Digitized_biosequence parentSeq; 
@@ -808,6 +828,31 @@ map<int, string> Reconstruction::check_profile_filenames(void)
 	}
     }
   return filenames; 
+}
+
+void Reconstruction::verify_leaf_sequences(void)
+{
+  vector<Node> leaves = tree.leaf_vector(); 
+  for (unsigned int i=0; i<leaves.size(); i++)
+    {
+      node treeNode = leaves[i];
+      string sequence = sequences[tree.node_name[treeNode]]; // sequence  
+      if (sequence.size() == 0 )
+	{
+	  cerr<<"\n\tERROR: the leaf node " << tree.node_name[treeNode] << " has no  sequence associated with it!\n";
+	  cerr<<"This is usually caused by a tree having slightly different names than the sequences in the input sequences. \n";
+
+	  cerr<<"Sequence names in input file: \n";
+	  for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
+	    if ((seqIter->second).size() > 0)
+	      cerr<<"\t" << seqIter->first << "\t" << split(seqIter->first, string("|"))[0] << endl;
+
+	  std::cerr<<"Sequence names in tree leaves: \n";
+	  for (unsigned int j=0; j<leaves.size(); j++)
+	    std::cerr<<"\t" << tree.node_name[leaves[j]] << endl;
+	  exit(1);
+	}
+    }
 }
 
 // void Reconstruction::show_indels(Stockholm stock)
