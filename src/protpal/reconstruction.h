@@ -9,6 +9,7 @@
 #include "protpal/profile.h"
 #include "protpal/transducer.h"
 #include "protpal/AlignmentEnvelope.h"
+#include "protpal/ReadProfileScore.h"
 #include "tree/phylogeny.h"
 #include "ecfg/ecfgsexpr.h"
 #include "seq/biosequence.h"
@@ -130,10 +131,16 @@ class Reconstruction
   sstring reads_to_place_filename;
   sstring saved_profiles_directory; 
   sstring saved_subtree_profiles_directory; 
+  sstring json_placements_filename; 
+  bool no_placements_tabular; 
   map<int, string> check_profile_filenames(void);
   map< pair<node, string>, bool> init_limiter(void); 
   sstring profile_to_make; 
-
+  void write_placement_JSON(ostream& out,ScoreMap& scores); 
+  void write_placement_tabular(ostream& out,ScoreMap& scores); 
+  void write_numbered_newick(ostream& out, bool quotes=true); 
+  
+  
   // Memory management
   void clear_child(node);
 

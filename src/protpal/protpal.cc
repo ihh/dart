@@ -15,8 +15,6 @@
 
 #include "protpal/AlignmentSampler.h"
 #include "protpal/MyMap.h"
-// #include "protpal/CompositePath.h"
-
 
 #include "ecfg/ecfgsexpr.h"
 #include "tree/phylogeny.h"
@@ -97,24 +95,16 @@ int main(int argc, char* argv[])
 	    }
 		      
 	}
-      // Display stuff that got stored in scores
-      cerr<<"\n\n"; 
-      cout<<"#Read\tNode\tPosteriorProbability\n"; 
-      bfloat totalScore; 
-      for (ScoreMap::iterator readIter = scores.begin(); readIter != scores.end(); 
-	   ++readIter)
+      // Display stuff that got stored in scores, possibly as JSON or simpler tabular
+      if (reconstruction.json_placements_filename != "None")
 	{
-	  totalScore = 0.0; 
-	  for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
-	       nodeIter != (readIter->second).end(); ++nodeIter)
-	    totalScore += nodeIter->second; 
-
-	  for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
-	       nodeIter != (readIter->second).end(); ++nodeIter)
-	    cout << readIter->first<<  "\t" << nodeIter->first << "\t" << nodeIter->second/totalScore <<endl; 
-	  cout<< "\n\n"; 
+	  ofstream json_file;
+	  json_file.open(reconstruction.json_placements_filename.c_str());
+	  reconstruction.write_placement_JSON(json_file, scores); 
 	}
-		  
+
+      if ( ! reconstruction.no_placements_tabular )
+	reconstruction.write_placement_tabular(cout, scores); 
 
       // 		  time(&readEnd); 
       // 		  cout<< "Minutes used to map ";

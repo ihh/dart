@@ -380,11 +380,15 @@ class PHYLIP_tree : public Phylogeny
   // internal parser methods
   // these are pretty ugly inside
   Node read_node (istream& in, Node parent_node);       // returns index of created node; creates parents vector on the fly
+  // Added newline and numbered_branches options 7/22/11 OW
   void write_node(ostream& out,                         // NB doesn't need a valid parents vector
 		  Node node,
 		  Node from_node,
 		  int max_columns,
-		  int& columns) const;
+		  int& columns,
+		  bool newline=true,
+		  bool numbered_branches=false
+		  ) const;
 
   // private method to rearrange the node indices
   void remap_nodes (const Node_vector& old_to_new_map);
@@ -442,11 +446,13 @@ class PHYLIP_tree : public Phylogeny
   // write() method: writes the tree in New Hampshire format, followed by a newline.
   // Set max_columns=0 to avoid splitting output with further newlines.
   // You can also re-root the tree for output by specifying an alternate root node.
-  void write (ostream& out, int max_columns = 50, int root_for_output = -1) const
+  // Added newline and numbered_branches options 7/22/11 OW
+  void write (ostream& out, int max_columns = 50, int root_for_output = -1, bool newline=true, bool numbered_branches=false) const
     {
       if (root_for_output < 0) root_for_output = root;
       int columns = 0;
-      write_node (out, root_for_output, -1, max_columns, columns);
+      write_node (out, root_for_output, -1, max_columns, columns, newline, numbered_branches);
+
     }
 
   // write_Stockholm method

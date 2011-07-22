@@ -7,6 +7,7 @@
 #include "protpal/profile.h"
 #include "protpal/reconstruction.h"
 #include "protpal/transducer.h"
+#include "protpal/ReadProfileScore.h"
 #include "tree/phylogeny.h"
 #include "util/piper.h"
 #include "ecfg/ecfgsexpr.h"
@@ -139,6 +140,8 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("ssp -saved-subtree-profiles", saved_subtree_profiles_directory="None", "When building an ancestral alignment, look for and save subtree profiles in the specified directory."); 
 
   opts.add("mpp -make-posterior-profile", profile_to_make="None", "Make a posterior profile for the specified node, storing it in the saved-posterior-profiles directory specified above", false);
+  opts.add("json -write-json", json_placements_filename="None", "Write JSON format summary of placements (as per pplacer JSON spec)", false);
+  opts.add("notab -no-placement-tabular", no_placements_tabular=false, "Do not write tabular format summary of placements");
  
   opts.parse_or_die(); 
   string error=""; bool all_reqd_args=true; 
@@ -855,6 +858,78 @@ void Reconstruction::verify_leaf_sequences(void)
 	}
     }
 }
+
+void Reconstruction::write_numbered_newick(ostream& out, bool quotes)
+{
+  if (quotes)
+    out <<"\"";
+  tree.write(out, -1, -1 , false, // no newline
+	     true // add branch numberings as per pplacer JSON spec
+	     ); 
+  if (quotes)
+    out <<"\"";
+}
+
+void Reconstruction::write_placement_JSON(ostream& out, ScoreMap& scores)
+{
+  out <<"{\n";
+  out <<"\"tree\":   ";
+  write_numbered_newick(out); 
+  out <<endl; 
+
+  out << "\"placements\": [\n";
+  bfloat totalScore; 
+  for (ScoreMap::iterator readIter = scores.begin(); readIter != scores.end();
+       ++readIter)
+    {
+      totalScore=0.0; 
+      for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	   nodeIter != (readIter->second).end(); ++nodeIter)
+	totalScore += nodeIter->second;
+
+      out << "\t{\"p\":\n\t[";
+      for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	   nodeIter != (readIter->second).end(); ++nodeIter)
+	{
+	  node nodeIdx = tree.find_node((nodeIter->first).c_str()); 
+	  out << "[" << nodeIdx << ", " << nodeIter->second << ", " <<  nodeIter->second/totalScore << ", " << "0.000008" << ", " << "0.01" << "],\n\t";
+	}
+      out <<"],\n\t";
+
+      out << "\"n\":[\"" << readIter->first << "\"] },\n\n";
+    }
+  out << "\t],\n\n";
+  
+  out << "\"version\": 1,\n"; 
+  out << "\"fields\": \n\t [\"edge_num\", \"likelihood\", \"like_weight_ratio\", \"distal_length\", \"pendant_length\" ]\n";
+  out << "}";
+}
+
+
+void Reconstruction::write_placement_tabular(ostream& out, ScoreMap& scores)
+{
+  bfloat totalScore;
+  for (ScoreMap::iterator readIter = scores.begin(); readIter != scores.end();
+       ++readIter)
+    {
+      totalScore = 0.0;
+      for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	   nodeIter != (readIter->second).end(); ++nodeIter)
+	totalScore += nodeIter->second;
+
+      for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	   nodeIter != (readIter->second).end(); ++nodeIter)
+	out << readIter->first<<  "\t" << nodeIter->first << "\t" << nodeIter->second/totalScore <<endl;
+      out<< "\n\n";
+    }
+}
+
+
+
+
+
+
+
 
 // void Reconstruction::show_indels(Stockholm stock)
 // {
