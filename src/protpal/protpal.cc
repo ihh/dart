@@ -76,6 +76,8 @@ int main(int argc, char* argv[])
       for (int profileNode = 0; profileNode < reconstruction.tree.nodes(); 
 	   profileNode++)
 	{
+	  if (reconstruction.loggingLevel >=1)
+	    cerr << "Scoring reads to profile at node: " << reconstruction.tree.node_name[profileNode]<<"..."; 
 	  if (profile_filenames[profileNode] == "None")
 	    continue;
 	  AbsorbingTransducer ancestralProfile(profile_filenames[profileNode].c_str(),
@@ -90,10 +92,12 @@ int main(int argc, char* argv[])
 	      read.set( readIter->second ); 
 	      //if ( ! limiter(profileNode, read.identifier) )
 	      //			    continue;
-	      cerr<<"Scoring read/profile pair: " << read.identifier << " - " << profile_scorer.name <<endl; 
+	      if (reconstruction.loggingLevel >= 2)
+		cerr<<"Scoring read/profile pair: " << read.identifier << " - " << profile_scorer.name <<endl; 
 	      profile_scorer.score_and_store(read, scores, false);
 	    }
-		      
+	  if (reconstruction.loggingLevel >=1)
+	    cerr<< "done.\n"; 
 	}
       // Display stuff that got stored in scores, possibly as JSON or simpler tabular
       if (reconstruction.json_placements_filename != "None")

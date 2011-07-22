@@ -875,7 +875,7 @@ void Reconstruction::write_placement_JSON(ostream& out, ScoreMap& scores)
   out <<"{\n";
   out <<"\"tree\":   ";
   write_numbered_newick(out); 
-  out <<endl; 
+  out <<",\n"; 
 
   out << "\"placements\": [\n";
   bfloat totalScore; 
@@ -892,17 +892,26 @@ void Reconstruction::write_placement_JSON(ostream& out, ScoreMap& scores)
 	   nodeIter != (readIter->second).end(); ++nodeIter)
 	{
 	  node nodeIdx = tree.find_node((nodeIter->first).c_str()); 
-	  out << "[" << nodeIdx << ", " << nodeIter->second << ", " <<  nodeIter->second/totalScore << ", " << "0.000008" << ", " << "0.01" << "],\n\t";
+	  out << "[" << nodeIdx << ", " << nodeIter->second << ", " <<  nodeIter->second/totalScore << ", " << "0.000008" << ", " << "0.01";
+	  if (nodeIter != --(readIter->second).end())
+	    out << "],\n\t";
+	  else
+	    out << "]\n\t";
 	}
       out <<"],\n\t";
 
-      out << "\"n\":[\"" << readIter->first << "\"] },\n\n";
+      out << "\"n\": [\"" << readIter->first << "\"] }"; 
+      if (readIter != --scores.end())
+	out << ",\n\n";
+      else
+	out << "\n";
     }
   out << "\t],\n\n";
   
+  out << "\"metadata\": {\"invocation\": \"protpal\"},\n";
   out << "\"version\": 1,\n"; 
-  out << "\"fields\": \n\t [\"edge_num\", \"likelihood\", \"like_weight_ratio\", \"distal_length\", \"pendant_length\" ]\n";
-  out << "}";
+  out << "\"fields\":   [\"edge_num\", \"likelihood\", \"like_weight_ratio\", \"distal_length\", \"pendant_length\" ]\n";
+  out << "}\n";
 }
 
 
