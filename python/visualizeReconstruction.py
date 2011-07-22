@@ -2,7 +2,7 @@ import sys,os
 from math import exp, log
 from parseSexpr import str2sexpr
 from SExpr import *
-from extra_functions import float2str
+from extra_functions import float2str, get_cmd_args
 allReqsFound = True
 try:
     from weblogolib import *
@@ -97,16 +97,25 @@ profile.make_all_SExprs()
 node = profile.get_value_for_tag("node")
 incoming_alphabet = list("arndcqeghilkmfpstwyv".upper()) # eventually get this from the profile file
 alphabet = str(unambiguous_protein_alphabet)
-viterbi_path = profile.find_all_with_tag("viterbi_path")[0]
+try:
+    viterbi_path = profile.find_all_with_tag("viterbi_path")[0]
+except:
+    sys.stderr.write("Viterbi path not found...continuing\n")
+    viterbi_path = []
 
 
 outString = "digraph profile_node_"+node+"{\nedge[arrowsize=0.5];\n rankdir=LR\n"
 colors = r.rainbow(20);     
 sys.stderr.write("Creating PNGs for each state in profile...\n")
-maxPostProb = max( [ getfloat(state.get_value_for_tag("postprob")) for state in profile.find_all_with_tag("state") \
+try:
+    maxPostProb = max( [ getfloat(state.get_value_for_tag("postprob")) for state in profile.find_all_with_tag("state") \
+                             if not state.get_value_for_tag("type") in ['start', 'end','wait']])
+    minPostProb = min( [ getfloat(state.get_value_for_tag("postprob")) for state in profile.find_all_with_tag("state") \
                          if not state.get_value_for_tag("type") in ['start', 'end','wait']])
-minPostProb = min( [ getfloat(state.get_value_for_tag("postprob")) for state in profile.find_all_with_tag("state") \
-                         if not state.get_value_for_tag("type") in ['start', 'end','wait']])
+except:
+    sys.stderr.write("Postprobs not found...continuing\n")
+    maxPostProb = minPostProb = 1
+
 
 
 statecount = 0
@@ -173,7 +182,7 @@ for transition in profile.find_all_with_tag("transition"):
 
 
 dotFileName = 'test.dot'
-outputFileName = 'output.pdf'
+outputFileName = sys.argv[1]
 DOTcmd = "dot -Tpdf %s > %s"%(dotFileName, outputFileName)
 
 fh=open(dotFileName,'w') 

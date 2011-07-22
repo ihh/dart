@@ -31,6 +31,8 @@
 
 int main(int argc, char* argv[])
 {
+  try{
+    
   time_t start,end;
   time (&start);
   // A few utility variables
@@ -38,12 +40,11 @@ int main(int argc, char* argv[])
   vector<Node> children;
   vector<double> branchLengths;   
   vector<string> node_names;
-  double verySmall = 0.001; //proxy for zero-length branches
+  double verySmall = 1e-5; //proxy for zero-length branches
   double branch_length; 
   string alignString; 
   // create main reconstruction object
   Reconstruction reconstruction(argc, argv);
-
 
 
   // yeccch - I've mostly moved over to using weight_profiles, but some 
@@ -67,7 +68,7 @@ int main(int argc, char* argv[])
 	if (fn->second == "None")
 	  continue;
 	else
-	  cerr<< reconstruction.tree.node_name[fn->first] << "\t" << fn->second << endl; 
+	  cerr<< "\t" << reconstruction.tree.node_name[fn->first] << "\t" << fn->second << endl; 
 		  
       cerr<<"Parsing reads..."; 
       map<string, string> reads = 
@@ -96,15 +97,22 @@ int main(int argc, char* argv[])
 	    }
 		      
 	}
-
       // Display stuff that got stored in scores
+      cerr<<"\n\n"; 
+      cout<<"#Read\tNode\tPosteriorProbability\n"; 
+      bfloat totalScore; 
       for (ScoreMap::iterator readIter = scores.begin(); readIter != scores.end(); 
 	   ++readIter)
 	{
-	  cout << "Read: " << readIter->first << "\n";
+	  totalScore = 0.0; 
 	  for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
 	       nodeIter != (readIter->second).end(); ++nodeIter)
-	    cout << "\t" << nodeIter->first << "\t" << nodeIter->second<<endl; 
+	    totalScore += nodeIter->second; 
+
+	  for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	       nodeIter != (readIter->second).end(); ++nodeIter)
+	    cout << readIter->first<<  "\t" << nodeIter->first << "\t" << nodeIter->second/totalScore <<endl; 
+	  cout<< "\n\n"; 
 	}
 		  
 
@@ -135,37 +143,27 @@ int main(int argc, char* argv[])
 	  reconstruction.root_profile_filename  = reconstruction.profile_to_make + ".sexpr";
 	}
       
-      if ( reconstruction.tree.is_leaf(new_root) )
+      if (reconstruction.tree.is_leaf(new_root) )
 	{
-	  //Just write the thing, and exit.  Implement an exact-match profile writer
-	  ExactMatch leaf(
-			  reconstruction.sequences[reconstruction.tree.node_name[new_root]], // sequence
-			  new_root, //tree index
-			  reconstruction.alphabet,  // sequence alphabet
-			  reconstruction.codon_model // codon model?
-			  );
-	  // Then, make an absorbing transducer from this, and write the profile from there
-	  AbsorbingTransducer leafAbsorb(&leaf); 
-	  ofstream saved_profile;
-	  saved_profile.open(reconstruction.root_profile_filename.c_str()); 
-	  state_path dummy; // dummy viterbi path
-	  leafAbsorb.write_profile(saved_profile, dummy); 
-	  saved_profile.close(); 
-	  exit(0); 
+	  Phylogeny::Node n = reconstruction.tree.add_named_node("", new_root, 1e-5);
+          reconstruction.tree.node_name[new_root] = "tmpRoot";
+          reconstruction.tree.node_name[n] = reconstruction.profile_to_make; ;
 	}
-      string tmpFileName = "tree_tmp.newick"; 
-      ofstream tmpTreeFile(tmpFileName.c_str());
-      reconstruction.tree.write(tmpTreeFile, -1, new_root); 
-      tmpTreeFile.close();
-      ifstream tree_file(tmpFileName.c_str());
-      reconstruction.tree.read(tree_file); //tmpFileName.c_str()); 
-      reconstruction.tree.force_binary(); 
-      system("rm -f tree_tmp.newick");
+      // Re-root the tree at the desired node, and then proceed with reconstruction
+      if ( new_root != reconstruction.tree.root )
+	{
+	  string tmpFileName = "tree_tmp.newick"; 
+	  ofstream tmpTreeFile(tmpFileName.c_str());
+	  reconstruction.tree.write(tmpTreeFile, -1, new_root); 
+	  tmpTreeFile.close();
+	  ifstream tree_file(tmpFileName.c_str());
+	  reconstruction.tree.read(tree_file); //tmpFileName.c_str()); 
+	  reconstruction.tree.force_binary(); 
+	  reconstruction.set_node_names(); 
+	  system("rm -f tree_tmp.newick");
+	}
     }
 
-  cout<<"The new tree:\n ";
-  reconstruction.tree.write(cout, -1, -1); 
-  
   // These  transducers remain the same throughout the traversal, so we can initialize them
   // once and for all and leave them.  
   SingletTrans R(reconstruction.alphabet, reconstruction.rate_matrix, reconstruction.root_insert_prob);
@@ -389,9 +387,9 @@ int main(int argc, char* argv[])
 
 	  if (reconstruction.loggingLevel>=1)
 	    {
-	      cerr<<"\tLeft profile has: "<<profile.left_profile.num_delete_states;
+	      cerr<<"\tLeft profile " << profile.left_profile.name << " has: "<<profile.left_profile.num_delete_states;
 	      cerr<<" absorbing states.\n"; 
-	      cerr<<"\tRight profile has: "<<profile.right_profile.num_delete_states;
+	      cerr<<"\tRight profile " << profile.right_profile.name << " has: "<<profile.right_profile.num_delete_states;
 	      cerr<< "  absorbing states.\n"; 
 	    }
 
@@ -758,6 +756,12 @@ int main(int argc, char* argv[])
   if (reconstruction.loggingLevel >= 1)
     {
       cerr<<"\nProtPal reconstruction completed without errors. \n";
+    }
+  }
+  catch(const Dart_exception& e)
+    {
+      cerr<<e.what(); 
+      exit(1); 
     }
   
   

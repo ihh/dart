@@ -147,10 +147,10 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   viterbi = !stoch_trace;
   
   codon_model = (codon_matrix_filename != "None");
-
   // Make sure we have the essential data - sequences and a tree
   // First, make sure we have sequence data from somewhere
-  if(stkFileName == "None" && fastaFileName =="None" && !simulate && phylocomposer_filename == "None")
+  if (stkFileName == "None" && fastaFileName =="None" && !simulate && phylocomposer_filename == "None" &&
+      reads_to_place_filename == "None")
 	{
 	  error += "\tNo sequence file could be imported.  Use -stk or -fa  to specify a sequence file\n";
 	  all_reqd_args = false; 
@@ -221,7 +221,8 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   //  Irrev_EM_matrix rate_matrix(1,1);
   //  Alphabet alphabet ("uninitialized", 1);
   ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
-  parse_sequences(alphabet); 
+  if (stkFileName || fastaFileName)
+    parse_sequences(alphabet); 
   
   if(estimate_root_insert)
     {

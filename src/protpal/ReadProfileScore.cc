@@ -62,7 +62,7 @@ bfloat ReadProfileScore::get_score(const Read& read, bool viterbi)
 		     dummy_ostream, // hmmoc filestream
 		     false, // only write hmmoc file, don't do actual DP
 		     false,  // keep backPointers - for finding viterbi traceback
-		     true); // display logging messages
+		     false); // display logging messages
       value = get_forward_value(); 
     }
   clear_DP_matrix(); 
@@ -188,8 +188,8 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 		    cerr<<"\tInvestigating transition from : "<< pairHMM.state_name[*kPrime] <<endl; 
 		  iPrime = get_incoming_read_state(i, *kPrime); 
 		  // We can be sure this DP cell will be -inf, so we continue
-		  //		  if (iPrime == -1 && pairHMM.state_type[*kPrime] != "start")
-		  //		    continue;
+		  if (iPrime == -1 && pairHMM.state_type[*kPrime] != "start")
+		    continue;
 		  hmm_transition_weight = pairHMM.get_transition_weight(*kPrime, *k); 
 		  if (logging)
 		    cerr<<"\tTransition weight between HMM states: " << hmm_transition_weight << endl; 
@@ -216,7 +216,7 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 		      toAdd = get_DP_cell(iPrime, *jPrime, *kPrime); 
 		      if (! toAdd > 0.0)
 			{
-			  cerr<<"\tThis incoming trans had 1e-inf Forward value\n";
+			  // cerr<<"\tThis incoming trans had 1e-inf Forward value\n";
 			  continue;
 			}
 		      if (*j != *jPrime)
@@ -324,8 +324,8 @@ bfloat ReadProfileScore::get_viterbi_value(void)
   
 inline int ReadProfileScore::get_incoming_read_state(int readIndex, state hmm_state)
 {
-  if (readIndex == 0)
-    cerr<<"Warning: incoming on start of read called!\n";
+  //  if (readIndex == 0)
+    //    cerr<<"Warning: incoming on start of read called!\n";
   
   if (pairHMM.state_type[hmm_state] == "insert")
     return readIndex; 
@@ -351,7 +351,7 @@ inline vector<state> ReadProfileScore::get_incoming_profile_states(state profile
 ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix_in)
 {
   // eventually we'd like to optimize this value!
-  branch_length = 0.1; 
+  branch_length = 0.01; 
   
   // Build up the HMM 
   num_states=-1; 
@@ -472,30 +472,41 @@ inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profile
   emissionWeight = 0.0;
   //  cerr<< "Size of read profile: " << read_profile.size() << endl; 
   //  cerr<< "Index queried: " << readIndex << endl; 
-  //  toks = sub_alphabet.tokens()
+  vector<sstring> toks = sub_alphabet.tokens();
+  
+  // Match state: emit to both read and profile
   if (state_type[hmm_state]  == "match")
-    for (symbolIter = read_profile[readIndex].begin(); 
-	 symbolIter != read_profile[readIndex].end(); symbolIter++)
-      for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
-	emissionWeight += equilibrium_dist[alphIdx] * 
-	  conditional_sub_matrix(alphIdx,symbolIter->first) * symbolIter->second;
+    {
+      for (symbolIter = read_profile[readIndex].begin(); 
+	   symbolIter != read_profile[readIndex].end(); symbolIter++)
+	for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
+	  {
+	    emissionWeight += equilibrium_dist[alphIdx]* // prior on this character
+	      profile->get_absorb_weight(profileState, alphIdx)* //absorption by profile
+	      conditional_sub_matrix(alphIdx,symbolIter->first)* // substitute to read's character
+	      symbolIter->second; // read's affinity for the given character
+	  }
+      //cerr<<"\n\nThe emission weight was: " << emissionWeight << endl; 
+    }
 
+  // Insert state: emit only to profile - product of equilibrium prob and absorb weight
   else if ( state_type[hmm_state] == "insert" )
     for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
-      emissionWeight += profile->get_absorb_weight(profileState, alphIdx) * 
-	equilibrium_dist[alphIdx]; 
+      emissionWeight += profile->get_absorb_weight(profileState, alphIdx) * // absorption by profile
+	equilibrium_dist[alphIdx]; // prior on this character
 
+  // Delete state: emit only to read - product of equilibrium prob and affinity for character
   else if ( state_type[hmm_state] == "delete" )
       for (symbolIter = read_profile[readIndex].begin(); 
 	   symbolIter != read_profile[readIndex].end(); symbolIter++)
 	{
 	  // cerr<<toks[*symbolIter] << " has weight: " << equilibrium_dist[alphIdx] <<endl; 
-	  emissionWeight += equilibrium_dist[symbolIter->first]*symbolIter->second; 
+	  emissionWeight += equilibrium_dist[symbolIter->first]*// prior on character
+	    symbolIter->second; // read's affinity for given character
 	}
-
   else
     emissionWeight = 1.0;
-  //cerr<<"\nThe emission weight was: " << result << endl; 
+
   //  cerr<<"Done\t";
   return emissionWeight; 
 }
@@ -509,11 +520,7 @@ void ReadProfileModel::set_substitution_model(Alphabet& alphabet_in, Irrev_EM_ma
   equilibrium_dist = rate_matrix_in.create_prior(); 
 }
 
-
-
-
-
-// HMMoC Adapter - an option to the ReadProfileScore class
+// HMMoC Adapter - an option to the ReadProfileScore class.  Not really functional just yet...
 void ReadProfileScore::HMMoC_adapter(const char* filename, bool precompute)
 {
   start_clique.clear(); mainClique.clear(); end_clique.clear(); 
