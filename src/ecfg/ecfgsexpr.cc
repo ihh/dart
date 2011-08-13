@@ -1204,11 +1204,17 @@ void ECFG_builder::init_grammars (Alphabet& alph, vector<ECFG_scores*>& ecfgs, S
   SExpr_file_operations file_ops;
   file_ops.preorder_visit (grammars_sexpr);
 
-  // initialise alphabet
-  init_alphabet (alph, grammars_sexpr.find_or_die (PK_ALPHABET));
+  // if we have an alphabet, initialise it before expanding macros
+  // otherwise, do the macros first (since they may create an alphabet) and then attempt to initialise the alphabet
+  // (yes, this is icky)
+  SExpr* alph_sexpr = grammars_sexpr.find (PK_ALPHABET);
+  if (alph_sexpr)
+    init_alphabet (alph, *alph_sexpr);
 
-  // expand remaining macros
-  expand_macros (grammars_sexpr, alph, align_db, stock_db);
+  expand_macros (grammars_sexpr, alph_sexpr ? &alph : NULL, align_db, stock_db);
+
+  if (!alph_sexpr)
+    init_alphabet (alph, grammars_sexpr.find_or_die (PK_ALPHABET));
 
   // init all grammars
   const vector<SExpr*> all_grammar_sexpr = grammars_sexpr.find_all (EG_GRAMMAR);
@@ -1247,22 +1253,25 @@ void ECFG_builder::load_xgram_alphabet_and_grammars (SExpr& ecfg_sexpr, Alphabet
     (*ecfg)->set_infix_len (max_subseq_len);
 }
 
-void ECFG_builder::expand_macros (SExpr& grammars_sexpr, const Alphabet& alph, const Tree_alignment_database* align_db, const Stockholm_database* stock_db)
+void ECFG_builder::expand_macros (SExpr& grammars_sexpr, const Alphabet* alph, const Tree_alignment_database* align_db, const Stockholm_database* stock_db)
 {
   SExpr_macros macros;
 
-  vector<sstring> tokens;
-  for (int sym = 0; sym < alph.size(); ++sym)
+  if (alph)
     {
-      sstring tok;
-      tok << alph.int2char (sym);
-      tokens.push_back (tok);
-    }
-  macros.foreach[sstring (EG_FOREACH_TOKEN)] = tokens;
+      vector<sstring> tokens;
+      for (int sym = 0; sym < alph->size(); ++sym)
+	{
+	  sstring tok;
+	  tok << alph->int2char (sym);
+	  tokens.push_back (tok);
+	}
+      macros.foreach[sstring (EG_FOREACH_TOKEN)] = tokens;
 
-  sstring tokens_str;
-  tokens_str << alph.size();
-  macros.replace[sstring (EG_TOKENS)] = tokens_str;
+      sstring tokens_str;
+      tokens_str << alph->size();
+      macros.replace[sstring (EG_TOKENS)] = tokens_str;
+    }
 
   const Stockholm* stock = 0;
   const Alignment* align = 0;

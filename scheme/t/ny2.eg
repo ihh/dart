@@ -1,0 +1,6 @@
+
+(&scheme
+ (load-from-path "xrate-stdlib.scm")
+ xrate-dna-alphabet
+ (xrate-NY-grammar))
+
