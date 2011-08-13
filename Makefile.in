@@ -106,6 +106,14 @@ ppsw:
 dpsw:
 	cd $(SRCDIR)/psw; $(MAKE) -k $(RELEASE) dep dpswalign dpswtrain
 
+# protpal: phylogenetic ancestral reconstruction using transducers
+protpal:
+	cd $(SRCDIR)/protpal; $(MAKE) -k $(RELEASE) dep $@
+
+# guildart: dart-augmented Scheme interpreter (requires guile)
+guildart:
+	cd $(SRCDIR)/guile; $(MAKE) -k $(RELEASE) dep $@
+
 # Utility programs
 utils:
 	cd $(SRCDIR)/seq; $(MAKE) -k $(RELEASE) dep wordcount cmpalign cmpfold aligncluster
