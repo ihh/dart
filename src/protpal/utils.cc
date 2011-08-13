@@ -350,6 +350,8 @@ MyMap<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
 	{
 	  getline(seqFile,line);
 	  //std::cerr<<"Line: "<<line<<endl;
+	  if ( ! line.size() )
+	    continue; 
 	  if (stringAt(line,0) == "#" || splitWhite(line).size()<2) continue;
 	  else
 	    {
