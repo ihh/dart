@@ -60,6 +60,7 @@ class IndelCounter
 
   double avg_insert_rate, avg_delete_rate, avg_insert_ext, avg_delete_ext; 
  private:
+  double verySmall; 
   PHYLIP_tree* tree; 
   map<node, string> rows; 
   map<node, string>:: iterator rowIter; 

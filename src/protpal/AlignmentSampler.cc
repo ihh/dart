@@ -19,6 +19,7 @@ AlignmentSampler::AlignmentSampler(void)
 }
 AlignmentSampler::AlignmentSampler(state_path path_in, node node_in, map<node, Profile>* profiles_in, map<node, AbsorbingTransducer>* AbsProfiles_in, PHYLIP_tree* tree_in)
 {
+
   path = path_in; 
   treeNode = node_in; 
   profiles = profiles_in; 
@@ -422,13 +423,14 @@ IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in)
   sstring sequence;
   node n; 
   unsigned int size=0; 
+  verySmall = 0.001; 
   for (seq = stk.row_index.begin(); seq!=stk.row_index.end(); seq++)
     {
       n = index(seq->first, tree->node_name); 
       if ( tree->is_leaf(n) )
 	sequence =  stk.get_row_as_string(seq->second);
       else
-	sequence = stk.gr_annot[seq->first]["ancrec_CYK_MAP"];
+	sequence = stk.gr_annot[seq->first]["ancrec_CYK_MAP"]; //toCheck
       rows[n] = string(sequence.c_str()); 
     }
 
@@ -478,9 +480,9 @@ IndelCounter::IndelCounter(map<string,string>& sequences, PHYLIP_tree* tree_in)
 void IndelCounter::display_indel_info(ostream& out, bool per_branch)
 {
   out<<"\n\n### Displaying indel information ###\n";  
-  out << "#branch insertion_rate \t insertion_extend \t deletion_rate \t deletion_extend\n"; 
   if (per_branch)
     {
+      out << "#branch insertion_rate \t insertion_extend \t deletion_rate \t deletion_extend\n"; 
       double insert_rt, delete_rt, delete_ext, insert_ext; 
       node treeNode; 
       for_nodes_pre (*tree, tree->root, -1, bi)
@@ -531,7 +533,8 @@ void IndelCounter::gather_indel_info(bool logging)
   node parent_node, child_node;
   unsigned int pair_length, match_count, pos; 
   bool prev_was_ins, prev_was_del, prev_was_match;
-
+  if (logging)
+    cerr<<"Beginning to gather indel information\n";
   for_nodes_pre (*tree, tree->root, -1, bi)
     {
       const Phylogeny::Branch& b = *bi;
@@ -539,6 +542,8 @@ void IndelCounter::gather_indel_info(bool logging)
       child_node = b.second; 
       if (child_node == tree->root)
 	continue; 
+      if (logging)
+	cerr<<"\t Getting indel information at node " << tree->node_name[parent_node] << endl ;
       get_pairwise_alignment(parent_node, child_node, parent, child);
       pair_length = parent.size(); 
       if (logging)
@@ -645,9 +650,9 @@ void IndelCounter::all_deletions(ostream& out)
 void IndelCounter::average_indel_counts(void)
 {
   double insert_rt, delete_rt, delete_ext, insert_ext; 
-  double insert_rate_tot = 0.0,  delete_rate_tot = 0.0,  delete_extend_tot = 0.0,  insert_extend_tot = 0.0; 
+  double insert_rate_num = 0.0,  delete_rate_num = 0.0, insert_rate_den = 0.0,  delete_rate_den = 0.0, delete_extend_tot = 0.0,  insert_extend_tot = 0.0; 
   node treeNode; 
-  double b = double(tree->branches()); 
+  double b = double(tree->branches());  
   int insert_count = 0, delete_count = 0; // actually the count of nodes which have nonzero in/del rates
   for_nodes_pre (*tree, tree->root, -1, bi)
     {
@@ -660,10 +665,23 @@ void IndelCounter::average_indel_counts(void)
 
       insert_ext = insert_extend(treeNode);
       delete_ext = delete_extend(treeNode);
-
-      insert_rate_tot +=  insert_rt;
-      delete_rate_tot +=  delete_rt;
       
+//       insert_rate_tot +=  insert_rt;
+//       delete_rate_tot +=  delete_rt;
+      
+      // numerator of the indel rate is sum_{treeNode \in nodes} (# indels on branch incoming treeNode)
+      insert_rate_num += insertions[treeNode].size();
+      delete_rate_num += deletions[treeNode].size();
+
+      // denomenator of the indel rate  = sum_{treeNode \in nodes} (length of parent sequence of treeNode) * (length of branch treeNode)
+      //                                = sum_{treeNode \in nodes} (dels on branch treeNode + matches on branch treeNode) * (length of branch treeNode)
+      insert_rate_den += ( matches[treeNode]+deletions[treeNode].size() )*
+	max(tree->branch_length(treeNode, tree->parent[treeNode]), verySmall);
+      delete_rate_den += ( matches[treeNode]+deletions[treeNode].size() )*
+	max(tree->branch_length(treeNode, tree->parent[treeNode]), verySmall);
+      
+
+      // hmm, insertion extend rates are not that relevant, but I'll leave this in for now. 
       if (insert_rt > 0.0)
 	{
 	  insert_extend_tot +=  insert_ext;
@@ -675,10 +693,11 @@ void IndelCounter::average_indel_counts(void)
 	  delete_count++; 
 	}
     }
-  avg_insert_rate = insert_rate_tot/b; 
+
+  avg_insert_rate = insert_rate_num / insert_rate_den; 
   avg_insert_ext = insert_extend_tot/insert_count; 
   
-  avg_delete_rate = delete_rate_tot/b; 
+  avg_delete_rate = delete_rate_num / delete_rate_den; 
   avg_delete_ext = delete_extend_tot/delete_count; 
 }
 
@@ -692,7 +711,7 @@ double IndelCounter::insert_extend(node n)
 
 double IndelCounter::insert_rate(node n)
 {
-  return insertions[n].size() / ((matches[n] + deletions[n].size() + 1) * tree->branch_length(n, tree->parent[n]));
+  return insertions[n].size() / ((matches[n] + deletions[n].size()) * max(tree->branch_length(n, tree->parent[n]), verySmall));
 }
 
 double IndelCounter::delete_extend(node n)
@@ -705,7 +724,7 @@ double IndelCounter::delete_extend(node n)
   
 double IndelCounter::delete_rate(node n)
 {
-  return deletions[n].size() / ((matches[n] + deletions[n].size() + 1) * tree->branch_length(n, tree->parent[n]));
+  return deletions[n].size() / ((matches[n] + deletions[n].size() ) * max(tree->branch_length(n, tree->parent[n]), verySmall));
 }
 
 

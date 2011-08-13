@@ -2,7 +2,7 @@ import sys,os
 from math import exp, log
 from parseSexpr import str2sexpr
 from SExpr import *
-from extra_functions import float2str
+from extra_functions import float2str, get_cmd_args
 allReqsFound = True
 try:
     from weblogolib import *
@@ -32,6 +32,16 @@ def prob2color(prob, logTrans=False):
             return grayColors[ -1 ]
     else:
         return grayColors[int(prob*100)]
+def getfloat(val):
+    retval = None
+    try:
+        retval = float(val)
+        return retval
+    except:
+        sys.stderr.write("Could not convert this to a float: " + str(val) +'\n')
+        return 1e-10
+        
+
 def write_PNG(filename, weights, alphabet, type="weblogo"):
     if type == "R":
         r.png(fileName)        
@@ -87,20 +97,31 @@ profile.make_all_SExprs()
 node = profile.get_value_for_tag("node")
 incoming_alphabet = list("arndcqeghilkmfpstwyv".upper()) # eventually get this from the profile file
 alphabet = str(unambiguous_protein_alphabet)
-viterbi_path = profile.find_all_with_tag("viterbi_path")[0]
+try:
+    viterbi_path = profile.find_all_with_tag("viterbi_path")[0]
+except:
+    sys.stderr.write("Viterbi path not found...continuing\n")
+    viterbi_path = []
 
 
 outString = "digraph profile_node_"+node+"{\nedge[arrowsize=0.5];\n rankdir=LR\n"
 colors = r.rainbow(20);     
 sys.stderr.write("Creating PNGs for each state in profile...\n")
-maxPostProb = max( [ float(state.get_value_for_tag("postprob")) for state in profile.find_all_with_tag("state") \
+try:
+    maxPostProb = max( [ getfloat(state.get_value_for_tag("postprob")) for state in profile.find_all_with_tag("state") \
+                             if not state.get_value_for_tag("type") in ['start', 'end','wait']])
+    minPostProb = min( [ getfloat(state.get_value_for_tag("postprob")) for state in profile.find_all_with_tag("state") \
                          if not state.get_value_for_tag("type") in ['start', 'end','wait']])
-minPostProb = min( [ float(state.get_value_for_tag("postprob")) for state in profile.find_all_with_tag("state") \
-                         if not state.get_value_for_tag("type") in ['start', 'end','wait']])
+except:
+    sys.stderr.write("Postprobs not found...continuing\n")
+    maxPostProb = minPostProb = 1
 
 
 
+statecount = 0
 for state in profile.find_all_with_tag("state"):
+    sys.stderr.write("Writing state number: %s\n"%statecount)
+    statecount += 1
     stateName = state.get_value_for_tag("name")
     if stateName in viterbi_path:
         viterbi_state = True
@@ -108,7 +129,7 @@ for state in profile.find_all_with_tag("state"):
         viterbi_state = False
     stateType = state.get_value_for_tag("type")
     if not stateType in ['start', 'end','wait']:
-        postProb = float(state.get_value_for_tag("postprob"))/maxPostProb
+        postProb = getfloat(state.get_value_for_tag("postprob"))/maxPostProb
         #postProb = max(postProb, 0.01)
         absDist = [0.0 for i in alphabet]
         for i, val in enumerate(state.find_all_with_tag("absorb")[0][1:]):
@@ -116,7 +137,7 @@ for state in profile.find_all_with_tag("state"):
                 newCoord = alphabet.index(incoming_alphabet[i%20]) # eek!
             except:
                 sys.stderr.write("Couldn't find: " + str(incoming_alphabet[i][0]) +'\n')
-            absDist[newCoord] += exp(float(val)) 
+            absDist[newCoord] += exp(getfloat(val)) 
         all = sum(absDist)
         absDist = [i/all for i in absDist]
         # Plot it in something (R or webLogo)
@@ -125,6 +146,7 @@ for state in profile.find_all_with_tag("state"):
         #outString += '[width=%s][height=%s][fixedsize=true]'%(postProb, postProb)
         outString += '[fillcolor="%s"][style=filled]'%(prob2color(postProb, logTrans=False))
         if postProb < .01:
+            sys.stderr.write("Making this state a 'point', for small postprob\n")
             outString += '[shape=point]'
         if viterbi_state:
             outString += '[color="red"]'
@@ -137,17 +159,20 @@ for state in profile.find_all_with_tag("state"):
         else:
             outString += 'Start[color="red"][fillcolor="black"][fontcolor="white"][style=filled];\n'
     
+statecount = 0
 for transition in profile.find_all_with_tag("transition"):
+    sys.stderr.write("Writing transition number: %s\n"%statecount)
+    statecount += 1
     fromState = "Node_" + transition.get_value_for_tag("from")
     if fromState == "Node_-1":
         fromState = "Start"
     toState = "Node_" + transition.get_value_for_tag("to")
-    weight = exp(float(transition.get_value_for_tag("weight")))
+    weight = exp(getfloat(transition.get_value_for_tag("weight")))
     includeWeight = True
     if not includeWeight:
         weight =''
     else:
-        weight = '%s' %float('%.1g' % weight)
+        weight = '%s' %getfloat('%.1g' % weight)
     outString += '%s -> %s [label="%s"]'%(fromState, toState, weight)
     if toState.replace("Node_","") in viterbi_path:
         if fromState == "Start" or viterbi_path[viterbi_path.index(toState.replace("Node_",""))-1] == fromState.replace("Node_",""):
@@ -157,7 +182,7 @@ for transition in profile.find_all_with_tag("transition"):
 
 
 dotFileName = 'test.dot'
-outputFileName = 'output.pdf'
+outputFileName = sys.argv[1]
 DOTcmd = "dot -Tpdf %s > %s"%(dotFileName, outputFileName)
 
 fh=open(dotFileName,'w') 

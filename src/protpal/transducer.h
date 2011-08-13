@@ -59,14 +59,14 @@ class Transducer
   vector<string> state_names;
 
   // Record of state connectivity.  state -> vector of states s.t. weight(q-> q') != 0
-  map<state, vector<state> > outgoing; 
+  MyMap<state, vector<state> > outgoing; 
 
   // Transition weight map.  state x state -> weight
-  map<vector <state>, double> transition_weight; 
+  MyMap<vector <state>, double> transition_weight; 
 
   // Emission weight map.  Each insert state maps to a vector of length alphabet.size()
   // emission_weight_matrix[state][i] gives the weight of emitting character alphabet[i] from "state"
-  map< state, vector<double> > emission_weight_matrix;     
+  MyMap< state, vector<double> > emission_weight_matrix;     
 
   // a state type for each state
   vector<string> state_types;
@@ -128,10 +128,18 @@ class BranchTrans : public Transducer
 {
  public:
   float branch_length;
-  // constructor.  Again, does everything for us for a basic setup/parameterization
+  // constructor.  Again, does everything for us for a basic setup/parameterization of an affine-gap transducer
   BranchTrans(double, Alphabet&, Irrev_EM_matrix&, double, double, double, double subRate = 1.0);
-  BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, double ins_open_rate, double del_open_rate, double gap_extend,
-	      double gap_extend2, double mixPrior, string name ); // mixture of affines
+  // 2 - mixture-of-affine gaps branch transducer                                                                      
+  BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, double ins_open_rate, double del_open_rate, 
+	      double gap_extend, double mixPrior, 
+	      double gap_extend2, double mixPrior2); 
+  // 3 - mixture-of-affine gaps branch transducer                                                                      
+  BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix,
+	      double ins_open_rate, double del_open_rate, 
+	      double gap_extend_0, double mix_prior_0, 
+	      double gap_extend_1, double mix_prior_1, 
+	      double gap_extend_2,double mix_prior_2);
   BranchTrans(double, bool);  
   BranchTrans(void);  
   array2d<double> conditional_sub_matrix;

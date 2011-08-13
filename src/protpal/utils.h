@@ -4,11 +4,13 @@
 #include<string>
 #include<vector>
 #include<map>
+#include <sys/stat.h>
 
 #include "algebras.h"
 #include "ecfg/ecfgsexpr.h"
 #include "seq/biosequence.h"
 #include "util/sstring.h"
+#include "protpal/MyMap.h"
 using namespace std;
 
 class dart_rate_matrix: public Irrev_EM_matrix
@@ -26,14 +28,13 @@ typedef pair<int,int> Row_pair;
 typedef map<Row_pair,Alignment_path> Decomposition;
 
 char* stockholm_tree(const char*);
-map<string, string> parse_stockholm(const char*, Alphabet );
-map<string, string> parse_fasta(const char*, Alphabet );
+MyMap<string, string> parse_stockholm(const char*, Alphabet );
+MyMap<string, string> parse_fasta(const char*, Alphabet );
 vector<string> split(string,string); 
 vector<string> splitWhite(string); 
 
-map<node, bool> merge(map<node, bool>  *map1, map<node, bool>  *map2); 
-
-
+MyMap<node, bool> merge(MyMap<node, bool>  *map1, MyMap<node, bool>  *map2); 
+void seqDictSize(MyMap<string, string>);                                                                                                                                     
 bfloat randomUnit(void);
 double absoluted(bfloat);
 
@@ -54,6 +55,7 @@ int index(string query, vector<string> in );
 int index(sstring query, vector<sstring> in );
 int index(int query, vector<int> in );
 int index(float query, vector<float> in );
+int index(bfloat query, vector<bfloat> in );
 
 
 bool in(string query, string in );
@@ -79,5 +81,6 @@ void displayVector(vector <vector <double> > in);
 
 void displayVector(vector <vector <int> > in);
 
+bool FileExists(string); 
 
 #endif

@@ -289,6 +289,11 @@ Alphabet::Alphabet (const char* name, int size)
   reset (name, size);
 }
 
+Alphabet::Alphabet (void)
+{
+  reset("uninitialized", 1);
+}
+
 void Alphabet::reset (const char* new_name, int new_size)
 {
   name = new_name;

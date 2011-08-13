@@ -7,17 +7,20 @@
 #include "protpal/profile.h"
 #include "protpal/reconstruction.h"
 #include "protpal/transducer.h"
+#include "protpal/ReadProfileScore.h"
 #include "tree/phylogeny.h"
 #include "util/piper.h"
 #include "ecfg/ecfgsexpr.h"
 #include "util/unixenv.h"
 #include "util/sstring.h"
 #include "util/opts_list.h"
+#include "util/sexpr.h"
 #include "seq/alignment.h"
 #include "seq/biosequence.h"
 
 
 #define DEFAULT_CHAIN_FILE "data/handalign/prot3.hsm"
+#define DEFAULT_DNA_CHAIN_FILE "data/handalign/hidden.hsm"
 #define DEFAULT_GRAMMAR_FILE "grammars/prot3.eg"
 #define DEFAULT_GAP_GRAMMAR_FILE "grammars/prot3gap.eg"
 
@@ -27,14 +30,15 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 {
   INIT_OPTS_LIST (opts, argc, argv, 0, "[options]",
 		  "Align and reconstruct ancestral sequences\n");
-  sstring default_chain_filename, default_gap_grammar_filename, default_grammar_filename;
+  sstring default_chain_filename, default_dna_chain_filename, default_gap_grammar_filename, default_grammar_filename;
   default_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_CHAIN_FILE;
+  default_dna_chain_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_DNA_CHAIN_FILE;
   default_grammar_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_GRAMMAR_FILE;
   default_gap_grammar_filename << Dart_Unix::get_DARTDIR() << '/' << DEFAULT_GAP_GRAMMAR_FILE;
 
   have_tree=false; 
   have_sequences=false; 
-  bool rndtime = true; 
+  //bool rndtime = true; 
 
   opts.program_name = "ProtPal";
   opts.short_description = "Progressive alignment and reconstruction of proteins";
@@ -49,13 +53,17 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.newline(); 
   opts.print_title("Input/output options");
-  opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t option.", false);
+  opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t and -tf options.", false);
+  opts.add("tn -truncate-names", truncate_names_char = "None", "Truncate sequence names - only include characters occurring before this character");
   opts.add("fa -fasta-file", fastaFileName="None", "Unaligned FASTA sequence file",false );
   opts.add("t -tree-string", treeString="None", "Tree string in newick format, within double quotes. ", false);
   opts.add("tf -tree-file", treeFileName="None", "File containing tree string in newick format.", false);
   opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called).  Default is a compact Stockholm form. ");
   opts.add("fo -fasta-output", fasta_output=false, "Display final alignment in FASTA format");
-
+  opts.add("wrp -write-root-profile", root_profile_filename="None", "Sample from the ancestral distribution at the root, then store the resulting profile in the specified file. ");
+  opts.add("rvp -root-viterbi-path", root_viterbi_path=true, "Include the Viterbi alignment at the root when saving the root profile (useful for visualization). ");
+  opts.add("gpc -gap-char", gap_char="-", "Gap character - for use in importing guide alignments\n");
+  
   opts.newline(); 
   opts.print_title("Reconstruction options");
 
@@ -75,23 +83,48 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("sa -show-alignments", show_alignments=false, "show intermediate sampled alignments  ");
   opts.add("rl -root-length", rootLength=-1, "<int> Root sequence length in simulation.  Default is to sample direclty from singlet transducer's insert distribution.", false);
 
+  opts.add("pc -phylocomposer-file", phylocomposer_filename = "None", "Generate a phylocomposer s-expression file for simulation or likelihood comparison (impractical for large data)", false);
   opts.newline();
   opts.print_title("Model parameters");
 
-  opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "<rate matrix file> DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
+  opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
+  opts.add("cod -codon-model", codon_matrix_filename = "None", "Same as subst-model, but containing a rate matrix describing substitution rates between codon triplets.");
+  opts.add("dna -dna-model", use_dna = false, "Use the default DNA substitution model, rather than amino acid model", false);
   opts.add("bs -subst-scale", sub_rate = 1.0, "Substitution rate scaling parameter ");
+  opts.add("mbl -max-branch-length", max_branch_length = 1.0, "Maximum allowed branch length (branches longer than this will be truncated).");
   opts.add("i -insert-rate", ins_rate=0.0025,"Insertion rate ");
   opts.add("d -delete-rate", del_rate=0.0025,"Deletion rate ");
   opts.add("ri -root-insert-prob", root_insert_prob=0.999, "Insert probability at root"); 
   opts.add("eri -estimate-root-insert-prob", estimate_root_insert=false, "Estimate insertion probability at root by averaging leaf sequence length");
-  opts.add("x -gap-extend", gap_extend=0.9, "Gap extend probability");
+  
+
+  opts.newline();
+  opts.print_title("Indel length modeling");
+  opts.add("x -gap-extend", gap_extend=0.9, "Gap extend probability (for first component if a mixture model is used)");
+  opts.add("mix2 -geo-mixture-2", mixture_2=false, "Use a mixture of 2 geometrics for indel lengths (see also parameters ge2 and mp2)");
+  opts.add("ge2 -gap-extend-2", gap_extend_2 = 0.31, "Second mixture gap extend probability");
+  opts.add("mp2 -mix-prior-2", mix_prior_2 = 0.43, "Mixture component weight for second mixture gap extend (e.g. goes with -ge2 parameter)");
+  
+    opts.add("mix3 -geo-mixture-3", mixture_3=false, "Use a mixture of 3 geometrics for indel lengths (see also parameters ge3 and mp3)");
+  opts.add("ge3 -gap_extend_3", gap_extend_3 = 0.00001, "Third mixture gap extend probability");
+  opts.add("mp3 -mix-prior-3", mix_prior_3 = 0.2, "Mixture component weight for third mixture gap extend (e.g. goes with -ge3 parameter)");
+
+  opts.print("Note: currently only 1, 2, and 3-component mixtures are implemented.  However, using dart/perl/quickgmix.pl (for parameter estimates) and dart/python/mixture-gen.py (to generate C++ code to append to transducer.{h,cc}) you could make a mixture of any number of components.");
+  
+  opts.newline(); 
+  opts.newline(); 
+  opts.print_title("Speed/memory heuristics"); 
+  opts.add ("ga -guide-alignment",  guide_alignment_filename="None", "Aligned stockholm sequence file.  Use this as a guide alignment; the -gs option dictates how far from the guide alignment to explore .", false);
+  opts.add("et -envelope-type", envelope_type = "basic", "Envelope type - basic or gap-sliding."); 
+  opts.add("gs -guide-sausage", guide_sausage = 50, "Max pairwise divergence from guide alignment homology relations."); 
   opts.add("n -num-samples", num_sampled_paths=100, "Number of paths to sample in traceback");
-  opts.add("m -max-DAG-size", max_sampled_externals=1000, "Max number (approximately) of delete states allowed in DAG");
-  opts.add("e -max-distance", envelope_distance=300, "Maximum allowed distance between aligned leaf characters");
+  opts.add("m -max-DAG-size", max_sampled_externals=1000, "Max number (approximately - due to sampling complete paths) of delete states allowed in DAG");
+  opts.add("e -max-distance", envelope_distance=300, "Maximum allowed distance between aligned leaf characters.  This is overridden if a guide alignment is supplied.");
 
   opts.newline();
   opts.print_title("Indel rate investigation");
   opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences, as well as estimated indel open and extend rates - written to specified file.");
+  opts.add("pb -per-branch", per_branch=false, "When used with -pi option, show per-branch indel statistics, rather than averaged over the tree");
   opts.add("db -stk-db", db_filename = "None", "Show alignments sampled at root level as a stockholm database - written to specified file.");
   opts.add("ra -root-alignments", num_root_alignments=1, "Number of alignments to sample at root node.");
   opts.add("ep -estimate-parameters", estimate_params=false, "Estimate the indel rate parameters via a stochastic sample (default 100 alignments, unless set by -ra option) at the root level\n");
@@ -99,48 +132,107 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("gc -gap-chain", gap_grammar_filename = default_gap_grammar_filename, "<grammar_filename> use this dart grammar containing a rate matrix with a 'gap' character.  This is used when reconstructing with fixed input alignment");
   opts.add("tg -train-grammar", train_grammar = false, "Use EM algorithm to estimate the character substitution model's parameters before inferring ancestral characters.  This is especially useful when using a fixed alignment, since the 'gap chain' is essentially part of the indel model");
 
-  
+  opts.newline();
+  opts.print_title("Phylogenetic read placement");
+  opts.add("p -place-reads", reads_to_place_filename="None", "Place reads in FASTA-formatted file onto tree nodes using pplacer-like algorithm\n");
+  opts.add("spp -saved-posterior-profiles", saved_profiles_directory="None", "In placing reads to nodes, use the profiles found in the specified directory (having names corresponding to tree nodes\n"); 
 
+  opts.add("ssp -saved-subtree-profiles", saved_subtree_profiles_directory="None", "When building an ancestral alignment, look for and save subtree profiles in the specified directory."); 
+
+  opts.add("mpp -make-posterior-profile", profile_to_make="None", "Make a posterior profile for the specified node, storing it in the saved-posterior-profiles directory specified above", false);
+  opts.add("json -write-json", json_placements_filename="None", "Write JSON format summary of placements (as per pplacer JSON spec)", false);
+  opts.add("notab -no-placement-tabular", no_placements_tabular=false, "Do not write tabular format summary of placements");
+ 
   opts.parse_or_die(); 
   string error=""; bool all_reqd_args=true; 
   if (!estimate_params && num_root_alignments != 1)
     estimate_params = true; 
   viterbi = !stoch_trace;
-
+  
+  codon_model = (codon_matrix_filename != "None");
   // Make sure we have the essential data - sequences and a tree
   // First, make sure we have sequence data from somewhere
-  if(stkFileName == "None" && fastaFileName =="None" && !simulate)
+  if (stkFileName == "None" && fastaFileName =="None" && !simulate && phylocomposer_filename == "None" &&
+      reads_to_place_filename == "None")
 	{
 	  error += "\tNo sequence file could be imported.  Use -stk or -fa  to specify a sequence file\n";
 	  all_reqd_args = false; 
 	}
   // Next, see if we have a tree, first trying to get it from a #=GF NH stockholm line
-  if (stkFileName != "None")
+  if (stkFileName != "None" && treeString == "None" && treeFileName == "None")// && treeFileName == "None" && treeString == "None")
     get_stockholm_tree(stkFileName.c_str());
   if (treeString == "None" && treeFileName == "None" && !have_tree )
 	{
 	  error += "\tNo tree string was specified.  Use -t  or -tf <to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
 	  all_reqd_args = false; 
 	}
-  else
-    {
-      if (treeString != "None")
-	loadTreeString(treeString.c_str());
-      else if (treeFileName != "None")
-	get_tree_from_file(treeFileName.c_str());
-    }
+  if (treeString != "None")
+    loadTreeString(treeString.c_str());
+  else if (treeFileName != "None")
+    get_tree_from_file(treeFileName.c_str());
+
   if(!all_reqd_args)
     {
       std::cout<<"\nNot all required arguments were supplied:\n"<<error<<endl;  
       std::cout<<opts.short_help(); 
       exit(1);
     }
+  // Now that we've got the tree - make sure it's binary. 
+  bool changed = tree.force_binary(); 
+  if (changed)
+    if (loggingLevel >= 1)
+      std::cerr<<"NB: Non-binary input tree was coerced to equivalent binary form.\n"; 
+  
+
+  
   // Otherwise, do some preliminary stuff
   //seed rand on the clock time          
-  if (rndtime)
-    srand((unsigned)time(0));
+  //  if (rndtime)
+  //    srand((unsigned)time(0));
   // Name internal nodes of the tree, if not already named
   set_node_names(); 
+
+  // If a guide alignment was used, initialize the alignmentEnvelope
+  if (guide_alignment_filename != "None")
+    {
+      if (loggingLevel >= 1)
+	std::cerr<<"\nBuilding alignment envelope from guide alignment...";
+      if (guide_sausage < 0)
+	{
+	  std::cerr<<"Guide sausage size must be >= 0, setting to 0\n";
+	  guide_sausage = 0; 
+	}
+      envelope.build_index(guide_alignment_filename, gap_char, guide_sausage, envelope_type, truncate_names_char);
+      if (loggingLevel >= 1)
+	std::cerr<<"Done.\n";
+    }
+  if ( mixture_2 && 1 - mix_prior_2 < 0)
+    {
+      std::cerr<<"Error - prior on first mixture component is less than 0.  In specifying 2nd component's prior, remember that P(first) = 1 - P(2nd)\n"; 
+      exit(0); 
+    }
+
+
+  if ( mixture_3 && 1 - mix_prior_2 - mix_prior_3 < 0)
+    {
+      std::cerr<<"Error - prior on first mixture component is less than 0.  In specifying 2nd and 3rd components, remember that P(first) = 1 - P(2nd) - P(3rd)\n"; 
+      exit(0); 
+    }
+	
+  SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
+  SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
+  //  Irrev_EM_matrix rate_matrix(1,1);
+  //  Alphabet alphabet ("uninitialized", 1);
+  ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
+  if (stkFileName || fastaFileName)
+    parse_sequences(alphabet); 
+  
+  if(estimate_root_insert)
+    {
+      root_insert_prob = get_root_ins_estimate();
+      if (loggingLevel >=1 )
+	cerr<< "Root insert probability estimated as: " << root_insert_prob << endl;
+    }
 
 }
 
@@ -149,11 +241,42 @@ void Reconstruction::parse_sequences(Alphabet alphabet)
 {
   // stockholm or fasta? (maybe add more later)
   if (stkFileName != "None")
-    sequences = parse_stockholm(stkFileName.c_str(), alphabet); 
+    {
+      if (!FileExists( string(stkFileName)))
+	{
+	  cerr<<"\nERROR: sequence file " << stkFileName << " does not exist. Exiting...\n\n";
+	  exit(1); 
+	}
+      sequences = parse_stockholm(stkFileName.c_str(), alphabet); 
+    }
   else if (fastaFileName != "None")
-    sequences = parse_fasta(fastaFileName.c_str(), alphabet); 
+    {
+      if (!FileExists( string(stkFileName)))
+	{
+	  cerr<<"\nERROR: sequence file " << stkFileName << " does not exist. Exiting...\n\n";
+	  exit(1); 
+	}
+      sequences = parse_fasta(fastaFileName.c_str(), alphabet); 
+    }
+  if (truncate_names_char != "None")
+    {
+      vector<string> toErase; 
+      for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
+	{
+	  if (in(string(truncate_names_char.c_str()), seqIter->first))
+	    {
+	      sequences[ split(seqIter->first, string(truncate_names_char.c_str()))[0] ] = seqIter->second; 
+	      if (loggingLevel >=1 )
+		std::cerr<< "\t NB: " << seqIter->first << " replaced with truncated name " << split(seqIter->first, string(truncate_names_char.c_str()))[0] << endl; 
+	      toErase.push_back(seqIter->first); 
+	    }
+	  else
+	    std::cerr<<"Seqname " << seqIter->first << " left alone\n"; 
+	}
+      for (vector<string>::iterator eraser=toErase.begin(); eraser!=toErase.end(); eraser++)
+	sequences.erase(*eraser);
+    }
 }
-
   
 void Reconstruction::loadTreeString(const char* in)
 {
@@ -161,9 +284,45 @@ void Reconstruction::loadTreeString(const char* in)
   const sstring tree_string = in; 
   istringstream tree_input (tree_string);
   PHYLIP_tree in_tree;
-  in_tree.read (tree_input);
-  tree = in_tree; 
+
+
+  try
+    {
+      in_tree.read (tree_input);
+      tree = in_tree; 
+    }
+  catch (const Dart_exception& e)
+    {
+      cerr << "ERROR: input tree was not readable.\n"; 
+      cerr << e.what();
+      exit(1);
+    }
 }
+
+void Reconstruction::get_tree_from_file(const char* fileName)
+{
+  if (!FileExists( string(fileName)))
+    {
+      cerr<<"\nERROR: tree file " << fileName << " does not exist. Exiting...\n\n";
+      exit(1); 
+    }
+  string line;
+  ifstream treeFile(fileName);
+  string tree_tmp = ""; 
+  if (treeFile.is_open())
+    {
+      while (! treeFile.eof() )
+	{
+	  getline(treeFile,line);
+	  if (index(";", line) != -1)
+	    {
+	      const char* tree = line.c_str(); 
+	      loadTreeString(tree); 
+	    }
+	}
+    }
+}
+
 
 void Reconstruction::set_node_names(void)
 {
@@ -181,28 +340,14 @@ void Reconstruction::set_node_names(void)
 }
 
 
-void Reconstruction::get_tree_from_file(const char* fileName)
-{
-  string line;
-  ifstream treeFile(fileName);
-  string tree_tmp = ""; 
-  if (treeFile.is_open())
-    {
-      while (! treeFile.eof() )
-        {
-	  getline(treeFile,line);
-	  if (index(";", line) != -1)
-	    {
-	      const char* tree = line.c_str(); 
-	      loadTreeString(tree); 
-	    }
-	}
-    }
-
-}
 
 void Reconstruction::get_stockholm_tree(const char* fileName)
 {
+  if (!FileExists( string(fileName)))
+    {
+      cerr<<"\nERROR: sequence/tree file " << fileName << " does not exist. Exiting...\n\n";
+      exit(1); 
+    }
   string line;
   ifstream seqFile(fileName);
   string tree_tmp = ""; 
@@ -232,15 +377,15 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
     }
   else
     {
-      std::cerr << "Error: Unable to open file: "<<fileName << endl; 
+      std::cerr << "\nError: Unable to open file: "<<fileName << endl; 
       exit(1); 
     }
 }
 
   
-void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_matrix)
+void Reconstruction::make_sexpr_file(ostream& out)
 {
-  map<string,string> prot2pc;
+  MyMap<string,string> prot2pc;
   prot2pc["S"] = "start";
   prot2pc["M"] = "match"; 
   prot2pc["I"] = "insert"; 
@@ -248,8 +393,8 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
   prot2pc["W"] = "wait";
   prot2pc["E"] = "end";   
   
-  std::cout << ";; phylocomposer file for simulating branch-length dependent transducers\n";
-  std::cout << "(token ("  ; 
+  out << ";; phylocomposer file for simulating branch-length dependent transducers\n";
+  out << "(token ("  ; 
   vector<sstring> tokens = alphabet.tokens(); 
   unsigned int alph_size = tokens.size();
   vector<sstring>::iterator tok, tok2; 
@@ -259,56 +404,56 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
   string parent, child; 
 
   for (tok = tokens.begin(); tok != tokens.end(); tok++)
-	std::cout << " "<< *tok << " "; 
-  std::cout<< ") )\n"; 
+	out << " "<< *tok << " "; 
+  out<< ") )\n"; 
 
   // define pi, the shared equilibrium distribution over tokens
   vector<double> equilibrium = rate_matrix.create_prior();
   for (tokIdx = 0 ; tokIdx != alph_size; tokIdx++)
-	std::cout << "(value ((pi " << tokens[tokIdx] << ") " << equilibrium[tokIdx] << "))\n";
+	out << "(value ((pi " << tokens[tokIdx] << ") " << equilibrium[tokIdx] << "))\n";
   
   
   // Define parameters for, then declare singlet transducer
   SingletTrans R(alphabet, rate_matrix);
   
   // Define parameters in 'value' blocks
-  std::cout<<"\n";
+  out<<"\n";
   for (state1 = R.states.begin(); state1 != R.states.end(); state1++)
 	{
 	  if (R.get_state_type(*state1) == "E") continue; 
 	  outgoing = R.get_outgoing(*state1); 
 	  for (state2 = outgoing.begin(); state2 != outgoing.end(); state2++)
 		{
-		  std::cout<< "(value (root_"<<R.get_state_name(*state1)<<"_"<<R.get_state_name(*state2)<<" ";
-		  std::cout<< R.get_transition_weight(*state1, *state2)<<"))\n";
+		  out<< "(value (root_"<<R.get_state_name(*state1)<<"_"<<R.get_state_name(*state2)<<" ";
+		  out<< R.get_transition_weight(*state1, *state2)<<"))\n";
 		}
 	} 
 
-  std::cout<<"\n(transducer \n\n\t(name ROOT)\n\n"; 
+  out<<"\n(transducer \n\n\t(name ROOT)\n\n"; 
   
   for (state1 = R.states.begin(); state1 != R.states.end(); state1++)
 	{
-	  std::cout<<"\t(state (name "<< R.get_state_name(*state1)<< ") (type "<< prot2pc[R.get_state_type(*state1)] << ")";
+	  out<<"\t(state (name "<< R.get_state_name(*state1)<< ") (type "<< prot2pc[R.get_state_type(*state1)] << ")";
 	  if (R.get_state_type(*state1) == "I")
-		std::cout<<" (label pi)"; 
-	  std::cout<<")\n";
+		out<<" (label pi)"; 
+	  out<<")\n";
 	}
 
   // Define transitions, referring back to earlier specified values
-  std::cout<<"\n";
+  out<<"\n";
   for (state1 = R.states.begin(); state1 != R.states.end(); state1++)
 	{
 	  if (R.get_state_type(*state1) == "E") continue; 
 	  outgoing = R.get_outgoing(*state1); 
 	  for (state2 = outgoing.begin(); state2 != outgoing.end(); state2++)
 		{
-		  std::cout<<"\t(transition (from "<< R.get_state_name(*state1) << ") ";
-		  std::cout<<"(to "<< R.get_state_name(*state2) << ") ";
-		  std::cout<< "(label root_"<<R.get_state_name(*state1)<<"_"<<R.get_state_name(*state2)<<" ";
-		  std::cout<<"))\n";
+		  out<<"\t(transition (from "<< R.get_state_name(*state1) << ") ";
+		  out<<"(to "<< R.get_state_name(*state2) << ") ";
+		  out<< "(label root_"<<R.get_state_name(*state1)<<"_"<<R.get_state_name(*state2)<<" ";
+		  out<<"))\n";
 		}
 	} 
-  std::cout<<");; end transducer ROOT\n\n";
+  out<<");; end transducer ROOT\n\n";
 
 
 
@@ -322,7 +467,33 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
 		  child = string( tree.node_name[b.second].c_str() ); 	  
 
 		  // construct a branch transducer with the appropriate branch length.
+		  // must alter this to use mixture models
 		  BranchTrans branch(tree.branch_length(b.first, b.second), alphabet, rate_matrix, ins_rate, del_rate, gap_extend, sub_rate); 
+
+		  if ( mixture_2 )
+		    {
+		      BranchTrans mix_2(tree.branch_length(b.first, b.second), alphabet, rate_matrix,
+					  ins_rate, del_rate,
+					  gap_extend,
+					  1-mix_prior_2,
+					  gap_extend_2,
+					  mix_prior_2);
+		      branch = mix_2; 
+		    }
+		  else if ( mixture_3 )
+		    {
+		      BranchTrans mix_3(tree.branch_length(b.first, b.second), alphabet, rate_matrix,
+					  ins_rate, del_rate,
+					  gap_extend,
+					  1-mix_prior_2 - mix_prior_3,
+					  gap_extend_2,
+					  mix_prior_2,
+					  gap_extend_3,
+					  mix_prior_3);
+		      branch = mix_3;
+		    }
+
+
 		  
 		  // define the Q_child match matrix
 		  for (state1 = branch.states.begin(); state1 != branch.states.end(); state1++)
@@ -333,58 +504,58 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
 				{
 				  for (tokIdx2 = 0 ; tokIdx2 != alph_size; tokIdx2++)
 					{
-					  std::cout<< "(value ((Q_"<< child<< " " << tokens[tokIdx] << " "<< tokens[tokIdx2] << ") "; 
-					  std::cout<<  branch.get_match_weight(*state1, tokIdx, tokIdx2);
-					  std::cout<< "))\n";
+					  out<< "(value ((Q_"<< child<< " " << tokens[tokIdx] << " "<< tokens[tokIdx2] << ") "; 
+					  out<<  branch.get_match_weight(*state1, tokIdx, tokIdx2);
+					  out<< "))\n";
 					}
 				}
 			}
 		  
 
 		  // Define transition parameters in 'value' blocks
-		  std::cout<<"\n";
+		  out<<"\n";
 		  for (state1 = branch.states.begin(); state1 != branch.states.end(); state1++)
 			{
 			  if (branch.get_state_type(*state1) == "E") continue; 
 			  outgoing = branch.get_outgoing(*state1); 
 			  for (state2 = outgoing.begin(); state2 != outgoing.end(); state2++)
 				{
-				  std::cout<< "(value ("<< child <<"_"<<branch.get_state_name(*state1)<<"_"<<branch.get_state_name(*state2)<<" ";
-				  std::cout<< branch.get_transition_weight(*state1, *state2)<<"))\n";
+				  out<< "(value ("<< child <<"_"<<branch.get_state_name(*state1)<<"_"<<branch.get_state_name(*state2)<<" ";
+				  out<< branch.get_transition_weight(*state1, *state2)<<"))\n";
 				}
 			} 
 
 
 		  // begin transducer declaration
-		  std::cout<<"\n(transducer \n\n\t(name "<<child<< ")\n\n"; 
+		  out<<"\n(transducer \n\n\t(name "<<child<< ")\n\n"; 
 
   		  //  declare states, possibly with labels for insert and match states
 		  for (state1 = branch.states.begin(); state1 != branch.states.end(); state1++)
 			{
-			  std::cout<<"\t(state (name "<< branch.get_state_name(*state1)<< ") (type "<< prot2pc[branch.get_state_type(*state1)] << ")";
+			  out<<"\t(state (name "<< branch.get_state_name(*state1)<< ") (type "<< prot2pc[branch.get_state_type(*state1)] << ")";
 			  if (branch.get_state_type(*state1) == "I")
-				std::cout<<" (label pi)"; 
+				out<<" (label pi)"; 
 			  else if  (branch.get_state_type(*state1) == "M")
-				std::cout<<" (label Q_"<<child<<")"; 
+				out<<" (label Q_"<<child<<")"; 
 					 
-			  std::cout<<")\n";
+			  out<<")\n";
 			}
 
 		  // Define transitions, referring back to earlier specified values
-		  std::cout<<"\n";
+		  out<<"\n";
 		  for (state1 = branch.states.begin(); state1 != branch.states.end(); state1++)
 			{
 			  if (branch.get_state_type(*state1) == "E") continue; 
 			  outgoing = branch.get_outgoing(*state1); 
 			  for (state2 = outgoing.begin(); state2 != outgoing.end(); state2++)
 				{
-				  std::cout<<"\t(transition (from "<< branch.get_state_name(*state1) << ") ";
-				  std::cout<<"(to "<< branch.get_state_name(*state2) << ") ";
-				  std::cout<< "(label " << child << "_"<<branch.get_state_name(*state1)<<"_"<<branch.get_state_name(*state2)<<" ";
-				  std::cout<<"))\n";
+				  out<<"\t(transition (from "<< branch.get_state_name(*state1) << ") ";
+				  out<<"(to "<< branch.get_state_name(*state2) << ") ";
+				  out<< "(label " << child << "_"<<branch.get_state_name(*state1)<<"_"<<branch.get_state_name(*state2)<<" ";
+				  out<<"))\n";
 				}
 			} 
-		  std::cout<<");; end transducer " << child << "\n\n";
+		  out<<");; end transducer " << child << "\n\n";
 		  
 		}
 	}
@@ -392,38 +563,40 @@ void Reconstruction::make_sexpr_file(Alphabet alphabet, Irrev_EM_matrix rate_mat
   for_rooted_children(tree, tree.root , child)
 	rootsKids.push_back(*child);
 
-  std::cout<<"(branch (name ROOT)\n\t(from SUBROOT) (to root)\n\t(transducer ROOT) \n\t";
+  out<<"(branch (name ROOT)\n\t(from SUBROOT) (to root)\n\t(transducer ROOT) \n\t";
 
-  std::cout<< show_branch(rootsKids[0]) ;
-  std::cout<< show_branch(rootsKids[1]);
-  std::cout<< ");; end phylogenetic tree"; 
+  //  out<< show_branch(rootsKids[0]) ;
+  //  out<< show_branch(rootsKids[1]);
+  show_branch(rootsKids[0], out) ;
+  show_branch(rootsKids[1], out) ;
+  out<< ");; end phylogenetic tree"; 
 }
 
-string Reconstruction::show_branch(node startNode)
+void Reconstruction::show_branch(node startNode, ostream& out)
 {
-  string out; 
+  //  string out; 
   vector<node> kids; 
-  out += "(branch (name " + string(tree.node_name[startNode].c_str()) + ")\n";
+  out << "(branch (name " + string(tree.node_name[startNode].c_str()) + ")\n";
 
-  out += "\t(from " + string(tree.node_name[tree.parent[startNode]].c_str()) + ") ";
-  out += "(to " + string(tree.node_name[startNode].c_str()) + ") \n";  
+  out << "\t(from " + string(tree.node_name[tree.parent[startNode]].c_str()) + ") ";
+  out << "(to " + string(tree.node_name[startNode].c_str()) + ") \n";  
 
-  out += "\t(transducer " + string(tree.node_name[startNode].c_str()) + ")\n";
+  out << "\t(transducer " + string(tree.node_name[startNode].c_str()) + ")\n";
 
   if (tree.is_internal(startNode))
 	{
 	    for_rooted_children(tree, startNode , child)
 		  kids.push_back(*child);
-		out += show_branch(kids[0]);
-		out += show_branch(kids[1]); 
+	    show_branch(kids[0], out);
+	    show_branch(kids[1], out); 
 	}		
-  out += "\t);; end branch " + string(tree.node_name[startNode].c_str()) +  " \n\n";
-  return out; 
+  out << "\t);; end branch " + string(tree.node_name[startNode].c_str()) +  " \n\n";
+  //  return out; 
 }
 
-void Reconstruction::simulate_alignment(Alphabet alphabet, Irrev_EM_matrix rate_matrix)
+void Reconstruction::simulate_alignment(void)
 {
-  map<node, Digitized_biosequence> sequences; 
+  MyMap<node, Digitized_biosequence> sequences; 
   Digitized_biosequence parentSeq; 
   string childName;
   Decomposition decomp; 
@@ -629,19 +802,144 @@ double Reconstruction::get_root_ins_estimate(void)
 {
   if (!sequences.size())
     {
-      std::cerr<<"Error: no sequences, can't estimate root length distribution!\n";
+      std::cerr<<"\nError: no sequences, can't estimate root length distribution!\n";
       return root_insert_prob; 
     }
   else
     {
       int totalLength = 0;
-      for (map<string,string>::iterator seqIter= sequences.begin(); seqIter!=sequences.end(); seqIter++)
+      for (MyMap<string,string>::iterator seqIter= sequences.begin(); seqIter!=sequences.end(); seqIter++)
 	totalLength += (seqIter->second).size();
       double avg = double(totalLength)/double(sequences.size());
       return 1.0-(1.0 / avg);
     }
 }
-	
+
+
+map<int, string> Reconstruction::check_profile_filenames(void)
+{
+  map<int, string> filenames; 
+  for (int treeNode = 0; treeNode < tree.nodes(); ++treeNode)
+    {
+      stringstream candidateName; 
+      candidateName << saved_profiles_directory << "/" << tree.node_name[treeNode] << ".sexpr"; 
+      if ( FileExists(candidateName.str()) )
+	filenames[treeNode] = candidateName.str();
+      else
+	{
+	  cerr<<"Warning: no saved profile for tree node " << tree.node_name[treeNode] << endl; 
+	  filenames[treeNode] = "None"; 
+	}
+    }
+  return filenames; 
+}
+
+void Reconstruction::verify_leaf_sequences(void)
+{
+  vector<Node> leaves = tree.leaf_vector(); 
+  for (unsigned int i=0; i<leaves.size(); i++)
+    {
+      node treeNode = leaves[i];
+      string sequence = sequences[tree.node_name[treeNode]]; // sequence  
+      if (sequence.size() == 0 )
+	{
+	  cerr<<"\n\tERROR: the leaf node " << tree.node_name[treeNode] << " has no  sequence associated with it!\n";
+	  cerr<<"This is usually caused by a tree having slightly different names than the sequences in the input sequences. \n";
+
+	  cerr<<"Sequence names in input file: \n";
+	  for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
+	    if ((seqIter->second).size() > 0)
+	      cerr<<"\t" << seqIter->first << "\t" << split(seqIter->first, string("|"))[0] << endl;
+
+	  std::cerr<<"Sequence names in tree leaves: \n";
+	  for (unsigned int j=0; j<leaves.size(); j++)
+	    std::cerr<<"\t" << tree.node_name[leaves[j]] << endl;
+	  exit(1);
+	}
+    }
+}
+
+void Reconstruction::write_numbered_newick(ostream& out, bool quotes)
+{
+  if (quotes)
+    out <<"\"";
+  tree.write(out, -1, -1 , false, // no newline
+	     true // add branch numberings as per pplacer JSON spec
+	     ); 
+  if (quotes)
+    out <<"\"";
+}
+
+void Reconstruction::write_placement_JSON(ostream& out, ScoreMap& scores)
+{
+  out <<"{\n";
+  out <<"\"tree\":   ";
+  write_numbered_newick(out); 
+  out <<",\n"; 
+
+  out << "\"placements\": [\n";
+  bfloat totalScore; 
+  for (ScoreMap::iterator readIter = scores.begin(); readIter != scores.end();
+       ++readIter)
+    {
+      totalScore=0.0; 
+      for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	   nodeIter != (readIter->second).end(); ++nodeIter)
+	totalScore += nodeIter->second;
+
+      out << "\t{\"p\":\n\t[";
+      for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	   nodeIter != (readIter->second).end(); ++nodeIter)
+	{
+	  node nodeIdx = tree.find_node((nodeIter->first).c_str()); 
+	  out << "[" << nodeIdx << ", " << nodeIter->second << ", " <<  nodeIter->second/totalScore << ", " << "0.000008" << ", " << "0.01";
+	  if (nodeIter != --(readIter->second).end())
+	    out << "],\n\t";
+	  else
+	    out << "]\n\t";
+	}
+      out <<"],\n\t";
+
+      out << "\"n\": [\"" << readIter->first << "\"] }"; 
+      if (readIter != --scores.end())
+	out << ",\n\n";
+      else
+	out << "\n";
+    }
+  out << "\t],\n\n";
+  
+  out << "\"metadata\": {\"invocation\": \"protpal\"},\n";
+  out << "\"version\": 1,\n"; 
+  out << "\"fields\":   [\"edge_num\", \"likelihood\", \"like_weight_ratio\", \"distal_length\", \"pendant_length\" ]\n";
+  out << "}\n";
+}
+
+
+void Reconstruction::write_placement_tabular(ostream& out, ScoreMap& scores)
+{
+  bfloat totalScore;
+  for (ScoreMap::iterator readIter = scores.begin(); readIter != scores.end();
+       ++readIter)
+    {
+      totalScore = 0.0;
+      for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	   nodeIter != (readIter->second).end(); ++nodeIter)
+	totalScore += nodeIter->second;
+
+      for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
+	   nodeIter != (readIter->second).end(); ++nodeIter)
+	out << readIter->first<<  "\t" << nodeIter->first << "\t" << nodeIter->second/totalScore <<endl;
+      out<< "\n\n";
+    }
+}
+
+
+
+
+
+
+
+
 // void Reconstruction::show_indels(Stockholm stock)
 // {
 //   ofstream myfile;

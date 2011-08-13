@@ -9,10 +9,11 @@
 
 #include "protpal/utils.h"
 #include "protpal/profile.h"
+#include "util/dexception.h"
+
 using namespace std;
 
 // Mini-class M_id methods
-
 int M_id::operator==(const M_id &right)
 {
   // Equality operator for M_n states.  Q, left, right states must be equal, as well as the 
@@ -28,6 +29,40 @@ int M_id::operator!=(const M_id &right)
   else return 1;
 }
 
+bool M_id::isValid(void)
+{
+  bool retVal = true; 
+  if ( q_state == dummy_value)
+    {
+      cerr<<"Warning: uninitialized Q state.\n ";
+      retVal = false; 
+    }
+
+  if ( left_state == dummy_value)
+    {
+      cerr<<"Warning: uninitialized l state.\n ";
+      retVal = false; 
+    }
+  if ( right_state == dummy_value)
+    {
+      cerr<<"Warning: uninitialized r state state.\n ";
+      retVal = false; 
+    }
+
+  if ( left_type == dummy_value)
+    {
+      cerr<<"Warning: uninitialized r type.\n ";
+      retVal = false; 
+    }
+
+  if ( right_type == dummy_value)
+    {
+      cerr<<"Warning: uninitialized r type.\n ";
+      retVal = false; 
+    }
+  return retVal; 
+}
+
 vector<int> M_id::toVector(void)
 {
   // An inefficient hack: rather than storing maps from M_id to data (e.g. DP cells),
@@ -38,13 +73,28 @@ vector<int> M_id::toVector(void)
   out[2]= right_state;
   out[3]= left_type;
   out[4]= right_type;	  
+  if (index(dummy_value, out) != -1)
+    {
+      cerr<<"Warning: Uninitialized M_id used in vector conversion! The vector: "; displayVector(out); 
+    }
   return out; 
 }
+
+M_id::M_id(void)
+{
+  dummy_value = -10; 
+  q_state = dummy_value; 
+  left_state = dummy_value; 
+  right_state = dummy_value; 
+  left_type = dummy_value; 
+  right_type = dummy_value; 
+}
+
 
 void M_id::display(QTransducer &Q)
 {
   // Display a state in M_n, showing it's Q state, left/right states and their types.
-  map<int, string> int2state;
+  MyMap<int, string> int2state;
   int2state[-1]="start";
   int2state[0]="wait";
   int2state[1]="delete";
@@ -55,6 +105,7 @@ void M_id::display(QTransducer &Q)
   std::cout<<"\tleftProfile:\t type: "<<int2state[left_type]<<", index:"<<left_state<<endl;
   std::cout<<"\trightProfile: \t type: "<<int2state[right_type]<<", index:"<<right_state<<endl;
 }
+
 
 int index(M_id query, vector<M_id> in )
 {
@@ -118,8 +169,8 @@ void AbsorbingTransducer::test_transitions(void)
 {
   // This function tests for super-normalization of transitions.  
   // Loops through states, summing the outgoing transitions for each one
-  map<state, bfloat> outgoing;
-  map<state, bfloat>::iterator stateIter;   
+  MyMap<state, bfloat> outgoing;
+  MyMap<state, bfloat>::iterator stateIter;   
   vector<int>::iterator j; 
   int i; 
   for (i=0; i<num_delete_states; i++)
@@ -255,7 +306,7 @@ AbsorbingTransducer::AbsorbingTransducer(Profile *sampled_profile)
 	 the left or right profiles) .  
   */
   bool logging =false;
-  
+  stored_sampled_profile = sampled_profile; 
   h_start = "h_start";
   h_left_internal = "left_internal";
   h_right_internal = "right_internal";
@@ -268,13 +319,16 @@ AbsorbingTransducer::AbsorbingTransducer(Profile *sampled_profile)
      - name, alphabet, etc
 
      These will be stored later, after we've moved to integer state indexing:
-     - the characters of its children (map<state, map<node, string> > state_type_phylogeny)
-     - min and max leaf_coordinates accounted for (map<state, pair<int, int> > leaf_coords)
+     - the characters of its children (MyMap<state, MyMap<node, string> > state_type_phylogeny)
+     - min and max leaf_coordinates accounted for (MyMap<state, pair<int, int> > leaf_coords)
 
   */
   treeNode = sampled_profile->treeNode;
   subtreeNodes = sampled_profile->subtreeNodes;  
-  name = sampled_profile->name;
+  if (sampled_profile->name != "")
+    name = sampled_profile->name;
+  else
+    name = sampled_profile->node_names[sampled_profile->treeNode];
   alphabet = sampled_profile->alphabet; 
   alphabet_size = alphabet.size();  
 
@@ -295,7 +349,7 @@ AbsorbingTransducer::AbsorbingTransducer(Profile *sampled_profile)
     that only involves non-null states (a.k.a. delete states).  
   */
 
-  if(logging) std::cerr<<"\n ****** Marginalizing null states ******\n";
+  if(logging) std::cerr<<"\n****** Marginalizing null states ******\n";
   marginalize_null_states(sampled_profile);
 
 
@@ -321,6 +375,7 @@ AbsorbingTransducer::AbsorbingTransducer(ExactMatch *EM_in)
   */
 
   treeNode = EM_in->treeNode;
+
   subtreeNodes.push_back(EM_in->treeNode); 
   alphabet = EM_in->alphabet; 
   alphabet_size = alphabet.size();
@@ -335,6 +390,8 @@ AbsorbingTransducer::AbsorbingTransducer(ExactMatch *EM_in)
   absorption_weight = EM_in->absorb;
   state_type_phylogeny = EM_in->state_type_phylogeny;
   leaf_coords = EM_in->leaf_coords;   
+  // for alignment envelope
+  leaf_seq_coords = EM_in->leaf_seq_coords;   
 
   // Set transition weights. All weight 1; we're assuming that a sequence has a single parse through the leaf/singlet grammar
   pair<state, state> transitionPair; 
@@ -366,33 +423,59 @@ bool Profile::is_end(M_id m)
   return (m.q_state == Q.composite_end_state);
 }
 
-bool Profile::is_external(M_id m)
+inline bool Profile::is_external(M_id m)
 {
   // query whether an M_n state is external - that is, the 'R' transducer is emitting a character 
   // which is absorbed by the branch transducers (and matched or deleted). 
-  string q_type, upsilon_type, bl_type, br_type;
+  string q_type;
+  //string upsilon_type, bl_type, br_type;
+
+  //string q_type; 
+  //  char upsilon_type, bl_type, br_type; 
   int left_type, right_type; 
   q_type = Q.get_state_type(m.q_state);
-  upsilon_type = stringAt(q_type,1);
-  bl_type = stringAt(q_type,2);
-  br_type = stringAt(q_type,3);            
+//   upsilon_type = stringAt(q_type,1);
+//   bl_type = stringAt(q_type,2);
+//   br_type = stringAt(q_type,3);            
   right_type = m.right_type;
   left_type = m.left_type;
-  if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete && 
-      br_type == "M" && right_type == profile_delete ||  // MMDMD
+
+  //  upsilon_type = q_type[1];
+  //  bl_type = q_type[2]; 
+  //  br_type = q_type[3]; 
+
+
+  if (left_type == profile_delete)
+    {
+      if (q_type == "IMMM" && left_type == profile_delete && right_type == profile_delete)
+	return true;
+      //   if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete && 
+      //       br_type == "M" && right_type == profile_delete)
+      //     return true; //   // MMDMD
+      if (q_type == "IMMD" && left_type == profile_delete && right_type == profile_wait)
+	return true;
+      //   else if (upsilon_type == "M" && bl_type == "M" && left_type == profile_delete &&
+      // 	   br_type == "D" && right_type == profile_wait)
+      //     return true; // ||  // MMDDW
+    }
+
+  if (q_type == "IMDM" && left_type == profile_wait && right_type == profile_delete)
+    return true;      
+  //   else if (upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
+  // 	   br_type == "M" && right_type == profile_delete)
+  //     return true; //|| // MDWMD
       
-      upsilon_type == "M" && bl_type == "M" && left_type == profile_delete &&
-      br_type == "D" && right_type == profile_wait ||  // MMDDW
-      
-      upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
-      br_type == "M" && right_type == profile_delete || // MDWMD
-      
-      upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
-      br_type == "D" && right_type == profile_wait )  // MDWDW
-	{
-	  return 1; 
-	}
-  else return 0;
+  if (q_type == "IMDD" && left_type == profile_wait && right_type == profile_wait)
+    {
+      std::cerr<<"IMDD type encountered!!\n";
+      return true;      
+    }
+//   else if (upsilon_type == "M" && bl_type == "D" && left_type == profile_wait &&
+//       br_type == "D" && right_type == profile_wait )  // MDWDW
+//     return 1; 
+  
+  else 
+    return false; 
 }
 
 bool Profile::is_left_int(M_id m)
@@ -573,86 +656,507 @@ void AbsorbingTransducer::identify_states(Profile *sampled_profile)
   num_delete_states = sampled_externals.size()-1; 
 }
 
-void AbsorbingTransducer::showDOT(Profile *sampled_profile)
+void AbsorbingTransducer::show_DOT(ostream& out, string name)
 {
+  out<< "digraph " << name  << "_absorbing {\n"; 
   // show graphiviz -friendly output for the state space of an absorbing transducer.  
-  // Warning: I haven't used this a whole lot, and so it's not very clean.  
-  string name, nameDest; 
-  vector<M_id> children;
-  vector<M_id>::iterator child;
-  unsigned int i; 
-  for (i=0; i<sampled_profile->sampled_states.size(); i++)
-	{
-	  if (i == sampled_start_state) name="start";
-	  else if (i == sampled_end_state) name="end";
-	  //	  else if in(i, sampled_pre_end_state) name="pre_end";	  	  
-	  else if (i == sampled_pre_end_state) name="pre_end";	  
-	  else
-		{
-		  if (sampled_profile->is_external(sampled_profile->sampled_states[i]) ) name = "D";
-		  else name = "N";
-		}
-	  if( sampled_profile->sampled_outgoing.count(sampled_profile->sampled_states[i].toVector()) >0)
-		children = sampled_profile->sampled_outgoing[sampled_profile->sampled_states[i].toVector()];
-	  else continue;
-	  
-	  for (child = children.begin(); child != children.end(); child++)
-		{
-		  if (*child == sampled_profile->sampled_states[sampled_start_state]) nameDest="start";
-		  else if (*child == sampled_profile->sampled_states[sampled_end_state]) nameDest="end";
-		  //else if in(*child, sampled_profile->sampled_states[sampled_pre_end_states]) nameDest="pre_end";	  		  
-		  else if (*child == sampled_profile->sampled_states[sampled_pre_end_state]) nameDest="pre_end";	  
-		  else
-			{
-			  if (sampled_profile->is_external(*child)) nameDest ="D"; 
-			  else nameDest = "N";
-			}
+  vector<state> in; 
+  int to; 
+  for (to = 0; to<num_delete_states; to++)
+    {
+      in = get_incoming(to); 
+      for (vector<state>::iterator fromIter=in.begin(); fromIter!=in.end(); fromIter++)
+	out << *fromIter << "->" << to << "label=" << "'"<<get_transition_weight(*fromIter, to) << "']\n";
+    }
 
-// 		  std::cerr<<"'"; displayVector(sampled_profile->sampled_states[i].toVector());
-// 		  std::cerr<<name<<"'-> '"; displayVector(child->toVector());
-// 		  std::cerr<<nameDest<<"';\n";
+  to = pre_end_state;   
+  in = get_incoming(to); 
+  for (vector<state>::iterator fromIter=in.begin(); fromIter!=in.end(); fromIter++)
+    out << *fromIter << "->" << to << "label=" << "'"<<get_transition_weight(*fromIter, to) << "']\n";
+
+  to = end_state; 
+  in = get_incoming(to); 
+  for (vector<state>::iterator fromIter=in.begin(); fromIter!=in.end(); fromIter++)
+    out << *fromIter << "->" << to << "label=" << "'"<<get_transition_weight(*fromIter, to) << "']\n";
+  out<<"}\n";
+}
+
+void AbsorbingTransducer::DART_marginalize_null_states(Profile *sampled_profile)
+{
+  // Use dart's machinery to sum out null states of the sampled profile. 
+  bool logging = true, logStates = false;
+  M_id e,f; 
+  pair<vector<int>, vector<int> > transitionPair; 
+  int eIdx, ePrimeIdx, num_states;
+  vector<M_id> children;
+  vector<M_id>::iterator ePrime;
+  vector<int> incoming_states, nulls;
+
+  // the main task here is filling incoming_tmp and sampled_externals_outgoing, and transition_weight_tmp
+  // First we do the actual marginalization with DART's machinery...
+
+  // Initialize DART's transition matrix                         
+  num_states = sampled_profile->sampled_states.size(); 
+  if (logging)
+    cerr<<"Transition matrix has size: " << num_states << endl; 
+  Transition_probs pre_summed(num_states);
+
+  // Fill the transition matrix as well as the list of null states
+  if (logging)
+    cerr<<"Begin populating pre_summed\n"; 
+  for (eIdx=0; eIdx!=num_states; eIdx++)
+    {
+      e = sampled_profile->sampled_states[eIdx];
+      if (sampled_profile->is_external(e) || sampled_profile->is_start(e) || sampled_profile->is_pre_end(e) )
+	{
+	  if (logStates)
+	    {
+	      cerr<<"Non-null state: \n"; 
+	      e.display(sampled_profile->Q); 
+	    }
+	}
+      else
+	nulls.push_back(eIdx);
+      if (sampled_profile->sampled_outgoing.count(e.toVector())>0)
+	{
+	  if (logStates)
+	    cerr<<"State has  children\n"; 
+	  children = sampled_profile->sampled_outgoing[e.toVector()];
+	  if (logStates)
+	    cerr<<"Children pulled out\n"; 
+	  for (ePrime = children.begin(); ePrime!=children.end(); ePrime++)
+	    {
+	      ePrimeIdx = index(*ePrime, sampled_profile->sampled_states); // hmm, this is a bit inefficient. Usually about 1K states
+	      if (logStates)
+		{
+		  cerr<<"Index determined\n"; 
+		  cerr<<"e and eprime idx: " << eIdx << " " << ePrimeIdx << endl; 
 		}
+	      pre_summed.transition(eIdx,ePrimeIdx) = sampled_profile->get_sampled_transition_weight(e,*ePrime);
+	      if (logStates)
+		cerr<<"Transition weight cataloged\n"; 
+	    }
+	}
+    }
+  if (logging)
+    cerr<<"Done populating pre_summed\n"; 
+  // Now DART does the heavy lifting.  Sum over null states and return a new transition matrix. 
+  Transition_methods eliminator;
+  Concrete_transition_probs post_summed = eliminator.eliminate(pre_summed, nulls);
+  if (logging)
+    cerr<<"Done eliminating states\n"; 
+  // Now repopulate the data structures relevant for AbsorbingTransducer to continue its business. 
+  // clear them first, to be sure.
+  incoming_tmp.clear(); sampled_externals_outgoing.clear(); transition_weight_tmp.clear(); 
+  for (eIdx=0; eIdx!=num_states; eIdx++)
+    for (ePrimeIdx=0; ePrimeIdx!=num_states; ePrimeIdx++)
+      if (post_summed.transition(eIdx,ePrimeIdx) > 0.0)
+	{
+	  e = sampled_profile->sampled_states[eIdx]; 
+	  f = sampled_profile->sampled_states[ePrimeIdx]; 
+	  
+	  transitionPair.first = e.toVector();
+	  transitionPair.second = f.toVector();
+
+	  //  fill incoming_tmp and sampled_externals_outgoing, and transition_weight_tmp	  
+	  incoming_tmp[f.toVector()].push_back(e); 
+	  sampled_externals_outgoing[e.toVector()].push_back(f); 
+	  transition_weight_tmp[transitionPair] = post_summed.transition(eIdx,ePrimeIdx); 
 	}
 }
+
+
+
+string Profile::displayStates(vector<M_id> states)
+{
+  string out; 
+  vector<M_id>::iterator e; 
+  for (e= states.begin(); e!= states.end(); e++)
+    out +=  " " + getDOTname(*e) + " "; 
+  out += "\n"; 
+  return out; 
+}
+
+bool Profile::all_parents_visited(M_id e, vector<M_id> visited, vector<M_id> subgraph, bool logging)
+{
+  vector<M_id>::iterator parent; 
+  // verify that all the nodes upstream of e (in the relevant subgraph) have been visited 
+  if (!sampled_incoming.count(e.toVector()))
+    {
+      if (!is_start(e))
+	cerr<<"Warning: in BFS, state has no incoming transitions: " << getDOTname(e) << endl; 
+      return true; 
+    }
+
+  if (logging)
+    {
+      cerr<<"Querying state: " << getDOTname(e) <<endl; 
+      cerr<<"Subgraph:       " << displayStates(subgraph); 
+      cerr<<"Parents:        " << displayStates(sampled_incoming[e.toVector()]); 
+    }
+  for (parent = sampled_incoming[e.toVector()].begin(); parent != sampled_incoming[e.toVector()].end(); parent++)
+    {
+      if (index(*parent, subgraph) == -1)
+	{
+	  if (logging)
+	    cerr<< "Parent " << getDOTname(*parent) << " not in subgraph, continue. \n"; 
+	  continue;
+	}
+      if (is_external(*parent) || is_start(*parent) || is_pre_end(*parent))
+	{
+	  if (logging)
+	    cerr<< "Parent " << getDOTname(*parent) << " is external, continue. \n"; 
+	  continue;
+	}
+      if (index(*parent, visited) == -1)
+	{
+	  if (logging)
+	    {
+	      cerr<< "Parent " << getDOTname(*parent) << " is not visited, but should be, return false. \n"; 
+	      cerr<< "Its index in the subgraph is " << index(*parent, subgraph) << endl; 
+	    }
+	  return false;
+	}
+    }
+  return true; 
+}
+vector<M_id> Profile::breadth_first_traversal(M_id beginning_state,bool ordered)
+{
+  // traverse the state space starting from beginning_state, terminating at external states.  
+  // This is a breadth-first-traversal, but also a parents-before-children traversal, so there are some extra
+  // checks in the queue loop...
+
+  queue<M_id> stateQueue;
+  M_id e, endState; 
+  vector<M_id> children,visited,subgraph;
+  vector<M_id>::iterator child; 
+  int counter=0; 
+  bool logging = false; 
+  
+  if (ordered)
+    subgraph = breadth_first_traversal(beginning_state,false); 
+
+  stateQueue.push(beginning_state); 
+  if (logging)
+    cerr << "Beginning to traverse state space\n"; 
+
+  while (!stateQueue.empty())
+    {
+      e = stateQueue.front(); 
+      stateQueue.pop();
+      
+      if (index(e,visited) != -1)
+	{
+	  if (logging)
+	    cerr<<"Already visited state " << getDOTname(e) << endl; 
+	}
+      else
+	{
+	  if (ordered) 
+	    // if we must have nodes in the correct order (parents before children), check this condition:
+	    // children must have had all their parents visited before they are visited. 
+	    {
+	      if (! all_parents_visited(e, visited, subgraph) )
+		{
+		  if (logging)
+		    {
+		      cerr<<"Not visited becuase not all its parents have been: " << getDOTname(e) << endl; 
+		      cerr<<"Parents: " << displayStates(sampled_incoming[e.toVector()]) << endl; 
+		      cerr<<"Subgraph: " << displayStates(subgraph) << endl; 
+		      cerr<<"Trace from all_parents_visited:\n";
+		      all_parents_visited(e, visited, subgraph,true);
+		    }
+		  
+		  continue;
+		}
+	    }
+	  ++counter; 
+	  visited.push_back(e); 
+	  if (logging)
+	    cerr<<"Currently visiting state: " << getDOTname(e) << endl; 
+	  // we only add the children of an external state e if e is the starting point
+	  if (e != beginning_state)
+	    {
+	      if (is_external(e) || is_pre_end(e))
+		{
+		  if (logging)
+		    cerr<<"\tNot adding this state's children to stack, since it is external or pre-end\n";
+		  continue; 
+		}
+	    }
+	  
+	  if (sampled_outgoing.count(e.toVector()) )
+	    {
+	      children = sampled_outgoing[e.toVector()];
+	      for (child = children.begin(); child != children.end(); child++)
+		{
+		  if (logging)
+		    cerr<<"\tAdded child to queue: "<< getDOTname(*child) << endl; 
+		stateQueue.push(*child); 
+		}
+	    }
+	  else
+	    cerr<<"Warning: the following state has no outgoing transitions: " << getDOTname(e) << endl; 
+	  
+	}
+    }
+  if (!visited.size())
+    {
+      cerr<<"Warning: BFS of size zero returned.  The state " << getDOTname(beginning_state) << " had outgoing transitions: ";
+      for (child = sampled_outgoing[e.toVector()].begin(); child != sampled_outgoing[e.toVector()].end(); child++)
+	cerr<<" " << getDOTname(*child)<< " ";
+      cerr<<endl; 
+      exit(0); 
+    }
+  return visited; 
+}
+
+
+void AbsorbingTransducer::BFS_marginalize_null_states(Profile *sampled_profile)
+{
+  // This function has a lot going on.  Lots of comments follow. 
+  vector<M_id> children, BFS, parents;
+  vector<int>::iterator sourceIdx;
+  vector<M_id>::iterator e, parent;
+  MyMap<vector<int>, bfloat> weights;
+  MyMap<vector<int>, bfloat> outgoingSum;   
+  MyMap<vector<int>, int> outgoingCount;   
+  M_id source; 
+  pair< vector<int> , vector<int> > transitionPair;
+  bool logging = false;
+  bfloat toAdd, small=1e-500;
+  int counter; 
+  
+  
+  // Loop over delete/external states.  We'd like to know the transition weight
+  // of 'source'-> ePrime, where ePrime is another non-null state. 
+  // the main task here is filling incoming_tmp and sampled_externals_outgoing, and transition_weight_tmp
+  for (sourceIdx=sampled_externals.begin();sourceIdx!=sampled_externals.end();sourceIdx++)
+    {
+      source = sampled_profile->sampled_states[*sourceIdx];
+      BFS = sampled_profile->breadth_first_traversal(source);     
+      if (logging)
+	cerr<<"\nSource state: " << sampled_profile->getDOTname(source) << endl; 
+      if (logging)
+	{
+	  cerr<<"\tLength of BFS list: " << BFS.size(); 
+	  for (e= BFS.begin(); e!= BFS.end(); e++)
+	    cerr<< " " << sampled_profile->getDOTname(*e) << " "; 
+	  cerr<<endl; 
+	}
+      
+
+      weights.clear(); 
+      weights[source.toVector()]=1.0;
+      counter = 0; 
+
+      for (e = BFS.begin(); e!= BFS.end(); e++)
+	{
+	  if (logging)
+	    cerr<<"New state from BFS: " << sampled_profile->getDOTname(*e) <<endl; 
+	  if (*e == source)
+	    continue; 
+
+	  // The possible parents are the null states within the (external-terminating) subgraph rooted at "source"
+	  parents.clear();
+	  for (parent = sampled_profile->sampled_incoming[e->toVector()].begin(); 
+	       parent != sampled_profile->sampled_incoming[e->toVector()].end(); parent++)
+	    {
+	      if (*parent == source)
+		parents.push_back(*parent);
+	      else if (sampled_profile->is_external(*parent))
+		continue;
+	      else if ( index(*parent, BFS) != -1)
+		parents.push_back(*parent); 
+	    }
+
+	  if (sampled_profile->is_external(*e) || sampled_profile->is_pre_end(*e) )
+	    {
+	      // We've found the next delete ( or pre_end) state that is connected to 
+	      // source
+	      if (logging)
+		cerr<<"New destination state: " << sampled_profile->getDOTname(*e) << endl; 
+	      transitionPair.first = source.toVector();
+	      transitionPair.second = e->toVector();
+	      // store the connectivity between source and e:
+	      sampled_externals_outgoing[source.toVector()].push_back(*e);
+	      incoming_tmp[e->toVector()].push_back(source);
+	      // Set the transition weight from source -> e  based on parents of e
+	      // This trans matrix is temporary, becuase states haven't been indexed
+	      // yet, so we're still storing data via M_id vectors.
+	      toAdd = 0.0; 
+	      for (parent = parents.begin(); parent != parents.end(); parent++)
+		{
+		  if (! weights.count(parent->toVector()))
+		    {
+		      cerr<< "Parent state had no weights entry.  State: " << sampled_profile->getDOTname(*e) <<endl; 
+		      cerr<< "                                   Parent: " << sampled_profile->getDOTname(*parent) <<endl; 
+		      exit(0); 
+		    }
+		  toAdd += weights.safe_get(parent->toVector()) * sampled_profile->get_sampled_transition_weight(*parent, *e); 
+		}
+	      
+	      if(logging)
+		cerr<<"New transition added, value: "<<toAdd<<endl; 
+
+	      if (toAdd>1.001)
+		{
+		  cerr<<"Error: cached transition weight is greater than 1 after summing over null states: " << toAdd <<endl; 
+		  exit(1);
+		}
+	      
+	      if (toAdd < small)
+		{
+		  cerr<<"Summed transition weight is excessivelysmall.  Previous weight: "<<weights[parent->toVector()]<<endl;
+		  cerr<<"Current trans weight: "<< sampled_profile->get_sampled_transition_weight(*parent, *e)<<endl;
+		  
+		  cerr<<"Parent state: " << sampled_profile->getDOTname(*parent) << endl; 
+		  exit(1);
+		}
+	      if (transition_weight_tmp.count(transitionPair)==1)
+		cerr<<"Warning: filling a cell that was already filled.  The state: " << sampled_profile->getDOTname(*e); 
+	      else 
+		transition_weight_tmp[transitionPair] = toAdd; 
+	      
+	    }
+	  else // The new state is a null state - fill its "weight" cell and continue.  
+	    { 
+	      if (logging)
+		cerr<<"\n\n***Bypassing non-external state: " << sampled_profile->getDOTname(*e) << endl; 
+
+	      toAdd = 0.0; 
+
+	      for (parent = parents.begin(); parent != parents.end(); parent++)
+		{
+		  if (! weights.count(parent->toVector()))
+		    {
+		      cerr<< "Parent state had no weights entry.  State: " << sampled_profile->getDOTname(*e) <<endl; 
+		      cerr<< "                                   Parent: " << sampled_profile->getDOTname(*parent) <<endl; 
+		      exit(0); 
+		    }
+
+		toAdd += weights.safe_get(parent->toVector()) * sampled_profile->get_sampled_transition_weight(*parent, *e); 
+	      //toAdd *= sampled_profile->get_internal_cascade_weight(*e); 	      
+		}
+
+	      if (toAdd < small)
+		{
+		  cerr<<"Stored transition weight is very small.  Previous weight: "<<weights.safe_get(parent->toVector())<<endl;
+		  cerr<<"Current trans weight: "<< sampled_profile->get_sampled_transition_weight(*parent, *e) << endl; 
+		  cerr<<"Internal emission weight: "<< sampled_profile->get_internal_cascade_weight(*e) << endl; 
+		  exit(1);
+		}
+	      else if(toAdd >1.001)
+		{
+		  cerr<<"Error: Stored transition weight is greater than 1:" << toAdd << endl;
+		  exit(1);
+		}
+	      if(logging) 
+		cerr<<"Caching  state: " << sampled_profile->getDOTname(*e) << "\n          weight: " << toAdd << endl; 
+	      if (weights.count(e->toVector()))
+		cerr<<"Warning: attempting to fill weight cell  that's already been filled!\n";
+	      weights[e->toVector()] = toAdd;
+	      if (weights[e->toVector()] < small)
+		cerr<<"A small entry made it into the 'weights' map: " << toAdd << " " << 
+		  weights[e->toVector()]<< endl; 
+	    }
+	}
+    }
+}
+
 void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 {
+  // another option, use DART:
+  //  DART_marginalize_null_states(sampled_profile); 
+  // return; 
+
+  // yet another option - use a slimmer BFS/DP version
+   ofstream fh;
+//    fh.open("saved_profile.dot");
+//    sampled_profile->show_DOT(fh); 
+//    cerr<<"Profile saved as saved_profile.dot\n";
+  
+  BFS_marginalize_null_states(sampled_profile); 
+  return; 
+  
   // This function has a lot going on.  Lots of comments follow. 
   // I've tried to follow the notation in transducer.tex as close as I can
   vector<int>::iterator sourceIdx;
   vector<M_id>::iterator ePrime;
   stack<M_id> stateStack;
-  map<vector<int>, bfloat> weights;
-  map<vector<int>, bfloat> outgoingSum;   
-  map<vector<int>, int> outgoingCount;   
+  MyMap<vector<int>, bfloat> weights;
+  MyMap<vector<int>, bfloat> outgoingSum;   
+  MyMap<vector<int>, int> outgoingCount;   
   M_id e, source; 
-  vector<M_id> children;
+  vector<M_id> children, BFS;
   pair< vector<int> , vector<int> > transitionPair;
   bool logging = false;
-  bfloat toAdd, small=pow(.1,1000); 
-
+  bfloat toAdd, small=1e-500;
+  int counter; 
+  
+  BFS = sampled_profile->breadth_first_traversal(sampled_profile->sampled_states[sampled_start_state]); 
+  cerr<<"Size of breadth-first search: " << BFS.size() << endl; 
   // Loop over delete/external states.  We'd like to know the transition weight
   // of 'source'-> ePrime, where ePrime is another non-null state. 
-
+  // the main task here is filling incoming_tmp and sampled_externals_outgoing, and transition_weight_tmp
   for (sourceIdx=sampled_externals.begin();sourceIdx!=sampled_externals.end();sourceIdx++)
     {
       source = sampled_profile->sampled_states[*sourceIdx];
-	  if (logging){ std::cerr<<"\nSource state: \n\t"; source.display(sampled_profile->Q);}
-      weights.clear();
+      if (logging)
+	cerr<<"\nSource state: " << sampled_profile->getDOTname(source) << endl; 
+      
+//       if (logging)
+// 	{
+// 	  std::cerr<<"\nSource state: \n\t"; source.display(sampled_profile->Q);
+// 	}
+      if (stateStack.size() != 0)
+	cerr<<"Warning: Stack not empty when it ought to be. \n"; 
       stateStack.push(source);
-	  weights.clear(); 
+      weights.clear(); 
       weights[source.toVector()]=1.0;
-	  outgoingSum[source.toVector()] =0; 
-
+      outgoingSum[source.toVector()] =0; 
+      counter = 0; 
       // search depth-first for next delete/external state
       while (!stateStack.empty())
 		{
+		  counter++; 
+		  if (counter >= 10000000)
+		    {
+		      // Error - we're likely caught in an infinite loop
+		      ofstream fh;
+		      fh.open("saved_profile.dot");
+		      sampled_profile->show_DOT(fh); 
+		      cerr<<"Infinite loop in null-elimination detected.  Profile saved as saved_profile.dot\n";
+
+		      fh.close(); 
+		      fh.open("saved_DFS.txt"); 
+		      sampled_profile->depth_first_traversal(fh, sampled_start_state, sampled_end_state); 
+		      cerr<<"Profile DFS pattern  saved as saved_DFS.txt\n";
+		      exit(0);
+		    }
+		  if (logging) 
+		    cerr<<"Stack size is currently: " << stateStack.size() << endl; 
+		  
+		  // Pop off next state, inspect its children
 		  e = stateStack.top();
 		  stateStack.pop();
+		  if (logging)
+		    { 
+		      std::cerr<<"New state from stack: \n\t"; 
+		      e.display(sampled_profile->Q);
+		    }
 		  if (sampled_profile->sampled_outgoing.count(e.toVector())>0)
 			children = sampled_profile->sampled_outgoing[e.toVector()];
-		  else continue;
-		  if(logging) std::cerr<<"This state has "<< children.size()<< " children\n";
 
+		  if(logging) 
+		    {
+		      cerr<<"This state has "<< children.size()<< " children\n";
+		      cerr<<" ****** Begin children *****\n"; 
+		      for (ePrime = children.begin(); ePrime!=children.end(); ePrime++)
+			ePrime->display(sampled_profile->Q); 
+		      cerr<<" ****** End children *****\n"; 
+		    }
+		  
 		  for (ePrime = children.begin(); ePrime!=children.end(); ePrime++)
 			{
 			  if (sampled_profile->is_external(*ePrime) || sampled_profile->is_pre_end(*ePrime) )
@@ -669,41 +1173,31 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 				  // this trans matrix is temporary, becuase states haven't been indexed
 				  // yet, so we're still storing data via M_id vectors.
 
-				  toAdd = weights[e.toVector()] * sampled_profile->get_sampled_transition_weight(e, *ePrime); 
+				  toAdd = weights.safe_get(e.toVector()) * sampled_profile->get_sampled_transition_weight(e, *ePrime); 
 				  if(logging)
 					{
-					  std::cerr<<"New transition added, value: "<<toAdd<<endl; 
+					  cerr<<"New transition added, value: "<<toAdd<<endl; 
 					}
 				  if (toAdd>1.001)
 					{
-					  std::cerr<<"Error: cached transition weight is greater than 1, after summing over null states\n";
+					  cerr<<"Error: cached transition weight is greater than 1 after summing over null states: " << toAdd <<endl; 
 					  exit(1);
 					}
 				  
-				  // for test.  This is now done as a test_transitions function
-				  /*
-				  outgoingSum[source.toVector()] += toAdd;
-				  outgoingCount[source.toVector()] += 1; 
-
-				  if(outgoingSum[source.toVector()] >1.0)
-					{
-					  std::cerr<<"Error: outgoing sum of delete state has passed 1.  The last transition added: "<<
-						toAdd<<endl; 
-					  std::cerr<<"State has "<<outgoingCount[source.toVector()]<<" outgoing transitions\n";
-					}
-				  */
 				  if (toAdd < small)
 					{
-					  std::cerr<<"Summed transition weight is very small.  Previous weight: "<<weights[e.toVector()]<<endl;
-					  std::cerr<<"Current trans weight: "<< sampled_profile->get_sampled_transition_weight(e, *ePrime)<<endl;
+					  cerr<<"Summed transition weight small.  Previous weight: "<<weights[e.toVector()]<<endl;
+					  cerr<<"Current trans weight: "<< sampled_profile->get_sampled_transition_weight(e, *ePrime)<<endl;
 
-					  std::cerr<<"Parent state: \n\t"; 
+					  cerr<<"Parent state: \n\t"; 
 					  e.display(sampled_profile->Q); 
 					  exit(1);
 					}
 				  if (transition_weight_tmp.count(transitionPair)==1)
 					transition_weight_tmp[transitionPair] += toAdd; 
-				  else transition_weight_tmp[transitionPair] = toAdd; 
+				  else 
+				    transition_weight_tmp[transitionPair] = toAdd; 
+
 				}
 			  else // child ePrime is a null state - add to stack
 				{ 
@@ -711,20 +1205,20 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 				  
 				  if (logging)
 					{ 
-					  std::cerr<<"\n\n***Bypassing non-external state:*** \n\t"; 
+					  std::cerr<<"\n\n***Bypassing non-external state (e.g. pushed to stack):*** \n\t"; 
 					  ePrime->display(sampled_profile->Q);
 					  std::cerr<<"\n\n";
 					}
 				  
-				  toAdd = weights[e.toVector()] *
-					sampled_profile->get_sampled_transition_weight(e, *ePrime) *
-					sampled_profile->get_internal_cascade_weight(*ePrime);
+				  toAdd = weights.safe_get(e.toVector()) *
+				    sampled_profile->get_sampled_transition_weight(e, *ePrime);
+				    //					*sampled_profile->get_internal_cascade_weight(*ePrime);
 
 				  if (toAdd < small)
 					{
-					  std::cerr<<"Stored transition weight is very small.  Previous weight: "<<weights[e.toVector()]<<endl;
-					  std::cerr<<"Current trans weight: "<< sampled_profile->get_sampled_transition_weight(e, *ePrime);
-					  std::cerr<<"Internal emission weight: "<< sampled_profile->get_internal_cascade_weight(*ePrime);
+					  std::cerr<<"Stored transition weight is very small.  Previous weight: "<<weights.safe_get(e.toVector())<<endl;
+					  std::cerr<<"Current trans weight: "<< sampled_profile->get_sampled_transition_weight(e, *ePrime) << endl; 
+					  std::cerr<<"Internal emission weight: "<< sampled_profile->get_internal_cascade_weight(*ePrime) << endl; 
 					  exit(1);
 					}
 				  else if(toAdd >1.001)
@@ -734,10 +1228,13 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 					}
 				  if(logging) 
 					{
-					  std::cerr<<"Caching state's weight: \n\t"; 
+					  std::cerr<<"Caching state's weight: " << toAdd << "\n\t"; 
 					  ePrime->display(sampled_profile->Q); 
 					}
 				  weights[ePrime->toVector()] = toAdd;
+				  if (weights[ePrime->toVector()] < small)
+				    std::cerr<<"A small entry made it into the 'weights' map: " << toAdd << " " << 
+				      weights[ePrime->toVector()]<< endl; 
 				}
 			}
 		}
@@ -747,7 +1244,7 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
   // NB this is now implemented as test_transitions function - I'm leaving this here
   // because it might be good for real-time debugging of the above function 
   /*
-  for (map< vector<int>, bfloat>::iterator src=outgoingSum.begin(); src!=outgoingSum.end(); src++)
+  for (MyMap< vector<int>, bfloat>::iterator src=outgoingSum.begin(); src!=outgoingSum.end(); src++)
 	{
 	  if (src->second > 1.0)
 		{
@@ -815,20 +1312,28 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 	  if (parent != sampled_profile->sampled_states[sampled_start_state] && 
 	      parent != sampled_profile->sampled_states[sampled_pre_end_state] )
 	    {
-	      //double absorbSum= 0.0; 
 	      for (charIndex = 0; charIndex < alphabet_size; charIndex++)
-		absorption_weight[state_counter].push_back(
-							   sampled_profile->get_external_cascade_weight(parent, charIndex));
-	      
+		absorption_weight[state_counter].push_back(sampled_profile->get_external_cascade_weight(parent, charIndex));
+		// underflow test
+		//absorption_weight[state_counter].push_back(1.0)
+
+
 		  // The leaf  coordinates accounted for by this state. 
 		  leaf_coords[state_counter] = sampled_profile->leaf_coords[parent.toVector()];
+		  
+		  // for alignment envelope
+		  leaf_seq_coords[state_counter] = sampled_profile->leaf_seq_coords[parent.toVector()]; 
 		  // The alignment column accounted for by this state.
 		  state_type_phylogeny[state_counter] = sampled_profile->state_type_phylogeny[parent.toVector()];
 		}
 
 	  // If parent is the start state, we give it a "dummy" STP map
 	  if (parent == sampled_profile->sampled_states[sampled_start_state] ) 
-	    state_type_phylogeny[state_counter] = sampled_profile->merge_STP(parent); 	  
+	    {
+	      state_type_phylogeny[state_counter] = sampled_profile->merge_STP(parent); 	  
+	      // for alignment envelope
+	      leaf_seq_coords[state_counter] = sampled_profile->leaf_seq_coords[parent.toVector()]; 
+	    }
 
 	  if ( sampled_externals_outgoing.count(parent.toVector()) < 1 )
 	    {
@@ -854,6 +1359,9 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   mid2int[parent.toVector()] = pre_end_state; 
   state2mid[pre_end_state] = parent; 
   state_type_phylogeny[state_counter] = sampled_profile->merge_STP(parent); 
+  // for alignment envelope
+  leaf_seq_coords[pre_end_state] = sampled_profile->leaf_seq_coords[parent.toVector()]; 
+
   if (num_delete_states != pre_end_state)
 	{
 	  std::cerr<<"Pre-end state set as "<<state_counter<<".  There were "<<num_delete_states<<" external states.\n";
@@ -911,8 +1419,12 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 		  transitionVecPair.second = child->toVector();	  
 		  transitionIntPair.first = mid2int[source.toVector()];
 		  transitionIntPair.second = mid2int[child->toVector()];	  
-		  transition_weight[transitionIntPair] = 
-			transition_weight_tmp[transitionVecPair];
+		  if (transition_weight_tmp[transitionVecPair] > 0.0)
+		    transition_weight[transitionIntPair] = transition_weight_tmp[transitionVecPair];
+		  else
+		    std::cerr<<"Adding a zero-weight transition to new profile's transition matrix...\n";
+		    // underflow test
+		  //max(transition_weight_tmp[transitionVecPair], bfloat(1));
 		}
     }
   // pre-end state
@@ -933,7 +1445,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
   transition_weight[transitionIntPair] = 1;  
 
   // transfer the 'between' map from sampled_profile.    
-  map<pair<vector<int>, vector<int> >, map<node, string> >::iterator nodeState; 
+  MyMap<pair<vector<int>, vector<int> >, MyMap<node, string> >::iterator nodeState; 
   for (nodeState=sampled_profile->between.begin(); nodeState!=sampled_profile->between.end(); nodeState++)
 	{
 	  transitionIntPair.first = mid2int[nodeState->first.first];
@@ -974,7 +1486,18 @@ bfloat AbsorbingTransducer::get_absorb_weight(state e, int charIndex)
 	  exit(1);
 	}
   #endif
-  return absorption_weight[e][charIndex];
+  bfloat toRet = absorption_weight[e][charIndex];
+  bool isReal=false;
+  if (toRet >0.0)
+    isReal = true;
+  if (isReal)
+    return toRet; 
+  else
+    {
+      std::cerr<<"Bad absorption value\n";
+      exit(0); 
+    }
+
 }
 
 bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
@@ -999,7 +1522,8 @@ bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
   if (ePrime == start_state) 
 	{
 	  std::cerr<<"Error: calling incoming transition to start state\n"; 
-	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" source state: "<<ePrime<<endl;
+	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" source state: "<<e<<endl;
+	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" destin state: "<<ePrime<<endl;
 	  exit(1);
 	}
   else if(index(e, incoming[ePrime]) == -1 )
@@ -1012,13 +1536,25 @@ bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
   else 
 	{
 	  pair<state, state> transitionPair; transitionPair.first=e, transitionPair.second=ePrime;
-	  if (transition_weight.count(transitionPair)) return transition_weight[transitionPair];
-	  else
+	  if (transition_weight.count(transitionPair)) 
+	    {
+	      bool isReal = false;
+	      if (transition_weight[transitionPair] > 0.0)
+		isReal = true; 
+	      if (!isReal)
 		{
-		  std::cerr<<"Error: the transition between states "<<e<<" , "<<ePrime<<" ought to be valid, but there is no entry in the transition matrix for it!\n";
+		  std::cerr<< "Error: the transition between states "<<e<<" , "<<ePrime<<" is valid, but it is zero\n"; 
 		  exit(1);
 		}
-
+	      else
+		return transition_weight[transitionPair];
+	    }
+	  else
+	    {
+	      std::cerr<<"Error: the transition between states "<<e<<" , "<<ePrime<<" ought to be valid, but there is no entry in the transition matrix for it!\n";
+	      exit(1);
+	    }
+	  
 	}
 }
 
@@ -1103,8 +1639,7 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
 	{ subtreeNodes.push_back(*n); }  
   subtreeNodes.push_back(treeNode); 
 
-  envelope_distance = 200; //hard-coded envelope distance
-  guide_sausage = -1; // placeholder sausage size
+  //  envelope_distance = 200; //hard-coded envelope distance
   num_sampled_externals = 0; 
   
   // This is a bit awkward...owing to the quirk that M_ids store types as integers
@@ -1115,6 +1650,8 @@ Profile::Profile(node node_in, AbsorbingTransducer left_in, AbsorbingTransducer 
   profile_pre_end = 2;
   profile_end = 3;
   
+  num_discarded_states = 0; 
+  num_zero_states = 0; 
 
 }
 // Top-level public methods
@@ -1127,8 +1664,8 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
   bool testing = false, viterbi=false, nextBreak=false;   //  bool fromStart;
   vector<M_id> states_in; // states for sampling
   vector<bfloat> weights; // weights for each of these states
-  bfloat weight, pathWeight, emissionWeight, small=0.00001; 
-  vector<M_id> pi; // sampled state path
+  bfloat weight, pathWeight, emissionWeight, small=0.00001, left_transition_weight; 
+  vector<M_id> pi, pi_previous; // sampled state path
   string S = "S";
   string I = "I";   
   int sampleIdx, loopIdx;
@@ -1149,6 +1686,9 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
     std::cerr<<"Warning: sampling only one path with viterbi option off.  Consider more paths or turning on viterbi..\n"; 
   for (int pathIdx = 0; pathIdx < num_paths; pathIdx++)
 	{
+	  if (logging >=1)
+	    if (pathIdx % 1000 == 0 and pathIdx!=0)
+	      cerr<<" " << pathIdx << " "; 
 	  if (logging >=1 and nextBreak )
 	    {
 	      std::cerr<<"(sampling truncated after caching " << num_sampled_externals << " states via ";
@@ -1183,10 +1723,12 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 	  // Keep sampling states until we reach M_n's start state
 	  // Keep a counter, in case things get out of control. 
 	  loopIdx = 0;
+
 	  while( mPrime != bigStart ) 
 		{
+		  try
+		    {
 		  loopIdx++; 
-		  if (loopIdx > 100000) {std::cerr<<"Possibly caught in  while loop. Exiting...\n";exit(1);}
 		  if(logging>=2) 
 			{ std::cerr<<"\nCurrent state:\n\t"; mPrime.display(Q); }
 
@@ -1200,11 +1742,13 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 				{
 				  // for left_pre_end in left_profile.pre_end_states
 				  // for right_pre_end in right_profile.pre_end_states				  
-				  if (!Q.has_transition(*q, Q.composite_end_state)) continue;
+				  if (!Q.has_transition(*q, Q.composite_end_state)) 
+				    continue;
 				  m.q_state = *q;
 				  m.left_state = left_profile.pre_end_state;
 				  m.right_state = right_profile.pre_end_state; 			  
-				  m.left_type = 2; m.right_type = 2;
+				  m.left_type = 2; 
+				  m.right_type = 2;
 				  weight = get_DP_cell(m)*Q.get_transition_weight(*q, mPrime.q_state) *
 					left_profile.get_transition_weight(left_profile.pre_end_state,left_profile.end_state) *
 					right_profile.get_transition_weight(right_profile.pre_end_state,right_profile.end_state); 
@@ -1212,22 +1756,25 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 				  // for test
 				  if (weight > 0.0 && testing)
 					{
-				  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
-				  if (transition_weight_test.count(transitionPair)<1)
-					{std::cerr<<"Using a novel transition in traceback!\n"; 
-					  std::cerr<<"Source:"; m.display(Q);
-					  std::cerr<<"Dest:"; mPrime.display(Q); 					  
-					  exit(1);}
-				  
-				  else if( absoluted(transition_weight_test[transitionPair] + small - (weight/get_DP_cell(m)+small))>small )
-					{std::cerr<<"Transition in traceback does not match same computed in forward!\n"; 
-					  std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
-					  exit(1);}
-					}
+					  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
+					  if (transition_weight_test.count(transitionPair)<1)
+					    {std::cerr<<"Using a novel transition in traceback!\n"; 
+					      std::cerr<<"Source:"; m.display(Q);
+					      std::cerr<<"Dest:"; mPrime.display(Q); 					  
+					      exit(1);}
+					  
+					  else if( absoluted(transition_weight_test[transitionPair] + small - (weight/get_DP_cell(m)+small))>small )
+					    {std::cerr<<"Transition in traceback does not match same computed in forward!\n"; 
+					      std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
+					      exit(1);}
+					} //end testing loop
 				  if (weight > 0.0)
 					{
-					  states_in.push_back(m);
-					  weights.push_back( weight );
+					  if (m.isValid())
+					    {
+					      states_in.push_back(m);
+					      weights.push_back( weight );
+					    }
 					}
 				}
 			  if (weights.size() == 0) 
@@ -1261,12 +1808,13 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 					  if (mPrime.left_state != left_profile.start_state)
 						{ weight*=left_profile.get_transition_weight(left_profile.start_state, mPrime.left_state);}
 					  
-					  // for test
+				  // for test
 				  if (weight > 0.0 && testing)
+				    {
+				      transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
+				      if (transition_weight_test.count(transitionPair)<1)
 					{
-					  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
-					  if (transition_weight_test.count(transitionPair)<1)
-						{std::cerr<<"Using a novel transition in traceback!\n"; 
+					  std::cerr<<"Using a novel transition in traceback!\n"; 
 					  std::cerr<<"Source:"; m.display(Q);
 					  std::cerr<<"Dest:"; mPrime.display(Q); 					  
 					  exit(1);}
@@ -1277,13 +1825,16 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 						  std::cerr<<"Source:"; m.display(Q);
 						  std::cerr<<"Dest:"; mPrime.display(Q); 					  
 						  exit(1);}
-					}
-
-					  if (weight > 0.0)
-						{
-						  states_in.push_back(m);
-						  weights.push_back( weight );
-						}
+				    }//end test
+				  
+				  if (weight > 0.0)
+				    {
+					  if (m.isValid())
+					    {
+					      states_in.push_back(m);
+					      weights.push_back( weight );
+					    }
+				    }
 					}
 				}
 			  // incoming states where Q is match
@@ -1297,37 +1848,45 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 				  for (e_l = left_incoming.begin(); e_l != left_incoming.end(); e_l++)
 					{
 					  m.left_state = *e_l;
-					  if (m.left_state == left_profile.start_state) m.left_type = -1;
-					  else m.left_type = 1;
+					  if (m.left_state == left_profile.start_state) 
+					    m.left_type = -1;
+					  else 
+					    m.left_type = 1;
 
 					  for (e_r = right_incoming.begin(); e_r != right_incoming.end(); e_r++)
 						{
-						  if (! is_in_envelope(*e_l, *e_r))
-							continue;
+						  //						  if (! is_in_envelope(*e_l, *e_r))
+						  //							continue;
 						  m.right_state = *e_r;
-						  if (m.right_state == right_profile.start_state) m.right_type = -1;
-						  else m.right_type = 1;
+						  if (m.right_state == right_profile.start_state) 
+						    m.right_type = -1;
+						  else 
+						    m.right_type = 1;
 
 						  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 							{
 
 							  m.q_state = *q;
-							  weight = 
-								get_DP_cell(m) *
-								Q.get_transition_weight(*q, mPrime.q_state) * 
-								left_profile.get_transition_weight(*e_l, mPrime.left_state) *
-								right_profile.get_transition_weight(*e_r, mPrime.right_state) ;
+							  weight = get_DP_cell(m); 
+							  if (weight>0.0)
+							    weight *=
+							      Q.get_transition_weight(*q, mPrime.q_state) * 
+							      left_profile.get_transition_weight(*e_l, mPrime.left_state) *
+							      right_profile.get_transition_weight(*e_r, mPrime.right_state) ;
+							  else
+							    continue;
 
 
 							  // for test
 							  if (weight > 0.0 && testing)
 								{
-							  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
-							  if (transition_weight_test.count(transitionPair)<1)
-								{std::cerr<<"Using a novel transition in traceback!\n"; 
-								  std::cerr<<"Source:"; m.display(Q);
-								  std::cerr<<"Dest:"; mPrime.display(Q); 					  
-								  exit(1);}
+								  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
+								  if (transition_weight_test.count(transitionPair)<1)
+								    {std::cerr<<"Using a novel transition in traceback!\n"; 
+								      std::cerr<<"Source:"; m.display(Q);
+								      std::cerr<<"Dest:"; mPrime.display(Q); 					  
+								      exit(1);
+								    }
 							  
 							  else if( absoluted(transition_weight_test[transitionPair] - weight/get_DP_cell(m))>small )
 								{std::cerr<<"Transition in traceback does not match same computed in forward!\n"; 
@@ -1338,14 +1897,16 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 								  std::cerr<<"left transition: "<<left_profile.get_transition_weight(*e_l, mPrime.left_state)<<endl; 
 								  std::cerr<<"right transition: "<<right_profile.get_transition_weight(*e_r, mPrime.right_state)<<endl; 
 								  exit(1);}
-								}
+								} // end test
 
 							  if (weight > 0.0)
+							    {
+							      if (m.isValid())
 								{
 								  states_in.push_back(m);
 								  weights.push_back( weight );
 								}
-					  
+							    }
 							}
 						}
 					}
@@ -1359,53 +1920,62 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
   
 				  for (e_l = left_incoming.begin(); e_l != left_incoming.end(); e_l++)
 					{
-					  if (! is_in_envelope(*e_l, mPrime.right_state))
-						continue; 
+					  //					  if (! is_in_envelope(*e_l, mPrime.right_state))
+					  //						continue; 
 
 					  m.left_state = *e_l;
-					  if (m.left_state == left_profile.start_state) m.left_type = -1;
-					  else m.left_type = 1;
+					  if (m.left_state == left_profile.start_state) 
+					    m.left_type = -1;
+					  else 
+					    m.left_type = 1;
 					  
 					  m.right_state = mPrime.right_state;
-					  
 					  m.right_type = 0; 
 					  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 						{
 						  m.q_state = *q;
-						  weight =
-							get_DP_cell(m)*
-							Q.get_transition_weight(*q, mPrime.q_state)*
-							left_profile.get_transition_weight(*e_l, mPrime.left_state);
+						  weight = get_DP_cell(m);
+						  if (weight >0.0)
+						    weight *=
+						      Q.get_transition_weight(*q, mPrime.q_state)*
+						      left_profile.get_transition_weight(*e_l, mPrime.left_state);
+						  else
+						    continue;
 						  // right profile transition weight is implicitely 1 here 
 
 						  // for test
 						  if (weight > 0.0 && testing)
 							{
-						  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
-						  if (transition_weight_test.count(transitionPair)<1)
-							{std::cerr<<"Using a novel transition in traceback!\n"; 
-							  std::cerr<<"Source:"; m.display(Q);
-							  std::cerr<<"Dest:"; mPrime.display(Q); 					  
-							  exit(1);}
-						  
-						  else if( absoluted(transition_weight_test[transitionPair] - weight/get_DP_cell(m)) > small )
-							{std::cerr<<"Transition in traceback does not match same computed in forward!\n"; 
-							  std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
-							  std::cerr<<"Source:"; m.display(Q);
-							  std::cerr<<"Dest:"; mPrime.display(Q); 					  
-							  exit(1);}
-							}
+							  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
+							  if (transition_weight_test.count(transitionPair)<1)
+							    {std::cerr<<"Using a novel transition in traceback!\n"; 
+							      std::cerr<<"Source:"; m.display(Q);
+							      std::cerr<<"Dest:"; mPrime.display(Q); 					  
+							      exit(1);
+							    }
+							  
+							  else if( absoluted(transition_weight_test[transitionPair] - weight/get_DP_cell(m)) > small )
+							    {
+							      std::cerr<<"Transition in traceback does not match same computed in forward!\n"; 
+							      std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
+							      std::cerr<<"Source:"; m.display(Q);
+							      std::cerr<<"Dest:"; mPrime.display(Q); 					  
+							      exit(1);}
+							} // end test
 						  if (weight > 0.0)
+						    {
+						      if (m.isValid())
 							{
 							  states_in.push_back(m);
 							  weights.push_back( weight );
 							}
+						    }
 						}
 					}
 				}
-
+			  
 			  // incoming states where Q is right-emit
-			  // right profile must not be in start state
+			  // right profile must not be in start state, left can be either wait or 'start' (type AND index)
 			  if (mPrime.right_state != right_profile.start_state) 				
 				{
 				  q_incoming = Q.get_incoming_right_emit_states(mPrime.q_state);
@@ -1413,108 +1983,155 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
   
 				  for (e_r = right_incoming.begin(); e_r != right_incoming.end(); e_r++)
 					{
-					  if (! is_in_envelope(mPrime.left_state , *e_r)) 
-						continue;
+					  //					  if (! is_in_envelope(mPrime.left_state , *e_r)) 
+					  //						continue;
 
 					  m.right_state = *e_r;
-					  if (m.right_state == right_profile.start_state) m.right_type = -1;
-					  else m.right_type = 1;
+					  if (m.right_state == right_profile.start_state) 
+					    continue; //m.right_type = -1;
+					  else
+					    m.right_type = 1;
 					  
-   					  m.left_state = mPrime.left_state; // note this
+   					  
 
 					  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 						{
-						  m.left_type = get_profile_type(*q, "left");
 						  m.q_state = *q;
+						  m.left_type = get_profile_type(*q, "left");
+						  // begin careful stuff
+						  if (m.left_type == profile_start)
+						    m.left_state = left_profile.start_state;
+						  else
+						    m.left_state = mPrime.left_state; // note this
+						  
+						  if (m.left_state != mPrime.left_state)
+						    {
+						      if (left_profile.has_transition(m.left_state, mPrime.left_state))
+							left_transition_weight  = 
+							  left_profile.get_transition_weight(m.left_state, mPrime.left_state);
+						      else
+							continue;
+						    }
+						  else
+						    left_transition_weight  = 1.0;
+						  // end careful stuff
 
-						  if ( stringAt(Q.get_state_type(*q),0) == S &&
-							   stringAt(Q.get_state_type(*q),1) == S &&
-							   stringAt(Q.get_state_type(*q),2) == S &&
-							   stringAt(Q.get_state_type(*q),3) == I) 
-							{
-							  if( mPrime.left_state != left_profile.start_state ) continue;
-							  else 
-								{
-								  if( m.left_type != -1){std::cerr<<"Left profile incorrectly typed!\n"; exit(1);}
-								}
-							}// end if SSSI
 
-						  weight =
-							get_DP_cell(m)*		
-							Q.get_transition_weight(*q, mPrime.q_state)*
-							right_profile.get_transition_weight(*e_r, mPrime.right_state);
-						  // left profile transition weight is implicitely 1 here 			  
 
+// 						  if ( stringAt(Q.get_state_type(*q),0) == S &&
+// 							   stringAt(Q.get_state_type(*q),1) == S &&
+// 							   stringAt(Q.get_state_type(*q),2) == S &&
+// 							   stringAt(Q.get_state_type(*q),3) == I) 
+// 							{
+// 							  if( mPrime.left_state != left_profile.start_state ) continue;
+// 							  else 
+// 								{
+// 								  if( m.left_type != -1){std::cerr<<"Left profile incorrectly typed!\n"; exit(1);}
+// 								}
+// 							}// end if SSSI
+
+						  weight = get_DP_cell(m);
+						  if (weight>0.0)
+						    weight *=
+						      Q.get_transition_weight(*q, mPrime.q_state)*
+						      right_profile.get_transition_weight(*e_r, mPrime.right_state) * 
+						      left_transition_weight; 
+						  else
+						    continue;
 
 						  // for test
 						  if (weight > 0.0 && testing)
 							{
-						  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
-						  if (transition_weight_test.count(transitionPair)<1)
-							{std::cerr<<"Using a novel transition in traceback!\n"; 
-							  std::cerr<<"Source:"; m.display(Q);
-							  std::cerr<<"Dest:"; mPrime.display(Q); 					  
-							  exit(1);}
-						  
-						  else if( absoluted(transition_weight_test[transitionPair] + small - (weight/get_DP_cell(m)+small))>small )
-							{std::cerr<<"Transition in traceback does not match same computed in forward!\n"; 
-							  std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
-							  std::cerr<<"Source:"; m.display(Q);
-							  std::cerr<<"Dest:"; mPrime.display(Q); 					  
-							  exit(1);}
-							}
+							  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
+							  if (transition_weight_test.count(transitionPair)<1)
+							    {std::cerr<<"Using a novel transition in traceback!\n"; 
+							      std::cerr<<"Source:"; m.display(Q);
+							      std::cerr<<"Dest:"; mPrime.display(Q); 					  
+							      exit(1);
+							    }
+							  
+							  else if( absoluted(transition_weight_test[transitionPair] + small - (weight/get_DP_cell(m)+small))>small )
+							    {
+							      std::cerr<<"Transition in traceback does not match same computed in forward!\n"; 
+							      std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
+							      std::cerr<<"Source:"; m.display(Q);
+							      std::cerr<<"Dest:"; mPrime.display(Q); 					  
+							      exit(1);
+							    }
+							} //end test
 						  if (weight > 0.0)
 							{
-							  states_in.push_back(m);
-							  weights.push_back( weight );
+							  if (m.isValid())
+							    {
+							      states_in.push_back(m);
+							      weights.push_back( weight );
+							    }
 							}
 						}
 					}
 				}
 			}
-
-		  if (weights.size() > 1)
+		    }
+		  catch(char * str)
+		    {
+		      cerr<<"Error in computing weights\n"; 
+		      exit(1); 
+		    }
+		  try
+		    {
+		      if (weights.size() > 1)
 			{
 			  if (logging>=2) 
+			    {
+			      /*
+				std::cerr<<"\nWeights for incoming states: "; 
+				displayVector(weights);
+				std::cerr<<"\nThese states were:\n";
+				for (vector<M_id>::iterator in=states_in.begin(); in!=states_in.end(); in++)
 				{
-				  /*
-				  std::cerr<<"\nWeights for incoming states: "; 
-				  displayVector(weights);
-				  std::cerr<<"\nThese states were:\n";
-				  for (vector<M_id>::iterator in=states_in.begin(); in!=states_in.end(); in++)
-					{
-					  map<node, string> tmpMap = merge_STP(*in); 
-					  show_state_phylo(tmpMap);
-					  std::cerr<<endl;
-					  } */
-				}
+				MyMap<node, string> tmpMap = merge_STP(*in); 
+				show_state_phylo(tmpMap);
+				std::cerr<<endl;
+				} */
+			    }
 
-			  if (viterbi) sampleIdx = maxIndex(weights);
-			  else sampleIdx = sample(weights);
-			  pathWeight *= (weights[sampleIdx] / get_DP_cell(states_in[sampleIdx]))*
-				compute_emission_weight(states_in[sampleIdx]);
+			  if (viterbi) 
+			    sampleIdx = maxIndex(weights);
+			  else 
+			    sampleIdx = sample(weights);
+			  if (sampleIdx >= states_in.size())
+			    cerr<<"ERROR: Sampled a state beyond end of vector of possible states!\n";
+			  //pathWeight *= (weights[sampleIdx] / get_DP_cell(states_in[sampleIdx]))*
+			  //				compute_emission_weight(states_in[sampleIdx]);
 
+			  if (weights.size() != states_in.size())
+			    {
+			      cerr<<"Error: candidate states and their relative weights are not size-matched!\n"; 
+			      exit(1); 
+			    }
 			  if (logging>=2) std::cerr<<"Sampled state number: "<<sampleIdx<<endl;
-			  pi.push_back(states_in[sampleIdx]);
-			  cache_state(states_in[sampleIdx], mPrime, weights[sampleIdx] );
-			  state_type_phylogeny[states_in[sampleIdx].toVector()] = merge_STP(states_in[sampleIdx]);
+			  if (! states_in.at(sampleIdx).isValid())
+			    cerr<<"WARNING: the sampled state is not 'valid':\n" << getDOTname(states_in[sampleIdx]) << endl; 
+			  pi.push_back(states_in.at(sampleIdx));
+			  cache_state(states_in.at(sampleIdx), mPrime, weights.at(sampleIdx) );
+			  state_type_phylogeny[states_in.at(sampleIdx).toVector()] = merge_STP(states_in.at(sampleIdx));
 			  if(logging>=2)
 				{
 				  std::cerr<<"Next state:"<<endl;
 				  states_in[sampleIdx].display(Q);
 				  show_state(states_in[sampleIdx]);
 				}
-			  
-
-			}
+		    }
 		  else if (weights.size() == 1)
 			{
 			  if(logging>=2)std::cerr<<"(Deterministic sample: only one incoming state)\n";
+			  if (!states_in[0].isValid())
+			    cerr<<"WARNING: the sampled state is not 'valid':\n" << getDOTname(states_in[0]) << endl; 
 			  pi.push_back(states_in[0]);
 			  cache_state(states_in[0], mPrime, weights[0] );
 			  state_type_phylogeny[states_in[0].toVector()] = merge_STP(states_in[0]);
-			  pathWeight *= (weights[0] / get_DP_cell(states_in[0]))*
-				compute_emission_weight(states_in[0]);
+			  //pathWeight *= (weights[0] / get_DP_cell(states_in[0]))*
+			  //				compute_emission_weight(states_in[0]);
 
 			  if(logging>=2)
 				{
@@ -1536,39 +2153,39 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 			  exit(1);
 			}
 		  mPrime = pi.back();
+		    }
+		  catch(char * str)
+		    {
+		      cerr<<"Error in caching state\n";
+		    }
+		
+		  if(logging>=2) 
+		    { std::cerr<<"\nFinal state:\n\t"; mPrime.display(Q); }
+
 		}
-  if(logging>=2) 
-	{ std::cerr<<"\nFinal state:\n\t"; mPrime.display(Q); }
-
-  // Store the null states' accounted characters:
-  cache_path(pi); 
-  store_summed_nulls(pi); 
-  if(pathWeight/forward_prob > 1.001)
-	{
-	  std::cerr<<"\nError: an alignment's posterior probability was calculated as greater than 1.  This is not reasonable, and represents a calculation error. \n";
-	  std::cout<<"#Sampled alignment, bit-score: "<< -log(pathWeight)/log(2)<<":\n";	  
-	  std::cout<<  "       posterior probability: "<< pathWeight/forward_prob<<":\n";
-	  show_alignment(pi, false); 
-	  std::cerr<<"\n";
-	  exit(1); 
+	  cache_path(pi); 
+	  // this operation is now handled within cache_path:
+	  //  store_summed_nulls(pi); 
+	  
+	  if (showAlignments) 
+	    {
+	      std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
+	      std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
+	      std::cout<< show_alignment(pi, leaves_only); 
+	      std::cerr<<"\n";
+	    }
 	}
-  
-  if (showAlignments) 
-	{
-	  std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
-	  std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
-	  std::cout<< show_alignment(pi, leaves_only); 
-	  std::cerr<<"\n";
-	}
-
-	}	
   return pi; 
 }
 void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 {
   // upon sampling a move from m to mPrime, store the info about the state
   // m and the transition m -> mPrime
-  
+
+  pair< vector<int>, vector<int> > transitionPair;
+  transitionPair.first=m.toVector();   transitionPair.second=mPrime.toVector();
+  if (sampled_transition_weight.count(transitionPair))
+    return; 
   // m is the new state
   if (index(m, sampled_states) == -1 ) 
 	{
@@ -1576,31 +2193,107 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 	  if ( is_external(m) )
 		  num_sampled_externals += 1; 
 	}
-  if (index(mPrime, sampled_outgoing[m.toVector()]) == -1) 
-    { sampled_outgoing[m.toVector()].push_back(mPrime); }
-  if (index(m, sampled_incoming[mPrime.toVector()]) == -1) 
-    { sampled_incoming[mPrime.toVector()].push_back(m);   }
-  
+  if (sampled_outgoing.count(m.toVector()))
+    {
+      if (index(mPrime, sampled_outgoing[m.toVector()]) == -1) 
+	sampled_outgoing[m.toVector()].push_back(mPrime);
+    }
+  else
+    sampled_outgoing[m.toVector()].push_back(mPrime);
+      
+  if (sampled_incoming.count(mPrime.toVector()))
+    {
+      if (index(m, sampled_incoming[mPrime.toVector()]) == -1)
+	sampled_incoming[mPrime.toVector()].push_back(m); 
+    }
+  else
+    sampled_incoming[mPrime.toVector()].push_back(m); 
+
+  // for alignment envelope - merge a pair of leaf sequence coords, similar to above. 
+  if (is_external(m) )
+    {
+      string side; 
+      if (index(m.q_state, Q.get_match_states()) != -1)
+	side = "both"; 
+      else if (index(m.q_state, Q.get_left_emit_states()) != -1)
+	side = "left";
+      else if (index(m.q_state, Q.get_right_emit_states()) != -1)
+	side = "right";
+      else
+	cerr<<"Unknown external q type: " << Q.get_state_type(m.q_state) << endl; 
 
 
-  if (leaf_coords.count(m.toVector())<1)
+      if (leaf_coords.count(m.toVector())<1)
 	{
 	  if ( m.left_state  == left_profile.end_state || m.left_state  == left_profile.pre_end_state)
-		if ( m.right_state  == right_profile.end_state || m.right_state  == right_profile.pre_end_state)
-		  // do not store coordinates
-		  {}
-		else 
+	    {
+	      if ( m.right_state  == right_profile.end_state || m.right_state  == right_profile.pre_end_state)
+		// do not store coordinates
+		{}
+	      else 
+		if (side == "right")
 		  leaf_coords[m.toVector()] = right_profile.leaf_coords[m.right_state];
-
+	    }
+	  
 	  else if ( m.right_state  == right_profile.end_state || m.right_state  == right_profile.pre_end_state)
+	    {
+	      if (side == "left")
 		leaf_coords[m.toVector()] = left_profile.leaf_coords[m.left_state];
-
+	    }
+	  
 	  else
+	    {
+	      if (side == "both")
 		leaf_coords[m.toVector()] = merge_coords(left_profile.leaf_coords[m.left_state],
-											 right_profile.leaf_coords[m.right_state]);
+							      right_profile.leaf_coords[m.right_state]);
+	      else if (side == "left")
+		leaf_coords[m.toVector()] = left_profile.leaf_coords[m.left_state];
+	      else if (side == "right")
+		leaf_coords[m.toVector()] = right_profile.leaf_coords[m.right_state];
+	    }
 	}
-  pair< vector<int>, vector<int> > transitionPair;
-  transitionPair.first=m.toVector();   transitionPair.second=mPrime.toVector();
+
+      if (leaf_seq_coords.count(m.toVector())<1)
+	{
+	  if ( m.left_state  == left_profile.end_state || m.left_state  == left_profile.pre_end_state || 
+	       m.left_state == left_profile.start_state)
+	    {
+	      if ( m.right_state  == right_profile.end_state || m.right_state  == right_profile.pre_end_state ||
+		   m.right_state  == right_profile.start_state)
+		// do not store coordinates
+		{}
+	      //	  if ( m.left_state  == left_profile.end_state || m.right_state  == right_profile.end_state )
+	      //	    {}
+	      else 
+		{
+		  if (side == "right")
+		    leaf_seq_coords[m.toVector()] = right_profile.leaf_seq_coords[m.right_state];
+		}
+	    }
+ 	  else if ( m.right_state  == right_profile.end_state || m.right_state  == right_profile.pre_end_state || 
+		    m.right_state  == right_profile.start_state)
+	    {
+	      if (side=="left")
+		leaf_seq_coords[m.toVector()] = left_profile.leaf_seq_coords[m.left_state];
+	    }
+	  
+	  else
+	    {
+	      if (side=="both")
+		leaf_seq_coords[m.toVector()] = merge_seq_coords(left_profile.leaf_seq_coords[m.left_state],
+								 right_profile.leaf_seq_coords[m.right_state]);
+	      // added afterwards
+	      // 	      else if (side=="left")
+//  		leaf_seq_coords[m.toVector()] = left_profile.leaf_seq_coords[m.left_state];
+// 	      else if (side=="right")
+// 		leaf_seq_coords[m.toVector()] = right_profile.leaf_seq_coords[m.right_state];
+	    }
+
+	}
+    }
+  
+
+  // if this is a novel transition, catalog it, possibly factoring out R-transition weights
   if (sampled_transition_weight.count(transitionPair)<1)
 	{
 	  if (is_external(mPrime) || is_pre_end(mPrime) )
@@ -1612,8 +2305,10 @@ void Profile::cache_state(M_id m, M_id mPrime, bfloat weight)
 		sampled_transition_weight[transitionPair] = 
 		  weight / (get_DP_cell(m));
 
-	  if (sampled_transition_weight[transitionPair] > 1.0)
+	  if (sampled_transition_weight[transitionPair] > 1.001)
 		{
+		  //		  cerr<< "Warning: sampled transition weight was greater than 1.0\n"; 
+		  //		  cerr<< "Large trans:" << sampled_transition_weight[transitionPair] << endl; 
 		  sampled_transition_weight[transitionPair] = 0.99999999; //for now..
 
 // 		  std::cerr<<"Warning: transition weight was cached as greater than one\nSome info:\n";
@@ -1676,7 +2371,7 @@ void Profile::cache_path(vector<M_id> path)
   bool logging = false; 
   int i,j; 
   M_id ext_start, right;
-  map<node, string> btwn_tmp, left_tmp, right_tmp; 
+  MyMap<node, string> btwn_tmp, left_tmp, right_tmp; 
   pair< vector<int> , vector<int> > externalPair; 
   pair< state, state > profileExternalPair; 
   vector<node> toPad; // we'll need to pad one side with gaps.  
@@ -1688,7 +2383,8 @@ void Profile::cache_path(vector<M_id> path)
 	  latestLeft = ext_start.left_state;
 	  latestRight = ext_start.right_state; 	  
 
-	  if (!is_external(ext_start) && i!=path.size()-1) continue;
+	  if (!is_external(ext_start) && i!=path.size()-1) 
+	    continue;
 	  btwn_tmp.clear(); right_tmp.clear(); left_tmp.clear(); 
 	  
 	  for (j=i-1; j>-1; j--)
@@ -1732,7 +2428,8 @@ void Profile::cache_path(vector<M_id> path)
 				  btwn_tmp = cat_STP(btwn_tmp, right_tmp);			  
 				}
 			  
-			  if (!is_flush(btwn_tmp)) std::cerr<<"STP not flush after a ext-ext joining, right. \n";
+			  if (!is_flush(btwn_tmp)) 
+			    std::cerr<<"STP not flush after a ext-ext joining, right. \n";
 
 			  if (btwn_tmp.size() > 0)
 				{
@@ -1805,7 +2502,7 @@ void Profile::cache_path(vector<M_id> path)
 	
   
 
-void Profile::sum_paths_to(M_id mPrime, bool inLog)
+void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 {
   // The core DP function - sum over paths into the composite state mPrime.  
   #ifdef DART_DEBUG
@@ -1815,10 +2512,10 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
   #endif
   
   // This function fills the cell at mPrime in Z
-  bool logging = false, testing = false;
+  bool testing = false;
   bool fromStart = 0;
-  bfloat toAdd, finalSum = 0.0;
-  bfloat small = pow(.1,100);
+  bfloat toAdd, finalSum = 0.0, left_transition_weight;
+  bfloat small = 1e-500; 
   vector<int> mPrimeVec = mPrime.toVector(); 
   vector<state> left_incoming;
   vector<state> right_incoming;   
@@ -1828,7 +2525,11 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
   M_id m; 
   vector<M_id> pi; 
   bool showState = 0; 
-  bfloat emissionWeight = compute_emission_weight(mPrime);
+  bfloat emissionWeight = 1.0;
+  // underflow test
+  //if (!emissionWeight>0)
+  //return;
+
   if (showState)
 	{
 	  state_type_phylogeny[mPrime.toVector()] = merge_STP(mPrime);
@@ -1844,7 +2545,8 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
   if (emissionWeight < small) { std::cerr<<"Warning: very small emission weight for state: \n";mPrime.display(Q);}
   #endif
 
-  Z[mPrime.toVector()] = 0;
+  //  Z[mPrime.toVector()] = 0;
+  //  add_to_DP_cell(mPrime, 0.0 ); 
 
   if (Q.has_transition(Q.composite_start_state, mPrime.q_state) &&  \
 	  left_profile.has_transition(left_profile.start_state, mPrime.left_state) && \
@@ -1898,6 +2600,8 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
   if (fromStart)
 	{
 	  // inLog
+	  // underflow test
+	  // if (true)
 	  if (toAdd > 0.0) 
 	    {
 	      if (inLog)
@@ -1913,9 +2617,10 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 		  outgoing[start_state.toVector()].push_back(mPrime); 
 		  transitionPair.first = start_state.toVector(); transitionPair.second = mPrimeVec; 
 		  transition_weight[transitionPair] = toAdd / emissionWeight; 
+		  //if (1) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
 		}
 
-	      if (logging) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
+
 	      finalSum +=toAdd; 
 	    }
 	}
@@ -1933,19 +2638,25 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 		{
 	  
 		  m.left_state = *e_l;
-		  if (*e_l == left_profile.start_state) m.left_type = -1; 	  
-		  else m.left_type = 1;
+		  if (*e_l == left_profile.start_state) 
+		    m.left_type = -1; 	  
+		  else
+		    m.left_type = 1;
 
 		  for (e_r = right_incoming.begin(); e_r != right_incoming.end(); e_r++)
 			{
 			  m.right_state = *e_r;
-			  if (*e_r == right_profile.start_state) m.right_type = -1; 	  
-			  else m.right_type = 1;
+			  if (*e_r == right_profile.start_state) 
+			    m.right_type = -1; 	  
+			  else 
+			    m.right_type = 1;
 		  
 			  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 				{
 				  m.q_state = *q;
 				  toAdd = get_DP_cell(m); 
+				  // underflow test
+				  // if (true) 
 				  if (toAdd > 0.0)
 				    {
 				      toAdd *=
@@ -1962,18 +2673,22 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 					  transitionPair.first = m.toVector(); transitionPair.second = mPrimeVec; 
 					  transition_weight[transitionPair] = toAdd /  ( get_DP_cell(m) * emissionWeight); 
 					}
-				    }
 				  // for test
-				  if (testing)
+				      if (testing)
 					{
 					  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
 					  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 					}
-				  
-				  if (logging) std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
-				   
+				      
+				      if (logging) 
+					{
+					  std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
+					  std::cerr<<"This is greater than zero: " << toAdd << endl;
+					  std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
+					}
 				    }
 				}
+			}
 		}
 	}
   //  if (mPrime.left_state !=0  && mPrime.left_state != left_profile.start_state)
@@ -1985,7 +2700,7 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 	  for (e_l = left_incoming.begin(); e_l != left_incoming.end(); e_l++)
 		{
 		  m.left_state = *e_l;
-		  if (*e_l == left_profile.start_state) m.left_type = -1; 	  
+		  if (*e_l == left_profile.start_state) continue; //m.left_type = -1; 	  
 		  else m.left_type = 1;
 
 		  m.right_state = mPrime.right_state; // note this
@@ -1994,7 +2709,9 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 			{
 			  m.q_state = *q;
 			  toAdd = get_DP_cell(m); 
-			  if (toAdd > 0.0)
+			  // underflow test
+			  //if (true) //
+			   if (toAdd > 0.0)
 			    {
 			      toAdd *= Q.get_transition_weight(*q, mPrime.q_state)*
 				left_profile.get_transition_weight(*e_l, mPrime.left_state)*
@@ -2009,16 +2726,20 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 				  transitionPair.first = m.toVector(); transitionPair.second = mPrimeVec; 
 				  transition_weight[transitionPair] = toAdd /  ( get_DP_cell(m) * emissionWeight); 
 				}
-			    }
-			  // for test
-			  if (testing)
+
+			      // for test
+			      if (testing)
 				{
 				  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
 				  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 				}
-
-			  if (logging) std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
-			  
+			      
+			      if (logging) 
+				{
+				  std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
+				  std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
+				}
+			    }
 			}
 		}
 	}
@@ -2033,20 +2754,44 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 		{
 
 		  m.right_state = *e_r;
-		  if (*e_r == right_profile.start_state) m.right_type = -1; 	  
-		  else m.right_type = 1;
+		  if (*e_r == right_profile.start_state) 
+		    {
+		      continue;
+		      m.right_type = -1; 	  
+		    }
+		  else 
+		    m.right_type = 1;
 
-		  m.left_state = mPrime.left_state; // note this
+		  
 
 		  for (q = q_incoming.begin(); q != q_incoming.end(); q++)
 			{
 			  m.q_state = *q;
 			  m.left_type = get_profile_type(*q, "left");
+			  // begin careful stuff
+			  if (m.left_type == profile_start)
+ 			    m.left_state = left_profile.start_state; // note this
+			  else
+			    m.left_state = mPrime.left_state; // note this
+
+			  if (m.left_state != mPrime.left_state)
+			    {
+			      if (left_profile.has_transition(m.left_state, mPrime.left_state))
+				left_transition_weight  = left_profile.get_transition_weight(m.left_state, mPrime.left_state); 
+			      else
+				continue; 
+			    }
+			  else
+			    left_transition_weight  = 1.0; 
+			  // end careful stuff
 			  toAdd = get_DP_cell(m); 
+			  // underflow test
+			  // (true) // 
+
 			  if (toAdd >0.0)
 			    {
 			      toAdd *= Q.get_transition_weight(*q, mPrime.q_state)*
-				right_profile.get_transition_weight(*e_r, mPrime.right_state)*
+				right_profile.get_transition_weight(*e_r, mPrime.right_state)* left_transition_weight *
 				emissionWeight;
 			      // left profile transition weight is implicitely 1 here 
 			      finalSum +=toAdd; 
@@ -2058,32 +2803,36 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog)
 				  transitionPair.first = m.toVector(); transitionPair.second = mPrimeVec; 
 				  transition_weight[transitionPair] = toAdd /  ( get_DP_cell(m) * emissionWeight); 
 				}
-			    }
-			  //for test
-			  if(testing)
+			    
+			      //for test
+			      if(testing)
 				{
 				  transitionPair.first = m.toVector(); transitionPair.second = mPrime.toVector(); 
 				  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 				}
-
-			  if (logging) 
+			      
+			      if (logging) 
 				{
 				  std::cerr<<"Adding contribution from source state having Q: "<<Q.get_state_name(m.q_state)<<" "<<toAdd<<endl;
 				  std::cerr<<"The full state: forward value: "<<get_DP_cell(m)<<" \n\t"; m.display(Q);
 				}
-		  
+			    }
 			  
 			}
 		}
 	}
+
   if (finalSum > 0.0)
-    add_to_DP_cell(mPrime, finalSum);
+    add_to_DP_cell(mPrime, finalSum * compute_emission_weight(mPrime));
+  else
+    ++num_zero_states;
 }
   
 
 void Profile::clear_DP(void)
 {
-  map< vector<int>, bfloat> Z_tmp;
+  //  MyMap< vector<int>, bfloat> Z_tmp;
+  DP_hash Z_tmp; 
   Z_tmp.swap(Z); 
 }
 void Profile::fill_backward_DP(int logging)
@@ -2153,6 +2902,22 @@ void Profile::fill_backward_DP(int logging)
     }
 }
 
+bfloat Profile::post_prob(M_id state)
+{
+  bfloat fw,bw;
+  fw = get_DP_cell (state); 
+  if (! fw > 0.0)
+    return 0.0; 
+  else
+    {
+      bw = get_backward_DP_cell (state); 
+      if (! bw > 0.0)
+	return 0.0;
+      else 
+	return bw*fw / (forward_prob*compute_emission_weight(state)); 
+    }
+}
+
 void Profile::fill_DP(int logging, bool inLog)
 {
   // top -level DP function - traverse over all states in M_n (in the proper order) and call
@@ -2179,7 +2944,8 @@ void Profile::fill_DP(int logging, bool inLog)
 	}
   add_to_DP_cell(mPrime, 1);  
   // bLog
-  backward_states.push_back(mPrime); 
+  if (inLog)
+    backward_states.push_back(mPrime); 
   if (logging>=2) 
 	{
 	  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2188,8 +2954,8 @@ void Profile::fill_DP(int logging, bool inLog)
   qStates = Q.get_SSSI_states();
   for (er_Prime=0; er_Prime < right_profile.num_delete_states; er_Prime++)
 	{
-	  if (!is_in_envelope( left_profile.start_state, er_Prime )) // always returns true
-		  continue; 
+	  //	  if (!is_in_envelope( left_profile.start_state, er_Prime )) // always returns true
+	  //	   		  continue; 
 	  for (qPrime = qStates.begin();qPrime != qStates.end(); qPrime++)
 		{
 		  mPrime.q_state = *qPrime; 
@@ -2203,9 +2969,10 @@ void Profile::fill_DP(int logging, bool inLog)
 			  std::cerr<<"\nThe following state is being filled:\n";
 			  mPrime.display(Q);
 			}
-		  sum_paths_to(mPrime, inLog);
+		  sum_paths_to(mPrime, inLog, logging>=2);
 		  // bLog
-		  backward_states.push_back(mPrime); 
+		  if (inLog)
+		    backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
@@ -2217,131 +2984,105 @@ void Profile::fill_DP(int logging, bool inLog)
 	{
 	  for (er_Prime=0; er_Prime < right_profile.num_delete_states; er_Prime++)
 		{
-		  // check for envelope compatibility.  
-		  if (! is_in_envelope( el_Prime, er_Prime ) )
-			continue;
-		  else
+		  if (is_in_envelope(el_Prime, er_Prime, "both"))
+		    {
+		      //  q is match state, both right and left types are "1"
+		      qStates = Q.get_match_states();
+		      for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
 			{
-			  //if (logging>=2) std::cerr<<"Examining state pair: "<< el_Prime <<" , " <<er_Prime<<endl;
-
-			  //  q is match state, both right and left types are "1"
-			  qStates = Q.get_match_states();
-			  for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
-				{
-				  mPrime.q_state = *qPrime; 
-				  mPrime.left_state = el_Prime; 
-				  mPrime.left_type = 1;
-				  mPrime.right_state = er_Prime; 
-				  mPrime.right_type = 1;
-				  if(logging>=2)
-					{
-					  std::cerr<<"\nThe following state is being filled:\n";
-					  mPrime.display(Q);
-					}
-				  sum_paths_to(mPrime, inLog);
-				  // bLog
-				  backward_states.push_back(mPrime); 
-				  if (logging>=2) 
-					{
-					  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
-					}
-				}
-
-			  //q is a left-emit state, left type is 1, right is 0
-			  qStates = Q.get_left_emit_states();
-			  for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
-				{
-				  mPrime.q_state = *qPrime; 
-				  mPrime.left_state = el_Prime; 
-				  mPrime.left_type = 1; 
-				  mPrime.right_state = er_Prime; 
-				  mPrime.right_type = 0; //get_profile_type(*qPrime, "right");
-				  if(logging>=2)
-					{
-					  std::cerr<<"\nThe following state is being filled:\n";
-					  mPrime.display(Q);
-					}
-				  sum_paths_to(mPrime, inLog);
-				  // bLog
-				  backward_states.push_back(mPrime); 
-				  if (logging>=2) 
-					{
-					  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
-					}
-				}
-
-			  //q is a right-emit state, right type is 1, left is *something* determined by get_profile_type(q, left)
-			  qStates = Q.get_right_emit_states();
-			  string S = "S";
-			  string I = "I";			  
-			  for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
-				{
-				  // avoid SSSI state, we fill these in a separate loop above
-				  if ( stringAt(Q.get_state_type(*qPrime),0) == S &&
-					   stringAt(Q.get_state_type(*qPrime),1) == S &&
-					   stringAt(Q.get_state_type(*qPrime),2) == S &&
-					   stringAt(Q.get_state_type(*qPrime),3) == I) continue; 
-
-				  mPrime.q_state = *qPrime; 
-				  mPrime.left_state = el_Prime; 
-				  mPrime.left_type = get_profile_type(*qPrime, "left");
-				  mPrime.right_state = er_Prime; 
-				  mPrime.right_type = 1; 
-				  if(logging>=2)
-					{
-					  std::cerr<<"\nThe following state is being filled:\n";
-					  mPrime.display(Q);
-					}
-				  sum_paths_to(mPrime, inLog);
-				  // bLog
-				  backward_states.push_back(mPrime); 
-				  if (logging>=2) 
-					{
-					  std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
-					}
-				}
-	
-
-			  // I don't think we actually need this set of states...
-			  //q is a wait state, right, left types are 0, both are set to 0
-			  if (0) //el_Prime == left_profile.num_delete_states-1 && er_Prime == right_profile.num_delete_states-1)
-				{
-				  qStates = Q.get_wait_states();
-				  for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
-					{
-					  mPrime.q_state = *qPrime; 
-					  mPrime.left_state = el_Prime; 
-					  mPrime.left_type = 0;
-					  mPrime.right_state = er_Prime; 
-					  mPrime.right_type = 0;
-					  if(logging>=2)
-						{
-						  std::cerr<<"\nThe following state is being filled:\n";
-						  mPrime.display(Q);
-						}
-					  sum_paths_to(mPrime, inLog);
-					  // bLog
-					  backward_states.push_back(mPrime); 
-					}
-
-				  if (logging>=2) 
-					{
-					  std::cerr<<"\tForward value of wait state: "<< get_DP_cell(mPrime)<<endl;
-					}
-				  if (get_DP_cell(mPrime)==0.0) {std::cerr<<"The following wait state has zero forward weight:"; mPrime.display(Q);}
-				}
+			  mPrime.q_state = *qPrime; 
+			  mPrime.left_state = el_Prime; 
+			  mPrime.left_type = 1;
+			  mPrime.right_state = er_Prime; 
+			  mPrime.right_type = 1;
+			  if(logging>=2)
+			    {
+			      std::cerr<<"\nThe following state is being filled:\n";
+			      mPrime.display(Q);
+			    }
+			  
+			  sum_paths_to(mPrime, inLog, logging>=2);
+			  // bLog
+			  if (inLog)
+			    backward_states.push_back(mPrime); 
+			  if (logging>=2) 
+			    {
+			      std::cerr<<"\tForward value of state matching: "<< el_Prime << " and " << er_Prime << " : " << get_DP_cell(mPrime)<<endl;
+			    }
 			}
+		    }
+		  if (is_in_envelope(el_Prime, er_Prime, "left"))
+		    {
+		      //q is a left-emit state, left type is 1, right is 0
+		      qStates = Q.get_left_emit_states();
+		      for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
+			{
+			  mPrime.q_state = *qPrime; 
+			  mPrime.left_state = el_Prime; 
+			  mPrime.left_type = 1; 
+			  mPrime.right_state = er_Prime; 
+			  mPrime.right_type = 0; //get_profile_type(*qPrime, "right");
+			  if(logging>=2)
+			    {
+			      std::cerr<<"\nThe following state is being filled:\n";
+			      mPrime.display(Q);
+			    }
+			  
+			  sum_paths_to(mPrime, inLog, logging>=2);
+			  // bLog
+			  if (inLog)
+			    backward_states.push_back(mPrime); 
+			  if (logging>=2) 
+			    {
+			      std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
+			    }
+			}
+		    }
+		  if (is_in_envelope(el_Prime, er_Prime, "right"))
+		    {
+		      //q is a right-emit state, right type is 1, left is *something* determined by get_profile_type(q, left)
+		      qStates = Q.get_right_emit_states();
+		      string S = "S";
+		      string I = "I";			  
+		      for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
+			{
+			  // avoid SSSI state, we fill these in a separate loop above
+			  if ( stringAt(Q.get_state_type(*qPrime),0) == S &&
+			       stringAt(Q.get_state_type(*qPrime),1) == S &&
+			       stringAt(Q.get_state_type(*qPrime),2) == S &&
+			       stringAt(Q.get_state_type(*qPrime),3) == I) continue; 
+			  
+			  mPrime.q_state = *qPrime; 
+			  mPrime.left_state = el_Prime; 
+			  mPrime.left_type = get_profile_type(*qPrime, "left");
+			  mPrime.right_state = er_Prime; 
+			  mPrime.right_type = 1; 
+			  if(logging>=2)
+			    {
+			      std::cerr<<"\nThe following state is being filled:\n";
+			      mPrime.display(Q);
+			    }
+			  
+			  sum_paths_to(mPrime, inLog, logging>=2);
+			  // bLog
+			  if (inLog)
+			    backward_states.push_back(mPrime); 
+			  if (logging>=2) 
+			    {
+			      std::cerr<<"\tForward value: "<< get_DP_cell(mPrime)<<endl;
+			    }
+			}
+		    }
 		}
 	}
 
   // fill left-emit and right-emit where one side is pre_end_state, wait
   // somewhat skittish about this section...
-
   // Q is left-emit 
   for (el_Prime=0; el_Prime < left_profile.num_delete_states; el_Prime++)
 	{
-	  if (! is_in_envelope(el_Prime, right_profile.pre_end_state ))//always true
-		continue; 
+	  //	  if (! is_in_envelope(el_Prime, right_profile.pre_end_state, "left" ))
+	  //     continue; 
 	  //q is a left-emit state, left type is 1, right is 0.  right index is right_profile.pre_end_state
 	  qStates = Q.get_left_emit_states();
 	  string S = "S";
@@ -2359,9 +3100,11 @@ void Profile::fill_DP(int logging, bool inLog)
 			  std::cerr<<"\nThe following state is being filled:\n";
 			  mPrime.display(Q);
 			}
-		  sum_paths_to(mPrime, inLog);
+
+		  sum_paths_to(mPrime, inLog, logging>=2);
 		  // bLog
-		  backward_states.push_back(mPrime); 
+		  if (inLog)
+		    backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -2370,10 +3113,12 @@ void Profile::fill_DP(int logging, bool inLog)
 	}
 
   // Q is right-emit 
+  if (logging >=2)
+    std::cerr<<"Beginning to fill right emit/left pre-end state..\n"; 
   for (er_Prime=0; er_Prime < right_profile.num_delete_states; er_Prime++)
 	{
-	  if (! is_in_envelope(left_profile.pre_end_state, er_Prime ))
-		continue; 
+	  //	  if (! is_in_envelope(left_profile.pre_end_state, er_Prime, "right" ))
+	  //	      continue; 
 	  //q is a right-emit state, left type is 0, right is 1.  left index is left_profile.pre_end_state
 	  qStates = Q.get_right_emit_states();
 	  string S = "S";
@@ -2396,9 +3141,11 @@ void Profile::fill_DP(int logging, bool inLog)
 			  std::cerr<<"\nThe following state is being filled:\n";
 			  mPrime.display(Q);
 			}
-		  sum_paths_to(mPrime, inLog);
+
+		  sum_paths_to(mPrime, inLog, logging>=2);
 		  // bLog
-		  backward_states.push_back(mPrime); 
+		  if (inLog)
+		    backward_states.push_back(mPrime); 
 		  if (logging>=2) 
 			{
 			  std::cerr<<"\tForward value (workaround): "<< get_DP_cell(mPrime)<<endl;
@@ -2411,21 +3158,23 @@ void Profile::fill_DP(int logging, bool inLog)
   qStates = Q.get_wait_states();
   for (qPrime = qStates.begin(); qPrime != qStates.end(); qPrime++)
 	{
-	  // for left_pre_end in left_profile.pre_end_states:
-	  // for right_pre_end in right_profile.pre_end_states:
+	  if (!Q.has_transition(*qPrime, Q.composite_end_state)) 
+	    continue; // don't fill states which don't connect to end state
 	  mPrime.q_state = *qPrime; 
 	  mPrime.left_state = left_profile.pre_end_state; 
 	  mPrime.left_type = 2;
 	  mPrime.right_state = right_profile.pre_end_state; 
 	  mPrime.right_type = 2;
-	  if(logging>=2)
+	  if(logging>=2) // log for now
 		{
 		  std::cerr<<"\nThe following state is being filled:\n";
 		  mPrime.display(Q);
 		}
-	  sum_paths_to(mPrime, inLog);
+
+	  sum_paths_to(mPrime, inLog,logging>=2); //log for now, debugging
 	  // bLog
-	  backward_states.push_back(mPrime); 
+	  if (inLog)
+	    backward_states.push_back(mPrime); 
 	  if (logging>=2) 
 		{
 		  std::cerr<<"\tForward value of wait/pre-end state: "<< get_DP_cell(mPrime)<<endl;
@@ -2440,9 +3189,11 @@ void Profile::fill_DP(int logging, bool inLog)
   mPrime.right_type = 3;
   mPrime.left_type = 3; 
   
-  Z[mPrime.toVector()] = 0;
+  //  Z[mPrime.toVector()] = 0;
+  add_to_DP_cell(mPrime, 0.0 ); 
   // bLog
-  backward_states.push_back(mPrime); 
+  if (inLog)
+    backward_states.push_back(mPrime); 
   
   // Fill the end state cell
   // for left_pre_end in left_profile.pre_end_states:
@@ -2464,7 +3215,7 @@ void Profile::fill_DP(int logging, bool inLog)
 	  toAdd += get_DP_cell(m) * Q.get_transition_weight(*qPrime, Q.composite_end_state);
 	} 
   
-  if (toAdd > 0.0)
+  if (true) //(toAdd > 0.0)
     {
       add_to_DP_cell(mPrime, toAdd); 
       // inLog
@@ -2495,6 +3246,8 @@ void Profile::fill_DP(int logging, bool inLog)
 	  std::cerr<<"\nThe following state has been filled:\n";
 	  mPrime.display(Q);
 	}
+  if (!Z.count(mPrime))
+    cerr<<"End state was never filled! Thus it is zero\n";
   forward_prob = get_DP_cell(mPrime);
   bool isReal = false;
   if (forward_prob>0.0)
@@ -2688,12 +3441,15 @@ bfloat Profile::get_external_cascade_weight(M_id e, int charIndex)
 }
 
 //Utility functions for DP containers - forward is the 'unnamed', and the backward is so explicitely named
-void Profile::add_to_DP_cell(M_id m , bfloat toAdd)
+inline void Profile::add_to_DP_cell(M_id m , bfloat toAdd)
 {
-  tmpMidVec = m.toVector(); 
-  // Add the value toAdd to the DP cell for state m
-  if (Z.count(tmpMidVec) <1) Z[tmpMidVec] = toAdd; 
-  else Z[tmpMidVec] += toAdd; 
+  // Add the value toAdd to the DP cell for state m, if it exists.  otherwise initialize this value. 
+  //  tmpIter = Z.find(tmpMidVec);
+  tmpIter = Z.find(m); 
+  if (tmpIter == Z.end())
+    Z[m] = toAdd; 
+  else
+    tmpIter->second += toAdd; 
 }
 void Profile::add_to_backward_DP(M_id m , bfloat toAdd)
 {
@@ -2713,41 +3469,180 @@ bfloat Profile::get_backward_DP_cell(M_id m)
 
 
 
-bfloat Profile::get_DP_cell(M_id m)
+inline bfloat Profile::get_DP_cell(M_id m)
 {
-  tmpMidVec = m.toVector(); 
-  // Access the value of DP cell for state m.  If this is nonexistant, return 0.  
-  if (Z.count(tmpMidVec) <1) return 0; 
-  else return Z[tmpMidVec];
+  tmpIter = Z.find(m); 
+  if (tmpIter == Z.end())
+    return 0.0; 
+  else 
+    return tmpIter->second; 
 } 
 
-bool Profile::is_in_envelope(state left_state, state right_state)
+inline bool Profile::is_in_envelope(state left_state, state right_state, string checks)
 {
-  if (left_state == left_profile.pre_end_state || left_state == left_profile.end_state )
-	return true;
+  //debugging logging
+  bool  logging = false; 
 
-  if (right_state == right_profile.pre_end_state || right_state == right_profile.end_state )
+  if ( use_guide_alignment ) // using guide alignment
+    {  
+      if (
+	  left_state == left_profile.end_state || right_state == right_profile.end_state || 
+	  left_state == left_profile.pre_end_state || right_state == right_profile.pre_end_state || 
+	  left_state == left_profile.start_state || right_state == right_profile.start_state 
+	  )
+      	return true; 
+      // for alignment envelope
+      bool bad = false; 
+      // leaf_seq_coords is a map from leaf nodes to integer.  Each absorbing profile (e.g. left_profile, right_profile) has one of these for each of its
+      // absorbing states.  leaf_seq_coords[s][n] = a  means that the state s accounts for the a'th position of the sequence at 
+      // leaf node n
+      for ( envIter1 = left_profile.leaf_seq_coords[left_state].begin(); envIter1 != left_profile.leaf_seq_coords[left_state].end(); envIter1++)
+	{
+	  for ( envIter2 = right_profile.leaf_seq_coords[right_state].begin(); envIter2 != right_profile.leaf_seq_coords[right_state].end(); envIter2++)
+	    {
+	      name1 = node_names[envIter1->first]; 
+	      name2 = node_names[envIter2->first]; 
+	      //  int leftMin, leftMax, rightMin, rightMax; 	      
+// 	      if (envelope->coordinates.count(name1))
+// 		if (envelope->coordinates[name1].count(envIter1->second))
+// 		  if (envelope->coordinates[name1][envIter1->second].count(name2))
+// 		    {
+// 		      leftMin = envelope->coordinates[name1][envIter1->second][name2].first; 
+// 		      leftMax = envelope->coordinates[name1][envIter1->second][name2].second; 
+// 		    }
+// 		  else
+// 		    cerr<<"Error\n";
+// 		else
+// 		  cerr<<"Error\n";
+// 	      else
+// 		cerr<<"Error\n";
+	      
+// 	      if (envelope->coordinates.count(name2))
+// 		if (envelope->coordinates[name2].count(envIter2->second))
+// 		  if (envelope->coordinates[name2][envIter2->second].count(name1))
+// 		    {
+// 		      rightMin = envelope->coordinates[name2][envIter2->second][name1].first;
+// 		      rightMax = envelope->coordinates[name2][envIter2->second][name1].second;
+// 		    }
+// 		  else
+// 		    cerr<<"Error\n";
+// 		else
+// 		  cerr<<"Error\n";
+// 	      else
+// 		cerr<<"Error\n";
+	      
+	      if ( checks == "left" )
+		if ( envelope->coordinates[name1][envIter1->second][name2].first  > envIter2->second || // min is greater than R coordinate
+		     envelope->coordinates[name1][envIter1->second][name2].second +1  < envIter2->second )// max+1 is less than R coordinate
+		  {
+		    ++num_discarded_states;
+		    return false; 
+		    //		    bad = true;
+		  }
+
+	      //old:
+	      // the following line reads like this:
+	      // is  coordinate of R character  within guide_sausage of the index at which the L character is  aligned 
+	      // in the guide alignment ?
+	      /*
+		if ( abs( envIter2->second - envelope->coordinates[name1][envIter1->second][name2] ) > guide_sausage )
+		  {
+		    ++num_discarded_states;
+		    bad  = true; 
+		  }
+	      */
+	      if ( checks == "right" )
+		if ( envelope->coordinates[name2][envIter2->second][name1].first > envIter1->second ||// min is greater than L coordinate
+		     envelope->coordinates[name2][envIter2->second][name1].second +1 < envIter1->second )// max+1 is less than L coordinate
+		  {
+		    ++num_discarded_states;
+		    return false; 
+		    //		    bad = true;
+		  }
+
+	      /*
+		// Reworded - 
+		// is the left coordinate within g_s of the right character's 'true' aligned coordinate?
+
+		if ( abs( envIter1->second - envelope->coordinates[name2][envIter2->second][name1] ) > guide_sausage )
+		  {
+		    ++num_discarded_states;
+		    bad = true; 
+		  }
+	      */
+	      if ( checks == "both" )
+		if ( envelope->coordinates[name2][envIter2->second][name1].first  > envIter1->second || // min is greater than R coordinate
+		     envelope->coordinates[name2][envIter2->second][name1].second < envIter1->second  ||// max is less than R coordinate
+
+		     envelope->coordinates[name1][envIter1->second][name2].first  > envIter2->second ||// min is greater than R coordinate
+		     envelope->coordinates[name1][envIter1->second][name2].second   < envIter2->second )// max is less than R coordinate
+		  {
+		    ++num_discarded_states;
+		    return false; 
+		    //		    bad = true;
+		  }
+
+		  
+	      // Warning -don't turn on logging unless you're working on a very small (e.g. 3-5 characters) alignment
+
+		if (logging)
+		{
+		  if (bad)
+		    std::cerr<<"\nThe alignment of these two columns was NOT in the envelope: (checktype: " << checks << ") \n"; 
+		  else
+		    std::cerr<<"\nThe alignment of these two columns WAS in the envelope: (checktype: " << checks << ") \n"; 
+		  
+		  //		  std::cerr<<"The distance from guide alignment was: " << abs( envIter2->second - envelope->lookup(name1, envIter1->second, name2) ) << " " <<
+		  //		    abs( envIter1->second - envelope->lookup(name1, envIter2->second, name1) ) << endl; 
+// 		  std::cerr<<"Left state:\n"; 
+// 		  show_state_phylo(left_profile.state_type_phylogeny[left_state]);
+// 		  std::cerr<<"\nRight state:\n"; 
+// 		  show_state_phylo(right_profile.state_type_phylogeny[right_state]);
+	      
+		  std::cerr<<"\nThe coordinates, min, max of the left state are: ";
+		  for (MyMap<node,int>::iterator envIter = left_profile.leaf_seq_coords[left_state].begin(); envIter !=left_profile.leaf_seq_coords[left_state].end(); envIter++)
+		    std::cerr<< envIter->second << " " << envelope->coordinates[name1][envIter->second][name2].first<< " " <<
+		      envelope->coordinates[name1][envIter->second][name2].second << " "; 
+	      
+		  std::cerr<<"\nThe coordinates, min, max of the right state are: ";
+		  for (MyMap<node,int>::iterator envIter = right_profile.leaf_seq_coords[right_state].begin(); envIter !=right_profile.leaf_seq_coords[right_state].end(); envIter++)
+		    std::cerr<< envIter->second << " " <<  envelope->coordinates[name2][envIter->second][name1].first << " " << 
+		      envelope->coordinates[name2][envIter->second][name1].second << " ";
+		  
+		  std::cerr<<"\n"; 
+		}
+		
+		
+		if (bad)
+		  return false; 
+	    }
+	}
+      return true; 
+    }
+  else //  a more  primitive  envelope
+    {
+      if (left_state == left_profile.pre_end_state || left_state == left_profile.end_state )
+	return true;
+      
+      if (right_state == right_profile.pre_end_state || right_state == right_profile.end_state )
 	return true; 
 
-  pair<int,int> left_coords = left_profile.leaf_coords[left_state];
-  pair<int,int> right_coords = right_profile.leaf_coords[right_state];
+      pair<int,int> left_coords = left_profile.leaf_coords[left_state];
+      pair<int,int> right_coords = right_profile.leaf_coords[right_state];
 
-  // alignment envelope function.  Simple check for distance between most distant leaf coordinates>
-  if (max(left_coords.second, right_coords.second) - min(left_coords.first, right_coords.first) < envelope_distance )
-	{
-	  return true;
-	}
-  else 
-	{
-	  //std::cerr<<"Not in envelope!\n";
-	  return false; 
-	}
+      // alignment envelope function.  Simple check for distance between most distant leaf coordinates>
+      if (max(left_coords.second, right_coords.second) - min(left_coords.first, right_coords.first) < envelope_distance )
+	return true;
+      else 
+	//std::cerr<<"Not in envelope!\n";
+	return false; 
+    }
 }
 
-bool is_flush(map<node, string> map1)
-{
+bool is_flush(MyMap<node, string> map1)
+{  
   // Query whether an STP has all its rows the same length.  
-  map<node, string>::iterator nodeState;  
+  MyMap<node, string>::iterator nodeState;  
   int alignLength = -1; 
 
   // check to make sure that all alignment rows are the same length
@@ -2758,11 +3653,11 @@ bool is_flush(map<node, string> map1)
 	}
   return true; 
 }
-map<node, string> pad_STP(map<node, string> map1, vector<node> toPad)
+MyMap<node, string> pad_STP(MyMap<node, string> map1, vector<node> toPad)
 {
   // Construct a new STP where entries for nodes in toPad have gaps of appropriate length.
-  map<node, string> outMap;
-  map<node, string>::iterator nodeState;  
+  MyMap<node, string> outMap;
+  MyMap<node, string>::iterator nodeState;  
   int alignLength = -1; 
 
   // check to make sure that all alignment rows are the same length
@@ -2794,7 +3689,7 @@ map<node, string> pad_STP(map<node, string> map1, vector<node> toPad)
   return outMap; 
 }
 
-map<node, string> cat_STP(map<node, string> map1, map<node, string> map2)
+inline MyMap<node, string> cat_STP(MyMap<node, string> map1, MyMap<node, string> map2)
 {
   /*  construct a new STP where all entries of m are added to those of mPrime.  
   for example: 
@@ -2814,8 +3709,10 @@ map<node, string> cat_STP(map<node, string> map1, map<node, string> map2)
   if (map1.size() == 0) return map2;
   if (map2.size() == 0) return map1;
    
-  map<node, string> outMap;
-  map<node, string>::iterator nodeState;  
+  MyMap<node, string> outMap;
+  MyMap<node, string>::iterator nodeState;  
+
+  #ifdef DART_DEBUG
   vector<node> map1_nodes, map2_nodes; 
 
   for (nodeState = map1.begin(); nodeState != map1.end(); nodeState++) map1_nodes.push_back(nodeState->first);
@@ -2838,7 +3735,7 @@ map<node, string> cat_STP(map<node, string> map1, map<node, string> map2)
 	  
 	  exit(1);
 	}
-  
+  #endif
   for (nodeState = map1.begin(); nodeState != map1.end(); nodeState++)  outMap[nodeState->first] = nodeState->second; 
   for (nodeState = map2.begin(); nodeState != map2.end(); nodeState++)  outMap[nodeState->first] += nodeState->second; 
 
@@ -2849,13 +3746,13 @@ map<node, string> cat_STP(map<node, string> map1, map<node, string> map2)
 	  
 	  
   
-map<node, string> Profile::merge_STP(M_id m)
+MyMap<node, string> Profile::merge_STP(M_id m)
 {
   // construct a new state_type_phylogeny map based on the input state m
   // This may involve padding states with gaps.  for instance, if one side is delete and the other
   // wait, the wait side will need gaps for each of its nodes of appropriate length, etc
-  map<node, string> outMap;
-  map<node, string>::iterator nodeState;  
+  MyMap<node, string> outMap;
+  MyMap<node, string>::iterator nodeState;  
   string qClass  = Q.get_state_class(m.q_state);
   bool logging = 0; 
   int left_length=1, right_length=1, difference=0;
@@ -3030,15 +3927,15 @@ void Profile::show_state(M_id m)
   // by show_state_phylo, which doesn't require the input to be a state, just a map from nodes->strings
   vector<M_id> pi; 
   pi.push_back(m); 
-  show_alignment(pi, false);
+  std::cout<< show_alignment(pi, false);
 }
 
 
-void show_state_phylo(map<node, string>& stp)
+void show_state_phylo(MyMap<node, string>& stp)
 {
   // visualize a single mapping from nodes to strings (e.g. an alignment).
-  map<node, string>::iterator nodeState;
-  map<node, string> subAlignment;    
+  MyMap<node, string>::iterator nodeState;
+  MyMap<node, string> subAlignment;    
 
   for (nodeState = stp.begin(); nodeState != stp.end(); nodeState++)
 	{
@@ -3052,6 +3949,10 @@ void show_state_phylo(map<node, string>& stp)
 	}
 }
 
+int Profile::DP_size(void)
+{
+  return Z.size();
+}
 
 string Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
 {
@@ -3063,10 +3964,10 @@ string Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
   string out; 
   int i,j; 
   M_id m,n; 
-  map<node, string>::iterator nodeState;
-  map<node, string> subAlignment;    
+  MyMap<node, string>::iterator nodeState;
+  MyMap<node, string> subAlignment;    
   pair<vector<int>, vector<int> > statePair;
-  map<node, string>::iterator b_iter;   
+  MyMap<node, string>::iterator b_iter;   
   if (!showNulls)
 	{
 	  for(i=pi.size()-1; i>-1; i--)
@@ -3179,21 +4080,21 @@ string Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
   return out; 
 }
 
-map<string, string> Profile::alignment_map(vector<M_id> &pi, bool leaves_only)
+MyMap<string, string> Profile::alignment_map(vector<M_id> &pi, bool leaves_only)
 {
   // Return a multiple sequence alignment as a string-string map (names to seqs).  All null states that 
   // were summed over in previous iterations are shown according to bool showNulls (I'm not
   // sure why we'd ever set this to false, but possibly if the root ancestor was the ONLY
   // sequence of interest, we'd like to trim out the extra alignment info).  
-  bool logging = false, showNulls=true,foundJ; 
+  bool logging = false, foundJ; 
   string out; 
   int i,j; 
   M_id m,n; 
-  map<node, string>::iterator nodeState;
-  map<node, string> subAlignment;    
-  map<string, string> alignment; 
+  MyMap<node, string>::iterator nodeState;
+  MyMap<node, string> subAlignment;    
+  MyMap<string, string> alignment; 
   pair<vector<int>, vector<int> > statePair;
-  map<node, string>::iterator b_iter;   
+  MyMap<node, string>::iterator b_iter;   
   for(i=pi.size()-1; i>-1; i--)
     {
       if (is_external(pi[i]) || pi[i].q_state == Q.composite_start_state)
@@ -3269,6 +4170,47 @@ map<string, string> Profile::alignment_map(vector<M_id> &pi, bool leaves_only)
 }
 
 
+void Profile::show_DOT(ostream& out, string name)
+{
+  string from, to; 
+  out << "digraph " << name << "{" <<endl; 
+  pair< vector<int>, vector<int> > transitionPair; 
+  for (vector<M_id>::iterator fromIter = sampled_states.begin(); fromIter!=sampled_states.end(); fromIter++)
+    {
+      from = getDOTname(*fromIter); 
+      out << from<< "[fillcolor=black,style=filled];" <<endl; 
+      for (vector<M_id>::iterator toIter = sampled_outgoing[fromIter->toVector()].begin(); 
+	   toIter!= sampled_outgoing[fromIter->toVector()].end(); toIter++)
+	{
+	  transitionPair.first = fromIter->toVector(); transitionPair.second = toIter->toVector(); 
+	  to = getDOTname(*toIter); 
+	  out << '"'<<from<<'"' << " -> " << '"' << to <<'"' << ";" <<endl; // " [label='" << sampled_transition_weight[transitionPair] << "']\n";
+	}
+    }
+  out<< "}";
+}
+
+string Profile::getDOTname(M_id m)
+{
+  stringstream out; 
+  if (is_start(m))
+    out << "S";
+  else if (is_end(m))
+    out << "E";
+  else if (is_pre_end(m))
+    out << "P";
+  else if (is_external(m))
+    out << "D";
+  else
+    out << "I";
+
+  out << "_";
+  out << Q.get_state_type(m.q_state); 
+  out << "_" << m.left_state; 
+  out << "_" << m.right_state; 
+  
+  return string(out.str()); 
+}
 
 
 int Profile::get_profile_type(state qState, string side)
@@ -3340,6 +4282,69 @@ int Profile::get_profile_type(state qState, string side)
     }
   return 0; 
 }
+
+void Profile::depth_first_traversal(ostream& out, int sampled_start_state, int sampled_end_state)
+{
+    stack<M_id> stateStack;
+    queue<M_id> stateQueue;
+    M_id e, endState; 
+    vector<M_id> children,visited;
+    vector<M_id>::iterator child; 
+    int counter=0; 
+    
+    endState = sampled_states[sampled_end_state];
+
+    stateStack.push(sampled_states[sampled_start_state]); 
+    //    stateQueue.push(sampled_states[sampled_start_state]); 
+    out << "Beginning to traverse state space\n"; 
+    while (!stateStack.empty())
+      //while (!stateQueue.empty())
+      {
+	if (false)//counter > 100000000)
+	  {
+	    cerr<<"Infinite loop detected, exiting!\n";
+	    out<<"Infinite loop detected, exiting!\n";
+	    //	    exit(0); 
+	  }
+	//cerr<<"Current stack size:" << stateStack.size() << endl; 
+	e = stateStack.top(); 
+	stateStack.pop();
+	// e = stateQueue.front(); 
+	// stateQueue.pop();
+	if (false) //index(e,visited) != -1)
+	  cerr<<"Already visited state " << getDOTname(e) << endl; 
+	else
+	  {
+	    ++counter; 
+	    //visited.push_back(e); 
+	    cerr<<"Current state off of stack: " << getDOTname(e) << endl; 
+	    out<<getDOTname(e) << endl; 
+	    if (sampled_outgoing.count(e.toVector()) )
+	      {
+		children = sampled_outgoing[e.toVector()];
+		if (e == endState)
+		  {
+		    cerr<<"End state has " << children.size() << " children" << endl; 
+		    cerr<<"Count in sampled_outgoing: " << sampled_outgoing.count(e.toVector()) << endl; 
+		  }
+		for (child = children.begin(); child != children.end(); child++)
+		  {
+		    stateStack.push(*child); 
+		    //stateQueue.push(*child); 
+		    if (e == endState)
+		      cerr<<"pushing end's child: " << getDOTname(*child) << endl; 
+		  }
+	      }
+	    else
+	      cerr<<"The following state has no outgoing transitions: " << getDOTname(e) << endl; 
+	  }
+      }
+    cerr << "Reached end of state space\n"; 
+    out << "Reached end of state space\n"; 
+}
+
+
+
 	  
 pair<int, int> merge_coords(pair<int, int> l, pair<int,int> r)
 {
@@ -3354,4 +4359,10 @@ pair<int, int> merge_coords(pair<int, int> l, pair<int,int> r)
 }
 
 
-
+MyMap<node, int> merge_seq_coords( MyMap<node, int> l, MyMap<node, int> r)
+{
+  MyMap<node,int> out; 
+  out.insert(l.begin(), l.end()); 
+  out.insert(r.begin(), r.end()); 
+  return out; 
+}

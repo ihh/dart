@@ -343,7 +343,9 @@ void PHYLIP_tree::write_node(ostream& out,
 			     Node node,
 			     Node from_node,
 			     int max_columns,
-			     int& columns) const
+			     int& columns,
+			     bool newline, // Added 7/22/11 OW
+			     bool numbered_branches) const
 {
   Child_iter c = children_begin(node, from_node);
   Child_iter end = children_end(node, from_node);
@@ -352,7 +354,7 @@ void PHYLIP_tree::write_node(ostream& out,
       out << '(';
       while (c != end)
 	{
-	  write_node (out, *c, node, max_columns, columns);
+	  write_node (out, *c, node, max_columns, columns, newline, numbered_branches);
 	  if (++c == end)
 	    out << ')';
 	  else
@@ -378,12 +380,18 @@ void PHYLIP_tree::write_node(ostream& out,
 	char tmp_buf[128];
 	sprintf (tmp_buf, ":%-.10f", l);
 	out << tmp_buf;
+	if (numbered_branches)
+	  out << "[" << node << "]"; 
 	columns += strlen(tmp_buf) + 1;
       }
     }
   else
     {
-      out << ";\n";
+      if (numbered_branches) // Added 7/22/11 OW
+	out << "[" << node << "]"; 
+      out << ";";
+      if (newline) // Added 7/22/11 OW
+	out<< "\n";
       columns = 0;
     }
 }

@@ -1,27 +1,38 @@
  ;; Jukes-Cantor 1969 DNA substitution rate matrix
+  (&define p_a .25)
+  (&define p_c .25)
+  (&define p_g .25)
+  (&define p_t .25)
+
+
+  (&warn pa)
+  
  (chain
+ (parametric)
+  (pgroup ((pa .95) (pg .01) (pc .01) (pt .03)))
   (update-policy rev)
   (terminal (NUC))
 
-  ;; initial probability distribution
-  (initial (state (a)) (prob .25))
-  (initial (state (c)) (prob .25))
-  (initial (state (g)) (prob .25))
-  (initial (state (t)) (prob .25))
 
-  ;; mutation rates
-  (mutate (from (a)) (to (c)) (rate .33))
-  (mutate (from (a)) (to (g)) (rate .33))
-  (mutate (from (a)) (to (t)) (rate .33))
-  (mutate (from (c)) (to (a)) (rate .33))
-  (mutate (from (c)) (to (g)) (rate .33))
-  (mutate (from (c)) (to (t)) (rate .33))
-  (mutate (from (g)) (to (a)) (rate .33))
-  (mutate (from (g)) (to (c)) (rate .33))
-  (mutate (from (g)) (to (t)) (rate .33))
-  (mutate (from (t)) (to (a)) (rate .33))
-  (mutate (from (t)) (to (c)) (rate .33))
-  (mutate (from (t)) (to (g)) (rate .33))
+  ;; initial probability distribution
+  (initial (state (a)) (prob .95))
+  (initial (state (c)) (prob .01))
+  (initial (state (g)) (prob .01))
+  (initial (state (t)) (prob .02))
+
+;;   ;; mutation rates
+;;   (mutate (from (a)) (to (c)) (rate .33))
+;;   (mutate (from (a)) (to (g)) (rate .33))
+;;   (mutate (from (a)) (to (t)) (rate .33))
+;;   (mutate (from (c)) (to (a)) (rate .33))
+;;   (mutate (from (c)) (to (g)) (rate .33))
+;;   (mutate (from (c)) (to (t)) (rate .33))
+;;   (mutate (from (g)) (to (a)) (rate .33))
+;;   (mutate (from (g)) (to (c)) (rate .33))
+;;   (mutate (from (g)) (to (t)) (rate .33))
+;;   (mutate (from (t)) (to (a)) (rate .33))
+;;   (mutate (from (t)) (to (c)) (rate .33))
+;;   (mutate (from (t)) (to (g)) (rate .33))
  )  ;; end chain X
 
 ;; IUPAC DNA alphabet

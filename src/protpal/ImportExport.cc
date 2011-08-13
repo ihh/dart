@@ -5,12 +5,12 @@
 
 
 /// Writing functions 
-void AbsorbingTransducer::write_profile(ostream& out)
+void AbsorbingTransducer::write_profile(ostream& out, state_path& viterbi_path)
 {
+  // Writes a profile 
   out.setf(ios::fixed, ios::floatfield);
   out.setf(ios::showpoint);
   out.precision(2);
-
   out.precision(10); 
   // write transducer to file in a compact format
   pair<state, state> statePair; 
@@ -19,13 +19,11 @@ void AbsorbingTransducer::write_profile(ostream& out)
   out << "(profile\n";
   add_tag_value_pair(out, "node", treeNode); 
   out << "\n"; 
-
   // Add the special states - their names are indices,  their types are non-delete
   out << ";; Start/pre-end/end state data\n"; 
   add_basic_state(out, "start", start_state); 
   add_basic_state(out, "wait", pre_end_state); 
   add_basic_state(out, "end", end_state); 
-
   // Loop over delete states and add them
   out << ";; Delete states' data\n\n"; 
   for (int stateIdx = 0; stateIdx < num_delete_states; stateIdx++)
@@ -33,15 +31,23 @@ void AbsorbingTransducer::write_profile(ostream& out)
     //   - absorb distribution
     //   - sequence co-ordinates of leaf sequences (for alignment envelope)
     add_delete_state(out, stateIdx); 
-  
+
   // Loop over transitions and add them
   out << ";; Transition weight data\n\n"; 
   for (MyMap<state, vector<state> >::iterator e = incoming.begin(); e != incoming.end(); e++)
     for (vector<state>::iterator ePrime = e->second.begin(); ePrime != e->second.end(); ePrime++)
       add_transition(out, *ePrime, e->first, get_transition_weight( *ePrime, e->first)); 
-  
-  out << ");; end profile for node " << treeNode << "\n";
 
+  // If viterbi path is non-null, add it after converting each M_id to an integer
+  if (viterbi_path.size())
+    {
+      out << "(viterbi_path "; 
+      for (state_path::reverse_iterator vit=viterbi_path.rbegin(); vit!=viterbi_path.rend(); vit++)
+	if (mid2int.count(vit->toVector()))
+	  out << mid2int[vit->toVector()] << " "; 
+      out <<")\n";
+    }
+  out << ");; end profile for node " << treeNode << "\n";
 }
 
 void AbsorbingTransducer::add_tag_value_pair(ostream& out, string tag, string value, bool newline)
@@ -88,6 +94,7 @@ void AbsorbingTransducer::add_delete_state(ostream& out, int stateIndex)
   out << "(state \n";   
   add_tag_value_pair(out, "type", "delete"); 
   add_tag_value_pair(out, "name", stateIndex); 
+  // add_tag_value_pair(out, "postprob", stored_sampled_profile->post_prob(state2mid[stateIndex])); 
 
   // Absorption weights
   if (verboseAbsorb)
@@ -139,6 +146,7 @@ void AbsorbingTransducer::add_transition(ostream& out, int fromState, int toStat
 //   cerr<< "Added transition " << fromState << " " << toState << " " << weight << " , stored as bfloat " << log(weight) << endl; 
   out << ")\n"; 
 }
+
 
 
 
@@ -397,9 +405,7 @@ bool AbsorbingTransducer::test_equality(AbsorbingTransducer& other, bool logging
 	cerr<< "The two transducers differ in their incoming transitions \n"; 
       same =  false; 
     }
-
-
-
   return same; 
-
 }
+
+

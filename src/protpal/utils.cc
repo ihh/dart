@@ -6,12 +6,13 @@
 #include<list>
 #include<queue>
 #include<ctime>
+#include <sys/stat.h>
 
 #include "utils.h"
 #include "ecfg/ecfgsexpr.h"
 #include "seq/biosequence.h"
-
 #include "util/macros.h"
+#include "protpal/MyMap.h"
 
 using namespace std;
 
@@ -31,9 +32,14 @@ double absoluted(bfloat in)
 
 bfloat randomUnit(void)
 {
+  bfloat retVal; 
   bfloat rm = RAND_MAX;
   bfloat draw = rand();
-  return draw/(rm+1.0);
+  retVal = draw/(rm+1.0);
+  if (retVal<=1.0)
+    return retVal;
+  else
+    cerr<<"Error - random unit returned a number larger than 1: " << retVal << endl; 
 }
 
 
@@ -70,7 +76,7 @@ int sample(vector<float> &weights)
   //  std::cerr<<"number drawn: "<<draw<<endl;
   for (i=0; i<probs.size(); i++)
 	{
-	  if (draw < probs[i]) return i;
+	  if (draw <= probs[i]) return i;
 	}
 }
 
@@ -90,7 +96,7 @@ int sample(vector<double> &weights)
   //  std::cerr<<"number drawn: "<<draw<<endl;
   for (i=0; i<probs.size(); i++)
 	{
-	  if (draw < probs[i]) return i;
+	  if (draw <= probs[i]) return i;
 	}
 }
 
@@ -110,17 +116,19 @@ int sample(vector<bfloat> &weights)
   bfloat draw = randomUnit();
   //  std::cerr<<"number drawn: "<<draw<<endl;
   for (i=0; i<probs.size(); i++)
-	{
-	  if (draw < probs[i]) return i;
-	}
+    if (draw <= probs[i] || i == probs.size()-1) return i;
+
+  cerr<<"ERROR: reached end of sampling vector without choosing an element! The sampled number was " << draw << endl; 
+  cerr<<"The weights vector  was "; displayVector(weights); 
+  cerr<<"The probabilities vector  was "; displayVector(probs); 
 }
 
 
 
-map<node, bool> merge(map<node, bool>  *map1, map<node, bool>  *map2)
+MyMap<node, bool> merge(MyMap<node, bool>  *map1, MyMap<node, bool>  *map2)
 {
-  map<node, bool> joinedMap; 
-  map<node, bool>::iterator it; 
+  MyMap<node, bool> joinedMap; 
+  MyMap<node, bool>::iterator it; 
   for (it = (*map1).begin(); it!=(*map1).end(); it++) joinedMap[(*it).first] = (*it).second;
   for (it = (*map2).begin(); it!=(*map2).end(); it++) joinedMap[(*it).first] = (*it).second;	    
   
@@ -231,6 +239,16 @@ int index(float query, vector<float> in )
   return(-1);
 }
 
+int index(bfloat query, vector<bfloat> in )
+{
+  for (int i=0; i<in.size(); i++)
+	{
+	  if (in[i] == query) return(i);
+	}
+  return(-1);
+}
+
+
 
 bool in(string query, string in )
 {
@@ -310,9 +328,9 @@ void displayVector(vector <vector <int> > in)
 	}
 }
 
-map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
+MyMap<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
 {
-  map<string, string> sequences; 
+  MyMap<string, string> sequences; 
   string line;
   ifstream seqFile(fileName);
 
@@ -327,15 +345,20 @@ map<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
 	  else
 	    {
 	      //std::cerr<<"splitting line...\n";
-	      sequences[splitWhite(line)[0]] += splitWhite(line)[1];
+	      sequences[splitWhite(line)[0]] += splitWhite(line)[1]; 
+	      //sequences.insert(pair<string, string>(splitWhite(line)[0], sequences[splitWhite(line)[0]] + splitWhite(line)[1]));
 	    }
 	}
       seqFile.close();
     }
   else 
     {
-      std::cerr << "Error: Unable to open file: "<<fileName<< "\n"; 
+      std::cerr << "\nERROR: Unable to open Stockholm file: "<<fileName<< "\n"; 
+      exit(1); 
     }
+  for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter!=sequences.end(); seqIter++)
+    if ( (seqIter->second).size() == 0)
+      std::cerr<<"Warning: 0 length sequence for species: " << seqIter->first << endl; 
   return sequences; 
 }
 
@@ -374,15 +397,57 @@ vector<string> split(string in, string splitChar)
 
 
 
-map<string, string> parse_fasta(const char* sequenceFileName, Alphabet alphabet)
+MyMap<string, string> parse_fasta(const char* sequenceFileName, Alphabet alphabet)
 {
-  map<string, string> sequences;
+  MyMap<string, string> sequences;
   ifstream sequenceFileStream(sequenceFileName); 
+  if (! sequenceFileStream.is_open())
+    {
+      std::cerr<<"\nERROR: could not open fasta file " << sequenceFileName << endl; 
+      exit(1); 
+    }
   Sequence_database seq_db;  // create the object
   seq_db.read_FASTA (sequenceFileStream);  // read from file
   seq_db.seqs2dsqs (alphabet);   // parse the sequences into tokens using the Alphabet class that you read in with the substitution model
   for_const_contents (list<Named_profile>, seq_db, prof) 
-    sequences[prof->name] = (prof->seq); 
+    {
+      sequences[prof->name] = (prof->seq); 
+      if (sequences[prof->name].size() == 0)
+	std::cerr<<"Warning: zero length sequence for species " << prof->name << endl; 
+    }
+
   return sequences; 
 }
 
+void seqDictSize(MyMap<string, string> seqDict)
+{
+  for (MyMap<string,string>::iterator seqIter =  seqDict.begin(); seqIter!=seqDict.end(); seqIter++)
+    std::cerr<< seqIter->first << " " << (seqIter->second).size() << endl;
+}
+
+
+
+
+bool FileExists(string strFilename) {
+  struct stat stFileInfo;
+  bool blnReturn;
+  int intStat;
+
+  // Attempt to get the file attributes
+  intStat = stat(strFilename.c_str(),&stFileInfo);
+  if(intStat == 0) {
+    // We were able to get the file attributes
+    // so the file obviously exists.
+    blnReturn = true;
+  } else {
+    // We were not able to get the file attributes.
+    // This may mean that we don't have permission to
+    // access the folder which contains this file. If you
+    // need to do that level of checking, lookup the
+    // return values of stat which will give you
+    // more details on why stat failed.
+    blnReturn = false;
+  }
+  
+  return(blnReturn);
+}

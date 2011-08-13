@@ -267,19 +267,6 @@ static inline void bfloat_pr_sum_accum( BFloat& a, const BFloat& b)
   }
 }
 
-static inline bool bfloat_less( const BFloat& a, const BFloat& b) 
-{
-  if (a.e > b.e) {
-    if (a.e >= b.e + cBFloatConvTableSize)
-      return false;
-    else
-      return a.f < b.f * BFloat::aConversionLookup[ a.e - b.e ];
-  }
-  if (a.e <= b.e - cBFloatConvTableSize)
-    return true;
-  else
-    return a.f * BFloat::aConversionLookup[ b.e - a.e ] < b.f;
-};
   
 static inline bool bfloat_equal( const BFloat& a, const BFloat& b) 
 {
@@ -293,6 +280,19 @@ static inline bool bfloat_equal( const BFloat& a, const BFloat& b)
     return false;
   else
     return a.f * BFloat::aConversionLookup[ b.e - a.e ] == b.f;
+};
+static inline bool bfloat_less( const BFloat& a, const BFloat& b) 
+{
+  if (a.e > b.e) {
+    if (a.e >= b.e + cBFloatConvTableSize)
+      return false;
+    else
+      return a.f < b.f * BFloat::aConversionLookup[ a.e - b.e ];
+  }
+  if (a.e <= b.e - cBFloatConvTableSize)
+    return true;
+  else
+    return a.f * BFloat::aConversionLookup[ b.e - a.e ] < b.f;
 };
 
 static inline bool bfloat_lessequal( const BFloat& a, const BFloat& b) 

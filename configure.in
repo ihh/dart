@@ -132,6 +132,7 @@ AC_CONFIG_FILES([Makefile
                  src/irrev/Makefile
                  src/newmat/Makefile
                  src/ontology/Makefile
+                 src/protpal/Makefile
                  src/psw/Makefile
                  src/randlib/Makefile
                  src/scfg/Makefile
@@ -141,6 +142,5 @@ AC_CONFIG_FILES([Makefile
                  src/tkf/Makefile
                  src/tree/Makefile
                  src/util/Makefile
-				 src/protpal/Makefile	
 		 src/util/unixenv.h])
 AC_OUTPUT

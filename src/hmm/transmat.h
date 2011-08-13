@@ -4,6 +4,7 @@
 #include "seq/alignment.h"
 #include "seq/local.h"
 #include "seq/pfunc.h"
+//#include "protpal/algebras.h"
 
 // Start, End and Undef string constants
 #define Grammar_start_state_name "Start"
@@ -151,6 +152,8 @@ typedef Transition_matrix<Prob> Transition_counts;
 typedef Transition_matrix <Prob, array2d <Prob, array2d_sparse_vector<Prob> > > Sparse_transition_counts;
 
 typedef Transition_counts Transition_probs;
+//typedef Transition_matrix<bfloat> Transition_bfloats;
+
 
 typedef Transition_matrix<PFunc> Transition_funcs;
 typedef Transition_matrix <PFunc, array2d <PFunc, array2d_sparse_vector<PFunc> > > Sparse_transition_funcs;
@@ -237,6 +240,7 @@ struct Transition_methods : Grammar_state_enum
   //
   // See (Holmes, 2003) or comments in C++ file for algebra of state elimination and restoral.
   static Concrete_transition_probs eliminate (const Transition_probs& tp, const vector<int>& null_states, bool zero2null = true, Concrete_transition_probs* s = 0);
+  //  static Concrete_transition_probs eliminate (const Transition_bfloats& tp, const vector<int>& null_states, bool zero2null = true, Concrete_transition_probs* s = 0);
 
   // sample path through null states
   // given an apparent path through emit states in a "null-states-eliminated" matrix,

@@ -5,6 +5,7 @@
 #include "algebras.h"
 #include "ecfg/ecfgsexpr.h"
 #include "util/sstring.h"
+#include "hmm/transmat.h"
 
 QTransducer::QTransducer(void)
 {
@@ -28,6 +29,7 @@ QTransducer::QTransducer(SingletTrans R_in, BranchTrans B_l_in, BranchTrans B_r_
   
   alphabet_size = alphabet.size();
   name = "QTransducer";
+  state_l_r.push_back(0);   state_l_r.push_back(0);   state_l_r.push_back(0); 
   
   // composite state classes
   match =  "match";
@@ -235,13 +237,13 @@ bool QTransducer::has_transition(state q, state qPrime)
 
 string QTransducer::get_state_class(state q)
 {
-  return state_class[q];
+  return state_class.at(q);
 }
 
 string QTransducer::get_state_type(state q)
 {
   string out; 
-  out = state_type[q];
+  out = state_type.at(q);
   return out;
 }
 
@@ -274,8 +276,7 @@ double QTransducer::get_emission_weight(state q, int left_emit, int right_emit)
 {
   // Check state existence, character validity, then lookup in emission_weight matrix
   //safety
-  vector<int> emission_tuple;
-  emission_tuple.push_back(q);  emission_tuple.push_back(left_emit);  emission_tuple.push_back(right_emit);
+  state_l_r[0] = q;  state_l_r[1] = left_emit;  state_l_r[2] = right_emit;
   #ifdef DART_DEBUG
   if (q >= num_states)
 	{
@@ -283,14 +284,15 @@ double QTransducer::get_emission_weight(state q, int left_emit, int right_emit)
 	  std::cerr<<"The offending call was: get_emission_weight in transducer: "<<name<<" state: "<<q<<" named: "<<get_state_name(q)<<endl;
 	  exit(1);
 	} 
-  if (emission_weight.count(emission_tuple)<1)
+  if (emission_weight.count(state_l_r)<1)
 	{
 	  std::cerr<<"One of the character indices " <<left_emit<<" "<<right_emit<< " is not valid.\n";
 	  std::cerr<<"The offending call was: get_emission_weight in transducer: "<<name<<" state: "<<q<<" named: "<<get_state_name(q)<<" left-symbol index: "<<left_emit<<" right-symbol index "<<right_emit<<endl;
 	  exit(1);
 	}
   #endif
-  return emission_weight[emission_tuple];
+  //  return emission_weight[emission_int]; 
+  return emission_weight[state_l_r];
 }
 
 
@@ -469,7 +471,7 @@ void QTransducer::cache_transition_weights(void)
   // Here, we loop through the entries in the table, then call up all the states that have that type-string,
   // which is stored in the map state_type_set 
 
-  map<vector<string>, vector<int> >::iterator it;
+  MyMap<vector<string>, vector<int> >::iterator it;
   vector<state>::iterator i;   vector<state>::iterator j; 
   string to; string from; vector<int> componentChanges;
   vector<state> transitionPair;
@@ -594,7 +596,7 @@ void QTransducer::cache_states(void)
   bool logging = 0;
 
   int state_count = 0;
-  map<string, vector<string> >::iterator it;
+  MyMap<string, vector<string> >::iterator it;
   vector<string> type_strings; 
   vector<state> state_indices;
   string compositeClass, type_R, type_B_l, type_B_r, type_Upsilon;
@@ -695,7 +697,7 @@ void QTransducer::cache_states(void)
 void QTransducer::cache_emission_weights( void )
 {
   double weight;
-  vector<int> state_l_r; 
+  //  vector<int> state_l_r; 
   bool logging = 0;
   //  store emission weight of state q, omega_l, omega_r
   // This will get stored in the map emission_weight, which maps a vector state, left-emit, right-emit to a double
@@ -722,8 +724,9 @@ void QTransducer::cache_emission_weights( void )
 			{
 			  for (omega_right = 0; omega_right<alphabet_size; omega_right++)
 				{
-				  state_l_r.clear(); 
-				  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+// 				  state_l_r.clear(); 
+// 				  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+				  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 				  weight = 0; 
 				  // omega_R is the character at R
 				  for (omega_R=0; omega_R<alphabet_size; omega_R++)
@@ -732,7 +735,8 @@ void QTransducer::cache_emission_weights( void )
 						B_l.get_match_weight(state_B_l, omega_R, omega_left)*\
 						B_r.get_match_weight(state_B_r, omega_R, omega_right);
 					}
-				  emission_weight[state_l_r] = weight;
+				  //				  emission_weight[state_l_r_int] = weight;
+				  emission_weight[state_l_r] = weight; //changed 10/11/10 OW
 				  if(logging) 
 					{
 					  std::cerr<<"Caching emission weight for "<<get_state_name(q)<<" chars: ";
@@ -751,8 +755,9 @@ void QTransducer::cache_emission_weights( void )
 		  omega_left = -1; 
 		  for (omega_right = 0; omega_right<alphabet_size; omega_right++)
 			{
-			  state_l_r.clear(); 
-			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  //			  state_l_r.clear(); 
+			  //			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 			  weight = 0; 
 			  // omega_R is the character at R
 			  for (omega_R=0; omega_R<alphabet_size; omega_R++)
@@ -760,7 +765,8 @@ void QTransducer::cache_emission_weights( void )
 				  weight += R.get_emission_weight(state_R, omega_R)*	\
 					B_r.get_match_weight(state_B_r, omega_R, omega_right);
 					}
-			  emission_weight[state_l_r] = weight;
+			  // emission_weight[state_l_r_int] = weight;
+			  emission_weight[state_l_r] = weight; //changed 10/11/10 OW
 			}
 		}
 	  //right-del - omega_right is -1
@@ -769,8 +775,9 @@ void QTransducer::cache_emission_weights( void )
 		  omega_right = -1; 
 		  for (omega_left = 0; omega_left<alphabet_size; omega_left++)
 			{
-			  state_l_r.clear(); 
-			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  //			  state_l_r.clear(); 
+			  //			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 			  weight = 0; 
 			  // omega_R is the character at R
 			  for (omega_R=0; omega_R<alphabet_size; omega_R++)
@@ -778,6 +785,7 @@ void QTransducer::cache_emission_weights( void )
 				  weight += R.get_emission_weight(state_R, omega_R)*	\
 					B_l.get_match_weight(state_B_l, omega_R, omega_left);
 					}
+			  // emission_weight[state_l_r_int] = weight; // changed 10/11/10 OW
 			  emission_weight[state_l_r] = weight;
 			}
 		}
@@ -788,10 +796,12 @@ void QTransducer::cache_emission_weights( void )
 		  omega_right = -1;
 		  for (omega_left = 0; omega_left<alphabet_size; omega_left++)
 			{
-			  state_l_r.clear(); 
-			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  //			  state_l_r.clear(); 
+			  //			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 
 			  weight = B_l.get_emission_weight(state_B_l, omega_left);
+			  //emission_weight[state_l_r_int] = weight; //changed 10/11/10 OW
 			  emission_weight[state_l_r] = weight;
 			  
 			}
@@ -803,10 +813,12 @@ void QTransducer::cache_emission_weights( void )
 		  omega_left = -1;
 		  for (omega_right = 0; omega_right<alphabet_size; omega_right++)
 			{
-			  state_l_r.clear(); 
-			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  //			  state_l_r.clear(); 
+			  //			  state_l_r.push_back(q); state_l_r.push_back(omega_left); state_l_r.push_back(omega_right); 
+			  state_l_r[0] = q; state_l_r[1] = omega_left; state_l_r[2] = omega_right; 
 			  
 			  weight = B_r.get_emission_weight(state_B_r, omega_right);
+			  //emission_weight[state_l_r_int] = weight; // changed 10/11/10 OW
 			  emission_weight[state_l_r] = weight;
 			}
 		}
@@ -819,77 +831,63 @@ void QTransducer::cache_emission_weights( void )
 void QTransducer::marginalizeNullStates(void)
 {
   // Marginalize over null states in Q, those having type (I,M,D,D)
-  // NB this is for the simplified case where there is only one such state...
-  // This means that in all cases we're eliminating null 'B' state from a set like this:
-  // A -> B -> C where B is possibly self-looping 
   bool logging = 0;
-  state a;
-  vector<state>::iterator b,c;
-  vector<state> b_states, c_states;
-  bool selfLoop=0; 
-  vector<state> transitionPair;
+  state a, aPrime;
+  vector<state> incoming_states, nulls, transitionPair; 
+  vector<state>::iterator b; 
   
+  // Initialize DART's transition matrix
+  Transition_probs pre_summed(num_states); 
+
+  // Fill the transition matrix as well as the list of null states
   for (a=0; a<num_states; a++)
+    {
+      if ( a == composite_start_state)
+	continue; 
+      if ( get_state_class(a) == "null" ) 
+	nulls.push_back(a); 
+
+      incoming_states = get_incoming(a); 
+      for ( b = incoming_states.begin(); b!= incoming_states.end(); b++ )
+	pre_summed.transition(*b, a) = get_transition_weight(*b, a);
+
+    }
+  
+  // eliminator does the null-state-summing returning a new transition matrix where transitions to/from null states are zero and the 
+  // transitions between non-nulls are summed over all possible paths between them. 
+  Transition_methods eliminator; 
+  Concrete_transition_probs post_summed = eliminator.eliminate(pre_summed, nulls); 
+  
+  // Clear Q's old data - incoming, outgoing transitions, and their associated weights
+  incoming.clear(); 
+  outgoing.clear(); 
+  transition_weight.clear();
+
+  // Re-populate Q's transition information that we deleted above  
+  // (Not the most efficient method here, though Q typically does not have that many states)
+  for (a=0; a<num_states; a++)
+    {
+      for (aPrime=0; aPrime<num_states; aPrime++)
 	{
-	  if (outgoing.count(a) <1 || state_class[a] == "null") continue;
-	  b_states = outgoing[a];
-	  for (b=b_states.begin(); b!=b_states.end(); b++)
-		{
-		  if (state_class[*b] == "null")
-			{
-			  if (has_transition(*b,*b)) selfLoop = 1;
-			  else selfLoop = 0; 
-
-			  c_states = outgoing[*b];
-			  for (c=c_states.begin(); c!=c_states.end(); c++)
-				{
-				  if (*c == *b) continue;
-				  else if (state_class[*c] == "null")
-					{
-					  std::cerr<<"Error: multiple null states in Q.  Can't marginalize with this simple method\n";
-					  exit(1);
-					}
-				  else
-					{
-					  if(logging) std::cerr<<"connecting states:"<<get_state_name(a)<<" and "<<get_state_name(*c)<<endl;
-
-					  if (!has_transition(a,*c))
-						{
-						  incoming[*c].push_back(a); outgoing[a].push_back(*c);
-						}
-						
-					  transitionPair.clear();
-					  transitionPair.push_back(a); transitionPair.push_back(*c); 
-					  //sum their transition until the difference is very small
-					  double toAdd = 100; 
-					  int counter = 1;
-					  bfloat ab, bc, bb; 
-					  ab = get_transition_weight(a, *b); bc = get_transition_weight( *b, *c); 
-					  if (!selfLoop) transition_weight[transitionPair] = ab*bc;
-					  else
-						{
-						  bb=get_transition_weight(*b,*b);
-						  while (toAdd> .0001)
-							{
-							  toAdd = ab*pow(bb, counter)*bc;
-							  transition_weight[transitionPair] += toAdd;
-							  counter += 1;
-							}
-						}
-					}
-				}
-			}
-		}
+	  if ( post_summed.transition(a,aPrime) > 0.0 )
+	    {
+	      incoming[aPrime].push_back(a); 
+	      outgoing[a].push_back(aPrime); 
+	      transitionPair.clear(); 
+	      transitionPair.push_back(a); transitionPair.push_back(aPrime); // why didn't I use pairs here? oh well
+	      transition_weight[transitionPair] = post_summed.transition(a, aPrime); 
+	      if (logging)
+		std::cerr<<"Transition between " << a << " and " << aPrime << " set to " << post_summed.transition(a, aPrime) << endl; 
+	    }
 	}
+    }
 }
-			  
-	  
+
+
 
   
 // The following functions initialize hard-coded aspects of the Qtransducer.  Most of this was auto-generated
-// via emacs or python code.  Probably best to check it over via other methods rather than looking at this directly
-
-
+// via emacs and/or python code.  Probably best to check it over via other methods rather than looking at this directly
 
 void QTransducer::get_state_type_reference(void)
 {
@@ -1636,3 +1634,63 @@ void QTransducer::get_transition_table(void)
 
 
 }
+/* 
+Some old null-elim code, now replaced with dart's 'eliminate' function
+
+  vector<state> b_states, c_states;
+  bool selfLoop=0; 
+  vector<state> transitionPair;
+  
+  for (a=0; a<num_states; a++)
+	{
+	  if (outgoing.count(a) <1 || state_class[a] == "null") continue;
+	  b_states = outgoing[a];
+	  for (b=b_states.begin(); b!=b_states.end(); b++)
+		{
+		  if (state_class[*b] == "null")
+			{
+			  if (has_transition(*b,*b)) selfLoop = 1;
+			  else selfLoop = 0; 
+
+			  c_states = outgoing[*b];
+			  for (c=c_states.begin(); c!=c_states.end(); c++)
+				{
+				  if (*c == *b) continue;
+				  else if (state_class[*c] == "null")
+					{
+					  std::cerr<<"Error: multiple null states in Q.  Can't marginalize with this simple method\n";
+					  exit(1);
+					}
+				  else
+					{
+					  if(logging) std::cerr<<"connecting states:"<<get_state_name(a)<<" and "<<get_state_name(*c)<<endl;
+
+					  if (!has_transition(a,*c))
+						{
+						  incoming[*c].push_back(a); outgoing[a].push_back(*c);
+						}
+						
+					  transitionPair.clear();
+					  transitionPair.push_back(a); transitionPair.push_back(*c); 
+					  //sum their transition until the difference is very small
+					  double toAdd = 100; 
+					  int counter = 1;
+					  bfloat ab, bc, bb; 
+					  ab = get_transition_weight(a, *b); bc = get_transition_weight( *b, *c); 
+					  if (!selfLoop) transition_weight[transitionPair] = ab*bc;
+					  else
+						{
+						  bb=get_transition_weight(*b,*b);
+						  while (toAdd> .0001)
+							{
+							  toAdd = ab*pow(bb, counter)*bc;
+							  transition_weight[transitionPair] += toAdd;
+							  counter += 1;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+*/
