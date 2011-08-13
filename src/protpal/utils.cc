@@ -451,3 +451,8 @@ bool FileExists(string strFilename) {
   
   return(blnReturn);
 }
+
+bool bfloat_is_nonzero(bfloat in)
+{
+  return  (in != in*2.0);
+}

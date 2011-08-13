@@ -3254,7 +3254,7 @@ void Profile::fill_DP(int logging, bool inLog)
     isReal = true; 
   if (!isReal)
     {
-      std::cerr<<"Error: sum-over-alignments likelihood is zero: "<< forward_prob <<"  This is not good.  Check your input alignment and tree for irregularities\n";
+      std::cerr<<"\n\nERROR: sum-over-alignments likelihood is zero: "<< forward_prob <<"  This is not good.  Check your input alignment and tree for irregularities\n";
       std::cerr<<"If there are no such irregularities, consider submitting a bug report, see www.biowiki.org/ProtPal for details.\n";
       exit(1);
     }

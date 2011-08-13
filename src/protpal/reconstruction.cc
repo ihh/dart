@@ -141,6 +141,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.add("mpp -make-posterior-profile", profile_to_make="None", "Make a posterior profile for the specified node, storing it in the saved-posterior-profiles directory specified above", false);
   opts.add("json -write-json", json_placements_filename="None", "Write JSON format summary of placements (as per pplacer JSON spec)", false);
+  opts.add("tab -tab-input", score_tabular_filename="None", "Read tabular summary of placements", false);
   opts.add("notab -no-placement-tabular", no_placements_tabular=false, "Do not write tabular format summary of placements");
  
   opts.parse_or_die(); 
@@ -872,11 +873,13 @@ void Reconstruction::write_numbered_newick(ostream& out, bool quotes)
 
 void Reconstruction::write_placement_JSON(ostream& out, ScoreMap& scores)
 {
+  bfloat verySmall = 1e-5;
+  //bfloat verySmall = .5;
   out <<"{\n";
   out <<"\"tree\":   ";
+  // Write a tree string with branches labeled (rather than nodes)
   write_numbered_newick(out); 
   out <<",\n"; 
-
   out << "\"placements\": [\n";
   bfloat totalScore; 
   for (ScoreMap::iterator readIter = scores.begin(); readIter != scores.end();
@@ -887,20 +890,23 @@ void Reconstruction::write_placement_JSON(ostream& out, ScoreMap& scores)
 	   nodeIter != (readIter->second).end(); ++nodeIter)
 	totalScore += nodeIter->second;
 
-      out << "\t{\"p\":\n\t[";
+      //      out << "\t{\"p\":\n\t[";
+      out << "\t{\"p\": [\n\t";
       for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
 	   nodeIter != (readIter->second).end(); ++nodeIter)
 	{
+	  if (nodeIter->second/totalScore < verySmall && nodeIter != --(readIter->second).end())
+	    continue;
 	  node nodeIdx = tree.find_node((nodeIter->first).c_str()); 
-	  out << "[" << nodeIdx << ", " << nodeIter->second << ", " <<  nodeIter->second/totalScore << ", " << "0.000008" << ", " << "0.01";
+	  //	  if (nodeIter != readIter->second.begin())
+	  out << "   [" << nodeIdx << ", " << nodeIter->second << ", " <<  nodeIter->second/totalScore << ", " << "0.000008" << ", " << "0.01";
+
 	  if (nodeIter != --(readIter->second).end())
 	    out << "],\n\t";
 	  else
-	    out << "]\n\t";
+	    out << "]],\n\t";
 	}
-      out <<"],\n\t";
-
-      out << "\"n\": [\"" << readIter->first << "\"] }"; 
+      out << " \"n\": [\"" << readIter->first << "\"] }"; 
       if (readIter != --scores.end())
 	out << ",\n\n";
       else
@@ -930,6 +936,33 @@ void Reconstruction::write_placement_tabular(ostream& out, ScoreMap& scores)
 	   nodeIter != (readIter->second).end(); ++nodeIter)
 	out << readIter->first<<  "\t" << nodeIter->first << "\t" << nodeIter->second/totalScore <<endl;
       out<< "\n\n";
+    }
+}
+
+void Reconstruction::parse_placement_tabular(ScoreMap& scores)
+{
+  sstring line, read, node; 
+  double score; 
+  ifstream tabFile(score_tabular_filename.c_str());
+  if (tabFile.is_open())
+    {
+      while (! tabFile.eof())
+	{
+	  getline(tabFile, line); 
+	  if ( line.split().size() < 3)
+	    continue; 
+	  //	  cerr <<"line: " << line <<endl; 
+	  read = line.split()[0]; 
+	  node = line.split()[1]; 
+	  score = atof(line.split()[2].c_str()); 
+	  // cerr<<read<<"\t"<<node<<"\t"<<score<<endl; 
+	  scores[read][node] = bfloat(score); 
+	}
+    }
+  else
+    {
+      cerr << "\nERROR: Unable to open tabular score file: "<< score_tabular_filename<< "\n";
+      exit(1);
     }
 }
 

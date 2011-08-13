@@ -96,7 +96,7 @@ class ReadProfileScore
   void score_and_store(const Read& read , ScoreMap& scores, bool viterbi=false);
 
   // Main workhorse function
-  bfloat get_score(const Read&, bool viterbi); 
+  bfloat get_score(const Read&, bool viterbi, bool logging=false); 
 
   // Name and read will change upon analyzing different reads/profiles.  
   string name;
@@ -112,6 +112,7 @@ class ReadProfileScore
 
   // public for now...
   void fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmmoc_only=false, bool backPointers=false, bool logging=false); 
+  void clear_DP_matrix(void);
  private:
   // Profile - one emission side
   AbsorbingTransducer *profile; 
@@ -138,8 +139,6 @@ class ReadProfileScore
   void write_read_info(ostream& out, const Read& read, bfloat value); 
 
   // Manage the dynamic programming matrix
-
-  void clear_DP_matrix(void);
   inline bfloat get_DP_cell(int,int,int); 
   inline void set_DP_cell(int,int,int, bfloat); 
   inline void add_to_DP_cell(int,int,int, bfloat); 

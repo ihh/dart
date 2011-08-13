@@ -41,7 +41,7 @@ ReadProfileScore::ReadProfileScore(AbsorbingTransducer* prof_in, Alphabet& alpha
   pairHMM.set_substitution_model(alphabet_in, rate_matrix_in, profile);
 }
 
-bfloat ReadProfileScore::get_score(const Read& read, bool viterbi)
+bfloat ReadProfileScore::get_score(const Read& read, bool viterbi, bool logging)
 {
   bfloat value;
   ofstream dummy_ostream; 
@@ -53,7 +53,7 @@ bfloat ReadProfileScore::get_score(const Read& read, bool viterbi)
 		     dummy_ostream, // hmmoc filestream
 		     false, // only write hmmoc file, don't do actual DP
 		     true,  // keep backPointers - for finding viterbi traceback
-		     false); // display logging messages
+		     logging); // display logging messages
       value = get_viterbi_value(); 
     }
   else
@@ -62,7 +62,7 @@ bfloat ReadProfileScore::get_score(const Read& read, bool viterbi)
 		     dummy_ostream, // hmmoc filestream
 		     false, // only write hmmoc file, don't do actual DP
 		     false,  // keep backPointers - for finding viterbi traceback
-		     false); // display logging messages
+		     logging); // display logging messages
       value = get_forward_value(); 
     }
   clear_DP_matrix(); 
@@ -214,9 +214,9 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 			    continue; 
 			}
 		      toAdd = get_DP_cell(iPrime, *jPrime, *kPrime); 
-		      if (! toAdd > 0.0)
+		      if ( ! bfloat_is_nonzero( toAdd ) )
 			{
-			  // cerr<<"\tThis incoming trans had 1e-inf Forward value\n";
+			  //cerr<<"\tThis incoming trans had 1e-inf Forward value\n";
 			  continue;
 			}
 		      if (*j != *jPrime)
@@ -244,6 +244,8 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 			}
 		    }
 		}
+	      if (logging)
+		cerr<<"\n\n Final forward value for this state: " << get_DP_cell(i,*j,*k)  << "\n\n"; 
 	    }
 	}
     }
@@ -458,7 +460,14 @@ inline bfloat ReadProfileModel::get_transition_weight(state from, state to)
       exit(1); 
     }
   else
-    return tmpIter->second;
+    {
+      if (! tmpIter->second > 0)
+	{
+	  cerr <<"ERROR: transition weight was zero!\n"; 
+	  exit(1); 
+	}
+      return tmpIter->second;
+    }
 }
 inline bfloat ReadProfileModel::get_emission_weight_by_alphabet_index(int readIndex, state profileState, state hmm_state)
 {
@@ -481,10 +490,10 @@ inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profile
 	   symbolIter != read_profile[readIndex].end(); symbolIter++)
 	for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
 	  {
-	    emissionWeight += equilibrium_dist[alphIdx]* // prior on this character
+	    emissionWeight += bfloat(equilibrium_dist[alphIdx])* // prior on this character
 	      profile->get_absorb_weight(profileState, alphIdx)* //absorption by profile
-	      conditional_sub_matrix(alphIdx,symbolIter->first)* // substitute to read's character
-	      symbolIter->second; // read's affinity for the given character
+	      bfloat(conditional_sub_matrix(alphIdx,symbolIter->first))* // substitute to read's character
+	      bfloat(symbolIter->second); // read's affinity for the given character
 	  }
       //cerr<<"\n\nThe emission weight was: " << emissionWeight << endl; 
     }
@@ -493,7 +502,7 @@ inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profile
   else if ( state_type[hmm_state] == "insert" )
     for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
       emissionWeight += profile->get_absorb_weight(profileState, alphIdx) * // absorption by profile
-	equilibrium_dist[alphIdx]; // prior on this character
+	bfloat(equilibrium_dist[alphIdx]); // prior on this character
 
   // Delete state: emit only to read - product of equilibrium prob and affinity for character
   else if ( state_type[hmm_state] == "delete" )
@@ -501,12 +510,14 @@ inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profile
 	   symbolIter != read_profile[readIndex].end(); symbolIter++)
 	{
 	  // cerr<<toks[*symbolIter] << " has weight: " << equilibrium_dist[alphIdx] <<endl; 
-	  emissionWeight += equilibrium_dist[symbolIter->first]*// prior on character
-	    symbolIter->second; // read's affinity for given character
+	  emissionWeight += bfloat(equilibrium_dist[symbolIter->first])*// prior on character
+	    bfloat(symbolIter->second); // read's affinity for given character
 	}
   else
-    emissionWeight = 1.0;
+    emissionWeight = bfloat(1.0);
 
+  if (! emissionWeight > 0)
+    cerr <<"\n\nWARNING: emission weight is zero!\n\n"; 
   //  cerr<<"Done\t";
   return emissionWeight; 
 }

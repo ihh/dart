@@ -138,12 +138,15 @@ class Reconstruction
   sstring profile_to_make; 
   void write_placement_JSON(ostream& out,ScoreMap& scores); 
   void write_placement_tabular(ostream& out,ScoreMap& scores); 
+  void parse_placement_tabular(ScoreMap& scores); 
+  sstring score_tabular_filename; 
   void write_numbered_newick(ostream& out, bool quotes=true); 
   
   
   // Memory management
   void clear_child(node);
 
+  // newly made  public
   void get_tree_from_file(const char*);
 
  private:

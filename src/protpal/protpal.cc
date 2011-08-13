@@ -12,9 +12,9 @@
 #include "protpal/Q.h"
 #include "protpal/utils.h"
 #include "protpal/ReadProfileScore.h"
-
 #include "protpal/AlignmentSampler.h"
 #include "protpal/MyMap.h"
+#include "protpal/json.h"
 
 #include "ecfg/ecfgsexpr.h"
 #include "tree/phylogeny.h"
@@ -29,6 +29,12 @@
 
 int main(int argc, char* argv[])
 {
+  
+  Json::Value root;   // will contains the root value after parsing.
+  Json::Reader reader;
+  bool parsingSuccessful = reader.parse( "this.json", root );
+  
+  exit(0); 
   try{
     
   time_t start,end;
@@ -58,47 +64,77 @@ int main(int argc, char* argv[])
   if ( reconstruction.reads_to_place_filename != "None" )
     {
       ScoreMap scores; 
-      map<int, string> profile_filenames = reconstruction.check_profile_filenames();
-      // limiter = reconstruction.init_limiter();
-
-      cerr<<"\nProfiles found for the following nodes:\n";
-      for (map<int, string>::iterator fn=profile_filenames.begin(); fn!=profile_filenames.end(); ++fn)
-	if (fn->second == "None")
-	  continue;
-	else
-	  cerr<< "\t" << reconstruction.tree.node_name[fn->first] << "\t" << fn->second << endl; 
-		  
-      cerr<<"Parsing reads..."; 
-      map<string, string> reads = 
-	parse_fasta(reconstruction.reads_to_place_filename.c_str(), reconstruction.alphabet);
-      cerr<<"Done.\n"; 
-      Read read; 
-      for (int profileNode = 0; profileNode < reconstruction.tree.nodes(); 
-	   profileNode++)
+      if  (reconstruction.score_tabular_filename == "None" )
 	{
-	  if (reconstruction.loggingLevel >=1)
-	    cerr << "Scoring reads to profile at node: " << reconstruction.tree.node_name[profileNode]<<"..."; 
-	  if (profile_filenames[profileNode] == "None")
-	    continue;
-	  AbsorbingTransducer ancestralProfile(profile_filenames[profileNode].c_str(),
-					       alphabetVector, reconstruction.tree);
-	  ancestralProfile.name = reconstruction.tree.node_name[profileNode]; // not written/parsed in sexpr...ugh.  Fix later
-	  ReadProfileScore profile_scorer(&ancestralProfile, reconstruction.alphabet, reconstruction.rate_matrix);
-		      
-	  for ( map<string, string>::iterator readIter = reads.begin(); 
-		readIter != reads.end(); ++readIter )
+	  map<int, string> profile_filenames = reconstruction.check_profile_filenames();
+	  // limiter = reconstruction.init_limiter();
+
+	  cerr<<"\nProfiles found for the following nodes:\n";
+	  for (map<int, string>::iterator fn=profile_filenames.begin(); fn!=profile_filenames.end(); ++fn)
+	    if (fn->second == "None")
+	      continue;
+	    else
+	      cerr<< "\t" << reconstruction.tree.node_name[fn->first] << "\t" << fn->second << endl; 
+		  
+	  cerr<<"Parsing reads..."; 
+	  map<string, string> reads = 
+	    parse_fasta(reconstruction.reads_to_place_filename.c_str(), reconstruction.alphabet);
+	  cerr<<"Done.\n"; 
+	  Read read; 
+	  for (int profileNode = reconstruction.tree.nodes() -1; profileNode >= 0; 
+	       profileNode--)
 	    {
-	      read.identifier = readIter->first; 
-	      read.set( readIter->second ); 
-	      //if ( ! limiter(profileNode, read.identifier) )
-	      //			    continue;
-	      if (reconstruction.loggingLevel >= 2)
-		cerr<<"Scoring read/profile pair: " << read.identifier << " - " << profile_scorer.name <<endl; 
-	      profile_scorer.score_and_store(read, scores, false);
+	      if (reconstruction.loggingLevel >=1)
+		cerr << "Scoring reads to profile at node: " << reconstruction.tree.node_name[profileNode]<<"..."; 
+	      if (profile_filenames[profileNode] == "None")
+		continue;
+	      AbsorbingTransducer ancestralProfile(profile_filenames[profileNode].c_str(),
+						   alphabetVector, reconstruction.tree);
+	      // not written/parsed in sexpr...ugh.  Fix later
+	      ancestralProfile.name = reconstruction.tree.node_name[profileNode]; 
+	      ReadProfileScore profile_scorer(&ancestralProfile, 
+					      reconstruction.alphabet, reconstruction.rate_matrix);
+		      
+	      for ( map<string, string>::iterator readIter = reads.begin(); 
+		    readIter != reads.end(); ++readIter )
+		{
+		  read.identifier = readIter->first; 
+		  read.set( readIter->second ); 
+		  //if ( ! limiter(profileNode, read.identifier) )
+		  //			    continue;
+		  if (reconstruction.loggingLevel >= 1)
+		    cerr<<"\tScoring read/profile pair: " << read.identifier << " - " << profile_scorer.name <<endl; 
+		  // Score read to profile, and store in 'scores' map, no logging
+		  profile_scorer.score_and_store(read, scores, false);
+		  bfloat score; 
+		  if (scores.count(read.identifier))
+		    if (scores[read.identifier].count(profile_scorer.name))
+		      {
+			score = scores[read.identifier][profile_scorer.name];
+			if (reconstruction.loggingLevel >= 1)
+			  cerr<<"\t\tScore:" << score << endl;
+			if ( ! bfloat_is_nonzero(score))
+			  {
+			    cerr<<"ERROR: score is non-positive!\n"; 
+			    profile_scorer.clear_DP_matrix(); 
+			    profile_scorer.get_score(read, false, //no viterbi
+						     true ); // do log
+			    exit(0); 
+			  }
+		      }
+		    else
+		      cerr << "\t\tRead had no score for profile "<< profile_scorer.name <<endl; 
+		  else
+		    cerr << "\t\tRead had no score for any profile: "<< read.identifier << endl; 
+			   
+		}
+	      if (reconstruction.loggingLevel >=1)
+		cerr<< "done.\n"; 
 	    }
-	  if (reconstruction.loggingLevel >=1)
-	    cerr<< "done.\n"; 
 	}
+      else
+	reconstruction.parse_placement_tabular(scores); 
+      cerr <<"\n\n"; 
       // Display stuff that got stored in scores, possibly as JSON or simpler tabular
       if (reconstruction.json_placements_filename != "None")
 	{
