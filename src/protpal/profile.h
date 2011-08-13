@@ -271,7 +271,7 @@ class Profile
   bfloat compute_emission_weight(M_id m);
 
   bool is_start(M_id);
-  inline bool is_external(M_id);
+  bool is_external(M_id);
   bool is_right_int(M_id); 
   bool is_left_int(M_id);
   bool is_pre_end(M_id);     

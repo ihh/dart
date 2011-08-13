@@ -99,7 +99,7 @@ int AlignmentEnvelope::next_match_column(int alignment_coordinate, string direct
 	++matches_found; 
       if (direction == "forward")
 	{
-	  if ( alignment_coordinate == alignment[seqName1].size()-1)
+	  if ( alignment_coordinate == int(alignment[seqName1].size())-1)
 	    return alignment_coordinate; 
 	  else
 	    ++alignment_coordinate; 

@@ -39,21 +39,25 @@ bfloat randomUnit(void)
   if (retVal<=1.0)
     return retVal;
   else
-    cerr<<"Error - random unit returned a number larger than 1: " << retVal << endl; 
+    {
+      cerr<<"Error - random unit returned a number larger than 1: " << retVal << endl; 
+      exit(1);
+    }
+  return retVal; 
 }
 
 
 int maxIndex(vector<bfloat> &weights)
 {
-  int maxIdx; 
+  int maxIdx=0; 
   bfloat max=0; 
-  for (int i=0; i<weights.size(); i++)
+  for (unsigned int i=0; i<weights.size(); i++)
 	{
 	  if (weights[i]>max) { maxIdx =i; max=weights[i];}
 	}
-  for (int i=0; i<weights.size(); i++)
+  for (unsigned int i=0; i<weights.size(); i++)
 	{
-	  if (i==maxIdx) continue; 
+	  if (int(i)==maxIdx) continue; 
 	  //if (weights[i] == max)std::cerr<<"Warning: non-unique max in maxIndex function\n";
 	}
   return maxIdx; 
@@ -64,7 +68,7 @@ int sample(vector<float> &weights)
 {
   vector<float> probs;
   double s = sum(weights);
-  int i;
+  unsigned int i;
   float previous = 0 ;
   for (i=0; i<weights.size(); i++)	
 	{
@@ -78,13 +82,14 @@ int sample(vector<float> &weights)
 	{
 	  if (draw <= probs[i]) return i;
 	}
+  return i; 
 }
 
 int sample(vector<double> &weights)
 {
   vector<double> probs;
   double s = sum(weights);
-  int i;
+  unsigned int i;
   float previous = 0 ;
   for (i=0; i<weights.size(); i++)	
 	{
@@ -98,6 +103,7 @@ int sample(vector<double> &weights)
 	{
 	  if (draw <= probs[i]) return i;
 	}
+  return i; 
 }
 
 
@@ -105,7 +111,7 @@ int sample(vector<bfloat> &weights)
 {
   vector<bfloat> probs; //not really necessary, but good to be careful
   bfloat s = sum(weights);
-  int i;
+  unsigned int i;
   bfloat previous = 0 ;
   for (i=0; i<weights.size(); i++)	
 	{
@@ -121,6 +127,9 @@ int sample(vector<bfloat> &weights)
   cerr<<"ERROR: reached end of sampling vector without choosing an element! The sampled number was " << draw << endl; 
   cerr<<"The weights vector  was "; displayVector(weights); 
   cerr<<"The probabilities vector  was "; displayVector(probs); 
+  exit(1); 
+  
+  return i; 
 }
 
 
@@ -146,21 +155,21 @@ pair<int, int> merge(pair<int, int> coords1, pair<int, int> coords2)
 double sum(vector<double> in)
 {
   double out = 0;
-  for (int i=0; i<in.size(); i++) out += in[i];
+  for (unsigned int i=0; i<in.size(); i++) out += in[i];
   return out;
 }
 
 double sum(vector<float> in)
 {
   double out = 0;
-  for (int i=0; i<in.size(); i++) out += in[i];
+  for (unsigned int i=0; i<in.size(); i++) out += in[i];
   return out;
 }
 
 bfloat sum(vector<bfloat> in)
 {
   bfloat out = 0;
-  for (int i=0; i<in.size(); i++) out += in[i];
+  for (unsigned int i=0; i<in.size(); i++) out += in[i];
   return out;
 }
 
@@ -168,13 +177,13 @@ bfloat sum(vector<bfloat> in)
 double sum(vector<int> in)
 {
   double out = 0;
-  for (int i=0; i<in.size(); i++) out += in[i];
+  for (unsigned int i=0; i<in.size(); i++) out += in[i];
   return out;
 }
 
 string stringAt(string in, int index)
 {
-  if (index > in.size()-1)
+  if (index > int(in.size())-1)
     {
       std::cerr<<"Error: Asking for a substring  beyond the size of the string\n"; 
       std::cerr<<"The  call was position " << index  << " in string " << in << endl; 
@@ -188,7 +197,7 @@ string stringAt(string in, int index)
 int index(string query, string in )
 {
   string subStr;
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	  subStr = in[i];
 	  if (subStr == query) return(i);		   
@@ -200,7 +209,7 @@ int index(string query, string in )
 int index(string query, vector<string> in )
 {
   string subStr;
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	  subStr = in[i];
 	  if (subStr == query) return(i);		   
@@ -211,7 +220,7 @@ int index(string query, vector<string> in )
 int index(sstring query, vector<sstring> in )
 {
   sstring subStr;
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	  subStr = in[i];
 	  if (subStr == query) return(i);		   
@@ -223,7 +232,7 @@ int index(sstring query, vector<sstring> in )
 
 int index(int query, vector<int> in )
 {
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	if (in[i] == query) return(i);
 	}
@@ -232,7 +241,7 @@ int index(int query, vector<int> in )
 
 int index(float query, vector<float> in )
 {
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	  if (in[i] == query) return(i);
 	}
@@ -241,7 +250,7 @@ int index(float query, vector<float> in )
 
 int index(bfloat query, vector<bfloat> in )
 {
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	  if (in[i] == query) return(i);
 	}
@@ -270,7 +279,7 @@ bool in(float query, vector<float> in )
 
 void displayVector(vector<int> in)
 {
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	  std::cerr<<in[i]<<"  ";
 	}
@@ -280,7 +289,7 @@ void displayVector(vector<int> in)
 
 void displayVector(vector<string> in)
 {
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	  std::cerr<<in[i]<<"  ";
 	}
@@ -289,7 +298,7 @@ void displayVector(vector<string> in)
 
 void displayVector(vector<double> in)
 {
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	  std::cerr<<in[i]<<"  ";
 	}
@@ -298,7 +307,7 @@ void displayVector(vector<double> in)
 
 void displayVector(vector<bfloat> in)
 {
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
 	  std::cerr<<in[i]<<"  ";
 	}
@@ -307,9 +316,9 @@ void displayVector(vector<bfloat> in)
   
 void displayVector(vector <vector <double> > in)
 {
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
-	  for (int j=0; j<in[i].size(); j++)
+	  for (unsigned int j=0; j<in[i].size(); j++)
 		{
 		  std::cerr<<in[i][j]<<"  ";
 		}
@@ -318,9 +327,9 @@ void displayVector(vector <vector <double> > in)
 }
 void displayVector(vector <vector <int> > in)
 {
-  for (int i=0; i<in.size(); i++)
+  for (unsigned int i=0; i<in.size(); i++)
 	{
-	  for (int j=0; j<in[i].size(); j++)
+	  for (unsigned int j=0; j<in[i].size(); j++)
 		{
 		  std::cerr<<in[i][j]<<"  ";
 		}
@@ -378,7 +387,7 @@ vector<string> split(string in, string splitChar)
   vector<string> out; 
   string tmp; 
   
-  for (int c=0; c<in.size(); c++)
+  for (unsigned int c=0; c<in.size(); c++)
     {
       if (stringAt(in, c)==splitChar)
 	{

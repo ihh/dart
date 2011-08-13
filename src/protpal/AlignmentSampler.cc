@@ -388,7 +388,7 @@ colMap AlignmentSampler::sample_expanded_path(node n, M_id start, M_id end, bool
 	    columns.push_back(padColumn(*colIter, tree)); 
 	}
       
-      if (pathIdx!=pi.size()-1 && pathIdx != 0)
+      if (pathIdx!=int(pi.size())-1 && pathIdx != 0)
 	{
 	  columns.push_back( padColumn(profile->state_type_phylogeny[piIter->toVector()] , tree) ); 
 	  if (!profile->state_type_phylogeny.count(piIter->toVector()) )
@@ -652,7 +652,7 @@ void IndelCounter::average_indel_counts(void)
   double insert_rt, delete_rt, delete_ext, insert_ext; 
   double insert_rate_num = 0.0,  delete_rate_num = 0.0, insert_rate_den = 0.0,  delete_rate_den = 0.0, delete_extend_tot = 0.0,  insert_extend_tot = 0.0; 
   node treeNode; 
-  double b = double(tree->branches());  
+  //double b = double(tree->branches());  
   int insert_count = 0, delete_count = 0; // actually the count of nodes which have nonzero in/del rates
   for_nodes_pre (*tree, tree->root, -1, bi)
     {

@@ -2099,7 +2099,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 			    sampleIdx = maxIndex(weights);
 			  else 
 			    sampleIdx = sample(weights);
-			  if (sampleIdx >= states_in.size())
+			  if (sampleIdx >= int(states_in.size()))
 			    cerr<<"ERROR: Sampled a state beyond end of vector of possible states!\n";
 			  //pathWeight *= (weights[sampleIdx] / get_DP_cell(states_in[sampleIdx]))*
 			  //				compute_emission_weight(states_in[sampleIdx]);
@@ -2383,7 +2383,7 @@ void Profile::cache_path(vector<M_id> path)
 	  latestLeft = ext_start.left_state;
 	  latestRight = ext_start.right_state; 	  
 
-	  if (!is_external(ext_start) && i!=path.size()-1) 
+	  if (!is_external(ext_start) && i!=int(path.size())-1) 
 	    continue;
 	  btwn_tmp.clear(); right_tmp.clear(); left_tmp.clear(); 
 	  
@@ -3648,8 +3648,8 @@ bool is_flush(MyMap<node, string> map1)
   // check to make sure that all alignment rows are the same length
   for (nodeState=map1.begin(); nodeState!=map1.end(); nodeState++)
 	{
-	  if (alignLength == -1) alignLength = nodeState->second.size(); 
-	  else if (alignLength != nodeState->second.size()) return false; 
+	  if (alignLength == -1) alignLength = int(nodeState->second.size()); 
+	  else if (alignLength != int(nodeState->second.size())) return false; 
 	}
   return true; 
 }
@@ -3664,7 +3664,7 @@ MyMap<node, string> pad_STP(MyMap<node, string> map1, vector<node> toPad)
   for (nodeState=map1.begin(); nodeState!=map1.end(); nodeState++)
 	{
 	  if (alignLength == -1) alignLength = nodeState->second.size(); 
-	  else if (alignLength != nodeState->second.size()) 
+	  else if (alignLength != int(nodeState->second.size()))
 		{
 		  std::cerr<<"Error: not all alignment rows are the same length; cannot pad with gaps\n";
 		  exit(1);

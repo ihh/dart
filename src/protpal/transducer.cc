@@ -8,7 +8,7 @@
 //General transducer operations
 string Transducer::get_state_name(state m)
 {
-  if (m >= states.size())
+  if (m >= int(states.size()))
 	{ 
 	  std::cerr<<"Error: state "<<m<<"has no name, since it is not in the transducer " << name << " which has "<<states.size()<<" states \n";
 	  exit(1);
@@ -22,7 +22,7 @@ string Transducer::get_state_name(state m)
 vector<state> Transducer::get_state_index(string state_name)
 {
   vector<state> out;
-  for (int i=0; i<state_names.size(); i++)
+  for (unsigned int i=0; i<state_names.size(); i++)
 	{ 
 	  if(state_names[i] == state_name) out.push_back(i);
 	}
@@ -39,7 +39,7 @@ vector<state> Transducer::get_state_index(string state_name)
 
 string Transducer::get_state_type(state m)
 {
-  if (m >= states.size())
+  if (m >= int(states.size()))
 	{
 	  std::cerr<<"Error: state "<<m<<"has no type, since it is not in the transducer  " << name << " which has "<<states.size()<<" states \n";
 	  exit(1);
@@ -50,7 +50,7 @@ string Transducer::get_state_type(state m)
 vector<state> Transducer::get_state_type_set(string type)
 {
   vector<state> out; 
-  for (int i=0; i<state_types.size(); i++)
+  for (unsigned int i=0; i<state_types.size(); i++)
 	{
 	  if (state_types[i] == type) out.push_back(i); 
 	}
@@ -81,7 +81,7 @@ void Transducer::test_transitions(void)
 {
   std::cerr<<"Testing transducer "<<name<<"'s transitions...\n";
   double sum; 
-  for (int i=0; i<state_names.size(); i++)
+  for (unsigned int i=0; i<state_names.size(); i++)
 	{
 	  sum = 0; 
 	  std::cerr<<"State "<<i<<": "<<state_names[i]<<" has outgoing transitions to:\n";
@@ -173,7 +173,7 @@ SingletTrans::SingletTrans(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, 
   state_types.push_back("W");
   state_types.push_back("E");
 
-  for (int i=0; i<state_names.size(); i++) states.push_back(i); 
+  for (unsigned int i=0; i<state_names.size(); i++) states.push_back(i); 
 
 
   // outgoing transitions
@@ -213,7 +213,7 @@ SingletTrans::SingletTrans(Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix, 
   // Emission weights
   // The states of type I are the only states which have an emission distribution
   vector<double> equilibrium = rate_matrix.create_prior(); 
-  for (int i=0; i<states.size(); i++)
+  for (unsigned int i=0; i<states.size(); i++)
 	{
 	  if (state_types[i] == "I") emission_weight_matrix[i] = equilibrium; 
 	}
@@ -242,7 +242,7 @@ SplittingTrans::SplittingTrans(void)
   /*   1 = match */
   /*   2 = wait */
   /*   3 = end */  
-  for (int i=0; i<state_names.size(); i++) states.push_back(i);
+  for (unsigned int i=0; i<state_names.size(); i++) states.push_back(i);
 
 
   // outgoing transitions
@@ -522,7 +522,7 @@ BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_E
 
   int start=0, match=1, match_wait=2, delete_wait=3, del=4, insert=5, end=6, end_wait = 7; 
 
-  for (int i=0; i<state_names.size(); i++) states.push_back(i); 
+  for (unsigned int i=0; i<state_names.size(); i++) states.push_back(i); 
 
   // Set outgoing transitions
   vector<state> out;
@@ -565,7 +565,7 @@ BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_E
 
   double ins_extend = gap_extend;
   double del_extend = gap_extend;
-  double wait2end = 1; // This is a forced transition...should have weight 1.
+  //double wait2end = 1; // This is a forced transition...should have weight 1.
 
   // Probability/weight of an insertion 
   double ins_open = 1-exp(-ins_open_rate*branch_length);
@@ -674,7 +674,7 @@ BranchTrans::BranchTrans(double branch_length_in, Alphabet& alphabet_in, Irrev_E
   // The states of type I are the only states which have an emission distribution
 
   vector<double> equilibrium = rate_matrix.create_prior(); 
-  for (int i=0; i<states.size(); i++)
+  for (unsigned int i=0; i<states.size(); i++)
     if (state_types[i] == "I") 
       emission_weight_matrix[i] = equilibrium;
 }
@@ -718,7 +718,7 @@ BranchTrans::BranchTrans(double branch_length_in, bool linear)
   /*   4 = insert */  
   /*   5 = end */    
 
-  for (int i=0; i<state_names.size(); i++) states.push_back(i); 
+  for (unsigned int i=0; i<state_names.size(); i++) states.push_back(i); 
 
   // Set outgoing transitions
   vector<state> out;
@@ -833,7 +833,7 @@ BranchTrans::BranchTrans(double branch_length_in, bool linear)
 	}
   // The states of type I are the only states which have an emission distribution
   string insert="I";
-  for (int i=0; i<states.size(); i++)
+  for (unsigned int i=0; i<states.size(); i++)
 	{
 	  if (state_types[i] == insert) emission_weight_matrix[i] = nullDistVector;
 	}
@@ -1348,7 +1348,7 @@ transitionPair.push_back(wait_end); transitionPair.push_back(end);
 transition_weight[transitionPair] = 1.0;
 
 vector<double> equilibrium = rate_matrix.create_prior();
-for (int i=0; i<states.size(); i++)
+for (unsigned int i=0; i<states.size(); i++)
     if (state_types[i] == "I") 
         emission_weight_matrix[i] = equilibrium;
 }
@@ -1752,7 +1752,7 @@ transitionPair.push_back(wait_end); transitionPair.push_back(end);
 transition_weight[transitionPair] = 1.0;
 
 vector<double> equilibrium = rate_matrix.create_prior();
-for (int i=0; i<states.size(); i++)
+for (unsigned int i=0; i<states.size(); i++)
     if (state_types[i] == "I") 
         emission_weight_matrix[i] = equilibrium;
 }

@@ -75,18 +75,25 @@ vector<state> QTransducer::get_components(state q)
   vector<state> out; 
   vector<state>::iterator assIter; 
   if (q > num_states || q<0)
-    std::cerr<<"Error: components of non-existent state queried\n";
+    {
+      std::cerr<<"Error: components of non-existent state queried\n";
+      exit(1);
+    }
   else 
     {
       for (assIter = assignments[q].begin(); assIter != assignments[q].end(); assIter++)
 	out.push_back(*assIter);
       return out;
     }
+  return out;
 }
 
 vector<state> QTransducer::get_state_indices(state q)
 {
-  //TODO
+  cerr<<"the function get_state_indices is not yet functional!\n"; 
+  exit(1); 
+  vector<state> toReturn; 
+  return toReturn; 
 }
 
 
@@ -105,7 +112,7 @@ vector<state> QTransducer::get_left_emit_states(void)
   vector<state> out =  state_class_set[left_ins];
   vector<state> rdel =  state_class_set[right_del];  
   
-  for (int i=0; i<rdel.size(); i++) out.push_back(rdel[i]);
+  for (unsigned int i=0; i<rdel.size(); i++) out.push_back(rdel[i]);
   return out; 
 }
 
@@ -119,7 +126,7 @@ vector<state> QTransducer::get_right_emit_states(void)
   vector<state> out =  state_class_set[right_ins];
   vector<state> ldel =  state_class_set[left_del];  
   
-  for (int i=0; i<ldel.size(); i++) out.push_back(ldel[i]);
+  for (unsigned int i=0; i<ldel.size(); i++) out.push_back(ldel[i]);
   return out; 
 }
 
@@ -137,7 +144,7 @@ vector<state> QTransducer::get_incoming_match_states(state qPrime)
   #endif
   if  (1)
 	{
-	  for (int i=0; i<incoming[qPrime].size(); i++)
+	  for (unsigned int i=0; i<incoming[qPrime].size(); i++)
 		{
 		  if (state_class[incoming[qPrime][i]] == match) out.push_back(incoming[qPrime][i]);
 		}
@@ -171,7 +178,7 @@ vector<state> QTransducer::get_incoming_left_emit_states(state qPrime)
 	  std::cerr<<"The offending call was: get_incoming_left_emit_states, in transducer: "<<name<<" state: "<<qPrime<<" named: "<<get_state_name(qPrime)<<endl;
 	}
   #endif
-  for (int i=0; i<incoming[qPrime].size(); i++)
+  for (unsigned int i=0; i<incoming[qPrime].size(); i++)
     {
       if (state_class[incoming[qPrime][i]] == left_ins || state_class[incoming[qPrime][i]] == right_del ) out.push_back(incoming[qPrime][i]);
     }
@@ -189,7 +196,7 @@ vector<state> QTransducer::get_incoming_right_emit_states(state qPrime)
 	  std::cerr<<"The offending call was:get_incoming_right_emit_states in transducer:  "<<name<<" state: "<<qPrime<<" named: "<<get_state_name(qPrime)<<endl;
 	}
   #endif
-  for (int i=0; i<incoming[qPrime].size(); i++)
+  for (unsigned int i=0; i<incoming[qPrime].size(); i++)
     {
       if (state_class[incoming[qPrime][i]] == left_del || state_class[incoming[qPrime][i]] == right_ins ) out.push_back(incoming[qPrime][i]);
     }
@@ -517,7 +524,7 @@ double QTransducer::compute_transition_weight(state q, state qPrime, vector<int>
   else if(componentChanges[0]==2) // the intermediate is always *a* wait state, but there might be several of these!
 	{
 	  sum = 0;
-	  for (int i=0; i<wait_indices.size(); i++)
+	  for (unsigned int i=0; i<wait_indices.size(); i++)
 		{
 		  waitIndex = wait_indices[i];
 		  if (R.has_transition(q_state_assignments[0], waitIndex) && 
@@ -545,7 +552,7 @@ double QTransducer::compute_transition_weight(state q, state qPrime, vector<int>
 	{
 	  wait_indices = B_l.get_state_type_set("W");
 	  sum = 0;
-	  for (int i=0; i<wait_indices.size(); i++)
+	  for (unsigned int i=0; i<wait_indices.size(); i++)
 		{
 		  waitIndex = wait_indices[i];
 		  if (B_l.has_transition(q_state_assignments[2], waitIndex) && 
@@ -571,7 +578,7 @@ double QTransducer::compute_transition_weight(state q, state qPrime, vector<int>
 	{
 	  wait_indices = B_r.get_state_type_set("W");
 	  sum = 0;
-	  for (int i=0; i<wait_indices.size(); i++)
+	  for (unsigned int i=0; i<wait_indices.size(); i++)
 		{
 		  waitIndex = wait_indices[i];
 		  if (B_r.has_transition(q_state_assignments[3], waitIndex) && 
@@ -608,7 +615,7 @@ void QTransducer::cache_states(void)
 
 	  if(logging) std::cerr<<"The composite class is: " << compositeClass<<endl;	  
 	  //	  state_set[compositeType] = vector<
-	  for (int i=0; i<type_strings.size(); i++)
+	  for (unsigned int i=0; i<type_strings.size(); i++)
 		{
 		  type_R = stringAt(type_strings[i], 0);
 		  type_Upsilon = stringAt(type_strings[i], 1); 
@@ -619,22 +626,22 @@ void QTransducer::cache_states(void)
 			  std::cerr<<"\tThe individual types are (r,u,bl, br): " << type_R<<" "<<type_Upsilon<<" "<<type_B_l<<" "<<type_B_r<<" \n";
 			}
 		  // Loop over states of R
-		  for (int r=0; r<R.states.size(); r++)
+		  for (unsigned int r=0; r<R.states.size(); r++)
 			{
 			  if (R.get_state_type(r) != type_R ) continue;
 
 			  // Loop over states of Upsilon
-			  for (int u=0; u<Upsilon.states.size(); u++)
+			  for (unsigned int u=0; u<Upsilon.states.size(); u++)
 				{
 				  if (Upsilon.get_state_type(u) != type_Upsilon ) continue;
 
 				  // Loop over states of B_l
-				  for (int bl=0; bl<B_l.states.size(); bl++)
+				  for (unsigned int bl=0; bl<B_l.states.size(); bl++)
 					{
 					  if (B_l.get_state_type(bl) != type_B_l ) continue;
 
 					  // Loop over states of B_r
-					  for (int br=0; br<B_r.states.size(); br++)
+					  for (unsigned int br=0; br<B_r.states.size(); br++)
 						{
 						  if (B_r.get_state_type(br) != type_B_r ) continue;
 						  
