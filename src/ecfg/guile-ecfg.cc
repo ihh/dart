@@ -209,6 +209,8 @@ register_grammar_functions (void* data)
 {
   ECFG_Scheme_evaluator& evaluator = *((ECFG_Scheme_evaluator*) data);
 
+  init_scheme_environment (NULL);
+
   init_stockholm_type();
   init_newick_type();
   init_xrate_primitives();

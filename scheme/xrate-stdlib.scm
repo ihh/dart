@@ -1,5 +1,5 @@
 ;; xrate standard library
-
+;; Ian Holmes, August 13, 2011
 
 ;; Define fold, the most basic map-reduce functional construct that we need
 ;; (fold F (L1 L2 ... LN)) = (F L1 (F L2 ... (F LN '())))
@@ -237,7 +237,7 @@
   (lambda (eqm-prefix)
     (let ((num-codons (length (all-sense-codons))))
       (quasiquote (pgroup (unquote (map (lambda (codon)
-					  (quasiquote ((unquote (xrate-codon-param eqm-prefix codon)) (&div 1 (unquote num-codons)))))
+					  (quasiquote ((unquote (xrate-codon-param eqm-prefix codon)) (unquote (/ 1 num-codons)))))
 					(all-sense-codons))))))))
 
 ;; rate parameter declarations for Nielsen-Yang model
@@ -268,6 +268,6 @@
 
 ;; Nielsen-Yang model as an xrate (alphabet, phylo-grammar) pair
 ;; As with xrate-NY-grammar, this is left as a function so that the genetic code can be changed
-(define xrate-NY-model
+(define xrate-NY-alphgram
   (lambda ()
     (list xrate-dna-alphabet (xrate-NY-grammar))))

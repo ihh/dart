@@ -99,7 +99,7 @@ public:
   char chomp (const char chomp_char = '\n') { return back() == chomp_char ? chop() : '\0'; }
 
   int to_int() const { return atoi (c_str()); }
-  double to_double() const { return atof (c_str()); }
+  double to_double() const;
 
   // strict versions of to_int() and to_double(), that do checking
   int to_int_strict (const char* err_prefix = "Not an integer constant") const;

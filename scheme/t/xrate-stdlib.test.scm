@@ -102,12 +102,12 @@
 (display (all-sense-codons))
 (newline)
 
-(display "xrate-NY-model = ")
-(display (xrate-NY-model))
+(display "xrate-NY-alphgram = ")
+(display (xrate-NY-alphgram))
 (newline)
 
 (display "Validating grammar ... ")
-(xrate-validate-grammar (xrate-NY-model))
+(xrate-validate-grammar (xrate-NY-alphgram))
 (newline)
 
 (display 'done)

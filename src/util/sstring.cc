@@ -98,17 +98,26 @@ int sstring::to_nonneg_int_strict (const char* err_prefix) const
 }
 
 Regexp double_regexp ("^\\-?([0-9]*\\.)?[0-9]+([eE][\\+\\-]?[0-9]+)?$");
+Regexp rational_regexp ("^(\\-?[0-9]+)/([0-9]+)$");
 double sstring::to_double_strict (const char* err_prefix) const
 {
-  if (!double_regexp.Match (c_str()))
+  if (!double_regexp.Match (c_str()) && !rational_regexp.Match (c_str()))
     THROWEXPR (err_prefix << ": " << *this);
   return to_double();
 }
 
+double sstring::to_double() const
+{
+  if (rational_regexp.Match (c_str()))
+    return atof(rational_regexp[1].c_str()) / atof(rational_regexp[2].c_str());
+  return atof (c_str());
+}
+
 Regexp nonneg_double_regexp ("^([0-9]*\\.)?[0-9]+([eE][\\+\\-]?[0-9]+)?$");
+Regexp nonneg_rational_regexp ("^(\\-?[0-9]+)/([0-9]+)$");
 double sstring::to_nonneg_double_strict (const char* err_prefix) const
 {
-  if (!nonneg_double_regexp.Match (c_str()))
+  if (!nonneg_double_regexp.Match (c_str()) && !nonneg_rational_regexp.Match (c_str()))
     THROWEXPR (err_prefix << ": " << *this);
   return to_double();
 }
