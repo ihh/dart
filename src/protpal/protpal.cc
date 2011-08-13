@@ -14,7 +14,6 @@
 #include "protpal/ReadProfileScore.h"
 #include "protpal/AlignmentSampler.h"
 #include "protpal/MyMap.h"
-#include "protpal/json.h"
 
 #include "ecfg/ecfgsexpr.h"
 #include "tree/phylogeny.h"
@@ -29,12 +28,6 @@
 
 int main(int argc, char* argv[])
 {
-  
-  Json::Value root;   // will contains the root value after parsing.
-  Json::Reader reader;
-  bool parsingSuccessful = reader.parse( "this.json", root );
-  
-  exit(0); 
   try{
     
   time_t start,end;
