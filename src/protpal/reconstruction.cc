@@ -141,7 +141,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.add("mpp -make-posterior-profile", profile_to_make="None", "Make a posterior profile for the specified node, storing it in the saved-posterior-profiles directory specified above", false);
   opts.add("json -write-json", json_placements_filename="None", "Write JSON format summary of placements (as per pplacer JSON spec)", false);
-  opts.add("tab -tab-input", score_tabular_filename="None", "Read tabular summary of placements", false);
+  opts.add("tab -tab-input", score_tabular_filename="None", "Read tabular summary of placements (together with -write-json, this can be used to convert a tabular file to a pplacer-style JSON file)", false);
   opts.add("notab -no-placement-tabular", no_placements_tabular=false, "Do not write tabular format summary of placements");
  
   opts.parse_or_die(); 
