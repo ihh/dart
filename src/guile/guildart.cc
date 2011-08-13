@@ -10,6 +10,8 @@ static void inner_main (void *closure, int argc, char **argv)
 {
   try
     {
+      init_scheme_environment (NULL);
+
       init_stockholm_type();
       init_newick_type();
 

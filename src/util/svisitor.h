@@ -11,6 +11,8 @@
 #include "util/guile-defs.h"
 #include "util/sexpr-keywords.h"
 
+#define DART_SCHEME_SUBDIR "scheme"
+
 // singleton shorthand map
 struct SExpr_macro_aliases
 {
@@ -91,5 +93,10 @@ public:
   static SExpr evaluate_sexpr (SExpr& sexpr);  // evaluates sexpr; returns result as an SExpr
   static SExpr evaluate_values (SExpr& sexpr);  // evaluates all children of sexpr, except for the first child; returns the list of results as an SExpr
 };
+
+// function to initialise guile Scheme environment for dart.
+// Adds $DARTDIR/scheme to search path
+void* init_scheme_environment (void*);
+
 
 #endif /* SEXPR_VISITOR_INCLUDED */

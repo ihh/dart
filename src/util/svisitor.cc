@@ -3,6 +3,7 @@
 #include "util/svisitor.h"
 #include "util/logfile.h"
 #include "util/vector_output.h"
+#include "util/unixenv.h"
 
 SExpr_macro_aliases::SExpr_macro_aliases()
 {
@@ -406,17 +407,27 @@ void SExpr_list_operations::visit (SExpr& parent_sexpr)
     }
 }
 
-// dummy function to pass to scm_with_guile
-static void*
-dummy_register_functions (void* data)
+// function to pass to scm_with_guile
+void*
+init_scheme_environment (void* data)
 {
+#if defined(GUILE_INCLUDED) && GUILE_INCLUDED
+  sstring inc_path;
+  inc_path << Dart_Unix::get_DARTDIR() << "/" DART_SCHEME_SUBDIR;
+  scm_append_x (scm_list_2 (scm_variable_ref (scm_c_lookup ("%load-path")),
+			    //  scm_append_x (scm_list_2 (scm_from_locale_symbol ("%load-path"),
+			    scm_list_1 (scm_from_locale_string (inc_path.c_str()))));
+
+    //  scm_c_define ("%load-path", scm_cons (scm_from_locale_string (inc_path.c_str()),
+    //					scm_c_lookup ("%load-path")));
+#endif /* GUILE_INCLUDED */
   return NULL;
 }
 
 // SExpr_Scheme_evaluator
 bool SExpr_Scheme_evaluator::initialized = false;
 SExpr_Scheme_evaluator::SExpr_Scheme_evaluator()
-  : register_functions (&dummy_register_functions),
+  : register_functions (&init_scheme_environment),
     data ((void*) 0)
 { }
 
