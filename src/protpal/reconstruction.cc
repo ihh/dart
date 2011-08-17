@@ -252,9 +252,9 @@ void Reconstruction::parse_sequences(Alphabet alphabet)
     }
   else if (fastaFileName != "None")
     {
-      if (!FileExists( string(stkFileName)))
+      if (!FileExists( string(fastaFileName)))
 	{
-	  cerr<<"\nERROR: sequence file " << stkFileName << " does not exist. Exiting...\n\n";
+	  cerr<<"\nERROR: sequence file " << fastaFileName << " does not exist. Exiting...\n\n";
 	  exit(1); 
 	}
       sequences = parse_fasta(fastaFileName.c_str(), alphabet); 
@@ -309,19 +309,8 @@ void Reconstruction::get_tree_from_file(const char* fileName)
     }
   string line;
   ifstream treeFile(fileName);
-  string tree_tmp = ""; 
   if (treeFile.is_open())
-    {
-      while (! treeFile.eof() )
-	{
-	  getline(treeFile,line);
-	  if (index(";", line) != -1)
-	    {
-	      const char* tree = line.c_str(); 
-	      loadTreeString(tree); 
-	    }
-	}
-    }
+    tree.read (treeFile);
 }
 
 
