@@ -23,6 +23,7 @@
 #include "util/dexception.h"
 #include "util/rnd.h"
 #include "util/sexpr.h"
+#include "seq/stockholm.h"
 
 // Main reconstruction program. 
 
@@ -734,7 +735,8 @@ int main(int argc, char* argv[])
 	}
 
       time(&end); 
-      cout<< "#=GF TIME_MINUTES " << difftime (end, start)/60.0 <<endl; 
+      cout << Stockholm_header; 
+      cout << "#=GF TIME_MINUTES " << difftime (end, start)/60.0 <<endl; 
       if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
 	annotated.write_Stockholm(cout);
       else // display in bare-bones/ non-Xrate format
@@ -760,6 +762,7 @@ int main(int argc, char* argv[])
 		cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << sequence << endl; 
 	    }
 	}
+      cout << Stockholm_footer; 
 		  
       // if requested, show what was inserted/deleted on the tree  (written to file)
       if (reconstruction.indel_filename != "None" && reconstruction.num_root_alignments == 1)

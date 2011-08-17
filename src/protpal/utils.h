@@ -28,8 +28,8 @@ typedef pair<int,int> Row_pair;
 typedef map<Row_pair,Alignment_path> Decomposition;
 
 char* stockholm_tree(const char*);
-MyMap<string, string> parse_stockholm(const char*, Alphabet );
-MyMap<string, string> parse_fasta(const char*, Alphabet );
+MyMap<string, string> parse_stockholm(const char*, Alphabet& );
+MyMap<string, string> parse_fasta(const char*, Alphabet& );
 vector<string> split(string,string); 
 vector<string> splitWhite(string); 
 

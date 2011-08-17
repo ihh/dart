@@ -25,12 +25,11 @@ class Reconstruction
   MyMap<string, string> options; 
 
   // Get sequences
-  void parse_sequences(Alphabet); 
+  void parse_sequences(Alphabet&); 
   
   // Each leaf node is assigned a sequence. Possibly delete these after making ExactMatch transducers for each
   // leaf.  Hmm, maybe I should have used pointers instead. 
   MyMap<string, string> sequences; 
-  sstring truncate_names_char; //truncate the names by this character, if requested
 
   // not (yet) using Ian's fancy Alphabet class
   // at least this is not a string any more, but a vector of strings, allowing latent-variable models.

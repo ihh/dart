@@ -337,40 +337,27 @@ void displayVector(vector <vector <int> > in)
 	}
 }
 
-MyMap<string, string> parse_stockholm(const char* fileName, Alphabet alphabet)
+MyMap<string, string> parse_stockholm(const char* sequenceFileName, Alphabet& alphabet)
 {
-  MyMap<string, string> sequences; 
-  string line;
-  ifstream seqFile(fileName);
-
-  // Parse stockholm file
-  if (seqFile.is_open())
+  MyMap<string, string> sequences;
+  ifstream sequenceFileStream(sequenceFileName); 
+  if (! sequenceFileStream.is_open())
     {
-      while (! seqFile.eof() )
-	{
-	  getline(seqFile,line);
-	  //std::cerr<<"Line: "<<line<<endl;
-	  if ( ! line.size() )
-	    continue; 
-	  if (stringAt(line,0) == "#" || splitWhite(line).size()<2) continue;
-	  else
-	    {
-	      //std::cerr<<"splitting line...\n";
-	      sequences[splitWhite(line)[0]] += splitWhite(line)[1]; 
-	      //sequences.insert(pair<string, string>(splitWhite(line)[0], sequences[splitWhite(line)[0]] + splitWhite(line)[1]));
-	    }
-	}
-      seqFile.close();
-    }
-  else 
-    {
-      std::cerr << "\nERROR: Unable to open Stockholm file: "<<fileName<< "\n"; 
+      std::cerr<<"\nERROR: could not open Stockholm file " << sequenceFileName << endl; 
       exit(1); 
     }
-  for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter!=sequences.end(); seqIter++)
-    if ( (seqIter->second).size() == 0)
-      std::cerr<<"Warning: 0 length sequence for species: " << seqIter->first << endl; 
+  Sequence_database seq_db;  // create the sequence database object
+  Stockholm stk;
+  stk.read_Stockholm(sequenceFileStream, seq_db); // read from file
+  seq_db.seqs2dsqs (alphabet);   // parse the sequences into tokens using the Alphabet class that you read in with the substitution model
+  for_const_contents (list<Named_profile>, seq_db, prof) 
+    {
+      sequences[prof->name] = (prof->seq); 
+      if (sequences[prof->name].size() == 0)
+	std::cerr<<"Warning: zero length sequence for name " << prof->name << endl; 
+    }
   return sequences; 
+
 }
 
 vector<string> splitWhite(string in)
@@ -408,7 +395,7 @@ vector<string> split(string in, string splitChar)
 
 
 
-MyMap<string, string> parse_fasta(const char* sequenceFileName, Alphabet alphabet)
+MyMap<string, string> parse_fasta(const char* sequenceFileName, Alphabet& alphabet)
 {
   MyMap<string, string> sequences;
   ifstream sequenceFileStream(sequenceFileName); 

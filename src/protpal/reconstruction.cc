@@ -54,7 +54,6 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.newline(); 
   opts.print_title("Input/output options");
   opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t and -tf options.", false);
-  opts.add("tn -truncate-names", truncate_names_char = "None", "Truncate sequence names - only include characters occurring before this character");
   opts.add("fa -fasta-file", fastaFileName="None", "Unaligned FASTA sequence file",false );
   opts.add("t -tree-string", treeString="None", "Tree string in newick format, within double quotes. ", false);
   opts.add("tf -tree-file", treeFileName="None", "File containing tree string in newick format.", false);
@@ -154,14 +153,19 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   // Make sure we have the essential data - sequences and a tree
   // First, make sure we have sequence data from somewhere
   if (stkFileName == "None" && fastaFileName =="None" && !simulate && phylocomposer_filename == "None" &&
-      reads_to_place_filename == "None")
+      reads_to_place_filename == "None" && guide_alignment_filename=="None")
 	{
 	  error += "\tNo sequence file could be imported.  Use -stk or -fa  to specify a sequence file\n";
 	  all_reqd_args = false; 
 	}
   // Next, see if we have a tree, first trying to get it from a #=GF NH stockholm line
-  if (stkFileName != "None" && treeString == "None" && treeFileName == "None")// && treeFileName == "None" && treeString == "None")
-    get_stockholm_tree(stkFileName.c_str());
+  if (treeString == "None" && treeFileName == "None")
+    if (stkFileName != "None")
+      get_stockholm_tree(stkFileName.c_str());
+    else if (guide_alignment_filename != "None")
+      get_stockholm_tree(guide_alignment_filename.c_str());
+
+
   if (treeString == "None" && treeFileName == "None" && !have_tree )
 	{
 	  error += "\tNo tree string was specified.  Use -t  or -tf <to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
@@ -203,7 +207,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 	  std::cerr<<"Guide sausage size must be >= 0, setting to 0\n";
 	  guide_sausage = 0; 
 	}
-      envelope.build_index(guide_alignment_filename, gap_char, guide_sausage, envelope_type, truncate_names_char);
+      envelope.build_index(guide_alignment_filename, gap_char, guide_sausage, envelope_type);
       if (loggingLevel >= 1)
 	std::cerr<<"Done.\n";
     }
@@ -225,7 +229,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   //  Irrev_EM_matrix rate_matrix(1,1);
   //  Alphabet alphabet ("uninitialized", 1);
   ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
-  if (stkFileName || fastaFileName)
+  if (stkFileName || fastaFileName || guide_alignment_filename)
     parse_sequences(alphabet); 
   
   if(estimate_root_insert)
@@ -238,7 +242,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 }
 
 
-void Reconstruction::parse_sequences(Alphabet alphabet)
+void Reconstruction::parse_sequences(Alphabet& alphabet)
 {
   // stockholm or fasta? (maybe add more later)
   if (stkFileName != "None")
@@ -259,24 +263,35 @@ void Reconstruction::parse_sequences(Alphabet alphabet)
 	}
       sequences = parse_fasta(fastaFileName.c_str(), alphabet); 
     }
-  if (truncate_names_char != "None")
+  
+  else if (guide_alignment_filename != "None")
     {
-      vector<string> toErase; 
-      for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
+      if (! FileExists( string(guide_alignment_filename)))
 	{
-	  if (in(string(truncate_names_char.c_str()), seqIter->first))
-	    {
-	      sequences[ split(seqIter->first, string(truncate_names_char.c_str()))[0] ] = seqIter->second; 
-	      if (loggingLevel >=1 )
-		std::cerr<< "\t NB: " << seqIter->first << " replaced with truncated name " << split(seqIter->first, string(truncate_names_char.c_str()))[0] << endl; 
-	      toErase.push_back(seqIter->first); 
-	    }
-	  else
-	    std::cerr<<"Seqname " << seqIter->first << " left alone\n"; 
+	  cerr<<"\nERROR: sequence file " << guide_alignment_filename << " does not exist. Exiting...\n\n";
+	  exit(1); 
 	}
-      for (vector<string>::iterator eraser=toErase.begin(); eraser!=toErase.end(); eraser++)
-	sequences.erase(*eraser);
+    sequences = parse_stockholm(guide_alignment_filename.c_str(), alphabet); 
     }
+
+//   if (truncate_names_char != "None")
+//     {
+//       vector<string> toErase; 
+//       for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
+// 	{
+// 	  if (in(string(truncate_names_char.c_str()), seqIter->first))
+// 	    {
+// 	      sequences[ split(seqIter->first, string(truncate_names_char.c_str()))[0] ] = seqIter->second; 
+// 	      if (loggingLevel >=1 )
+// 		std::cerr<< "\t NB: " << seqIter->first << " replaced with truncated name " << split(seqIter->first, string(truncate_names_char.c_str()))[0] << endl; 
+// 	      toErase.push_back(seqIter->first); 
+// 	    }
+// 	  else
+// 	    std::cerr<<"Seqname " << seqIter->first << " left alone\n"; 
+// 	}
+//       for (vector<string>::iterator eraser=toErase.begin(); eraser!=toErase.end(); eraser++)
+// 	sequences.erase(*eraser);
+//     }
 }
   
 void Reconstruction::loadTreeString(const char* in)

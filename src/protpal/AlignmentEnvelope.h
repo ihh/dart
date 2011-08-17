@@ -16,13 +16,17 @@ class AlignmentEnvelope
  public:
   // constructor, initializer
   AlignmentEnvelope(void); 
-  void build_index(sstring guide_alignment_filename, sstring gap_char = "-", int sausage_size=0, sstring type="gap-sliding", sstring truncate_names_char="None"); 
+  void build_index(sstring guide_alignment_filename, sstring gap_char = "-", int sausage_size=0, sstring type="gap-sliding");
   // main data storage unit - nested maps
   map< string, map<int, map<string, pair<int, int> > > > coordinates; 
   pair<int, int> lookup(string seqName, int index, string otherSeqName);
 
   void show(ostream& out); 
  private:
+  bool is_gap(int, int); 
+  bool is_not_gap(int, int); 
+  int name2int(sstring);
+  Stockholm stk; 
   int sausage_size; 
   sstring type; 
   map<string, string> alignment;  
