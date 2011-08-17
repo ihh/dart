@@ -40,9 +40,8 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
   //int seqSize; 
   pair<int, int> envPair; 
   Alphabet dummy_alpha("Uninitialized", 0); 
-  Sequence_database seq_db;  // create the sequence database object
   ifstream sequenceFileStream(guide_alignment_filename.c_str());
-  // Stockholm object stores the alignment. 
+  // Stockholm object stk stores the alignment, Sequence_database seq_db  stores the sequences
   stk.read_Stockholm(sequenceFileStream, seq_db); // read from file       
   stk.assert_flush(); 
 

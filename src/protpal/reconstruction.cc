@@ -17,12 +17,13 @@
 #include "util/sexpr.h"
 #include "seq/alignment.h"
 #include "seq/biosequence.h"
-
+#include "util/dexception.h"
 
 #define DEFAULT_CHAIN_FILE "data/handalign/prot3.hsm"
 #define DEFAULT_DNA_CHAIN_FILE "data/handalign/hidden.hsm"
 #define DEFAULT_GRAMMAR_FILE "grammars/prot3.eg"
 #define DEFAULT_GAP_GRAMMAR_FILE "grammars/prot3gap.eg"
+#define nullValue ""
 
 using namespace std; 
 
@@ -53,13 +54,14 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.newline(); 
   opts.print_title("Input/output options");
-  opts.add ("stk -stockholm-file",  stkFileName="None", "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t and -tf options.", false);
-  opts.add("fa -fasta-file", fastaFileName="None", "Unaligned FASTA sequence file",false );
-  opts.add("t -tree-string", treeString="None", "Tree string in newick format, within double quotes. ", false);
-  opts.add("tf -tree-file", treeFileName="None", "File containing tree string in newick format.", false);
+  //  opts.add ("stk -stockholm-file",  stkFileName=nullValue, "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t and -tf options.", false);
+  opts.add("fa -fasta-file", fastaFileName=nullValue, "Unaligned FASTA sequence file",false );
+  opts.add("stk -stockholm-file", stkFileName=nullValue, "Stockholm format sequence file", false);
+  opts.add("t -tree-string", treeString=nullValue, "Tree string in newick format, within double quotes. ", false);
+  opts.add("tf -tree-file", treeFileName=nullValue, "File containing tree string in newick format.", false);
   opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called).  Default is a compact Stockholm form. ");
   opts.add("fo -fasta-output", fasta_output=false, "Display final alignment in FASTA format");
-  opts.add("wrp -write-root-profile", root_profile_filename="None", "Sample from the ancestral distribution at the root, then store the resulting profile in the specified file. ");
+  opts.add("wrp -write-root-profile", root_profile_filename=nullValue, "Sample from the ancestral distribution at the root, then store the resulting profile in the specified file. ");
   opts.add("rvp -root-viterbi-path", root_viterbi_path=true, "Include the Viterbi alignment at the root when saving the root profile (useful for visualization). ");
   opts.add("gpc -gap-char", gap_char="-", "Gap character - for use in importing guide alignments\n");
   
@@ -82,12 +84,12 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("sa -show-alignments", show_alignments=false, "show intermediate sampled alignments  ");
   opts.add("rl -root-length", rootLength=-1, "<int> Root sequence length in simulation.  Default is to sample direclty from singlet transducer's insert distribution.", false);
 
-  opts.add("pc -phylocomposer-file", phylocomposer_filename = "None", "Generate a phylocomposer s-expression file for simulation or likelihood comparison (impractical for large data)", false);
+  opts.add("pc -phylocomposer-file", phylocomposer_filename = nullValue, "Generate a phylocomposer s-expression file for simulation or likelihood comparison (impractical for large data)", false);
   opts.newline();
   opts.print_title("Model parameters");
 
   opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
-  opts.add("cod -codon-model", codon_matrix_filename = "None", "Same as subst-model, but containing a rate matrix describing substitution rates between codon triplets.");
+  opts.add("cod -codon-model", codon_matrix_filename = nullValue, "Same as subst-model, but containing a rate matrix describing substitution rates between codon triplets.");
   opts.add("dna -dna-model", use_dna = false, "Use the default DNA substitution model, rather than amino acid model", false);
   opts.add("bs -subst-scale", sub_rate = 1.0, "Substitution rate scaling parameter ");
   opts.add("mbl -max-branch-length", max_branch_length = 1.0, "Maximum allowed branch length (branches longer than this will be truncated).");
@@ -113,7 +115,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.newline(); 
   opts.newline(); 
   opts.print_title("Speed/memory heuristics"); 
-  opts.add ("ga -guide-alignment",  guide_alignment_filename="None", "Aligned stockholm sequence file.  Use this as a guide alignment; the -gs option dictates how far from the guide alignment to explore .", false);
+  opts.add ("ga -guide-alignment",  guide_alignment_filename=nullValue, "Aligned stockholm sequence file.  Use this as a guide alignment; the -gs option dictates how far from the guide alignment to explore .", false);
   opts.add("et -envelope-type", envelope_type = "basic", "Envelope type - basic or gap-sliding."); 
   opts.add("gs -guide-sausage", guide_sausage = 50, "Max pairwise divergence from guide alignment homology relations."); 
   opts.add("n -num-samples", num_sampled_paths=100, "Number of paths to sample in traceback");
@@ -122,9 +124,9 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.newline();
   opts.print_title("Indel rate investigation");
-  opts.add("pi -print-indels", indel_filename = "None", "Show inserted and deleted sequences, as well as estimated indel open and extend rates - written to specified file.");
+  opts.add("pi -print-indels", indel_filename = nullValue, "Show inserted and deleted sequences, as well as estimated indel open and extend rates - written to specified file.");
   opts.add("pb -per-branch", per_branch=false, "When used with -pi option, show per-branch indel statistics, rather than averaged over the tree");
-  opts.add("db -stk-db", db_filename = "None", "Show alignments sampled at root level as a stockholm database - written to specified file.");
+  opts.add("db -stk-db", db_filename = nullValue, "Show alignments sampled at root level as a stockholm database - written to specified file.");
   opts.add("ra -root-alignments", num_root_alignments=1, "Number of alignments to sample at root node.");
   opts.add("ep -estimate-parameters", estimate_params=false, "Estimate the indel rate parameters via a stochastic sample (default 100 alignments, unless set by -ra option) at the root level\n");
   opts.add("ia -input-alignment", input_alignment=false, "Estimate indel rate parameters via a fixed input alignment (specified as -stk or -fa), rather than using protpal's internal alignment/reconstruction algorithm.");
@@ -133,54 +135,70 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.newline();
   opts.print_title("Phylogenetic read placement");
-  opts.add("p -place-reads", reads_to_place_filename="None", "Place reads in FASTA-formatted file onto tree nodes using pplacer-like algorithm\n");
-  opts.add("spp -saved-posterior-profiles", saved_profiles_directory="None", "In placing reads to nodes, use the profiles found in the specified directory (having names corresponding to tree nodes\n"); 
+  opts.add("p -place-reads", reads_to_place_filename=nullValue, "Place reads in FASTA-formatted file onto tree nodes using pplacer-like algorithm\n");
+  opts.add("spp -saved-posterior-profiles", saved_profiles_directory=nullValue, "In placing reads to nodes, use the profiles found in the specified directory (having names corresponding to tree nodes\n"); 
 
-  opts.add("ssp -saved-subtree-profiles", saved_subtree_profiles_directory="None", "When building an ancestral alignment, look for and save subtree profiles in the specified directory."); 
+  opts.add("ssp -saved-subtree-profiles", saved_subtree_profiles_directory=nullValue, "When building an ancestral alignment, look for and save subtree profiles in the specified directory."); 
 
-  opts.add("mpp -make-posterior-profile", profile_to_make="None", "Make a posterior profile for the specified node, storing it in the saved-posterior-profiles directory specified above", false);
-  opts.add("json -write-json", json_placements_filename="None", "Write JSON format summary of placements (as per pplacer JSON spec)", false);
-  opts.add("tab -tab-input", score_tabular_filename="None", "Read tabular summary of placements (together with -write-json, this can be used to convert a tabular file to a pplacer-style JSON file)", false);
+  opts.add("mpp -make-posterior-profile", profile_to_make=nullValue, "Make a posterior profile for the specified node, storing it in the saved-posterior-profiles directory specified above", false);
+  opts.add("json -write-json", json_placements_filename=nullValue, "Write JSON format summary of placements (as per pplacer JSON spec)", false);
+  opts.add("tab -tab-input", score_tabular_filename=nullValue, "Read tabular summary of placements (together with -write-json, this can be used to convert a tabular file to a pplacer-style JSON file)", false);
   opts.add("notab -no-placement-tabular", no_placements_tabular=false, "Do not write tabular format summary of placements");
- 
+  
+  
   opts.parse_or_die(); 
-  string error=""; bool all_reqd_args=true; 
+  string error=""; 
+  bool all_reqd_args=true; 
+  bool have_stockholm = bool(stkFileName != nullValue);
+  bool have_fasta = bool(fastaFileName != nullValue);
+  bool generate_phylocomposer = bool(phylocomposer_filename != nullValue);
+  bool place_reads = bool(reads_to_place_filename != nullValue);
+  bool have_guide_alignment = bool(guide_alignment_filename != nullValue); 
+  bool have_tree_string = bool(treeString != nullValue);
+  bool have_tree_file = bool(treeFileName != nullValue); 
+
   if (!estimate_params && num_root_alignments != 1)
     estimate_params = true; 
   viterbi = !stoch_trace;
   
-  codon_model = (codon_matrix_filename != "None");
+  codon_model = bool(codon_matrix_filename != nullValue);
   // Make sure we have the essential data - sequences and a tree
   // First, make sure we have sequence data from somewhere
-  if (stkFileName == "None" && fastaFileName =="None" && !simulate && phylocomposer_filename == "None" &&
-      reads_to_place_filename == "None" && guide_alignment_filename=="None")
-	{
-	  error += "\tNo sequence file could be imported.  Use -stk or -fa  to specify a sequence file\n";
-	  all_reqd_args = false; 
-	}
+  // Unless we are generating phylocomposer, simulating, or placing reads, we need 
+  // sequence input either as stockholm,  fasta or guide alignment (stockholm)
+  if (!have_stockholm && 
+      !have_fasta && 
+      !have_guide_alignment && 
+      !simulate && 
+      !generate_phylocomposer &&
+      !place_reads )
+    {
+      error += "\tNo sequence file could be imported.  Use -ga, -stk, or -fa  to specify a sequence file\n";
+      all_reqd_args = false; 
+    }
   // Next, see if we have a tree, first trying to get it from a #=GF NH stockholm line
-  if (treeString == "None" && treeFileName == "None")
-    if (stkFileName != "None")
+  if ( !have_tree_string && !have_tree_file)
+    if (have_stockholm)
       get_stockholm_tree(stkFileName.c_str());
-    else if (guide_alignment_filename != "None")
+    else if (have_guide_alignment)
       get_stockholm_tree(guide_alignment_filename.c_str());
 
-
-  if (treeString == "None" && treeFileName == "None" && !have_tree )
-	{
-	  error += "\tNo tree string was specified.  Use -t  or -tf <to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
-	  all_reqd_args = false; 
-	}
-  if (treeString != "None")
+  // Then try to get it from -tf or -t options
+  if (have_tree_string)
     loadTreeString(treeString.c_str());
-  else if (treeFileName != "None")
+  else if (have_tree_file)
     get_tree_from_file(treeFileName.c_str());
 
-  if(!all_reqd_args)
+  if ( !have_tree )
     {
-      std::cout<<"\nNot all required arguments were supplied:\n"<<error<<endl;  
-      std::cout<<opts.short_help(); 
-      exit(1);
+      error += "\tNo tree string was specified.  Use -t  or -tf <to specify a phylogenetic tree, or include it the stockholm file as a  '#=GF NH' line \n";
+      all_reqd_args = false; 
+    }
+
+  if(!all_reqd_args)
+    {      
+      cerr<<opts.short_help(); 
+      THROWEXPR("\nNot all required arguments were supplied:\n" + error +"\n");
     }
   // Now that we've got the tree - make sure it's binary. 
   bool changed = tree.force_binary(); 
@@ -191,14 +209,27 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   
   // Otherwise, do some preliminary stuff
-  //seed rand on the clock time          
-  //  if (rndtime)
-  //    srand((unsigned)time(0));
   // Name internal nodes of the tree, if not already named
   set_node_names(); 
 
+  if ( mixture_2 && 1 - mix_prior_2 < 0)
+    {
+      THROWEXPR("Error - prior on first mixture component is less than 0.  In specifying 2nd component's prior, remember that P(first) = 1 - P(2nd)\n")
+	}
+
+
+  if ( mixture_3 && 1 - mix_prior_2 - mix_prior_3 < 0)
+    {
+      THROWEXPR("Error - prior on first mixture component is less than 0.  In specifying 2nd and 3rd components, remember that P(first) = 1 - P(2nd) - P(3rd)\n");
+    }
+	
+  SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
+  SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
+  //  Irrev_EM_matrix rate_matrix(1,1);
+  //  Alphabet alphabet ("uninitialized", 1);
+  ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
   // If a guide alignment was used, initialize the alignmentEnvelope
-  if (guide_alignment_filename != "None")
+  if (have_guide_alignment)
     {
       if (loggingLevel >= 1)
 	std::cerr<<"\nBuilding alignment envelope from guide alignment...";
@@ -210,27 +241,26 @@ Reconstruction::Reconstruction(int argc, char* argv[])
       envelope.build_index(guide_alignment_filename, gap_char, guide_sausage, envelope_type);
       if (loggingLevel >= 1)
 	std::cerr<<"Done.\n";
-    }
-  if ( mixture_2 && 1 - mix_prior_2 < 0)
-    {
-      std::cerr<<"Error - prior on first mixture component is less than 0.  In specifying 2nd component's prior, remember that P(first) = 1 - P(2nd)\n"; 
-      exit(0); 
+	  
+      // Get sequences from alignment envelope
+      // parse the sequences into tokens using the Alphabet 
+      // that was read in with the substitution model
+      envelope.seq_db.seqs2dsqs (alphabet);   
+      for_const_contents (list<Named_profile>, envelope.seq_db, prof)
+	{
+	  sequences[prof->name] = (prof->seq);
+	  if (sequences[prof->name].size() == 0)
+	    cerr<<"Warning: zero length sequence for name " << prof->name << endl;
+	}
+      envelope.stk.clear();
+      envelope.seq_db.clear(); 
     }
 
-
-  if ( mixture_3 && 1 - mix_prior_2 - mix_prior_3 < 0)
+  if (have_stockholm || have_fasta)
     {
-      std::cerr<<"Error - prior on first mixture component is less than 0.  In specifying 2nd and 3rd components, remember that P(first) = 1 - P(2nd) - P(3rd)\n"; 
-      exit(0); 
+      cerr << "Warning: redundancy in sequence specification: sequences were already imported via the -ga option.\nNow overwriting those sequences based on -stk or -fa options.  (In normal conditions they  be the same, but the safest way to ensure this is to use only the -ga option)\n"; 
+      parse_sequences(alphabet); 
     }
-	
-  SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
-  SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
-  //  Irrev_EM_matrix rate_matrix(1,1);
-  //  Alphabet alphabet ("uninitialized", 1);
-  ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
-  if (stkFileName || fastaFileName || guide_alignment_filename)
-    parse_sequences(alphabet); 
   
   if(estimate_root_insert)
     {
@@ -238,60 +268,24 @@ Reconstruction::Reconstruction(int argc, char* argv[])
       if (loggingLevel >=1 )
 	cerr<< "Root insert probability estimated as: " << root_insert_prob << endl;
     }
-
 }
 
 
 void Reconstruction::parse_sequences(Alphabet& alphabet)
 {
   // stockholm or fasta? (maybe add more later)
-  if (stkFileName != "None")
+  if (stkFileName != nullValue)
     {
       if (!FileExists( string(stkFileName)))
-	{
-	  cerr<<"\nERROR: sequence file " << stkFileName << " does not exist. Exiting...\n\n";
-	  exit(1); 
-	}
+	THROWEXPR("\nERROR: Stockholm sequence file " + stkFileName + " does not exist. Exiting...\n\n")
       sequences = parse_stockholm(stkFileName.c_str(), alphabet); 
     }
-  else if (fastaFileName != "None")
+  else if (fastaFileName != nullValue)
     {
       if (!FileExists( string(fastaFileName)))
-	{
-	  cerr<<"\nERROR: sequence file " << fastaFileName << " does not exist. Exiting...\n\n";
-	  exit(1); 
-	}
+	THROWEXPR("\nERROR: sequence file " + fastaFileName  + " does not exist. Exiting...\n\n");
       sequences = parse_fasta(fastaFileName.c_str(), alphabet); 
-    }
-  
-  else if (guide_alignment_filename != "None")
-    {
-      if (! FileExists( string(guide_alignment_filename)))
-	{
-	  cerr<<"\nERROR: sequence file " << guide_alignment_filename << " does not exist. Exiting...\n\n";
-	  exit(1); 
-	}
-    sequences = parse_stockholm(guide_alignment_filename.c_str(), alphabet); 
-    }
-
-//   if (truncate_names_char != "None")
-//     {
-//       vector<string> toErase; 
-//       for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
-// 	{
-// 	  if (in(string(truncate_names_char.c_str()), seqIter->first))
-// 	    {
-// 	      sequences[ split(seqIter->first, string(truncate_names_char.c_str()))[0] ] = seqIter->second; 
-// 	      if (loggingLevel >=1 )
-// 		std::cerr<< "\t NB: " << seqIter->first << " replaced with truncated name " << split(seqIter->first, string(truncate_names_char.c_str()))[0] << endl; 
-// 	      toErase.push_back(seqIter->first); 
-// 	    }
-// 	  else
-// 	    std::cerr<<"Seqname " << seqIter->first << " left alone\n"; 
-// 	}
-//       for (vector<string>::iterator eraser=toErase.begin(); eraser!=toErase.end(); eraser++)
-// 	sequences.erase(*eraser);
-//     }
+    }  
 }
   
 void Reconstruction::loadTreeString(const char* in)
@@ -300,8 +294,6 @@ void Reconstruction::loadTreeString(const char* in)
   const sstring tree_string = in; 
   istringstream tree_input (tree_string);
   PHYLIP_tree in_tree;
-
-
   try
     {
       in_tree.read (tree_input);
@@ -309,7 +301,7 @@ void Reconstruction::loadTreeString(const char* in)
     }
   catch (const Dart_exception& e)
     {
-      cerr << "ERROR: input tree was not readable.\n"; 
+      cerr << "ERROR: input tree was not readable:\n"; 
       cerr << e.what();
       exit(1);
     }
@@ -324,8 +316,18 @@ void Reconstruction::get_tree_from_file(const char* fileName)
     }
   string line;
   ifstream treeFile(fileName);
-  if (treeFile.is_open())
-    tree.read (treeFile);
+  try
+    {
+      if (treeFile.is_open())
+	tree.read (treeFile);
+    }
+  catch (const Dart_exception& e)
+    {
+      cerr << "ERROR: input tree was not readable:\n"; 
+      cerr << e.what();
+      exit(1);
+    }
+
 }
 
 
@@ -349,10 +351,7 @@ void Reconstruction::set_node_names(void)
 void Reconstruction::get_stockholm_tree(const char* fileName)
 {
   if (!FileExists( string(fileName)))
-    {
-      cerr<<"\nERROR: sequence/tree file " << fileName << " does not exist. Exiting...\n\n";
-      exit(1); 
-    }
+    THROWEXPR("\nERROR: sequence/tree file " << fileName << " does not exist. Exiting...\n\n");
   string line;
   ifstream seqFile(fileName);
   string tree_tmp = ""; 
@@ -390,6 +389,7 @@ void Reconstruction::get_stockholm_tree(const char* fileName)
   
 void Reconstruction::make_sexpr_file(ostream& out)
 {
+  // Warning: nasty stuff follows. 
   MyMap<string,string> prot2pc;
   prot2pc["S"] = "start";
   prot2pc["M"] = "match"; 
@@ -759,7 +759,7 @@ Digitized_biosequence Reconstruction::sample_pairwise(Digitized_biosequence pare
 	  std::cerr<<"outgoingWeights: "; displayVector(outgoingWeights);
 	  std::cerr<<"\n";
 	  std::cerr<<"possible states"; displayVector(possible);
-	  exit(1); 
+	  THROWEXPR("Simulation error \n"); 
 	}
       
       s = sNew; 
@@ -833,7 +833,7 @@ map<int, string> Reconstruction::check_profile_filenames(void)
       else
 	{
 	  cerr<<"Warning: no saved profile for tree node " << tree.node_name[treeNode] << endl; 
-	  filenames[treeNode] = "None"; 
+	  filenames[treeNode] = nullValue; 
 	}
     }
   return filenames; 
@@ -854,12 +854,12 @@ void Reconstruction::verify_leaf_sequences(void)
 	  cerr<<"Sequence names in input file: \n";
 	  for (MyMap<string, string>::iterator seqIter = sequences.begin(); seqIter != sequences.end(); seqIter++)
 	    if ((seqIter->second).size() > 0)
-	      cerr<<"\t" << seqIter->first << "\t" << split(seqIter->first, string("|"))[0] << endl;
+	      cerr<<"\t" << seqIter->first << endl; 
 
 	  std::cerr<<"Sequence names in tree leaves: \n";
 	  for (unsigned int j=0; j<leaves.size(); j++)
 	    std::cerr<<"\t" << tree.node_name[leaves[j]] << endl;
-	  exit(1);
+	  THROWEXPR("Tree leaves / sequence names mismatch\n"); 
 	}
     }
 }
@@ -964,10 +964,7 @@ void Reconstruction::parse_placement_tabular(ScoreMap& scores)
 	}
     }
   else
-    {
-      cerr << "\nERROR: Unable to open tabular score file: "<< score_tabular_filename<< "\n";
-      exit(1);
-    }
+    THROWEXPR( "\nERROR: Unable to open tabular score file: " + score_tabular_filename);
 }
 
 

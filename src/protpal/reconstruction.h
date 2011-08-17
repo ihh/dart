@@ -141,12 +141,20 @@ class Reconstruction
   sstring score_tabular_filename; 
   void write_numbered_newick(ostream& out, bool quotes=true); 
   
-  
   // Memory management
   void clear_child(node);
 
   // newly made  public
   void get_tree_from_file(const char*);
+
+  //  Top-level bools
+  bool have_stockholm;
+  bool have_fasta;
+  bool generate_phylocomposer;
+  bool place_reads;
+  bool have_guide_alignment;
+  bool have_tree_string;
+  bool have_tree_file;
 
  private:
   // Help message

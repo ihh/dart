@@ -20,13 +20,15 @@ class AlignmentEnvelope
   // main data storage unit - nested maps
   map< string, map<int, map<string, pair<int, int> > > > coordinates; 
   pair<int, int> lookup(string seqName, int index, string otherSeqName);
+  Stockholm stk; 
+  Sequence_database seq_db; 
 
   void show(ostream& out); 
  private:
   bool is_gap(int, int); 
   bool is_not_gap(int, int); 
   int name2int(sstring);
-  Stockholm stk; 
+
   int sausage_size; 
   sstring type; 
   map<string, string> alignment;  
