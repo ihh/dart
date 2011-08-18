@@ -113,8 +113,8 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
   else // Codon models - a bit trickier.  
     {
       cerr <<" (using codon model) "; 
-      vector<string> codons = all_codons(); 
-      string codon; 
+      vector<sstring> codons = all_codons(); 
+      sstring codon; 
       for (int seqIdx=0; seqIdx<num_delete_states; ++seqIdx)
 	{
 	  for (int codIdx=0; codIdx < int(codons.size()); codIdx++)

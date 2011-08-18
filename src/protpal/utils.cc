@@ -457,14 +457,14 @@ bool bfloat_is_nonzero(bfloat in)
 
 
 // Some codon model related functions. 
-bool is_synonymous(string codon1, string codon2, map<string,string>& codon_table)
+bool is_synonymous(string codon1, string codon2, map<sstring,sstring>& codon_table)
 {
   return bool(codon_table[codon1] == codon_table[codon2]);
 }
 
 bool differ_more_than_one(string codon1, string codon2)
 {
-  if (codon1.size() == codon2.size() == 3)
+  if (codon1.size() == codon2.size() && codon1.size() ==  3)
     {
       int diffs = 0;
       for (int i=0; i<3; i++)
@@ -477,7 +477,10 @@ bool differ_more_than_one(string codon1, string codon2)
       return false; 
     }
   else
-    THROWEXPR("Improperly sized codons"); 
+    {
+      cerr <<  "Improperly sized codons: " << codon1 << " "  << codon1.size() << " " << codon1 << " " << codon2.size(); 
+  THROWEXPR("Wierd codons"); 
+    }
   return true ; 
 }
 
@@ -498,8 +501,10 @@ pair<string, string> find_first_difference(string codon1, string codon2)
 }
 
 
-bool is_transition(string nuc1, string nuc2)
+bool is_transition(pair<string,string> nucPair)
 {
+  string nuc1 = nucPair.first; 
+  string nuc2 = nucPair.second; 
   if (nuc1 == "a")
     return bool(nuc2=="g");
 
@@ -516,10 +521,10 @@ bool is_transition(string nuc1, string nuc2)
   return false; 
 }
 
-vector<string> all_codons(void)
+vector<sstring> all_codons(void)
 {
-  vector<string> out; 
-  vector<string> dna; 
+  vector<sstring> out; 
+  vector<sstring> dna; 
   string codon; 
   int i,j,k;
   dna.push_back("a");   dna.push_back("c");   dna.push_back("g");   dna.push_back("t"); 
@@ -538,9 +543,9 @@ vector<string> all_codons(void)
   return out; 
 }
 
-map<string, string> codon_table(void)
+map<sstring, sstring> codon_table(void)
 {
-  map<string, string> out; 
+  map<sstring, sstring> out; 
   // hard-coded translation table.  Not a great solution, but will have to do for now
   out["ctt"]="l";
   out["atg"]="m";

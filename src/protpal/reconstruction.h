@@ -168,7 +168,7 @@ class Reconstruction
   void load_rate_matrix(const string);
   void loadTreeString(const char*);
   void get_stockholm_tree(const char*);  
-
+  void init_codon_chain_and_alphabet(bfloat selectionPressure, bfloat transitionBias); 
   
 };
 #endif
