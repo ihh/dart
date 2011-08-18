@@ -120,6 +120,8 @@ class Reconstruction
   double mix_prior_3;
   double root_insert_prob;
   sstring gap_char; 
+  double selectionPressure;
+  double transitionBias; 
   
   // Indel investigation
   int num_root_alignments; 

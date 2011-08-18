@@ -89,7 +89,9 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.print_title("Model parameters");
 
   opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
-  opts.add("cod -codon-model", codon_matrix_filename = nullValue, "Same as subst-model, but containing a rate matrix describing substitution rates between codon triplets.");
+  opts.add("cod -codon-model", codon_matrix_filename = nullValue, "Same as subst-model, but containing a rate matrix describing substitution rates between codon triplets. (currently under development)");
+  opts.add("sel -selection-pressure", selectionPressure=1.0, "Selection parameter (omega) for use in codon models"); 
+opts.add("ts -transition-bias", transitionBias=2.0, "Transition bias parameter (kappa) for use in codon models");   
   opts.add("dna -dna-model", use_dna = false, "Use the default DNA substitution model, rather than amino acid model", false);
   opts.add("bs -subst-scale", sub_rate = 1.0, "Substitution rate scaling parameter ");
   opts.add("mbl -max-branch-length", max_branch_length = 1.0, "Maximum allowed branch length (branches longer than this will be truncated).");
@@ -237,7 +239,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
     }
   else
     {
-      init_codon_chain_and_alphabet(1.0, 2.0); 
+      init_codon_chain_and_alphabet(selectionPressure, transitionBias); 
     }				       
   // If a guide alignment was used, initialize the alignmentEnvelope
   if (have_guide_alignment)
