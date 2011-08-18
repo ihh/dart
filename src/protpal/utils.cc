@@ -454,3 +454,157 @@ bool bfloat_is_nonzero(bfloat in)
 {
   return  (in != in*2.0);
 }
+
+
+// Some codon model related functions. 
+bool is_synonymous(string codon1, string codon2, map<string,string>& codon_table)
+{
+  return bool(codon_table[codon1] == codon_table[codon2]);
+}
+
+bool differ_more_than_one(string codon1, string codon2)
+{
+  if (codon1.size() == codon2.size() == 3)
+    {
+      int diffs = 0;
+      for (int i=0; i<3; i++)
+	{
+	  if (stringAt(codon1,i) != stringAt(codon2,i))
+	    diffs++;
+	  if (diffs > 1)
+	    return true; 
+	}
+      return false; 
+    }
+  else
+    THROWEXPR("Improperly sized codons"); 
+  return true ; 
+}
+
+pair<string, string> find_first_difference(string codon1, string codon2)
+{
+  pair<string, string> out; 
+  for (int i=0; i<3; i++)
+    {
+      if (stringAt(codon1,i) != stringAt(codon2,i))
+	{
+	  out.first = stringAt(codon1,i);
+	  out.second = stringAt(codon2,i);
+	  return out; 
+	}
+    }
+  cerr <<"Warning: returning empty pair of differences between codons: "<<codon1 << " " <<codon2<<endl; 
+  return out; 
+}
+
+
+bool is_transition(string nuc1, string nuc2)
+{
+  if (nuc1 == "a")
+    return bool(nuc2=="g");
+
+  if (nuc1 == "c")
+    return bool(nuc2=="t");
+
+  if (nuc1 == "g")
+    return bool(nuc2=="a");
+
+  if (nuc1 == "t")
+    return bool(nuc2=="c");
+  
+  THROWEXPR("Unknown nucleotides queried for transition: " + nuc1 +" "+nuc2);
+  return false; 
+}
+
+vector<string> all_codons(void)
+{
+  vector<string> out; 
+  vector<string> dna; 
+  string codon; 
+  int i,j,k;
+  dna.push_back("a");   dna.push_back("c");   dna.push_back("g");   dna.push_back("t"); 
+  for (i=0; i<4; i++)
+    {
+      for (j=0; j<4; j++)
+	{
+	  for (k=0; k<4; k++)
+	    {
+	      codon.clear();
+	      codon = dna[i] + dna[j] + dna[k];
+	      out.push_back(codon); 
+	    }
+	}
+    }
+  return out; 
+}
+
+map<string, string> codon_table(void)
+{
+  map<string, string> out; 
+  // hard-coded translation table.  Not a great solution, but will have to do for now
+  out["ctt"]="l";
+  out["atg"]="m";
+  out["aca"]="t";
+  out["acg"]="t";
+  out["atc"]="i";
+  out["aac"]="n";
+  out["ata"]="i";
+  out["agg"]="r";
+  out["cct"]="p";
+  out["ctc"]="l";
+  out["agc"]="s";
+  out["aag"]="k";
+  out["aga"]="r";
+  out["cat"]="h";
+  out["aat"]="n";
+  out["att"]="i";
+  out["ctg"]="l";
+  out["cta"]="l";
+  out["act"]="t";
+  out["cac"]="h";
+  out["aaa"]="k";
+  out["ccg"]="p";
+  out["agt"]="s";
+  out["cca"]="p";
+  out["caa"]="q";
+  out["ccc"]="p";
+  out["tat"]="y";
+  out["ggt"]="g";
+  out["tgt"]="c";
+  out["cga"]="r";
+  out["cag"]="q";
+  out["tct"]="s";
+  out["gat"]="d";
+  out["cgg"]="r";
+  out["ttt"]="f";
+  out["tgc"]="c";
+  out["ggg"]="g";
+  out["tag"]="stop";
+  out["gga"]="g";
+  out["tgg"]="w";
+  out["ggc"]="g";
+  out["tac"]="y";
+  out["ttc"]="f";
+  out["tcg"]="s";
+  out["tta"]="l";
+  out["ttg"]="l";
+  out["tcc"]="s";
+  out["acc"]="t";
+  out["tca"]="s";
+  out["gca"]="a";
+  out["gta"]="v";
+  out["gcc"]="a";
+  out["gtc"]="v";
+  out["gcg"]="a";
+  out["gtg"]="v";
+  out["gag"]="e";
+  out["gtt"]="v";
+  out["gct"]="a";
+  out["tga"]="stop";
+  out["gac"]="d";
+  out["cgt"]="r";
+  out["gaa"]="e";
+  out["taa"]="stop";
+  out["cgc"]="r";
+  return out; 
+}

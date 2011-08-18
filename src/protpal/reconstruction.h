@@ -88,7 +88,7 @@ class Reconstruction
   MyMap<node, Profile> pre_summed_profiles; 
   
   // Reconstruction algorithm parameters
-
+  bool testing;
   Alphabet alphabet;
   Irrev_EM_matrix rate_matrix; 
   int num_sampled_paths;

@@ -83,4 +83,10 @@ void displayVector(vector <vector <int> > in);
 
 bool FileExists(string); 
 bool bfloat_is_nonzero(bfloat);
+vector<string> all_codons(void); 
+map<string, string> codon_table(void); 
+bool is_synonymous(string, string, map<string, string>); 
+bool is_transition(string, string); 
+bool differ_more_than_one(string, string); 
+pair<string, string> find_first_difference(string, string); 
 #endif

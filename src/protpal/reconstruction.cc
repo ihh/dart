@@ -54,9 +54,9 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.newline(); 
   opts.print_title("Input/output options");
-  //  opts.add ("stk -stockholm-file",  stkFileName=nullValue, "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t and -tf options.", false);
+  opts.add ("stk -stockholm-file",  stkFileName=nullValue, "Unaligned stockholm sequence file.  If there is a #=GF NH line, this will be used as the phylogenetic tree, though this can be overridden by the -t and -tf options.", false);
   opts.add("fa -fasta-file", fastaFileName=nullValue, "Unaligned FASTA sequence file",false );
-  opts.add("stk -stockholm-file", stkFileName=nullValue, "Stockholm format sequence file", false);
+  opts.add("test -run-tests", testing=false, "Run tests in protpal", false);
   opts.add("t -tree-string", treeString=nullValue, "Tree string in newick format, within double quotes. ", false);
   opts.add("tf -tree-file", treeFileName=nullValue, "File containing tree string in newick format.", false);
   opts.add("xo -xrate-output", xrate_output=false, "Display final alignment in  full XRATE-style (will be used if the -anrec-postprob option is called).  Default is a compact Stockholm form. ");
@@ -147,15 +147,19 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   
   
   opts.parse_or_die(); 
+  // Allows us to do testing in higher-up protpal without all the usually-necessary arguments present
+  if (testing)
+    return; 
+
   string error=""; 
   bool all_reqd_args=true; 
-  bool have_stockholm = bool(stkFileName != nullValue);
-  bool have_fasta = bool(fastaFileName != nullValue);
-  bool generate_phylocomposer = bool(phylocomposer_filename != nullValue);
-  bool place_reads = bool(reads_to_place_filename != nullValue);
-  bool have_guide_alignment = bool(guide_alignment_filename != nullValue); 
-  bool have_tree_string = bool(treeString != nullValue);
-  bool have_tree_file = bool(treeFileName != nullValue); 
+  have_stockholm = bool(stkFileName != nullValue);
+  have_fasta = bool(fastaFileName != nullValue);
+  generate_phylocomposer = bool(phylocomposer_filename != nullValue);
+  place_reads = bool(reads_to_place_filename != nullValue);
+  have_guide_alignment = bool(guide_alignment_filename != nullValue); 
+  have_tree_string = bool(treeString != nullValue);
+  have_tree_file = bool(treeFileName != nullValue); 
 
   if (!estimate_params && num_root_alignments != 1)
     estimate_params = true; 
@@ -222,12 +226,21 @@ Reconstruction::Reconstruction(int argc, char* argv[])
     {
       THROWEXPR("Error - prior on first mixture component is less than 0.  In specifying 2nd and 3rd components, remember that P(first) = 1 - P(2nd) - P(3rd)\n");
     }
-	
-  SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
-  SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
-  //  Irrev_EM_matrix rate_matrix(1,1);
-  //  Alphabet alphabet ("uninitialized", 1);
-  ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
+  
+  if (! codon_model)
+    {
+      SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
+      SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
+      //  Irrev_EM_matrix rate_matrix(1,1);
+      //  Alphabet alphabet ("uninitialized", 1);
+      ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
+    }
+  else
+    {
+      rate_matrix.init_matrix_template(1,// one site class
+				       64, // 64 codons
+				       1.0/64); //  default eq. dist?
+    }				       
   // If a guide alignment was used, initialize the alignmentEnvelope
   if (have_guide_alignment)
     {
@@ -305,6 +318,7 @@ void Reconstruction::loadTreeString(const char* in)
       cerr << e.what();
       exit(1);
     }
+  have_tree = true; 
 }
 
 void Reconstruction::get_tree_from_file(const char* fileName)
@@ -327,6 +341,7 @@ void Reconstruction::get_tree_from_file(const char* fileName)
       cerr << e.what();
       exit(1);
     }
+  have_tree = true; 
 
 }
 

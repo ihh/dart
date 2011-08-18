@@ -991,7 +991,7 @@ void AbsorbingTransducer::BFS_marginalize_null_states(Profile *sampled_profile)
 		    {
 		      cerr<< "Parent state had no weights entry.  State: " << sampled_profile->getDOTname(*e) <<endl; 
 		      cerr<< "                                   Parent: " << sampled_profile->getDOTname(*parent) <<endl; 
-		      exit(0); 
+		      THROWEXPR("Error in null-state summing");
 		    }
 		  toAdd += weights.safe_get(parent->toVector()) * sampled_profile->get_sampled_transition_weight(*parent, *e); 
 		}

@@ -29,6 +29,7 @@
 
 int main(int argc, char* argv[])
 {
+
   try{
   time_t start,end;
   sstring nullValue = "";
@@ -43,8 +44,7 @@ int main(int argc, char* argv[])
   string alignString; 
   // create main reconstruction object
   Reconstruction reconstruction(argc, argv);
-
-
+  
   // yeccch - I've mostly moved over to using weight_profiles, but some 
   // hackiness still persists! -OW
   // It seems like this is used only in reading transducers in from a file...def. fixable
@@ -57,6 +57,8 @@ int main(int argc, char* argv[])
   // If phylogenetic placement was requested, then do this and exit. 
   if ( reconstruction.place_reads)
     {
+      if (reconstruction.loggingLevel >=1 )
+	cerr<<"Performing phylogenetic placement...\n"; 
       ScoreMap scores; 
       if  (reconstruction.score_tabular_filename == nullValue )
 	{
@@ -144,6 +146,8 @@ int main(int argc, char* argv[])
       // 		  cout<< "Minutes used to map ";
       // 		  cout << numReads << " reads to a profile: "; 
       // 		  cout << difftime (readEnd, readStart)/60.0 <<endl; 
+      if (reconstruction.loggingLevel >=1 )
+	cerr<<"Done\n"; 
       exit(0); 
     }
   // END PHYLO-PLACEMENT 
