@@ -1,6 +1,7 @@
 package SequenceIterator;
 
 # Ian Holmes  --  ihh@sanger.ac.uk  --  Aug 26 1998
+# Updated 2009, 2011 -- ihh@berkeley.edu
 
 #
 # Perl OOP includes
@@ -8,7 +9,7 @@ package SequenceIterator;
 
 use vars qw($AUTOLOAD @ISA @EXPORT_OK %EXPORT_TAGS);
 use base qw(Exporter);
-%EXPORT_TAGS = ('all' => [@EXPORT_OK = qw(itertemp iterseq biterseq gbiterseq printseq)]);
+%EXPORT_TAGS = ('all' => [@EXPORT_OK = qw(itertemp iterseq biterseq gbiterseq printseq revcomp)]);
 
 #
 # package variables
@@ -134,6 +135,14 @@ sub printseq {
     for ($i=0;$i<length $seq;$i+=$width) { print $fh substr($seq,$i,$width),"\n" }
 }
 
+# revcomp
+sub revcomp {
+    my ($seq) = @_;
+    $seq = reverse $seq;
+    $seq =~ tr/acgtuACGTU/tgcaaTGCAA/;
+    return $seq;
+}
+
 1;
 
 
@@ -178,7 +187,7 @@ A skeletal implementation of 'blastdb':
 
 =over 5
 
-=item C<iterseq>
+=item iterseq
 
 iterseq($database,$sub)
 
@@ -190,7 +199,7 @@ every sequence in $database.
 If a filter program is specified in $filter then $database
 is piped through that first.
 
-=item C<itertemp>
+=item itertemp
 
 itertemp($database,$sub)
 
@@ -201,4 +210,11 @@ and then calls &$sub($temp_file_name,$sequence_name,$sequence_data).
 
 If a filter program is specified in $filter then $database
 is piped through that first.
+
+=item revcomp
+
+my $rev = revcomp($seq)
+
+Reverse-complements a sequence.
+
 
