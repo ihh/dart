@@ -28,8 +28,8 @@ typedef pair<int,int> Row_pair;
 typedef map<Row_pair,Alignment_path> Decomposition;
 
 char* stockholm_tree(const char*);
-MyMap<string, string> parse_stockholm(const char*, Alphabet );
-MyMap<string, string> parse_fasta(const char*, Alphabet );
+MyMap<string, string> parse_stockholm(const char*, Alphabet& );
+MyMap<string, string> parse_fasta(const char*, Alphabet& );
 vector<string> split(string,string); 
 vector<string> splitWhite(string); 
 
@@ -57,12 +57,9 @@ int index(int query, vector<int> in );
 int index(float query, vector<float> in );
 int index(bfloat query, vector<bfloat> in );
 
-
 bool in(string query, string in );
 bool in(int query, vector<int> in );
 bool in(float query, vector<float> in );
-
-
 
 double sum(vector<double> in);
 double sum(vector<float> in);
@@ -70,17 +67,18 @@ double sum(vector<int> in);
 bfloat sum(vector<bfloat> in);
 
 void displayVector(vector<int> in);
-
 void displayVector(vector<string> in);
-
 void displayVector(vector<double> in);
 void displayVector(vector<bfloat> in);
-  
-
 void displayVector(vector <vector <double> > in);
-
 void displayVector(vector <vector <int> > in);
 
 bool FileExists(string); 
 bool bfloat_is_nonzero(bfloat);
+vector<sstring> all_codons(void); 
+map<sstring, sstring> codon_table(void); 
+bool is_synonymous(string, string, map<sstring, sstring>&); 
+bool is_transition(pair<string, string>); 
+bool differ_more_than_one(string, string); 
+pair<string, string> find_first_difference(string, string); 
 #endif

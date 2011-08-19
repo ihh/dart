@@ -211,7 +211,7 @@ void AbsorbingTransducer::test_transitions(void)
 		}
 	}
   if (foundSuper)
-	exit(1);
+    THROWEXPR("SUPERNORMALIZED transition found");
 }
 
 void AbsorbingTransducer::display( bool states, bool transitions, bool absorptions)
@@ -650,7 +650,7 @@ void AbsorbingTransducer::identify_states(Profile *sampled_profile)
 		  std::cerr<<"Q: "<<sampled_profile->Q.get_state_name(m->q_state);
 		  std::cerr<<"el(idx, type): "<<m->left_state<< " " << m->left_type<<endl;
 		  std::cerr<<"er(idx, type): "<<m->right_state<< " " << m->right_type<<endl;		  
-		  exit(1);
+		  THROWEXPR("Unknown h state type\n");
 		}
     }
   num_delete_states = sampled_externals.size()-1; 
@@ -991,7 +991,7 @@ void AbsorbingTransducer::BFS_marginalize_null_states(Profile *sampled_profile)
 		    {
 		      cerr<< "Parent state had no weights entry.  State: " << sampled_profile->getDOTname(*e) <<endl; 
 		      cerr<< "                                   Parent: " << sampled_profile->getDOTname(*parent) <<endl; 
-		      exit(0); 
+		      THROWEXPR("Error in null-state summing");
 		    }
 		  toAdd += weights.safe_get(parent->toVector()) * sampled_profile->get_sampled_transition_weight(*parent, *e); 
 		}
@@ -1000,18 +1000,14 @@ void AbsorbingTransducer::BFS_marginalize_null_states(Profile *sampled_profile)
 		cerr<<"New transition added, value: "<<toAdd<<endl; 
 
 	      if (toAdd>1.001)
-		{
-		  cerr<<"Error: cached transition weight is greater than 1 after summing over null states: " << toAdd <<endl; 
-		  exit(1);
-		}
-	      
+		THROWEXPR("Error: cached transition weight is greater than 1 after summing over null states: ")
 	      if (toAdd < small)
 		{
 		  cerr<<"Summed transition weight is excessivelysmall.  Previous weight: "<<weights[parent->toVector()]<<endl;
 		  cerr<<"Current trans weight: "<< sampled_profile->get_sampled_transition_weight(*parent, *e)<<endl;
 		  
 		  cerr<<"Parent state: " << sampled_profile->getDOTname(*parent) << endl; 
-		  exit(1);
+		  THROWEXPR("Very small transition weight - likely a problem");
 		}
 	      if (transition_weight_tmp.count(transitionPair)==1)
 		cerr<<"Warning: filling a cell that was already filled.  The state: " << sampled_profile->getDOTname(*e); 
@@ -1044,12 +1040,12 @@ void AbsorbingTransducer::BFS_marginalize_null_states(Profile *sampled_profile)
 		  cerr<<"Stored transition weight is very small.  Previous weight: "<<weights.safe_get(parent->toVector())<<endl;
 		  cerr<<"Current trans weight: "<< sampled_profile->get_sampled_transition_weight(*parent, *e) << endl; 
 		  cerr<<"Internal emission weight: "<< sampled_profile->get_internal_cascade_weight(*e) << endl; 
-		  exit(1);
+		  THROWEXPR("Very small transition weight - likely a problem");
 		}
 	      else if(toAdd >1.001)
 		{
 		  cerr<<"Error: Stored transition weight is greater than 1:" << toAdd << endl;
-		  exit(1);
+		  THROWEXPR("SUPERNORMALIZED transition weight\n"); 
 		}
 	      if(logging) 
 		cerr<<"Caching  state: " << sampled_profile->getDOTname(*e) << "\n          weight: " << toAdd << endl; 
@@ -1181,7 +1177,7 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 				  if (toAdd>1.001)
 					{
 					  cerr<<"Error: cached transition weight is greater than 1 after summing over null states: " << toAdd <<endl; 
-					  exit(1);
+					  THROWEXPR("supernormalized transition.");
 					}
 				  
 				  if (toAdd < small)
@@ -1191,7 +1187,7 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 
 					  cerr<<"Parent state: \n\t"; 
 					  e.display(sampled_profile->Q); 
-					  exit(1);
+					  THROWEXPR("Very small transition weight");
 					}
 				  if (transition_weight_tmp.count(transitionPair)==1)
 					transition_weight_tmp[transitionPair] += toAdd; 
@@ -1219,12 +1215,12 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 					  std::cerr<<"Stored transition weight is very small.  Previous weight: "<<weights.safe_get(e.toVector())<<endl;
 					  std::cerr<<"Current trans weight: "<< sampled_profile->get_sampled_transition_weight(e, *ePrime) << endl; 
 					  std::cerr<<"Internal emission weight: "<< sampled_profile->get_internal_cascade_weight(*ePrime) << endl; 
-					  exit(1);
+					  THROWEXPR("Generic profile error");
 					}
 				  else if(toAdd >1.001)
 					{
 					  std::cerr<<"Error: Stored transition weight is greater than 1.\n";
-					  exit(1);
+					  THROWEXPR("Generic profile error");
 					}
 				  if(logging) 
 					{
@@ -1249,7 +1245,7 @@ void AbsorbingTransducer::marginalize_null_states(Profile *sampled_profile)
 	  if (src->second > 1.0)
 		{
 		  std::cerr<<"Warning, outgoing sum greater than 1: "<< src->second<<endl; 
-		  exit(1);
+		  THROWEXPR("Generic profile error");
 		}
 	}
   */
@@ -1339,7 +1335,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 	    {
 	      std::cerr<<"Error: in traversal, the following state has no outgoing transitions!\n\t";
 	      parent.display(sampled_profile->Q);
-	      exit(1);
+	      THROWEXPR("Generic profile error");
 	    }
 	  children = sampled_externals_outgoing[parent.toVector()];
 	  for (child = children.begin(); child != children.end(); child++)
@@ -1394,7 +1390,7 @@ void AbsorbingTransducer::index_delete_states(Profile *sampled_profile)
 		{
 		  std::cerr<<"Error: in mid->int loop, the following state has no outgoing transitions!\n\t";
 		  source.display(sampled_profile->Q);
-		  exit(1);
+		  THROWEXPR("Generic profile error");
 		}
 
       children = sampled_externals_outgoing[source.toVector()];
@@ -1464,26 +1460,26 @@ bfloat AbsorbingTransducer::get_absorb_weight(state e, int charIndex)
 	{
 	  std::cerr<<"Error: the state "  << e << " is not a delete state\n";
 	  std::cerr<<"The offending call was: get_absorb_weight in transducer: "<<name<<" state: "<<e<<" character index: "<<charIndex<<endl;
-	  exit(1); 
+	  THROWEXPR("Generic profile error"); 
 	}
   else if ( charIndex >=0 && charIndex < alphabet_size)
 	{
 	  if (absorption_weight.count(e)<1)
 		{
 		  std::cerr<<"Error: the state "<<e<<" appears OK, but have no entry in the emission matrix.\n";
-		  exit(1);
+		  THROWEXPR("Generic profile error");
 		}
 	  else if (charIndex >= absorption_weight[e].size())
 		{
 		  std::cerr<<" The character index "<< charIndex<<" appears too big for the state "<<e<<" which has emission vector of size: "<< absorption_weight[e].size()<<endl;
-		  exit(1);
+		  THROWEXPR("Generic profile error");
 		}
 	}
   else
 	{
 	  std::cerr<<"The alphabet index "<<charIndex<<" is not valid\n"; 
 	  std::cerr<<"The offending call was: get_absorb_weight in transducer: "<<name<<" state: "<<e<<" character index: "<<charIndex<<endl;
-	  exit(1);
+	  THROWEXPR("Generic profile error");
 	}
   #endif
   bfloat toRet = absorption_weight[e][charIndex];
@@ -1509,7 +1505,7 @@ bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
 	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" source state: "<<e<<endl;
 	  std::cerr<<"There are "<<num_delete_states<<" delete states in this transducer\n"; 
 	  std::cerr<<"Start, pre-end, end states are: "<<start_state<<","<<pre_end_state<<","<<end_state<<endl;
-	  exit(1);
+	  THROWEXPR("Generic profile error");
 	}
   if (! checkState(ePrime))
 	{
@@ -1517,21 +1513,21 @@ bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
 	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" destination state: "<<ePrime<<endl;
 	  std::cerr<<"There are "<<num_delete_states<<" delete states in this transducer\n"; 
 	  std::cerr<<"Start, pre-end, end states are: "<<start_state<<","<<pre_end_state<<","<<end_state<<endl;
-	  exit(1);
+	  THROWEXPR("Generic profile error");
 	}
   if (ePrime == start_state) 
 	{
 	  std::cerr<<"Error: calling incoming transition to start state\n"; 
 	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" source state: "<<e<<endl;
 	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" destin state: "<<ePrime<<endl;
-	  exit(1);
+	  THROWEXPR("Generic profile error");
 	}
   else if(index(e, incoming[ePrime]) == -1 )
 	{
 	  std::cerr<<"Error: state "<<ePrime<<" does not have "<<e<< " as one of its incoming state transitions\n";
 	  std::cerr<<"States incoming to "<<ePrime<<" are: "; displayVector(incoming[ePrime]);
 	  std::cerr<<"The offending call was: get_transition_weight in transducer: "<<name<<" source state: "<<ePrime<<endl;
-	  exit(1);
+	  THROWEXPR("Generic profile error");
 	}
   else 
 	{
@@ -1544,7 +1540,7 @@ bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
 	      if (!isReal)
 		{
 		  std::cerr<< "Error: the transition between states "<<e<<" , "<<ePrime<<" is valid, but it is zero\n"; 
-		  exit(1);
+		  THROWEXPR("Generic profile error");
 		}
 	      else
 		return transition_weight[transitionPair];
@@ -1552,7 +1548,7 @@ bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
 	  else
 	    {
 	      std::cerr<<"Error: the transition between states "<<e<<" , "<<ePrime<<" ought to be valid, but there is no entry in the transition matrix for it!\n";
-	      exit(1);
+	      THROWEXPR("Generic profile error");
 	    }
 	  
 	}
@@ -1565,14 +1561,14 @@ vector<state> AbsorbingTransducer::get_incoming(state e)
   if (e == start_state) 
 	{
 	  std::cerr<<"Error: in get_incoming from transducer "<<name<<" , start state has no incoming transitions\n";
-	  exit(1);
+	  THROWEXPR("Generic profile error");
 	}
 
   else if (incoming.count(e) >0) return incoming[e]; 
   else
 	{
 	  std::cerr<<"State "<<e<< " appears not to have any incoming transitions, though it is not the start state.  Very peculiar. \n";
-	  exit(1);
+	  THROWEXPR("Generic profile error");
 	}
 }
 
@@ -1761,12 +1757,12 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 					    {std::cerr<<"Using a novel transition in traceback!\n"; 
 					      std::cerr<<"Source:"; m.display(Q);
 					      std::cerr<<"Dest:"; mPrime.display(Q); 					  
-					      exit(1);}
+					      THROWEXPR("Generic profile error");}
 					  
 					  else if( absoluted(transition_weight_test[transitionPair] + small - (weight/get_DP_cell(m)+small))>small )
 					    {std::cerr<<"Transition in traceback does not match same computed in forward!\n"; 
 					      std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
-					      exit(1);}
+					      THROWEXPR("Generic profile error");}
 					} //end testing loop
 				  if (weight > 0.0)
 					{
@@ -1817,14 +1813,14 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 					  std::cerr<<"Using a novel transition in traceback!\n"; 
 					  std::cerr<<"Source:"; m.display(Q);
 					  std::cerr<<"Dest:"; mPrime.display(Q); 					  
-					  exit(1);}
+					  THROWEXPR("Generic profile error");}
 					  
 					  else if( absoluted(transition_weight_test[transitionPair] - weight/get_DP_cell(m))>small )
 						{std::cerr<<"Transition in traceback does not match same computed in forward!\n"; 
 						  std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
 						  std::cerr<<"Source:"; m.display(Q);
 						  std::cerr<<"Dest:"; mPrime.display(Q); 					  
-						  exit(1);}
+						  THROWEXPR("Generic profile error");}
 				    }//end test
 				  
 				  if (weight > 0.0)
@@ -1885,7 +1881,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 								    {std::cerr<<"Using a novel transition in traceback!\n"; 
 								      std::cerr<<"Source:"; m.display(Q);
 								      std::cerr<<"Dest:"; mPrime.display(Q); 					  
-								      exit(1);
+								      THROWEXPR("Generic profile error");
 								    }
 							  
 							  else if( absoluted(transition_weight_test[transitionPair] - weight/get_DP_cell(m))>small )
@@ -1896,7 +1892,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 								  std::cerr<<"Q transition: "<<Q.get_transition_weight(*q, mPrime.q_state)<<endl; 
 								  std::cerr<<"left transition: "<<left_profile.get_transition_weight(*e_l, mPrime.left_state)<<endl; 
 								  std::cerr<<"right transition: "<<right_profile.get_transition_weight(*e_r, mPrime.right_state)<<endl; 
-								  exit(1);}
+								  THROWEXPR("Generic profile error");}
 								} // end test
 
 							  if (weight > 0.0)
@@ -1951,7 +1947,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 							    {std::cerr<<"Using a novel transition in traceback!\n"; 
 							      std::cerr<<"Source:"; m.display(Q);
 							      std::cerr<<"Dest:"; mPrime.display(Q); 					  
-							      exit(1);
+							      THROWEXPR("Generic profile error");
 							    }
 							  
 							  else if( absoluted(transition_weight_test[transitionPair] - weight/get_DP_cell(m)) > small )
@@ -1960,7 +1956,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 							      std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
 							      std::cerr<<"Source:"; m.display(Q);
 							      std::cerr<<"Dest:"; mPrime.display(Q); 					  
-							      exit(1);}
+							      THROWEXPR("Generic profile error");}
 							} // end test
 						  if (weight > 0.0)
 						    {
@@ -2026,7 +2022,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 // 							  if( mPrime.left_state != left_profile.start_state ) continue;
 // 							  else 
 // 								{
-// 								  if( m.left_type != -1){std::cerr<<"Left profile incorrectly typed!\n"; exit(1);}
+// 								  if( m.left_type != -1){std::cerr<<"Left profile incorrectly typed!\n"; THROWEXPR("Generic profile error");}
 // 								}
 // 							}// end if SSSI
 
@@ -2047,7 +2043,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 							    {std::cerr<<"Using a novel transition in traceback!\n"; 
 							      std::cerr<<"Source:"; m.display(Q);
 							      std::cerr<<"Dest:"; mPrime.display(Q); 					  
-							      exit(1);
+							      THROWEXPR("Generic profile error");
 							    }
 							  
 							  else if( absoluted(transition_weight_test[transitionPair] + small - (weight/get_DP_cell(m)+small))>small )
@@ -2056,7 +2052,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 							      std::cerr<<"DP, trace: "<<transition_weight_test[transitionPair]<<" "<<weight/get_DP_cell(m)<<endl; 
 							      std::cerr<<"Source:"; m.display(Q);
 							      std::cerr<<"Dest:"; mPrime.display(Q); 					  
-							      exit(1);
+							      THROWEXPR("Generic profile error");
 							    }
 							} //end test
 						  if (weight > 0.0)
@@ -2075,7 +2071,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 		  catch(char * str)
 		    {
 		      cerr<<"Error in computing weights\n"; 
-		      exit(1); 
+		      THROWEXPR("Generic profile error"); 
 		    }
 		  try
 		    {
@@ -2107,7 +2103,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 			  if (weights.size() != states_in.size())
 			    {
 			      cerr<<"Error: candidate states and their relative weights are not size-matched!\n"; 
-			      exit(1); 
+			      THROWEXPR("Generic profile error"); 
 			    }
 			  if (logging>=2) std::cerr<<"Sampled state number: "<<sampleIdx<<endl;
 			  if (! states_in.at(sampleIdx).isValid())
@@ -2150,7 +2146,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 			{
 			  std::cerr<<"Error: Sampled state is same as current state.\nCurrent state: ";
 			  mPrime.display(Q); 
-			  exit(1);
+			  THROWEXPR("Generic profile error");
 			}
 		  mPrime = pi.back();
 		    }
@@ -2507,7 +2503,7 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
   // The core DP function - sum over paths into the composite state mPrime.  
   #ifdef DART_DEBUG
   if (get_DP_cell(mPrime) != 0.0){
-	std::cerr<<"Asked to fill cell which already has entry!\n"; exit(1);
+	std::cerr<<"Asked to fill cell which already has entry!\n"; THROWEXPR("Generic profile error");
   }
   #endif
   
@@ -2877,7 +2873,7 @@ void Profile::fill_backward_DP(int logging)
 		  std::cerr<<"their product: " << toAdd <<endl; 
 		  m.display(Q); 	      
 		  m_iter->display(Q); 
-		  exit(1);
+		  THROWEXPR("Generic profile error");
 		}
 	    }
 	}
@@ -2898,7 +2894,7 @@ void Profile::fill_backward_DP(int logging)
       std::cerr<<"\tBackward value of start state: " << -log(get_backward_DP_cell(m))/log(2) <<endl; 
       std::cerr<<"\tForward value of end state: " << -log(forward_prob)/log(2) <<endl; 
       std::cerr<<" This is problem, exiting...\n";
-      exit(1); 
+      THROWEXPR("Generic profile error"); 
     }
 }
 
@@ -3256,7 +3252,7 @@ void Profile::fill_DP(int logging, bool inLog)
     {
       std::cerr<<"\n\nERROR: sum-over-alignments likelihood is zero: "<< forward_prob <<"  This is not good.  Check your input alignment and tree for irregularities\n";
       std::cerr<<"If there are no such irregularities, consider submitting a bug report, see www.biowiki.org/ProtPal for details.\n";
-      exit(1);
+      THROWEXPR("Generic profile error");
     }
 	
   if(logging>=2) std::cerr<<"forward-bits: "<<-log(get_DP_cell(mPrime))/log(2.0)<<endl;
@@ -3355,7 +3351,7 @@ bfloat Profile::get_sampled_transition_weight(M_id e, M_id ePrime)
       std::cerr<<"Error: requested a non-existant sampled transition weight.\n The offending call was:\n";
       std::cerr<<"Source state:\n\t";e.display(Q);
       std::cerr<<"Destination state:\n\t";ePrime.display(Q);      
-      exit(1); 
+      THROWEXPR("Generic profile error"); 
     }
   return sampled_transition_weight[transitionPair]; 
 }
@@ -3371,7 +3367,7 @@ bfloat Profile::get_internal_cascade_weight(M_id e)
     {
       std::cerr<<"Error: calling internal cascade weight on a state that is not right-int or left-int.  The state was:\n\t";
       e.display(Q); 
-      exit(1);
+      THROWEXPR("Generic profile error");
     }
 }
 
@@ -3430,12 +3426,12 @@ bfloat Profile::get_external_cascade_weight(M_id e, int charIndex)
 	{
 	  std::cerr<<"Error: called external delete weight on a non-recognized q type:"<< q_type<<endl;
 	  std::cerr<<Q.get_state_name(e.q_state)<<endl;
-	  exit(1);
+	  THROWEXPR("Generic profile error");
 	}
   if (out>1.001)
     {
       std::cerr<<"Warning: absorb weight is greater than one, not reasonable\n";
-      exit(1); 
+      THROWEXPR("Generic profile error"); 
     }
   return out; 
 }
@@ -3667,7 +3663,7 @@ MyMap<node, string> pad_STP(MyMap<node, string> map1, vector<node> toPad)
 	  else if (alignLength != int(nodeState->second.size()))
 		{
 		  std::cerr<<"Error: not all alignment rows are the same length; cannot pad with gaps\n";
-		  exit(1);
+		  THROWEXPR("Generic profile error");
 		}
 	}
   outMap = map1; 
@@ -3733,7 +3729,7 @@ inline MyMap<node, string> cat_STP(MyMap<node, string> map1, MyMap<node, string>
 	  std::cerr<<"Right STP:\n";
 	  show_state_phylo(map2);	  
 	  
-	  exit(1);
+	  THROWEXPR("Generic profile error");
 	}
   #endif
   for (nodeState = map1.begin(); nodeState != map1.end(); nodeState++)  outMap[nodeState->first] = nodeState->second; 
@@ -3808,7 +3804,7 @@ MyMap<node, string> Profile::merge_STP(M_id m)
 		}
 
 	  difference = left_length - right_length; 
-	  if (difference !=0) {std::cerr<<"Joining states of unequal size, problem!\n"; exit(1);}
+	  if (difference !=0) {std::cerr<<"Joining states of unequal size, problem!\n"; THROWEXPR("Generic profile error");}
 	  if (difference>0)
 		{
 		  // left side is longer, pad right side with difference number of gaps
@@ -3984,7 +3980,7 @@ string Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
 		  if (! is_flush(state_type_phylogeny[m.toVector()])) 
 			{
 			  std::cerr<<"STP is not flush!\n";
-			  exit(1);
+			  THROWEXPR("Generic profile error");
 			}
 		  for (nodeState = state_type_phylogeny[m.toVector()].begin(); 
 			   nodeState != state_type_phylogeny[m.toVector()].end(); nodeState++)
@@ -4051,7 +4047,7 @@ string Profile::show_alignment(vector<M_id> &pi, bool leaves_only)
 									  show_state_phylo(between[statePair]); 
 									  std::cerr<<"To:\n";
 									  show_state_phylo(subAlignment); 
-									  exit(1);
+									  THROWEXPR("Generic profile error");
 									}
 								  }
 							  }
@@ -4149,7 +4145,7 @@ MyMap<string, string> Profile::alignment_map(vector<M_id> &pi, bool leaves_only)
 				  show_state_phylo(between[statePair]); 
 				  std::cerr<<"To:\n";
 				  show_state_phylo(subAlignment); 
-				  exit(1);
+				  THROWEXPR("Generic profile error");
 				}
 			      }
 			  }
@@ -4269,7 +4265,7 @@ int Profile::get_profile_type(state qState, string side)
 		{
 		  std::cerr<<"Unknown Q type, unable to determine profile types!"; 
 		  std::cerr<<Q.get_state_name(qState); 
-		  exit(1);
+		  THROWEXPR("Generic profile error");
 		}
 	}
   //  std::cerr<<"Returning state types: "<<profileTypes.first<<" "<<profileTypes.second<<endl;
@@ -4278,7 +4274,7 @@ int Profile::get_profile_type(state qState, string side)
   else 
     {
       std::cerr<<"Unrecognized side in get_profile_type: "<<side<<endl;
-      exit(1); 
+      THROWEXPR("Generic profile error"); 
     }
   return 0; 
 }

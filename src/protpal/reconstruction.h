@@ -25,12 +25,11 @@ class Reconstruction
   MyMap<string, string> options; 
 
   // Get sequences
-  void parse_sequences(Alphabet); 
+  void parse_sequences(Alphabet&); 
   
   // Each leaf node is assigned a sequence. Possibly delete these after making ExactMatch transducers for each
   // leaf.  Hmm, maybe I should have used pointers instead. 
   MyMap<string, string> sequences; 
-  sstring truncate_names_char; //truncate the names by this character, if requested
 
   // not (yet) using Ian's fancy Alphabet class
   // at least this is not a string any more, but a vector of strings, allowing latent-variable models.
@@ -89,7 +88,7 @@ class Reconstruction
   MyMap<node, Profile> pre_summed_profiles; 
   
   // Reconstruction algorithm parameters
-
+  bool testing;
   Alphabet alphabet;
   Irrev_EM_matrix rate_matrix; 
   int num_sampled_paths;
@@ -121,6 +120,8 @@ class Reconstruction
   double mix_prior_3;
   double root_insert_prob;
   sstring gap_char; 
+  double selectionPressure;
+  double transitionBias; 
   
   // Indel investigation
   int num_root_alignments; 
@@ -142,12 +143,20 @@ class Reconstruction
   sstring score_tabular_filename; 
   void write_numbered_newick(ostream& out, bool quotes=true); 
   
-  
   // Memory management
   void clear_child(node);
 
   // newly made  public
   void get_tree_from_file(const char*);
+
+  //  Top-level bools
+  bool have_stockholm;
+  bool have_fasta;
+  bool generate_phylocomposer;
+  bool place_reads;
+  bool have_guide_alignment;
+  bool have_tree_string;
+  bool have_tree_file;
 
  private:
   // Help message
@@ -161,7 +170,7 @@ class Reconstruction
   void load_rate_matrix(const string);
   void loadTreeString(const char*);
   void get_stockholm_tree(const char*);  
-
+  void init_codon_chain_and_alphabet(bfloat selectionPressure, bfloat transitionBias); 
   
 };
 #endif

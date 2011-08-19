@@ -23,14 +23,16 @@
 #include "util/dexception.h"
 #include "util/rnd.h"
 #include "util/sexpr.h"
+#include "seq/stockholm.h"
 
 // Main reconstruction program. 
 
 int main(int argc, char* argv[])
 {
+
   try{
-    
   time_t start,end;
+  sstring nullValue = "";
   time (&start);
   // A few utility variables
   node treeNode; 
@@ -42,8 +44,7 @@ int main(int argc, char* argv[])
   string alignString; 
   // create main reconstruction object
   Reconstruction reconstruction(argc, argv);
-
-
+  
   // yeccch - I've mostly moved over to using weight_profiles, but some 
   // hackiness still persists! -OW
   // It seems like this is used only in reading transducers in from a file...def. fixable
@@ -54,17 +55,19 @@ int main(int argc, char* argv[])
 
 
   // If phylogenetic placement was requested, then do this and exit. 
-  if ( reconstruction.reads_to_place_filename != "None" )
+  if ( reconstruction.place_reads)
     {
+      if (reconstruction.loggingLevel >=1 )
+	cerr<<"Performing phylogenetic placement...\n"; 
       ScoreMap scores; 
-      if  (reconstruction.score_tabular_filename == "None" )
+      if  (reconstruction.score_tabular_filename == nullValue )
 	{
 	  map<int, string> profile_filenames = reconstruction.check_profile_filenames();
 	  // limiter = reconstruction.init_limiter();
 
 	  cerr<<"\nProfiles found for the following nodes:\n";
 	  for (map<int, string>::iterator fn=profile_filenames.begin(); fn!=profile_filenames.end(); ++fn)
-	    if (fn->second == "None")
+	    if (fn->second == nullValue)
 	      continue;
 	    else
 	      cerr<< "\t" << reconstruction.tree.node_name[fn->first] << "\t" << fn->second << endl; 
@@ -79,7 +82,7 @@ int main(int argc, char* argv[])
 	    {
 	      if (reconstruction.loggingLevel >=1)
 		cerr << "Scoring reads to profile at node: " << reconstruction.tree.node_name[profileNode]<<"..."; 
-	      if (profile_filenames[profileNode] == "None")
+	      if (profile_filenames[profileNode] == nullValue)
 		continue;
 	      AbsorbingTransducer ancestralProfile(profile_filenames[profileNode].c_str(),
 						   alphabetVector, reconstruction.tree);
@@ -129,7 +132,7 @@ int main(int argc, char* argv[])
 	reconstruction.parse_placement_tabular(scores); 
       cerr <<"\n\n"; 
       // Display stuff that got stored in scores, possibly as JSON or simpler tabular
-      if (reconstruction.json_placements_filename != "None")
+      if (reconstruction.json_placements_filename != nullValue)
 	{
 	  ofstream json_file;
 	  json_file.open(reconstruction.json_placements_filename.c_str());
@@ -143,23 +146,23 @@ int main(int argc, char* argv[])
       // 		  cout<< "Minutes used to map ";
       // 		  cout << numReads << " reads to a profile: "; 
       // 		  cout << difftime (readEnd, readStart)/60.0 <<endl; 
+      if (reconstruction.loggingLevel >=1 )
+	cerr<<"Done\n"; 
       exit(0); 
     }
   // END PHYLO-PLACEMENT 
 
   // Construct a root "posterior profile" if requested.  This requires us to 
   // re-root the tree at that node, and then reconstruct this new "root"
-  if ( reconstruction.profile_to_make != "None" )
+  if ( reconstruction.profile_to_make != nullValue )
     {
       const Phylogeny::Node new_root = 
 	reconstruction.tree.find_node( reconstruction.profile_to_make.c_str());
       if (new_root < 0)
-	{
-	  cerr<<"Error: requested profile for node " << reconstruction.profile_to_make;
-	  cerr << " does not appear to be a valid node in the tree. \n"; 
-	  exit(1); 
-	}
-      if ( reconstruction.root_profile_filename == "None" )
+	THROWEXPR("Error: requested profile for node " +reconstruction.profile_to_make+
+		  " which does not appear to be a valid node in the tree.");
+
+      if ( reconstruction.root_profile_filename == nullValue )
 	{
 	  cerr<<"Warning: no file specified for root profile.  Writing to default location: " ;
 	  cerr<< reconstruction.profile_to_make << ".sexpr\n"; 
@@ -199,7 +202,7 @@ int main(int argc, char* argv[])
 	  exit(0); 
 	}
   // If generating a phylocomposer input file was requested, do this instead of reconstruction
-  if ( reconstruction.phylocomposer_filename != "None" )
+  if ( reconstruction.generate_phylocomposer)
     {
       ofstream phylocomp_out;
       phylocomp_out.open( reconstruction.phylocomposer_filename.c_str() );
@@ -226,8 +229,7 @@ int main(int argc, char* argv[])
 	      {
 		if ((int) reconstruction.sequences[reconstruction.tree.node_name[treeNode]].size() != seqLength)
 		  {
-		    cerr<<"Error: input alignment's sequences are not all of the same length.  Do not use -ia with unaligned sequences\n"; 
-		    exit(1); 
+		    THROWEXPR("Error: input alignment's sequences are not all of the same length.  Do not use -ia with unaligned sequences");
 		  }
 	      }
 	    else 
@@ -287,7 +289,7 @@ int main(int argc, char* argv[])
 	  branchLengths.clear(); 
 
 	  stringstream fileToWrite;
-	  if ( reconstruction.saved_subtree_profiles_directory != "None" )
+	  if ( reconstruction.saved_subtree_profiles_directory != nullValue )
 	    {
 	       fileToWrite << reconstruction.saved_subtree_profiles_directory;
 	       fileToWrite << reconstruction.tree.node_name[treeNode] << ".sexpr";
@@ -426,7 +428,7 @@ int main(int argc, char* argv[])
 
 	  // If we got a guide alignment on input, let the profile know about
 	  // it so it can constrain DP breadth
-	  if (reconstruction.guide_alignment_filename != "None")
+	  if (reconstruction.have_guide_alignment)
 	    {
 	      profile.use_guide_alignment = true; 
 	      profile.envelope = &reconstruction.envelope; 
@@ -439,10 +441,10 @@ int main(int argc, char* argv[])
 	  if(reconstruction.loggingLevel>=1)
 	    cerr<<"\tFilling forward dynamic programming matrix..."; 
 
-	  if (treeNode != reconstruction.tree.root || reconstruction.root_profile_filename == "None")
+	  if (treeNode != reconstruction.tree.root || reconstruction.root_profile_filename == nullValue)
 	    profile.fill_DP(reconstruction.loggingLevel, // log messages
 			    false); // do not store incoming/outgoing information.  
-	  else if (reconstruction.root_profile_filename != "None")
+	  else if (reconstruction.root_profile_filename != nullValue)
 	    {
 	      if(reconstruction.loggingLevel>=1)
 		cerr<<" (logging state connectivity) "; 
@@ -518,7 +520,7 @@ int main(int argc, char* argv[])
 	      // If requested, save this profile in the specified directory so we can possibly
 	      // recycle it in later invocations.  This must be done carefully do avoid inter-dataset
 	      // contamination!  
-	      if ( reconstruction.saved_subtree_profiles_directory != "None" and not have_read)
+	      if ( reconstruction.saved_subtree_profiles_directory != nullValue and not have_read)
 		{
 		  ofstream saved_profile;
 		  state_path dummy_path; 
@@ -551,7 +553,7 @@ int main(int argc, char* argv[])
 	    }
 	  else
 	    {
-	      if (reconstruction.root_profile_filename != "None")
+	      if (reconstruction.root_profile_filename != nullValue)
 		{
 		  if(reconstruction.loggingLevel>=1)
 		    cerr<<"\tSampling "<<reconstruction.num_root_alignments<<" alignments from root alignment..."; 
@@ -585,8 +587,8 @@ int main(int argc, char* argv[])
 		  saved_profile.close();
 		}
 	      
-		  
-	      cout<<"#=GF alignment_likelihood "<<-log(profile.forward_prob)/log(2) << endl; 
+	      cout << Stockholm_header; 
+	      cout<<"#=GF alignment_likelihood_bits "<<-log(profile.forward_prob)/log(2) << endl; 
 	      ofstream db_file;
 	      state_path path = profile.sample_DP(
 						  1, // sample only one path
@@ -596,13 +598,13 @@ int main(int argc, char* argv[])
 						  reconstruction.viterbi // sample the viterbi path
 						  );
 	      alignString = profile.show_alignment( path, reconstruction.leaves_only); 
-	      if (reconstruction.num_root_alignments > 1 && reconstruction.indel_filename != "None")
+	      if (reconstruction.num_root_alignments > 1 && reconstruction.indel_filename != nullValue)
 		{
 		  if(reconstruction.loggingLevel>=1)
 		    cerr<<"\nSampling " << reconstruction.num_root_alignments << " alignments at root level..."; 
 		  double tot_ins=0, tot_ins_ext=0, tot_del=0, tot_del_ext=0; 
 
-		  if (reconstruction.db_filename != "None")
+		  if (reconstruction.db_filename != nullValue)
 		    {		  
 
 		      db_file.open (reconstruction.db_filename.c_str());
@@ -618,7 +620,7 @@ int main(int argc, char* argv[])
 							  false, // leaves only
 							  false // don't sample the viterbi path!
 							  );
-		      if (reconstruction.db_filename != "None")
+		      if (reconstruction.db_filename != nullValue)
 			db_file << profile.show_alignment(path, reconstruction.leaves_only);
 			  
 		      MyMap<string, string> alignment = profile.alignment_map(path, false); 
@@ -649,7 +651,7 @@ int main(int argc, char* argv[])
 
 			}
 		    }
-		  if (reconstruction.db_filename != "None")
+		  if (reconstruction.db_filename != nullValue)
 		    db_file.close();
 		}
 	    }
@@ -734,7 +736,7 @@ int main(int argc, char* argv[])
 	}
 
       time(&end); 
-      cout<< "#=GF TIME_MINUTES " << difftime (end, start)/60.0 <<endl; 
+      cout << "#=GF TIME_MINUTES " << difftime (end, start)/60.0 <<endl; 
       if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
 	annotated.write_Stockholm(cout);
       else // display in bare-bones/ non-Xrate format
@@ -760,9 +762,10 @@ int main(int argc, char* argv[])
 		cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << sequence << endl; 
 	    }
 	}
+      cout << Stockholm_footer; 
 		  
       // if requested, show what was inserted/deleted on the tree  (written to file)
-      if (reconstruction.indel_filename != "None" && reconstruction.num_root_alignments == 1)
+      if (reconstruction.indel_filename != nullValue && reconstruction.num_root_alignments == 1)
 	{
 	  if (reconstruction.loggingLevel >=1)
 	    cerr<<"\nWriting indel information to file: " << reconstruction.indel_filename << endl; 
@@ -783,6 +786,7 @@ int main(int argc, char* argv[])
   }
   catch(const Dart_exception& e)
     {
+      // Exception during protpal activities
       cerr<<e.what(); 
       exit(1); 
     }
