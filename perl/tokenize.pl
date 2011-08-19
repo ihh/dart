@@ -41,8 +41,8 @@ my (%aa, %tok);
 # > (used by FASTA format)
 %tok = ( 'ttt'=>'F',  'tct'=>'S',  'tat'=>'Y',  'tgt'=>'C',
 	 'ttc'=>'f',  'tcc'=>'s',  'tac'=>'y',  'tgc'=>'c',
-	 'tta'=>'L',  'tca'=>'5',  'taa'=>'=',  'tga'=>'!',
-	 'ttg'=>'l',  'tcg'=>'$',  'tag'=>'_',  'tgg'=>'W',
+	 'tta'=>'L',  'tca'=>'5',  'taa'=>'0',  'tga'=>'2',
+	 'ttg'=>'l',  'tcg'=>'$',  'tag'=>'1',  'tgg'=>'W',
        
 	 'ctt'=>'<',  'cct'=>'P',  'cat'=>'H',  'cgt'=>'R',
 	 'ctc'=>'[',  'ccc'=>'p',  'cac'=>'h',  'cgc'=>'r',
