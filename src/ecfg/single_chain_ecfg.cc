@@ -8,9 +8,12 @@ Single_chain_ECFG::Single_chain_ECFG (const Irrev_EM_matrix& matrix)
   if (chain_idx != 0)
     THROWEXPR ("chain_idx should be zero");
 
-  ((EM_matrix_params&) *matrix_set.chain[chain_idx].matrix) = matrix;
+  ECFG_chain& chain (matrix_set.chain[chain_idx]);
+  ((EM_matrix_params&) *chain.matrix) = matrix;
+  chain.state[0] = "X";
 
   state_info[0] = ECFG_emitl_state_info (chain_idx);
+  state_info[0].name = "S";
 
   transition (Start, 0) = transition (0, 0) = transition (0, End) = transition (Start, End) = ScoreOfProb1;
 

@@ -169,7 +169,8 @@ int ECFG_matrix_set::add_matrix (const vector<int>& alph_size, ECFG_enum::Update
   ECFG_chain new_chain;
   new_chain.word_len = len;
   new_chain.classes = n_classes;
-  new_chain.class_labels = vector<sstring> (n_classes, sstring (len, '?'));
+  if (n_classes > 1)
+    new_chain.class_labels = vector<sstring> (n_classes, sstring (len, '?'));
   new_chain.class_row = "?";
   new_chain.type = type;
   new_chain.is_parametric = false;
