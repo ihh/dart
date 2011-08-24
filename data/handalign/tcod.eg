@@ -4,7 +4,7 @@
  (wildcard *))
 
 (chain
- (update-policy parametric)
+ (update-policy rev)
  (terminal (X))
  (initial (state (F)) (prob 0.018110008669685))  ;; ttt [F]
  (initial (state (f)) (prob 0.0233599845872267))  ;; ttc [F]
