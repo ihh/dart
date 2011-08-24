@@ -2,7 +2,9 @@
 #include "util/unixenv.h"
 
 // path to default chain file, from dart root
-#define DEFAULT_CHAIN_FILE "data/handalign/prot1.hsm"
+//#define DEFAULT_CHAIN_FILE "data/handalign/prot.hsm"
+// changed here to test tokenized codon model: (OW 8/24/11)
+#define DEFAULT_CHAIN_FILE "data/handalign/tcod.eg"
 
 // wrapper for Alphabet::char2int
 int char2int (const Alphabet& alphabet, const sstring& s, const char* desc)
