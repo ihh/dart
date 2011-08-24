@@ -7,7 +7,7 @@ TESTS      =
 TARGETS    = $(TESTS) protpal
 DIRNAME    = protpal
 
-DEPS       = ecfg guile scfg hmm hsm irrev tree seq util newmat randlib
+DEPS       = ecfg  scfg hmm hsm irrev tree seq util newmat randlib
 
 CCDIR      = $(shell pwd)
 SRCDIR     = $(CCDIR)/..

@@ -108,6 +108,7 @@ ExactMatch::ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in
 	    else
 	      //Small but nonzero weight for other chars
 	      absorb[i].push_back(1e-10);
+	  //	  cerr << "Absorption vector size for state " << i  << " : " << absorb[i].size() <<endl; 
 	}
     }
   else // Codon models - a bit trickier.  

@@ -308,6 +308,11 @@ double BranchTrans::get_match_weight(state b, int incoming_character, int outgoi
 	}
 #endif
   double result = conditional_sub_matrix(incoming_character, outgoing_character); 
+
+  #ifdef DART_DEBUG
+  if (result <= 0)
+    cerr<<"Warning: match weight is not positive.  This may indicate a problem with the substitution matrix\n";
+  #endif
   return result; 
   // 	  float n = alphabet_size;
   // 	  // Uniform match distribution, from early testing days
