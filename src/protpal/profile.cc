@@ -2165,8 +2165,10 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 	  
 	  if (showAlignments) 
 	    {
-	      std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
-	      std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
+	      // These are no longer meaningful - I turned them off becuase computing these 
+	      // values takes quite a while.
+	      //	      std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
+	      //	      std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
 	      std::cout<< show_alignment(pi, leaves_only); 
 	      std::cerr<<"\n";
 	    }
@@ -2591,7 +2593,7 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 		  transition_weight_test[transitionPair] = toAdd/(emissionWeight*get_DP_cell(m)); 
 		}
 	}
-  else if (logging) std::cerr<<"No incoming transitions from start detected!\n";
+  else if (logging) std::cerr<<"(No incoming transitions from start detected)\n";
 
   if (fromStart)
 	{
@@ -2615,9 +2617,12 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 		  transition_weight[transitionPair] = toAdd / emissionWeight; 
 		  //if (1) std::cerr<<"Adding contribution from start state as source: " << toAdd<<endl;
 		}
-
-
 	      finalSum +=toAdd; 
+	      if (logging)
+		{
+		  cerr << "Transition from START contributed: " << toAdd << endl; 
+		  cerr << "Current value for finalSum: " << finalSum << endl; 
+		}
 	    }
 	}
 
@@ -2819,7 +2824,11 @@ void Profile::sum_paths_to(M_id mPrime, bool inLog, bool logging)
 	}
 
   if (finalSum > 0.0)
+    {
+      if (logging)
+	cerr << "Setting state's DP cell as: "<<finalSum<<"*"<< compute_emission_weight(mPrime) << endl; 
     add_to_DP_cell(mPrime, finalSum * compute_emission_weight(mPrime));
+    }
   else
     ++num_zero_states;
 }
@@ -2888,6 +2897,7 @@ void Profile::fill_backward_DP(int logging)
   m.right_state = right_profile.start_state; 
   m.left_type = -1; 
   m.right_type = -1; 
+  #ifdef DART_DEBUG
   if ( abs(-log(get_backward_DP_cell(m))/log(2) - -log(forward_prob)/log(2)) > 0.0001)
     {
       std::cerr<< "The forward and backward recursions have arrived at sum-over-alignment bit scores: \n";
@@ -2896,6 +2906,7 @@ void Profile::fill_backward_DP(int logging)
       std::cerr<<" This is problem, exiting...\n";
       THROWEXPR("Generic profile error"); 
     }
+  #endif
 }
 
 bfloat Profile::post_prob(M_id state)
@@ -3269,6 +3280,7 @@ bfloat Profile::compute_emission_weight(M_id m)
   // left, right, character indices, respectively
   // unsigned int char1, char2; 
   // NB we use '-1' as a proxy for the null character in the non-match states below. 
+  // (not a great system)
 
   bfloat weight = 0.0;
   string qClass = Q.get_state_class(m.q_state);
@@ -3289,26 +3301,11 @@ bfloat Profile::compute_emission_weight(M_id m)
 	}
       for (alphIter=alphabet_ints.begin(); alphIter!=alphabet_ints.end(); alphIter++)
 	weight += right_profile.get_absorb_weight(m.right_state, *alphIter)*tmpEmitVals[*alphIter];
+      if (!bfloat_is_nonzero(weight))
+	cerr <<"Warning: nonpositive emission weight: " << weight << endl; 
       return weight;
     }
-	  
-  //older, slow way:
-
-//   if ( qClass == "match")
-// 	{
-// 	  for (char1 = 0; char1 < alphabet_size; char1++)
-// 	    {
-// 	      for (char2 = 0; char2 < alphabet_size; char2++)		
-// 		{
-// 		  weight +=
-// 		    Q.get_emission_weight(m.q_state, char1, char2)*
-// 		    left_profile.get_absorb_weight(m.left_state, char1)*
-// 		    right_profile.get_absorb_weight(m.right_state, char2);
-// 		}
-// 	    }
-// 	  return weight;
-// 	}
-  
+	    
   // if q is left-emit
   if ( qClass == "left_ins" || qClass == "right_del")
 	{
@@ -3318,6 +3315,8 @@ bfloat Profile::compute_emission_weight(M_id m)
 			Q.get_emission_weight(m.q_state, *alphIter, -1)* \
 			left_profile.get_absorb_weight(m.left_state, *alphIter);
 		}
+	  if (!bfloat_is_nonzero(weight))
+	    cerr <<"Warning: nonpositive emission weight: " << weight << endl; 
 	  return weight;
 	}
 
@@ -3329,7 +3328,11 @@ bfloat Profile::compute_emission_weight(M_id m)
 	      weight +=						  
 		Q.get_emission_weight(m.q_state, -1, *alphIter)*   
 		right_profile.get_absorb_weight(m.right_state, *alphIter);
+	      //	      cerr << "Qemit:" << Q.get_emission_weight(m.q_state, -1, *alphIter) <<"\t"; 
+	      //	      cerr << "Right absorb: " << right_profile.get_absorb_weight(m.right_state, *alphIter) << endl; 
 	    }
+	  if (!bfloat_is_nonzero(weight))
+	    cerr <<"Warning: nonpositive emission weight: " << weight << endl; 
 	  return weight;
 	}
   return 1.0; 

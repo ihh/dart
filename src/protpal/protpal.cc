@@ -16,6 +16,7 @@
 #include "protpal/MyMap.h"
 
 #include "ecfg/ecfgsexpr.h"
+#include "ecfg/single_chain_ecfg.h"
 #include "tree/phylogeny.h"
 #include "ecfg/ecfgmain.h"
 #include "seq/alignment.h"
@@ -55,6 +56,7 @@ int main(int argc, char* argv[])
 
 
   // If phylogenetic placement was requested, then do this and exit. 
+  // (This will soon be removed and have its own separate program...)
   if ( reconstruction.place_reads)
     {
       if (reconstruction.loggingLevel >=1 )
@@ -260,7 +262,7 @@ int main(int argc, char* argv[])
 			   reconstruction.sequences[reconstruction.tree.node_name[treeNode]], // sequence
 			   leaves[i], //tree index
 			   reconstruction.alphabet,  // sequence alphabet
-			   reconstruction.codon_model // codon model?
+			   reconstruction.codon_model // toRm
 			   );
 	   // Then, make an absorbing transducer from this, and place it in the profiles map.  
 	   AbsorbingTransducer leafAbsorb(&leaf); 
@@ -308,7 +310,8 @@ int main(int argc, char* argv[])
 	  for_rooted_children(reconstruction.tree, treeNode, child)
 	    {
 	      children.push_back(*child); 
-	      branch_length = min(reconstruction.max_branch_length, max(verySmall, reconstruction.tree.branch_length(treeNode ,*child)));
+	      branch_length = min(reconstruction.max_branch_length, 
+				  max(verySmall, reconstruction.tree.branch_length(treeNode ,*child)));
 	      if (branch_length != reconstruction.tree.branch_length(treeNode ,*child))
 		{
 		  cerr<<"\tNB: branch length "<< reconstruction.tree.branch_length(treeNode ,*child);
@@ -341,7 +344,7 @@ int main(int argc, char* argv[])
 			  );
 
 	  // Boy this is awkward.  Can't seem to declare things within an if-else, so I'll declare it outside, then possibly overwrite it
-	  // hmm...
+	  // hmm...there must be a better way
 	  if ( reconstruction.mixture_2 )
 	    {
 	      BranchTrans L_mix_2(branchLengths[0], reconstruction.alphabet, reconstruction.rate_matrix, 
@@ -466,7 +469,6 @@ int main(int argc, char* argv[])
 		cerr<<"\tEnvelope allowed for discarding " << profile.num_discarded_states << " candidate states during DP recursion\n"; 
 	    }
 
-
 	  // For non-root nodes, we now sample a traceback through the Z matrix.  
 	  // This is relatively quick compared to DP
 	  // This step also stores the set of states, and the associated transition
@@ -485,10 +487,6 @@ int main(int argc, char* argv[])
 	      // Now that we're done sampling, we can discard the DP matrix.  
 	      profile.clear_DP();
 	      
-	      // Not sure if this code will be ressurected:
-	      //	      if (reconstruction.estimate_params)
-	      //		reconstruction.pre_summed_profiles[treeNode] = profile; 
-
 	      if(reconstruction.loggingLevel>=1)
 		{
 		  cerr<<"done.  \n";
@@ -530,29 +528,10 @@ int main(int argc, char* argv[])
 		    cerr<<"\tWrote profile to file: " << fileToWrite.str() <<endl; 
 		  saved_profile.close();
 		}
-
-	      
-// 	      CHECK EQUALITY IN READ/WRITTEN TRANSDUCER
-// 		absorbTrans2.test_equality(absorbTrans,true, true); 
-// 	      DONE READ/WRITE TESTING
-
-
-	      // TESTING / BENCHMARKING READ-PROFILE SCORING (E.G PPLACER-LIKE FUNCTIONALITY)
-// 	      // Writing to hmmoc file - not yet fully functional, but provides a 
-// 	      // significant speedup (~10X)
-// 	      //testScore.HMMoC_adapter("testHMMoC.xml"); 
-// 	      //exit(0); 
-
-// Add back in later:
-/*
-              time_t readStart,readEnd;
-	      time (&readStart);
-	      unsigned int numReads = 1;
-	      cout<<"\n"; 
-*/
 	    }
 	  else
 	    {
+	      // If writing the root profile was requested, sample paths through it, then write
 	      if (reconstruction.root_profile_filename != nullValue)
 		{
 		  if(reconstruction.loggingLevel>=1)
@@ -566,6 +545,8 @@ int main(int argc, char* argv[])
 				    ); 
 		  if(reconstruction.loggingLevel>=1)
 		    cerr<<"Done.\n";
+		  // Viterbi path through the profile - this is very helpful in visualization, so it
+		  // is a default here. 
 		  state_path viterbi_path;
 		  if (reconstruction.root_viterbi_path)
 		    viterbi_path = profile.sample_DP(
@@ -673,14 +654,16 @@ int main(int argc, char* argv[])
   istringstream stockStream(alignString);
   Sequence_database db; 
   Stockholm stk(1,1);
+  const char* newGapChar("_"); 
+  
   if (reconstruction.input_alignment)
-    stk.read_Stockholm(stockStream,db, 0,"_"); 
+    stk.read_Stockholm(stockStream,db, 0,newGapChar); 
   else
     stk.read_Stockholm(stockStream,db);
   
   if (reconstruction.leaves_only)
     stk.write_Stockholm(cout);
-  else // display all characters
+  else // display characters at all nodes
     {
       ECFG_main ecfg; 
       ecfg.ancrec_CYK_MAP = true; 
@@ -690,20 +673,32 @@ int main(int argc, char* argv[])
 	  ecfg.min_ancrec_postprob = reconstruction.min_ancrec_postprob; 
 	}
 
+      // The gap grammar is used when an input alignment was provided. 
       SExpr_file gap_grammar_sexpr_file (reconstruction.gap_grammar_filename.c_str()); 
-      SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); 
+      
+      // This will soon not be needed:
+      SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); // toRm
 
       if (reconstruction.input_alignment)
 	{
 	  grammar_sexpr_file = gap_grammar_sexpr_file; 
-	  ecfg.gap_chars = sstring("_"); 
+	  ecfg.gap_chars = sstring(newGapChar); 
 	}
       
       SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
 
       // Get the alignment and grammar into the ecfg and get it ready for operations 
       ecfg.read_alignments(stk); 
-      ecfg.read_grammars(&grammar_ecfg_sexpr); 
+      
+      // Old: a separate grammar
+      //      ecfg.read_grammars(&grammar_ecfg_sexpr);
+
+      // New: a "grammar" based on the rate matrix we've been using the whole time
+      Single_chain_ECFG single_chain_grammar(reconstruction.rate_matrix); 
+      ecfg.add_grammar("test", &single_chain_grammar);
+      cerr <<"Grammar added...\n"; 
+
+      // Necessary according to ecfg/ecfgmain.h
       ecfg.convert_sequences(); 
 
       // Train the Xrate grammar/chain, if requested
@@ -726,7 +721,6 @@ int main(int argc, char* argv[])
       if (reconstruction.loggingLevel >=1) 
 	cerr<< "\tReconstructing ancestral characters conditional on ML indel history..."; 
       ecfg.annotate_alignments(); 
-
       Stockholm annotated = *(ecfg.stock_db.align.begin()); 
 
       if (reconstruction.loggingLevel >=1) 

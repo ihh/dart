@@ -271,7 +271,8 @@ opts.add("ts -transition-bias", transitionBias=2.0, "Transition bias parameter (
 
   if (have_stockholm || have_fasta)
     {
-      cerr << "Warning: redundancy in input sequence specification: sequences were already imported via the -ga option.\nNow overwriting those sequences based on -stk or -fa options.  (In normal conditions they  be the same, but the safest way to ensure this is to use only the -ga option)\n"; 
+      if (have_guide_alignment)
+	cerr << "Warning: redundancy in input sequence specification: sequences were already imported via the -ga option.\nNow overwriting those sequences based on -stk or -fa options.  (In normal conditions they  be the same, but the safest way to ensure this is to use only the -ga option)\n"; 
       parse_sequences(alphabet); 
     }
   
