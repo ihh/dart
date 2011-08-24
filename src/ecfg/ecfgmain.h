@@ -101,6 +101,7 @@ struct ECFG_main
   // add a preset grammar
   // call this as many times as you like after constructing the ECFG_main object
   void add_grammar (const char* name, ECFG_scores* ecfg);
+  void add_and_select_grammar (const char* name, ECFG_scores* ecfg);  // as well as adding the grammar, set it as the default "preset", thus forcing the ECFG_main object to use this grammar
   void add_standard_grammars(const char* default_grammar_string = "rev");  // adds a few standard "preset" grammars
 
   // call delete_grammars to delete all the preset grammars added via add_standard_grammars() and/or add_grammar()

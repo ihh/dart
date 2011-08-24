@@ -57,9 +57,18 @@ ECFG_main::~ECFG_main()
 
 void ECFG_main::add_grammar (const char* name, ECFG_scores* ecfg)
 {
-  ecfg_map[sstring (name)] = ecfg;
+  const sstring name_str (name);
+  if (ecfg_map.find (name_str) != ecfg_map.end())
+    THROWEXPR ("Tried to add a grammar called '" << name << "' to the list of presets, but there is already a grammar with that name");
+  ecfg_map[name_str] = ecfg;
   ecfg->name = name;
   grammar_list.push_back (name);
+}
+
+void ECFG_main::add_and_select_grammar (const char* name, ECFG_scores* ecfg)
+{
+  add_grammar (name, ecfg);
+  preset = name;
 }
 
 void ECFG_main::add_standard_grammars (const char* default_grammar)
