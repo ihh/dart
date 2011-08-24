@@ -1,7 +1,7 @@
 # Requires GNU Make
 
 TESTS      = 
-TARGETS    = $(TESTS) xrate simgram paircfg_xfold testsexpr testchain
+TARGETS    = $(TESTS) xrate simgram paircfg_xfold testsexpr testchain hsm2eg
 DIRNAME    = ecfg
 
 DEPS       = @GUILE_DEPS@ amap telegraph scfg hmm hsm irrev tree seq util newmat randlib
