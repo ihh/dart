@@ -69,6 +69,7 @@ void ECFG_main::add_and_select_grammar (const char* name, ECFG_scores* ecfg)
 {
   add_grammar (name, ecfg);
   preset = name;
+  read_grammars (NULL);
 }
 
 void ECFG_main::add_standard_grammars (const char* default_grammar)

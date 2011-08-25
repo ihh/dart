@@ -696,7 +696,6 @@ int main(int argc, char* argv[])
       // New: a "grammar" based on the rate matrix we've been using the whole time
       Single_chain_ECFG single_chain_grammar(reconstruction.rate_matrix); 
       ecfg.add_and_select_grammar("protpal", &single_chain_grammar);
-      ecfg.alph = &reconstruction.alphabet; 
       cerr <<"Grammar added...\n"; 
 
       // Necessary according to ecfg/ecfgmain.h
