@@ -229,18 +229,10 @@ opts.add("ts -transition-bias", transitionBias=2.0, "Transition bias parameter (
       THROWEXPR("Error - prior on first mixture component is less than 0.  In specifying 2nd and 3rd components, remember that P(first) = 1 - P(2nd) - P(3rd)\n");
     }
   
-  if (! codon_model)
-    {
-      SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
-      SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
-      //  Irrev_EM_matrix rate_matrix(1,1);
-      //  Alphabet alphabet ("uninitialized", 1);
-      ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
-    }
-  else
-    {
-      init_codon_chain_and_alphabet(selectionPressure, transitionBias); 
-    }				       
+  SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
+  SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
+  ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
+
   // If a guide alignment was used, initialize the alignmentEnvelope
   if (have_guide_alignment)
     {

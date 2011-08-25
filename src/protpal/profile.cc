@@ -10,6 +10,7 @@
 #include "protpal/utils.h"
 #include "protpal/profile.h"
 #include "util/dexception.h"
+#include "seq/stockholm.h"
 
 using namespace std;
 
@@ -2169,7 +2170,9 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 	      // values takes quite a while.
 	      //	      std::cout<<"#=GF bit_score "<< -log(pathWeight)/log(2)<<endl; 
 	      //	      std::cout<<  "#=GF post_prob "<< pathWeight/forward_prob<<endl; 
+	      cout << Stockholm_header; 
 	      std::cout<< show_alignment(pi, leaves_only); 
+	      cout << Stockholm_footer; 
 	      std::cerr<<"\n";
 	    }
 	}
