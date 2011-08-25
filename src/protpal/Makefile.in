@@ -1,8 +1,5 @@
 # Requires GNU Make
 
-INTERPRETER = darts
-TESTSCRIPT  = t/test.scm
-
 TESTS      = 
 TARGETS    = $(TESTS) protpal
 DIRNAME    = protpal

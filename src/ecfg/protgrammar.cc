@@ -17,11 +17,12 @@ Protein_grammar::Protein_grammar (int zones, int hidden)
       // now create the real matrix
       const int m = matrix_set.add_matrix (1, Rev, hidden);
       ECFG_chain& chain = matrix_set.chain[m];
-      for (int c = 0; c < hidden; ++c)
-	{
-	  chain.class_labels[c].clear();
-	  chain.class_labels[c] << c + 1;
-	}
+      if (hidden > 1)  // prevent overrun error when hidden==1
+	for (int c = 0; c < hidden; ++c)
+	  {
+	    chain.class_labels[c].clear();
+	    chain.class_labels[c] << c + 1;
+	  }
       EM_matrix_base& mat = *chain.matrix;
       mat.init_alphabet (dummy_em_mat.hidden_alphabet);
 

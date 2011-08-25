@@ -370,11 +370,6 @@ void Alphabet::init_chars (const char* chars, const char* comp)
 	  case_sensitive = true;
 	}
       char2int_table[c] = i;
-
-      sstring c_tok;
-      c_tok << c;
-      tok.push_back (c_tok);
-      tok2int[c_tok] = i;
     }
   // reset char2int_table
   if (case_sensitive)
@@ -391,6 +386,11 @@ void Alphabet::init_chars (const char* chars, const char* comp)
     {
       char2int_table[chars_lc[i]] = char2int_table[chars_uc[i]] = i;
       char_aff_table[chars_lc[i]] = char_aff_table[chars_uc[i]] = 1.0;
+
+      sstring c_tok;
+      c_tok << chars_lc[i];
+      tok.push_back (c_tok);
+      tok2int[c_tok] = i;
     }
   nondegen_comp.clear();
   const int comp_len = strlen (comp);
