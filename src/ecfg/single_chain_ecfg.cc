@@ -9,7 +9,7 @@ Single_chain_ECFG::Single_chain_ECFG (const Irrev_EM_matrix& matrix)
     THROWEXPR ("chain_idx should be zero");
 
   ECFG_chain& chain (matrix_set.chain[chain_idx]);
-  ((EM_matrix_params&) *chain.matrix) = matrix;
+  chain.matrix->assign ((Substitution_matrix_factory&) matrix);
   chain.state[0] = "X";
 
   state_info[0] = ECFG_emitl_state_info (chain_idx);
