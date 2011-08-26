@@ -6,7 +6,7 @@ use SequenceIterator qw(iterseq printseq revcomp);
 my $usage = "";
 $usage .= "$0 -- convert DNA to tokenized-codon sequence (or protein sequence)\n";
 $usage .= "\n";
-$usage .= "Usage: $0 [-f <frame>] [-revcomp] [-aa] [-decode] [filename(s)]\n";
+$usage .= "Usage: $0 [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [filename(s)]\n";
 $usage .= "\n";
 $usage .= "The 'frame' (i.e. reading frame) can be 0, 1, or 2.\n";
 $usage .= "\n";
