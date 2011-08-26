@@ -105,6 +105,7 @@ struct Stockholm : Alignment, Fold_char_enum
   // lower level I/O
   static void write_Stockholm_header (ostream& out);   // writes format & version identifiers
   static void write_Stockholm_separator (ostream& out);   // writes separator line
+  void write_Stockholm_body (ostream& out) const;
   void write_Stockholm_body (ostream& out, const Output_mask& out_mask,
 			     bool use_NSE_names) const;  // writes alignment
 
