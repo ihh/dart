@@ -32,7 +32,9 @@ my (%aa, %tok);
         'gtt'=>'V',  'gct'=>'A',  'gat'=>'D',  'ggt'=>'G',
         'gtc'=>'V',  'gcc'=>'A',  'gac'=>'D',  'ggc'=>'G',
         'gta'=>'V',  'gca'=>'A',  'gaa'=>'E',  'gga'=>'G',
-        'gtg'=>'V',  'gcg'=>'A',  'gag'=>'E',  'ggg'=>'G' );
+        'gtg'=>'V',  'gcg'=>'A',  'gag'=>'E',  'ggg'=>'G',
+
+	map (($_ x 3 => $_), qw(* - ? .)) );
 
 # !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
 # Characters avoided in token set:
@@ -57,7 +59,9 @@ my (%aa, %tok);
 	 'gtt'=>'V',  'gct'=>'A',  'gat'=>'D',  'ggt'=>'G',
 	 'gtc'=>'v',  'gcc'=>'a',  'gac'=>'d',  'ggc'=>'g',
 	 'gta'=>'^',  'gca'=>'4',  'gaa'=>'E',  'gga'=>'9',
-	 'gtg'=>'7',  'gcg'=>'&',  'gag'=>'e',  'ggg'=>'6' );
+	 'gtg'=>'7',  'gcg'=>'&',  'gag'=>'e',  'ggg'=>'6',
+
+	 map (($_ x 3 => $_), qw(* - ? .)) );
 
 my $frame = 0;
 my $revcomp = 0;
