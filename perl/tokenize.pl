@@ -34,7 +34,8 @@ my (%aa, %tok);
         'gta'=>'V',  'gca'=>'A',  'gaa'=>'E',  'gga'=>'G',
         'gtg'=>'V',  'gcg'=>'A',  'gag'=>'E',  'ggg'=>'G',
 
-	map (($_ x 3 => $_), qw(* - ? .)) );
+	'n'=>'z', 'nn'=>'Z', 'nnn'=>'X',
+	map (($_ x 3 => $_), qw(* - ? . x)) );
 
 # ASCII characters 33 through 126:
 # !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
@@ -62,16 +63,19 @@ my (%aa, %tok);
 	 'gta'=>'^',  'gca'=>'4',  'gaa'=>'E',  'gga'=>'9',
 	 'gtg'=>'7',  'gcg'=>'&',  'gag'=>'e',  'ggg'=>'6',
 
-	 map (($_ x 3 => $_), qw(* - ? .)) );
+	 'n'=>'z', 'nn'=>'Z', 'nnn'=>'X',
+	 map (($_ x 3 => $_), qw(* - ? . x)) );
 
 my $frame = 0;
 my $revcomp = 0;
 my $use_aa = 0;
+my $is_rna = 0;
 my $untokenize = 0;
 
 GetOptions ("frame=i" => \$frame,
 	    "revcomp" => \$revcomp,
 	    "aa"  => \$use_aa,
+	    "rna"  => \$is_rna,
 	    "decode" => \$untokenize) or die $usage;
 
 my $trans_ref = $use_aa ? \%aa : \%tok;
@@ -92,12 +96,15 @@ for my $filename (@ARGV) {
 sub tokenize {
     my ($seq) = @_;
     $seq = lc $seq;
+    $seq =~ s/u/t/g;  # do this even if -rna was not specified; no need to punish user
     if ($revcomp) { $seq = revcomp ($seq) }
     my $trans = "";
     for (my $pos = $frame; $pos < length($seq); $pos += 3) {
 	$codon = substr ($seq, $pos, 3);
 	if (exists $$trans_ref{$codon}) { $trans .= $$trans_ref{$codon} }
-	else { warn "Unrecognized codon $codon at position $pos of input\n" }
+	elsif (length($codon) == 1) { $trans .= $$trans_ref{'n'}; warn "Extra character $codon at end of input\n" }
+	elsif (length($codon) == 2) { $trans .= $$trans_ref{'nn'}; warn "Extra characters $codon at end of input\n" }
+	else { $trans .= $$trans_ref{'nnn'}; warn "Unrecognized codon $codon at position $pos of input\n" }
     }
     return $trans;
 }
@@ -108,7 +115,9 @@ sub untokenize {
     for (my $pos = 0; $pos < length($seq); ++$pos) {
 	$token = substr ($seq, $pos, 1);
 	if (exists $untok{$token}) { $untrans .= $untok{$token} }
-	else { warn "Unrecognized token $token at position $pos of input\n" }
+	else { $untrans .= 'nnn'; warn "Unrecognized token $token at position $pos of input\n" }
     }
+    if ($revcomp) { $untrans = revcomp ($untrans) }
+    if ($is_rna) { $untrans =~ s/t/u/g }
     return $untrans;
 }
