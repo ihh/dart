@@ -96,6 +96,7 @@ sub tokenize {
     for (my $pos = $frame; $pos < length($seq); $pos += 3) {
 	$codon = substr ($seq, $pos, 3);
 	if (exists $$trans_ref{$codon}) { $trans .= $$trans_ref{$codon} }
+	else { warn "Unrecognized codon $codon at position $pos of input\n" }
     }
     return $trans;
 }
@@ -106,6 +107,7 @@ sub untokenize {
     for (my $pos = 0; $pos < length($seq); ++$pos) {
 	$token = substr ($seq, $pos, 1);
 	if (exists $untok{$token}) { $untrans .= $untok{$token} }
+	else { warn "Unrecognized token $token at position $pos of input\n" }
     }
     return $untrans;
 }
