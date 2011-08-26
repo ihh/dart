@@ -36,6 +36,7 @@ my (%aa, %tok);
 
 	map (($_ x 3 => $_), qw(* - ? .)) );
 
+# ASCII characters 33 through 126:
 # !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
 # Characters avoided in token set:
 # ( ) ; " ' (used by S-expression format)
