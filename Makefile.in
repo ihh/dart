@@ -105,8 +105,8 @@ dpsw:
 protpal:
 	cd $(SRCDIR)/protpal; $(MAKE) -k $(RELEASE) dep $@
 
-# guildart: dart-augmented Scheme interpreter (requires guile)
-guildart:
+# darts: dart-enhanced Scheme interpreter (requires guile)
+darts:
 	cd $(SRCDIR)/guile; $(MAKE) -k $(RELEASE) dep $@
 
 # Utility programs
