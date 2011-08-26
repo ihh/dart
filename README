@@ -3,7 +3,7 @@ DART: DNA/Amino/RNA Tests
 
 The primary reference point for DART is the following URL:
 
-http://biowiki.org/dart
+http://biowiki.org/DART
 
 ===============================================================================
 
@@ -135,7 +135,8 @@ substitutions & indels.
 	
 
 ** protpal
-Program for approximate statistical alignment and reconstruction.  Uses progressive alignment with sequence profiles. 
+Program for approximate statistical alignment and reconstruction.
+Uses progressive alignment and sequence profile transducers.
 
 
 REFERENCES
