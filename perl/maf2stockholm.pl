@@ -32,14 +32,41 @@ unless (@argv) {
 @ARGV = @argv;
 
 my $stock;
+my $hadEmpty = 0;
+my $isFirst = 1;
 while (<>) {
     next if /^\s*\#/;  # comment
-    if (/^a /) {
-	print $stock->to_string($cols) if defined $stock;
-	$stock = Stockholm->new;
-    } elsif (/^s /) {
-	my ($s_char, $name, $start, $len, $strand, $end, $seq) = split;
-	$stock->add_row ($name, $seq);
+    if (/\S/) {
+	if (/^a/) {
+	    if (!$hadEmpty && !$isFirst) { warn "A new alignment block beginning with an 'a' line should be preceded by an empty line\n" }
+	    $hadEmpty = 0;
+	    print $stock->to_string($cols) if defined $stock;
+	    $stock = Stockholm->new;
+	    while (/\s(\S+)=(\S+)/g) { $stock->add_gf ($1, $2) }
+	} else {
+	    if ($hadEmpty) { warn "Following blank line, expected new alignment block beginning with an 'a' line\n" }
+	    $hadEmpty = 0;
+	    if (/^s /) {
+		my ($s_char, $name, $start, $len, $strand, $end, $seq) = split;
+		$stock->add_row ($name, $seq);
+		$stock->gs->{'start'}->{$name} = [$start];
+		$stock->gs->{'len'}->{$name} = [$len];
+		$stock->gs->{'strand'}->{$name} = [$strand];
+		$stock->gs->{'end'}->{$name} = [$end];
+	    } elsif (/^q/) {
+		my ($q_char, $name, $quality) = split;
+		$stock->gr->{'quality'}->{$name} = $quality;
+	    } elsif (/^[ie]/) {
+		# Silently skip MAF 'i' and 'e' lines
+	    } elsif (/^track/ && $isFirst) {
+		# Silently skip initial 'track' line
+	    } else {
+		warn "Skipping line: $_";
+	    }
+	}
+    } else {
+	$hadEmpty = 1;
     }
+    $isFirst = 0;
 }
 print $stock->to_string($cols) if defined $stock;
