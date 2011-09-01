@@ -197,13 +197,17 @@ void Stockholm::write_Stockholm_NSE (ostream& out, char annotation_wildcard_char
 
 void Stockholm::write_Stockholm (ostream& out) const
 {
+  write_Stockholm_header (out);
+  write_Stockholm_body (out);
+}
+
+void Stockholm::write_Stockholm_body (ostream& out) const
+{
   // create global output mask
   Output_mask out_mask;
   out_mask.initialise_global (path);
   // print
-  write_Stockholm_header (out);
   write_Stockholm_body (out, out_mask, FALSE);
-  write_Stockholm_separator (out);
 }
 
 void Stockholm::write_Stockholm_body (ostream& out, const Output_mask& out_mask, bool use_NSE_names) const

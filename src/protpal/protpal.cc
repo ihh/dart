@@ -732,7 +732,7 @@ int main(int argc, char* argv[])
       time(&end); 
       cout << "#=GF TIME_MINUTES " << difftime (end, start)/60.0 <<endl; 
       if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
-	annotated.write_Stockholm(cout);
+	annotated.write_Stockholm_body(cout);
       else // display in bare-bones/ non-Xrate format
 	{
 	  Phonebook::iterator seq; 
