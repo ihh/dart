@@ -16,6 +16,9 @@ Alternatively, the following will make individual packages:
 	make evoldoer
 	make protpal
 
+You are strongly advised NOT to use parallel make, as it
+probably will not work.
+
 Executables go in the following directories:
 
 	dart/bin
