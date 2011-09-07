@@ -12,7 +12,7 @@ void WE_hits::get_hits (const Pair_CFG_scores& cfg, const set<int>& paired_state
 
   // create the dummy y-sequence
   const Fold_envelope dummy_yenv;
-  const Named_profile dummy_npy;
+  const Named_profile dummy_npy = Named_profile();
 
   // create the subseq set
   Subseq_coords_set subseqs;

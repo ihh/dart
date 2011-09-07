@@ -135,7 +135,7 @@ void Pair_CFG_trainer::train_single (double min_inc, int max_rounds, int forgive
   // constants
   const sstring ss_annot_string (Stockholm_secondary_structure_tag);  // "SS"
   // dummy Y sequence & fold envelope
-  const Named_profile dummy_np;
+  const Named_profile dummy_np = Named_profile();
   const Fold_envelope dummy_env;
   // do EM
   Loge prev_loglike = -InfinityLoge;
