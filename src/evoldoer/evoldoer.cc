@@ -204,7 +204,7 @@ int main (int argc, char** argv)
 
 	      // create dummy y-sequence & envelope
 	      const Fold_envelope dummy_yenv;
-	      const Named_profile dummy_npy;
+	      const Named_profile dummy_npy = Named_profile();
 
 	      // if unlimited structures, stick with banded envelope; otherwise, sample structures
 	      if (nfold < 0)

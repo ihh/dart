@@ -296,7 +296,7 @@ void Stemloc::sample_folds (Fold_envelope& env, const Named_profile& np, int nfo
 {
   // create dummy y-sequence & envelope
   const Fold_envelope dummy_yenv;
-  const Named_profile dummy_npy;
+  const Named_profile dummy_npy = Named_profile();
 
   // if unlimited structures, stick with banded envelope; otherwise, sample structures
   if (nfold < 0)
