@@ -6,6 +6,7 @@
 #include "util/piper.h"
 #include "util/unixenv.h"
 #include "util/nullstream.h"
+#include "util/xmlescape.h"
 
 // TODO
 // -- if use_centroid_band is true, use the peeled_obs rows of centroid & the centroid band width to pass centroid[] to HMMoC (at run-time, not compile-time)
@@ -194,7 +195,7 @@ void HMMoC_adapter::dump_hmmoc_model (ostream& out, const char* cpp_filename_pre
     {
       if (c->size() > 1)
 	long_token = true;
-      out << *c;
+      out << encodeForXml(*c);
     }
   if(long_token)
     CLOGERR << "Warning: Using multi-character tokens in hmmoc model dump!\n";
