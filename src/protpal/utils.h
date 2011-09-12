@@ -29,7 +29,9 @@ typedef map<Row_pair,Alignment_path> Decomposition;
 
 char* stockholm_tree(const char*);
 MyMap<string, string> parse_stockholm(const char*, Alphabet& );
+MyMap<string, string> parse_gapped_stockholm(const char*, Alphabet& );
 MyMap<string, string> parse_fasta(const char*, Alphabet& );
+MyMap<string, string> parse_gapped_fasta(const char*, Alphabet& );
 vector<string> split(string,string); 
 vector<string> splitWhite(string); 
 
@@ -75,10 +77,11 @@ void displayVector(vector <vector <int> > in);
 
 bool FileExists(string); 
 bool bfloat_is_nonzero(bfloat);
-vector<sstring> all_codons(void); 
-map<sstring, sstring> codon_table(void); 
-bool is_synonymous(string, string, map<sstring, sstring>&); 
-bool is_transition(pair<string, string>); 
-bool differ_more_than_one(string, string); 
-pair<string, string> find_first_difference(string, string); 
+
+/* vector<sstring> all_codons(void);  */
+/* map<sstring, sstring> codon_table(void);  */
+/* bool is_synonymous(string, string, map<sstring, sstring>&);  */
+/* bool is_transition(pair<string, string>);  */
+/* bool differ_more_than_one(string, string);  */
+/* pair<string, string> find_first_difference(string, string);  */
 #endif

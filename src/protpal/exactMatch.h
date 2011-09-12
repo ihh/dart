@@ -16,7 +16,7 @@ class ExactMatch
 {
  public:
   // Constructor - does everything we need to get it in absorbing form.
-  ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in, bool codon_model=false); 
+  ExactMatch(string &sequence, node treeNode_in, Alphabet& alphabet_in); 
 
   // The (leaf) node of the phylogeny this sequence is associated with.
   node treeNode; 

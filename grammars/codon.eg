@@ -1,4 +1,4 @@
-(alphabet
+v(alphabet
  (name RNA)
  (token (a c g u))
  (complement (u g c a))

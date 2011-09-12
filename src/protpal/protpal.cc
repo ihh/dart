@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
   string alignString; 
   // create main reconstruction object
   Reconstruction reconstruction(argc, argv);
-  
+
   // yeccch - I've mostly moved over to using weight_profiles, but some 
   // hackiness still persists! -OW
   // It seems like this is used only in reading transducers in from a file...def. fixable
@@ -54,114 +54,14 @@ int main(int argc, char* argv[])
   for (vector<sstring>::iterator a=toks.begin(); a!=toks.end(); a++)
     alphabetVector.push_back(string(a->c_str()));
 
-
-  // If phylogenetic placement was requested, then do this and exit. 
-  // (This will soon be removed and have its own separate program...)
-  if ( reconstruction.place_reads)
-    {
-      if (reconstruction.loggingLevel >=1 )
-	cerr<<"Performing phylogenetic placement...\n"; 
-      ScoreMap scores; 
-      if  (reconstruction.score_tabular_filename == nullValue )
-	{
-	  map<int, string> profile_filenames = reconstruction.check_profile_filenames();
-	  // limiter = reconstruction.init_limiter();
-
-	  cerr<<"\nProfiles found for the following nodes:\n";
-	  for (map<int, string>::iterator fn=profile_filenames.begin(); fn!=profile_filenames.end(); ++fn)
-	    if (fn->second == nullValue)
-	      continue;
-	    else
-	      cerr<< "\t" << reconstruction.tree.node_name[fn->first] << "\t" << fn->second << endl; 
-		  
-	  cerr<<"Parsing reads..."; 
-	  map<string, string> reads = 
-	    parse_fasta(reconstruction.reads_to_place_filename.c_str(), reconstruction.alphabet);
-	  cerr<<"Done.\n"; 
-	  Read read; 
-	  for (int profileNode = reconstruction.tree.nodes() -1; profileNode >= 0; 
-	       profileNode--)
-	    {
-	      if (reconstruction.loggingLevel >=1)
-		cerr << "Scoring reads to profile at node: " << reconstruction.tree.node_name[profileNode]<<"..."; 
-	      if (profile_filenames[profileNode] == nullValue)
-		continue;
-	      AbsorbingTransducer ancestralProfile(profile_filenames[profileNode].c_str(),
-						   alphabetVector, reconstruction.tree);
-	      // not written/parsed in sexpr...ugh.  Fix later
-	      ancestralProfile.name = reconstruction.tree.node_name[profileNode]; 
-	      ReadProfileScore profile_scorer(&ancestralProfile, 
-					      reconstruction.alphabet, reconstruction.rate_matrix);
-		      
-	      for ( map<string, string>::iterator readIter = reads.begin(); 
-		    readIter != reads.end(); ++readIter )
-		{
-		  read.identifier = readIter->first; 
-		  read.set( readIter->second ); 
-		  //if ( ! limiter(profileNode, read.identifier) )
-		  //			    continue;
-		  if (reconstruction.loggingLevel >= 1)
-		    cerr<<"\tScoring read/profile pair: " << read.identifier << " - " << profile_scorer.name <<endl; 
-		  // Score read to profile, and store in 'scores' map, no logging
-		  profile_scorer.score_and_store(read, scores, false);
-		  bfloat score; 
-		  if (scores.count(read.identifier))
-		    if (scores[read.identifier].count(profile_scorer.name))
-		      {
-			score = scores[read.identifier][profile_scorer.name];
-			if (reconstruction.loggingLevel >= 1)
-			  cerr<<"\t\tScore:" << score << endl;
-			if ( ! bfloat_is_nonzero(score))
-			  {
-			    cerr<<"ERROR: score is non-positive!\n"; 
-			    profile_scorer.clear_DP_matrix(); 
-			    profile_scorer.get_score(read, false, //no viterbi
-						     true ); // do log
-			    exit(0); 
-			  }
-		      }
-		    else
-		      cerr << "\t\tRead had no score for profile "<< profile_scorer.name <<endl; 
-		  else
-		    cerr << "\t\tRead had no score for any profile: "<< read.identifier << endl; 
-			   
-		}
-	      if (reconstruction.loggingLevel >=1)
-		cerr<< "done.\n"; 
-	    }
-	}
-      else
-	reconstruction.parse_placement_tabular(scores); 
-      cerr <<"\n\n"; 
-      // Display stuff that got stored in scores, possibly as JSON or simpler tabular
-      if (reconstruction.json_placements_filename != nullValue)
-	{
-	  ofstream json_file;
-	  json_file.open(reconstruction.json_placements_filename.c_str());
-	  reconstruction.write_placement_JSON(json_file, scores); 
-	}
-
-      if ( ! reconstruction.no_placements_tabular )
-	reconstruction.write_placement_tabular(cout, scores); 
-
-      // 		  time(&readEnd); 
-      // 		  cout<< "Minutes used to map ";
-      // 		  cout << numReads << " reads to a profile: "; 
-      // 		  cout << difftime (readEnd, readStart)/60.0 <<endl; 
-      if (reconstruction.loggingLevel >=1 )
-	cerr<<"Done\n"; 
-      exit(0); 
-    }
-  // END PHYLO-PLACEMENT 
-
-  // Construct a root "posterior profile" if requested.  This requires us to 
+  // Construct a root "posterior profile" for a given node, if requested.  This requires us to 
   // re-root the tree at that node, and then reconstruct this new "root"
   if ( reconstruction.profile_to_make != nullValue )
     {
       const Phylogeny::Node new_root = 
 	reconstruction.tree.find_node( reconstruction.profile_to_make.c_str());
       if (new_root < 0)
-	THROWEXPR("Error: requested profile for node " +reconstruction.profile_to_make+
+	THROWEXPR("ERROR: requested profile for node " +reconstruction.profile_to_make+
 		  " which does not appear to be a valid node in the tree.");
 
       if ( reconstruction.root_profile_filename == nullValue )
@@ -182,18 +82,21 @@ int main(int argc, char* argv[])
 	{
 	  string tmpFileName = "tree_tmp.newick"; 
 	  ofstream tmpTreeFile(tmpFileName.c_str());
+	  // Write the tree rooted at the "new_root"
 	  reconstruction.tree.write(tmpTreeFile, -1, new_root); 
 	  tmpTreeFile.close();
+	  // Read it in again  (there is possibly a better way to to this?)
 	  ifstream tree_file(tmpFileName.c_str());
 	  reconstruction.tree.read(tree_file); //tmpFileName.c_str()); 
 	  reconstruction.tree.force_binary(); 
+	  // NB node names between trees are not meaningful. 
 	  reconstruction.set_node_names(); 
 	  system("rm -f tree_tmp.newick");
 	}
     }
 
   // These  transducers remain the same throughout the traversal, so we can initialize them
-  // once and for all and leave them.  
+  // once and for all and leave them. root_insert_prob may be set or estimated on the fly from sequences.
   SingletTrans R(reconstruction.alphabet, reconstruction.rate_matrix, reconstruction.root_insert_prob);
   SplittingTrans Upsilon;
 
@@ -204,6 +107,7 @@ int main(int argc, char* argv[])
 	  exit(0); 
 	}
   // If generating a phylocomposer input file was requested, do this instead of reconstruction
+  // This was used early on in testing, but is not super-useful anymore.  
   if ( reconstruction.generate_phylocomposer)
     {
       ofstream phylocomp_out;
@@ -217,30 +121,26 @@ int main(int argc, char* argv[])
     }
   
   // If using an input alignment was requested, do this and bypass reconstruction
-  // This is a bit ambiguous now - an 'input alignment' is used for indel counting and other statistics, whereas a 
-  // "guide alignment" is used to constrain DP in aligning sequences.  
+  // This is a bit confusing now - an 'input alignment' is used for indel counting and other statistics, 
+  // and it is (ideally) an ancestral alignment, whereas a 
+  // "guide alignment" is used to constrain DP in aligning sequences (and is usually a leaf alignment). 
   else if (reconstruction.input_alignment)
     {
-      int seqLength = -1;
+      map<string, string> gapped_seqs; 
+      if (reconstruction.have_stockholm)
+      // NB parse_gapped_fasta asserts the alignment is flush.  
+	gapped_seqs = parse_gapped_stockholm(reconstruction.stkFileName.c_str(), reconstruction.alphabet); 	
+      // Gapped fasta parsing is not yet implemented - this currently throws and exception:
+      else if (reconstruction.have_fasta)
+	gapped_seqs = parse_gapped_fasta(reconstruction.fastaFileName.c_str(), reconstruction.alphabet); 	
       alignString = "";
-      for (treeNode = 0; treeNode < reconstruction.tree.nodes(); treeNode++)
-	if (reconstruction.sequences.count(reconstruction.tree.node_name[treeNode]))
-	  {
-	    alignString += reconstruction.tree.node_name[treeNode] + "   " + reconstruction.sequences[reconstruction.tree.node_name[treeNode]] + "\n";
-	    if (seqLength != -1)
-	      {
-		if ((int) reconstruction.sequences[reconstruction.tree.node_name[treeNode]].size() != seqLength)
-		  {
-		    THROWEXPR("Error: input alignment's sequences are not all of the same length.  Do not use -ia with unaligned sequences");
-		  }
-	      }
-	    else 
-	      seqLength = reconstruction.sequences[reconstruction.tree.node_name[treeNode]].size();
-	  }
+      for (map<string, string>::iterator seqIter=gapped_seqs.begin(); seqIter != gapped_seqs.end(); ++seqIter)
+	alignString += seqIter->first +  "   " + seqIter->second + "\n"; 
     }
   else
     {
-      // Otherwise, let the "progressive transducer-profile-based" ancestral reconstruction begin!  
+      // Otherwise, we want an alignment, but have none on  input so we must make our own:
+      // let the "progressive transducer-profile-based" ancestral reconstruction begin!  
       //  Initialize the exact-match transducers at leaf nodes - can be thought of as a trivial reconstruction
       if(reconstruction.loggingLevel>=1)
 	cerr<<"\n";
@@ -253,6 +153,8 @@ int main(int argc, char* argv[])
 	cerr<<"Making exact-match transducers for leaf nodes...";
 
       // Verify that all leaf nodes have sequences in the input file
+      // Maybe modify this so it just warns when there is an empty sequence?
+      //    If so,  should verify that there is a start-wait-end transition in the low-level transducer...
       reconstruction.verify_leaf_sequences();
       
        for (unsigned int i=0; i<leaves.size(); i++)
@@ -260,9 +162,8 @@ int main(int argc, char* argv[])
  	  treeNode = leaves[i]; 
 	   ExactMatch leaf(
 			   reconstruction.sequences[reconstruction.tree.node_name[treeNode]], // sequence
-			   leaves[i], //tree index
-			   reconstruction.alphabet,  // sequence alphabet
-			   reconstruction.codon_model // toRm
+			   leaves[i], // Node's index in the tree
+			   reconstruction.alphabet  // sequence alphabet
 			   );
 	   // Then, make an absorbing transducer from this, and place it in the profiles map.  
 	   AbsorbingTransducer leafAbsorb(&leaf); 
@@ -272,7 +173,7 @@ int main(int argc, char* argv[])
 	 }
       if(reconstruction.loggingLevel>=1)
 	cerr<<"Done\n"; 
-      // Postorder traversal over internal nodes.  
+      // Here begins the main postorder traversal over internal nodes.  
       // For each internal node:
       //    1. Instantiate its profile using its two child profiles, delete children
       //    2. Fill DP matrix
@@ -290,6 +191,7 @@ int main(int argc, char* argv[])
 	  children.clear(); 
 	  branchLengths.clear(); 
 
+	  // Read subtree (not posterior) profile from file, if possible
 	  stringstream fileToWrite;
 	  if ( reconstruction.saved_subtree_profiles_directory != nullValue )
 	    {
@@ -310,6 +212,7 @@ int main(int argc, char* argv[])
 	  for_rooted_children(reconstruction.tree, treeNode, child)
 	    {
 	      children.push_back(*child); 
+	      // Enforce a minimum and maximum branch length, to avoid weird behaviour. 
 	      branch_length = min(reconstruction.max_branch_length, 
 				  max(verySmall, reconstruction.tree.branch_length(treeNode ,*child)));
 	      if (branch_length != reconstruction.tree.branch_length(treeNode ,*child))
@@ -322,7 +225,7 @@ int main(int argc, char* argv[])
 
 	  // Instantiate the Q transducer object and its prerequisites.  
 	  // The two branch transducers must be re-created at each iteration so that the branch lengths
-	  // and the depending parameters are correct.  Thus, Q's transitions must be re-built.  
+	  // and the depending parameters are correct.  Thus, Q's transitions must be re-built (fast).
 	  // Finally, marginalize Q's null states (e.g. IMDD)
 	  
 
@@ -391,11 +294,11 @@ int main(int argc, char* argv[])
 
 	  // A Q-transducer is composed of a singlet transducer (R), two branch trans (B_*), and a trivial
 	  // splitting transducer (Upsilon). 
-	  QTransducer Q(R, //singlet
-			B_l, //left-branch
+	  QTransducer Q(R, // singlet
+			B_l, // left-branch
 			B_r, // right-branch
-			Upsilon, //splitting 
-			reconstruction.alphabet //sequence alphabet
+			Upsilon, // splitting 
+			reconstruction.alphabet // sequence alphabet
 			);
 	  // Remove non-emitting states in Q (e.g. IMDD - a deletion on both branches)
 	  Q.marginalizeNullStates();
@@ -430,7 +333,8 @@ int main(int argc, char* argv[])
 	  profile.max_sampled_externals = reconstruction.max_sampled_externals; 
 
 	  // If we got a guide alignment on input, let the profile know about
-	  // it so it can constrain DP breadth
+	  // it so it can constrain DP breadth. The Reconstruction object holds the envelope, so we 
+	  // give the profile a pointer to it. 
 	  if (reconstruction.have_guide_alignment)
 	    {
 	      profile.use_guide_alignment = true; 
@@ -439,23 +343,25 @@ int main(int argc, char* argv[])
 	  else
 	    profile.use_guide_alignment = false; 
 
-	  // Fill the Z matrix via the forward-like algorithm- the only argument is logging level
+	  // Fill the Z matrix via the forward-like algorithm.
 	  // (Fairly hairy stuff happening within this function)
 	  if(reconstruction.loggingLevel>=1)
 	    cerr<<"\tFilling forward dynamic programming matrix..."; 
 
 	  if (treeNode != reconstruction.tree.root || reconstruction.root_profile_filename == nullValue)
-	    profile.fill_DP(reconstruction.loggingLevel, // log messages
+	    profile.fill_DP(reconstruction.loggingLevel, // log messages? 
 			    false); // do not store incoming/outgoing information.  
+	  // At the root, if we are writing a posterior profile, we'll need to do the backward algo, so store state 
+	  // connectivity information (so we can compute posterior state probs).  
 	  else if (reconstruction.root_profile_filename != nullValue)
 	    {
 	      if(reconstruction.loggingLevel>=1)
-		cerr<<" (logging state connectivity) "; 
+		cerr<<" (logging state connectivity for backward algorithm) "; 
 	      profile.fill_DP(reconstruction.loggingLevel, // log messages
 			      true); // do store incoming/outgoing information - for state postprobs
 	      
 	      if(reconstruction.loggingLevel>=1)
-		cerr<<"\n\tFilling backward DP matrix... "; 	      
+		cerr<<"\n\tFilling backward dynamic programming matrix... "; 	      
 	      profile.fill_backward_DP(reconstruction.loggingLevel); 
 	    }
 
@@ -497,7 +403,7 @@ int main(int argc, char* argv[])
 	      // Transform the (null-in, null-out) transducer into an absorbing transducer:
 	      // Remove R-states, modify transition probabilities, sum over null states, 
 	      // index remaining delete states.  This is a *mildly* hairy operation...
-
+	      
 	      if(reconstruction.loggingLevel>=1)
 		cerr<<"\tTransforming sampled profile DAG into an absorbing transducer...";
 	      AbsorbingTransducer absorbTrans(&profile);
@@ -517,7 +423,7 @@ int main(int argc, char* argv[])
 	      
 	      // If requested, save this profile in the specified directory so we can possibly
 	      // recycle it in later invocations.  This must be done carefully do avoid inter-dataset
-	      // contamination!  
+	      // contamination, and is not really for the casual user. 
 	      if ( reconstruction.saved_subtree_profiles_directory != nullValue and not have_read)
 		{
 		  ofstream saved_profile;
@@ -532,6 +438,7 @@ int main(int argc, char* argv[])
 	  else
 	    {
 	      // If writing the root profile was requested, sample paths through it, then write
+	      // The number of paths to sample at the root can be set independently of the number of subtree-sampling. 
 	      if (reconstruction.root_profile_filename != nullValue)
 		{
 		  if(reconstruction.loggingLevel>=1)
@@ -569,7 +476,7 @@ int main(int argc, char* argv[])
 		}
 	      
 	      cout << Stockholm_header; 
-	      cout<<"#=GF alignment_likelihood_bits "<<-log(profile.forward_prob)/log(2) << endl; 
+	      cout << "#=GF alignment_likelihood_bits "<<-log(profile.forward_prob)/log(2) << endl; 
 	      ofstream db_file;
 	      state_path path = profile.sample_DP(
 						  1, // sample only one path
@@ -579,6 +486,9 @@ int main(int argc, char* argv[])
 						  reconstruction.viterbi // sample the viterbi path
 						  );
 	      alignString = profile.show_alignment( path, reconstruction.leaves_only); 
+
+	      // Sample a bunch of paths at the root level and average indel counts (a hacky approximation to using 
+	      // an entire profile for indel rate estimation.
 	      if (reconstruction.num_root_alignments > 1 && reconstruction.indel_filename != nullValue)
 		{
 		  if(reconstruction.loggingLevel>=1)
@@ -644,8 +554,8 @@ int main(int argc, char* argv[])
   
   if (reconstruction.loggingLevel >= 1)
     cerr<<"\nFinished with alignment construction, now post-processing for ancestral characters and indels\n"; 
-  // There's now an "alignment" created, either from input or via protpal
-  // Convert it to a stockholm object - so we can do character recon w/ Xrate
+  // At this point there's an "alignment" created, either from input or via protpal
+  // Now we convert it to a (DART) Stockholm object - so we can do character reconstruction using ECFG_main/XRate's machinery
   // There is no way that this is the easiest way to do this, but oh well:
   stringstream treeStream;
   reconstruction.tree.write_Stockholm(treeStream);
@@ -661,46 +571,40 @@ int main(int argc, char* argv[])
   else
     stk.read_Stockholm(stockStream,db);
   
+  // If  no reconstruction is requested ('alignment' mode) just print the leaf alignment
   if (reconstruction.leaves_only)
     stk.write_Stockholm(cout);
-  else // display characters at all nodes
+  // Otherwise we must display characters at all nodes
+  else 
     {
       ECFG_main ecfg; 
+      if (reconstruction.input_alignment)
+	ecfg.gap_chars = sstring(newGapChar); 
       ecfg.ancrec_CYK_MAP = true; 
       if (reconstruction.ancrec_postprob)
 	{
 	  ecfg.ancrec_postprob=true;
 	  ecfg.min_ancrec_postprob = reconstruction.min_ancrec_postprob; 
 	}
-
-      // The gap grammar is used when an input alignment was provided. 
-      SExpr_file gap_grammar_sexpr_file (reconstruction.gap_grammar_filename.c_str()); 
       
-      // This will soon not be needed:
-      SExpr_file grammar_sexpr_file (reconstruction.grammar_filename.c_str()); // toRm
+      // Get the alignment into the ecfg and get it ready for operations 
+      ecfg.read_alignments(stk); 
 
+      // Grammar stuff - which one we use depend on the kind of input:
+      // For protpal alignment, we make a "grammar" based on the rate matrix we've been using the whole time
+      Single_chain_ECFG single_chain_grammar(reconstruction.rate_matrix); 
       if (reconstruction.input_alignment)
 	{
-	  grammar_sexpr_file = gap_grammar_sexpr_file; 
-	  ecfg.gap_chars = sstring(newGapChar); 
+	  // The "gap grammar" is used when an input alignment was provided. 
+	  SExpr_file gap_grammar_sexpr_file (reconstruction.gap_grammar_filename.c_str()); 
+	  SExpr& gap_grammar_ecfg_sexpr = gap_grammar_sexpr_file.sexpr;
+	  ecfg.read_grammars(&gap_grammar_ecfg_sexpr);
 	}
-      
-      SExpr& grammar_ecfg_sexpr = grammar_sexpr_file.sexpr;
-
-      // Get the alignment and grammar into the ecfg and get it ready for operations 
-      ecfg.read_alignments(stk); 
-      
-      // Old: a separate grammar
-      //      ecfg.read_grammars(&grammar_ecfg_sexpr);
-
-      // New: a "grammar" based on the rate matrix we've been using the whole time
-      Single_chain_ECFG single_chain_grammar(reconstruction.rate_matrix); 
-      ecfg.add_and_select_grammar("protpal", &single_chain_grammar);
-      cerr <<"Grammar added...\n"; 
+      else
+	ecfg.add_and_select_grammar("protpal", &single_chain_grammar);
 
       // Necessary according to ecfg/ecfgmain.h
       ecfg.convert_sequences(); 
-
       // Train the Xrate grammar/chain, if requested
       if (reconstruction.train_grammar)
 	{
@@ -733,7 +637,9 @@ int main(int argc, char* argv[])
       cout << "#=GF TIME_MINUTES " << difftime (end, start)/60.0 <<endl; 
       if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
 	annotated.write_Stockholm_body(cout);
-      else // display in bare-bones/ non-Xrate format
+      
+      // display in bare-bones/ non-Xrate format - requires some formatting which is done here
+      else 
 	{
 	  Phonebook::iterator seq; 
 	  int nameSize, maxNameLength = 0; 

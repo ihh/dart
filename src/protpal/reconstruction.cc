@@ -89,9 +89,6 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.print_title("Model parameters");
 
   opts.add("b -subst-model", rate_matrix_filename = default_chain_filename, "DART format chain file to be used for branch transducers' match states absorb/emit likelihoods.");
-  opts.add("cod -codon-model", codon_matrix_filename = nullValue, "Same as subst-model, but containing a rate matrix describing substitution rates between codon triplets. (currently under development)");
-  opts.add("sel -selection-pressure", selectionPressure=1.0, "Selection parameter (omega) for use in codon models"); 
-opts.add("ts -transition-bias", transitionBias=2.0, "Transition bias parameter (kappa) for use in codon models");   
   opts.add("dna -dna-model", use_dna = false, "Use the default DNA substitution model, rather than amino acid model", false);
   opts.add("bs -subst-scale", sub_rate = 1.0, "Substitution rate scaling parameter ");
   opts.add("mbl -max-branch-length", max_branch_length = 1.0, "Maximum allowed branch length (branches longer than this will be truncated).");
@@ -167,7 +164,7 @@ opts.add("ts -transition-bias", transitionBias=2.0, "Transition bias parameter (
     estimate_params = true; 
   viterbi = !stoch_trace;
   
-  codon_model = bool(codon_matrix_filename != nullValue);
+  codon_model = false; 
   // Make sure we have the essential data - sequences and a tree
   // First, make sure we have sequence data from somewhere
   // Unless we are generating phylocomposer, simulating, or placing reads, we need 
@@ -265,7 +262,8 @@ opts.add("ts -transition-bias", transitionBias=2.0, "Transition bias parameter (
     {
       if (have_guide_alignment)
 	cerr << "Warning: redundancy in input sequence specification: sequences were already imported via the -ga option.\nNow overwriting those sequences based on -stk or -fa options.  (In normal conditions they  be the same, but the safest way to ensure this is to use only the -ga option)\n"; 
-      parse_sequences(alphabet); 
+      if (! input_alignment) // then we parse the sequences later, as a gapped alignment
+	parse_sequences(alphabet); 
     }
   
   if(estimate_root_insert)
@@ -977,79 +975,79 @@ void Reconstruction::parse_placement_tabular(ScoreMap& scores)
 
 
 
-void Reconstruction::init_codon_chain_and_alphabet(bfloat selectionPressure, bfloat transitionBias)
-{
-  // This function attempts to implement a basic codon model via dart's
-  // Irrev_EM_matrix and Alphabet classes.  
-  vector<sstring> codons = all_codons(); 
-  map<sstring, sstring> translation = codon_table(); 
-  sstring codon1, codon2; 
-  int codIdx1, codIdx2; 
-  int alphSize = codons.size(); 
-  double rate; 
+// void Reconstruction::init_codon_chain_and_alphabet(bfloat selectionPressure, bfloat transitionBias)
+// {
+//   // This function attempts to implement a basic codon model via dart's
+//   // Irrev_EM_matrix and Alphabet classes.  
+//   vector<sstring> codons = all_codons(); 
+//   map<sstring, sstring> translation = codon_table(); 
+//   sstring codon1, codon2; 
+//   int codIdx1, codIdx2; 
+//   int alphSize = codons.size(); 
+//   double rate; 
 
-  // Begin by initializing a DART alphabet and rate matrix of the appropriate size...
-  alphabet.reset("codon_model", alphSize); 
-  alphabet.init_tokens(codons); 
-  rate_matrix.init_matrix(1,// one site class
-			  alphSize); // 64 codons
-  rate_matrix.init_alphabet(alphabet); 
+//   // Begin by initializing a DART alphabet and rate matrix of the appropriate size...
+//   alphabet.reset("codon_model", alphSize); 
+//   alphabet.init_tokens(codons); 
+//   rate_matrix.init_matrix(1,// one site class
+// 			  alphSize); // 64 codons
+//   rate_matrix.init_alphabet(alphabet); 
 
-  // Not so sure about this next bit...
-  // As there is only one "class", do the inter-class rates matter? I think I still 
-  // have to set them to something...
-  for (codIdx1=0; codIdx1<alphSize; codIdx1++)
-    rate_matrix.Y[codIdx1].fill(1.0); 
+//   // Not so sure about this next bit...
+//   // As there is only one "class", do the inter-class rates matter? I think I still 
+//   // have to set them to something...
+//   for (codIdx1=0; codIdx1<alphSize; codIdx1++)
+//     rate_matrix.Y[codIdx1].fill(1.0); 
 
-  // Using a flat eq dist for now...(agnostic to stop codons.  change soon)
-  vector<double> equilibrium; 
-  for (codIdx1 = 0; codIdx1 < alphSize; codIdx1++)
-    equilibrium.push_back(1.0/alphSize); 
-  // Set this in the rate matrix object
-  // (not sure if this is necessary, relevant, or how it relates to create_prior()?
-  rate_matrix.pi = equilibrium; 
+//   // Using a flat eq dist for now...(agnostic to stop codons.  change soon)
+//   vector<double> equilibrium; 
+//   for (codIdx1 = 0; codIdx1 < alphSize; codIdx1++)
+//     equilibrium.push_back(1.0/alphSize); 
+//   // Set this in the rate matrix object
+//   // (not sure if this is necessary, relevant, or how it relates to create_prior()?
+//   rate_matrix.pi = equilibrium; 
 
-  // Loop thru codons and populate the rate matrix according to a Neilsen-Yang style model 
-  // (selection and ts/tv bias)
-  for (codIdx1 = 0; codIdx1 < alphSize; codIdx1++)
-    {
-        for (codIdx2 = 0; codIdx2 < alphSize; codIdx2++)
-	  {
-	    if (codIdx1 == codIdx2)
-	      continue; // set these later
+//   // Loop thru codons and populate the rate matrix according to a Neilsen-Yang style model 
+//   // (selection and ts/tv bias)
+//   for (codIdx1 = 0; codIdx1 < alphSize; codIdx1++)
+//     {
+//         for (codIdx2 = 0; codIdx2 < alphSize; codIdx2++)
+// 	  {
+// 	    if (codIdx1 == codIdx2)
+// 	      continue; // set these later
 	    
-	    codon1 = codons[codIdx1]; 
-	    codon2 = codons[codIdx2]; 
-	    if (differ_more_than_one( codon1, codon2))
-	      rate = 0.0; 
-	    else
-	      {
-		rate = equilibrium[codIdx2]; // all rates have this factor, e.g. "pi_j"
-		if ( is_transition( find_first_difference(codon1, codon2) ) )
-		  rate *= transitionBias; 
-		if ( !is_synonymous(codon1, codon2, translation ))
-		  rate *= selectionPressure; 
-	      }
-	    // Actually set the rate in the matrix.  Not sure if this is the best/safest way
-	    rate_matrix.X[0](codIdx1,codIdx2) = rate; 
-	  }
-    }
-  // Set the diagonal elements as the neg sum of the remaining elements of its row
-  // Again, not sure if this could be better automatically handled by dart...
-  for (codIdx1 = 0; codIdx1 < alphSize; codIdx1++)
-    {
-      rate_matrix.X[0](codIdx1,codIdx1) = 0.0; 
-      for (codIdx2 = 0; codIdx2 < alphSize; codIdx2++)
-	if ( codIdx1 != codIdx2 )
-	  rate_matrix.X[0](codIdx1,codIdx1) -= rate_matrix.X[0](codIdx1,codIdx2); 
-    }
+// 	    codon1 = codons[codIdx1]; 
+// 	    codon2 = codons[codIdx2]; 
+// 	    if (differ_more_than_one( codon1, codon2))
+// 	      rate = 0.0; 
+// 	    else
+// 	      {
+// 		rate = equilibrium[codIdx2]; // all rates have this factor, e.g. "pi_j"
+// 		if ( is_transition( find_first_difference(codon1, codon2) ) )
+// 		  rate *= transitionBias; 
+// 		if ( !is_synonymous(codon1, codon2, translation ))
+// 		  rate *= selectionPressure; 
+// 	      }
+// 	    // Actually set the rate in the matrix.  Not sure if this is the best/safest way
+// 	    rate_matrix.X[0](codIdx1,codIdx2) = rate; 
+// 	  }
+//     }
+//   // Set the diagonal elements as the neg sum of the remaining elements of its row
+//   // Again, not sure if this could be better automatically handled by dart...
+//   for (codIdx1 = 0; codIdx1 < alphSize; codIdx1++)
+//     {
+//       rate_matrix.X[0](codIdx1,codIdx1) = 0.0; 
+//       for (codIdx2 = 0; codIdx2 < alphSize; codIdx2++)
+// 	if ( codIdx1 != codIdx2 )
+// 	  rate_matrix.X[0](codIdx1,codIdx1) -= rate_matrix.X[0](codIdx1,codIdx2); 
+//     }
 
-  cerr << "Rate matrix-created prior: " << rate_matrix.create_prior() << endl; 
-  exit(0);  // testing for now
-  array2d<double> sub = rate_matrix.create_conditional_substitution_matrix(0.01);   
-  for (codIdx1 = 0; codIdx1 < alphSize; codIdx1++)
-    for (codIdx2 = 0; codIdx2 < alphSize; codIdx2++)
-      if (sub(codIdx1, codIdx2) >0.0)
-	cerr <<"Prob of sub between " << codons[codIdx1] << " " << codons[codIdx2] << " : " << sub(codIdx1, codIdx2) << endl; 
-  exit(0); // testing for now
-}
+//   cerr << "Rate matrix-created prior: " << rate_matrix.create_prior() << endl; 
+//   exit(0);  // testing for now
+//   array2d<double> sub = rate_matrix.create_conditional_substitution_matrix(0.01);   
+//   for (codIdx1 = 0; codIdx1 < alphSize; codIdx1++)
+//     for (codIdx2 = 0; codIdx2 < alphSize; codIdx2++)
+//       if (sub(codIdx1, codIdx2) >0.0)
+// 	cerr <<"Prob of sub between " << codons[codIdx1] << " " << codons[codIdx2] << " : " << sub(codIdx1, codIdx2) << endl; 
+//   exit(0); // testing for now
+// }

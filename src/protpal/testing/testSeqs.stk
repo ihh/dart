@@ -2,10 +2,14 @@
 # something unimportant
 #=GF NH ((ape:.01, chimp:.01)ape_chimp:.01, (fish:.01, fugufish:.01)fish_fugufish:.01)root;
 
-fish        ghilkmfawyvarndcqeghilkmfawyvarndcqeghilkmfawyvarndcqeghilkmfawyvarndcqe
+fish        ghilkmfawyvarndcqeghilkmfawyvarndcqeghilkmfawyvarndcqeghilkmfawyvarndcqe---------aaa-------------------------
 
 fugufish    ghilkmfawyvarndcqeggilkmfawyvadcqeghillmfawyvarndcqeghilkmfawyvarndcqeghilkghilkmfawyvarndcqeggilkmfawyvadcqe
 
-ape   aiahgaghalilkghilkmfawyvarndcqegawyvarndcqeghilaaaaawyvarndcqeghiltawytarndcqeghitkmfawyv
+ape         aiahgaghalilkghilkmfawyvarndcqegawyvarndcqeghilaaaaawyvarndcqeghiltawytarndcqeghitkmfawyv----------aaa-------
 
-chimp   aiahgaghalilkghilkmfawyvrndcqegawyvandcqeghilaaaaawarndcqeghilkmtawytarndcqeghitkmfawyv
+chimp       aiahgaghalilkghilkmfawyvrndcqegawyvandcqeghilaaaaawarndcqeghilkmtawytarndcqeghitkmfawyv-----------aaaa-aaa--a
+
+ape_chimp        aiahgaghalilkghilkmfawyvaancveeaayvaarcqsahalaaaaaaarnvarndciakhiarasaqnrnq-qeitmtaafaa------bbb---aaa--a----
+fish_fugufish    ghilkmfawyvarndcqeghilkmfawyvadaqyqeahimkafalavaaaqaqhvhklkafasavarcqaqhi-k-hilkmaaayva---cc-------fa---a----
+root             ahilkmfhwyvlrnhclkmfiwymfawyvaeaayvaahiqsahalavaaaaarhvaklkafakaiarasaqhrnk-qeitmaaafaa---------dd-aaa--a----
