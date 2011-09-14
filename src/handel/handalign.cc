@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
   opts.print_title ("Mutation parameters");
 
   opts.add ("l -seq-len", mean_seq_len = 100, "expected sequence length at equilibrium");
-  opts.add ("d -delete-rate", delete_rate = .11, "deletion rate");
+  opts.add ("d -delete-rate", delete_rate = .01, "deletion rate");
   opts.add ("g -gap-len", gap_len = 5, "expected deletion length");
 
   opts.newline();
