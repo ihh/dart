@@ -6,7 +6,7 @@ use SequenceIterator qw(iterseq printseq revcomp);
 my $usage = "";
 $usage .= "$0 -- convert DNA to tokenized-codon sequence (or protein sequence)\n";
 $usage .= "\n";
-$usage .= "Usage: $0 [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [filename(s)]\n";
+$usage .= "Usage: $0 [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [-warnstop] [filename(s)]\n";
 $usage .= "\n";
 $usage .= "The 'frame' (i.e. reading frame) can be 0, 1, or 2.\n";
 $usage .= "\n";
@@ -66,16 +66,20 @@ my (%aa, %tok);
 	 'n'=>'z', 'nn'=>'Z', 'nnn'=>'X',
 	 map (($_ x 3 => $_), qw(* - ? . x)) );
 
+my %is_stop = map (($_ => 1), qw(tag taa tga));
+
 my $frame = 0;
 my $revcomp = 0;
 my $use_aa = 0;
 my $is_rna = 0;
 my $untokenize = 0;
+my $warn_stop = 0;
 
 GetOptions ("frame=i" => \$frame,
 	    "revcomp" => \$revcomp,
 	    "aa"  => \$use_aa,
 	    "rna"  => \$is_rna,
+	    "warnstop" => \$warn_stop,
 	    "decode" => \$untokenize) or die $usage;
 
 my $trans_ref = $use_aa ? \%aa : \%tok;
@@ -89,33 +93,38 @@ for my $filename (@ARGV) {
     iterseq ($filename,
 	     sub {
 		 my ($name, $seq) = @_;
-		 printseq ($name, $untokenize ? untokenize($seq) : tokenize($seq));
+		 printseq ($name, $untokenize ? untokenize($seq,$name) : tokenize($seq,$name));
 	     });
 }
 
 sub tokenize {
-    my ($seq) = @_;
+    my ($seq, $name) = @_;
     $seq = lc $seq;
     $seq =~ s/u/t/g;  # do this even if -rna was not specified; no need to punish user
     if ($revcomp) { $seq = revcomp ($seq) }
     my $trans = "";
     for (my $pos = $frame; $pos < length($seq); $pos += 3) {
 	$codon = substr ($seq, $pos, 3);
-	if (exists $$trans_ref{$codon}) { $trans .= $$trans_ref{$codon} }
-	elsif (length($codon) == 1) { $trans .= $$trans_ref{'n'}; warn "Extra character $codon at end of input\n" }
-	elsif (length($codon) == 2) { $trans .= $$trans_ref{'nn'}; warn "Extra characters $codon at end of input\n" }
-	else { $trans .= $$trans_ref{'nnn'}; warn "Unrecognized codon $codon at position $pos of input\n" }
+	if (exists $$trans_ref{$codon}) {
+	    $trans .= $$trans_ref{$codon};
+	    warn "Stop codon $codon found while tokenizing sequence $name\n" if $warn_stop && $is_stop{$codon};
+	} elsif (length($codon) == 1) { $trans .= $$trans_ref{'n'}; warn "Extra character $codon at end of sequence $name\n" }
+	elsif (length($codon) == 2) { $trans .= $$trans_ref{'nn'}; warn "Extra characters $codon at end of sequence $name\n" }
+	else { $trans .= $$trans_ref{'nnn'}; warn "Unrecognized codon $codon at position $pos of sequence $name\n" }
     }
     return $trans;
 }
 
 sub untokenize {
-    my ($seq) = @_;
+    my ($seq, $name) = @_;
     my $untrans = "n" x $frame;
     for (my $pos = 0; $pos < length($seq); ++$pos) {
 	$token = substr ($seq, $pos, 1);
-	if (exists $untok{$token}) { $untrans .= $untok{$token} }
-	else { $untrans .= 'nnn'; warn "Unrecognized token $token at position $pos of input\n" }
+	if (exists $untok{$token}) {
+	    my $codon = $untok{$token};
+	    warn "Stop codon $codon found while de-tokenizing sequence $name\n" if $warn_stop && $is_stop{$codon};
+	    $untrans .= $codon;
+	} else { $untrans .= 'nnn'; warn "Unrecognized token $token at position $pos of sequence $name\n" }
     }
     if ($revcomp) { $untrans = revcomp ($untrans) }
     if ($is_rna) { $untrans =~ s/t/u/g }
