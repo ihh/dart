@@ -103,7 +103,7 @@ sub tokenize {
     my ($seq, $name) = @_;
     $seq = lc $seq;
     $seq =~ s/u/t/g;  # do this even if -rna was not specified; no need to punish user
-    if ($revcomp) { $seq = revcomp ($seq) }
+    if ($revcomp) { $seq = revcomp ($seq); $name .= " (reverse strand)" }
     my $trans = "";
   CODON: for (my $pos = $frame; $pos < length($seq); $pos += 3) {
 	my $remaining_chars = length($seq) - ($pos + 3);
@@ -124,6 +124,7 @@ sub tokenize {
 sub untokenize {
     my ($seq, $name) = @_;
     my $untrans = "n" x $frame;
+    if ($revcomp) { $name .= " (reverse strand)" }
     for (my $pos = 0; $pos < length($seq); ++$pos) {
 	$token = substr ($seq, $pos, 1);
 	if (exists $untok{$token}) { $untrans .= $untok{$token} }
