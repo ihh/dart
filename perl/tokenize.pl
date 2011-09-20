@@ -127,7 +127,7 @@ sub untokenize {
     for (my $pos = 0; $pos < length($seq); ++$pos) {
 	$token = substr ($seq, $pos, 1);
 	if (exists $untok{$token}) { $untrans .= $untok{$token} }
-	else { $untrans .= 'nnn'; warn "Unrecognized token '$token' at position $pos of sequence $name\n" }
+	else { $untrans .= 'nnn'; warn "Unrecognized token ($token) at position $pos of sequence $name\n" }
     }
     if ($revcomp) { $untrans = revcomp ($untrans) }
     if ($is_rna) { $untrans =~ s/t/u/g }
