@@ -124,7 +124,6 @@ sub tokenize {
 sub untokenize {
     my ($seq, $name) = @_;
     my $untrans = "n" x $frame;
-    if ($revcomp) { $name .= " (reverse strand)" }
     for (my $pos = 0; $pos < length($seq); ++$pos) {
 	$token = substr ($seq, $pos, 1);
 	if (exists $untok{$token}) { $untrans .= $untok{$token} }
