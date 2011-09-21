@@ -252,7 +252,7 @@ void ECFG_builder::init_hybrid_chain (ECFG_matrix_set& ems, SymIndex& term2chain
       SExpr *cpt_term_parent_ptr = (**component_sexpr).find_any(EG_CHAIN_TERM " " EG_CHAIN_TERMINAL);
       if (cpt_term_parent_ptr == NULL)
 	THROWEXPR ("In (" << **component_sexpr << "): " EG_CHAIN_TERM " not found");
-      const vector<sstring> component_terminals = cpt_term_parent_ptr->atoms_to_strings();
+      const vector<sstring> component_terminals = cpt_term_parent_ptr->value().atoms_to_strings();
       if (component_terminals.size() == 0)
 	THROWEXPR ("In (" << **component_sexpr << "): component terminal list empty");
 
