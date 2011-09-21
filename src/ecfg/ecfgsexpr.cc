@@ -520,7 +520,7 @@ void ECFG_builder::ECFG_rule_block::parse (ECFG_scores& ecfg)
   if (from_postemit)
     {
       sstring emit_state_placeholder_name;
-      emit_state_placeholder_name << ' ' << lhs_name;
+      emit_state_placeholder_name << ' ' << lhs_name;   // emit states are flagged by prefixing the state name with a space... hacky
       if (info.name.size() && info.name != emit_state_placeholder_name)
 	{
 	  if (info.total_size() == 0)
@@ -564,7 +564,7 @@ void ECFG_builder::ECFG_rule_block::parse (ECFG_scores& ecfg)
 	    THROWEXPR ("In (" << *sexpr << ")\nLHS/RHS mismatch at position " << lpos << " of LHS, " << rpos << " of RHS");
 	}
       // Check state not already initialised
-      if (info.name.size() && info.name != sstring (ECFG_post_emit_character))
+      if (info.name.size() && info.name[0] != ' ')   // emit states are flagged by prefixing the state name with a space... hacky
 	THROWEXPR ("In (" << *sexpr << ")\nBad '" << EG_TRANSFORM << "' rule: describes emit state, but state already initialised");
 
       // Initialise the emit state
