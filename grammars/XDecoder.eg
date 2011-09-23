@@ -1,0 +1,745 @@
+; RNA-decoder grammar in Xrate: Xdecoder
+;; This xrate file reproduces the grammar described in the following paper:
+;;  A comparative method for finding and folding RNA secondary structures within protein-coding regions.
+;;  Pedersen JS, Meyer IM, Forsberg R, Simmonds P, Hein J.
+;;  Nucleic Acids Res. 2004 Sep 24;32(16):4925-36.
+;;  http://www.ncbi.nlm.nih.gov/pubmed/15448187
+
+; This used to be classFactor.oldRates.eg 
+(grammar
+ (name Xdecoder)
+ (update-rates 1)
+ (update-rules 1)
+ (parametric)
+(fold-string-tag SS_cons)
+ (const-pgroup
+  ((newNS .999)
+   (newS 0.000687668))
+  ((preSbif 0.833931)
+   (preSend 0.166662))
+  ((endClass 1)
+   (continueClass 1.07443e-06))
+  ((S2B 0.750019)
+   (S2L 0.250173))
+  ((F2F 0.835088)
+   (F2B 0.165053))
+  ((L2U 0.840314)
+   (L2F 0.160095))
+  ((nulproba0 0.266277)
+   (nulprobc0 0.226095)
+   (nulprobg0 0.279322)
+   (nulprobu0 0.228775))
+  ((nulproba1 0.23849)
+   (nulprobc1 0.257028)
+   (nulprobg1 0.245025)
+   (nulprobu1 0.259715))
+  ((nulproba2 0.185694)
+   (nulprobc2 0.303549)
+   (nulprobg2 0.185308)
+   (nulprobu2 0.325787))
+
+
+
+  )  ;; end pgroup
+
+; now the (trainable) rate parameters:
+ (const-rate
+  (nuldummya2a 0)
+  (nulratea2c 0.0118087)
+  (nulratea2g 0.0973956)
+  (nulratea2u 0.0121492)
+  (nulratec2a 0.00561694)
+  (nuldummyc2c 0)
+  (nulratec2g 0.00472654)
+  (nulratec2u 0.0634164)
+  (nulrateg2a 0.0571541)
+  (nulrateg2c 0.00621513)
+  (nuldummyg2g 0)
+  (nulrateg2u 0.00411754)
+  (nulrateu2a 0.00960499)
+  (nulrateu2c 0.130308)
+  (nulrateu2g 0.00572305)
+  (nuldummyu2u 0)
+  
+
+  ; Rate class multipliers
+;;   (rateClassMul4 0.0130754); slow
+;;   (rateClassMul3 4.64603); fast 
+;;   (rateClassMul2 0.178377); slow-ish
+;;   (rateClassMul1 1); unchanged
+  )  ;; end rate
+
+; These rates are taken from the RNAdecoder paper.  For now not trainable, for testing purposes
+(const-rate 
+ (kappa0 4.84)
+ (kappa1 4.28)
+ (kappa2 19.71)
+
+; as per XML file, kappaLi =kappai for i!=2
+; (kappaL0 1.605)                                                                                                             
+; (kappaL1  16.07)  
+ (kappaL0 4.84)
+ (kappaL1  4.84)
+ (kappaL2  8.621)
+ ; Codon multipliers - also from RNAdecoder paper
+ (Lmul0 0.206)
+ (Lmul1 0.115)
+ (Lmul2 1)
+
+;;  ; HARD-CODED TREE-SCALING RATE PARAMETERS - problems with macro
+ (r00 .0424)
+ (r01 .02369)
+ (r02 .206)
+
+ (r10 .02369)
+ (r11 .013)
+ (r12 .115)
+
+ (r20 .206)
+ (r21 .02369)
+ (r22 1)   
+
+ ; structure-related rate parameters.  Taken from RNAdecoder paper
+ (structMul0 .0461)
+ (structMul1 .0573)
+ (structMul2 1) 
+ (r_struct .384)
+ (r_loop 0.476)
+)
+(rate 
+  ; previous trained values :
+  (rateClassMul1 3)
+  (rateClassMul2 0.2)
+  (rateClassMul3 1)
+  (rateClassMul4 1)   
+)
+
+;; Pairing submodel parameters
+;; These 20 probabilities are allowed to be trained.  Most rate parameters held fixed.
+(const-pgroup 
+  ((PPaa 0.0103158)
+   (PPca 0.0147924)
+   (PPga 1.03112e-11)
+   (PPua 0.103092)
+   (PPac 0.0103158)
+   (PPcc 1.03112e-11)
+   (PPgc 0.247586)
+   (PPuc 0.0190773)
+   (PPag 1.03112e-11)
+   (PPcg 0.263706)
+   (PPgg 1.96456e-11)
+   (PPug 0.0618964)
+   (PPau 0.133879)
+   (PPcu 0.0412632)
+   (PPgu 0.0826409)
+   (PPuu 0.0118662))
+
+); end pairing parameters pgroup
+
+
+ ;; begin high-level subgrammar
+ 
+;; begin -> pre_ns | pre_s
+ (nonterminal (name begin))
+ (transform (from (begin)) (to (pre_ns)) (prob newNS))
+ (transform (prob newS) (from (begin)) (to (pre_s)))
+
+ ;; pre_ns -> nonstruct inter_ns_s (note: different from RNAdecoder grammar.  
+ ;; This allows length constraint which is useful for whole-genome scans)
+ (nonterminal (name pre_ns))
+ (transform (from (pre_ns)) (to (nonstruct inter_ns_s)))
+
+ ;; pre_s -> struct inter_ns_s | end
+ (nonterminal (name pre_s))
+ (transform (prob preSbif) (from (pre_s)) (to (struct-bif-inter_ns_s)))
+ (transform (prob preSend) (from (pre_s)) (to ()))
+
+ (nonterminal (name struct-bif-inter_ns_s))
+ (transform (from (struct-bif-inter_ns_s)) (to (struct inter_ns_s))) 
+
+ ;; inter_ns_s -> pre_ns | pre_s
+ (nonterminal (name inter_ns_s))
+ (transform (prob newNS) (from (inter_ns_s)) (to (pre_ns)))
+ (transform (prob newS) (from (inter_ns_s)) (to (pre_s)))
+
+ ;; end high-level grammar
+
+ ;; nonstruct submodel
+ (nonterminal (name nonstruct))
+
+ (&define CLASSES 4)
+
+(&foreach X (0 1 2) ; codon positions				 
+	  (&foreach-integer C (1 CLASSES)
+	   (chain
+	    (terminal ((&. NUL C X )))
+	    (update-policy parametric)
+	    (&foreach-token i
+			    (initial (state (i)) (prob ((&. nulprob i X)))) ; each codon position has its own stationary dist
+			   )
+		; transitions
+		(mutate (from (a)) (to (g)) (rate (&. nulprob g X) * (&. kappa X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (c)) (to (u)) (rate (&. nulprob u X) * (&. kappa X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (g)) (to (a)) (rate (&. nulprob a X) * (&. kappa X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (u)) (to (c)) (rate (&. nulprob c X) * (&. kappa X) * (&. rateClassMul C) (&. Lmul X)))
+
+		; transversions
+		(mutate (from (a)) (to (c)) (rate (&. nulprob c X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (a)) (to (u)) (rate (&. nulprob u X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (c)) (to (a)) (rate (&. nulprob a X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (c)) (to (g)) (rate (&. nulprob g X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (g)) (to (c)) (rate (&. nulprob c X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (g)) (to (u)) (rate (&. nulprob u X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (u)) (to (a)) (rate (&. nulprob a X) * (&. rateClassMul C) (&. Lmul X)))
+		(mutate (from (u)) (to (g)) (rate (&. nulprob g X) * (&. rateClassMul C) (&. Lmul X)))
+		)
+	   ); end C loop
+
+	   ;; nonstruct -> nsC
+
+	   ;;  In the chain NULCX, (C is class, X codon)
+	   ;; the terminal evolves with rate scaled by  rateClassMulC and LmulX multipliers
+	   ;; in addition to the HKY model's kappa parameter (transition/transversion ratio)
+	  (transform (from (nonstruct)) ( to ((&. ns X)))(prob (1 / 3)))
+	  (transform (from ((&. ns X))) (to ((&. ns X _emit) ns_next)))
+	  (nonterminal (name (&. ns X _emit) )(sum-from))
+
+	   ;; ns_next -> end | nxY forall codon positions Y
+	   (transform (prob endClass) (from ((&. ns _next))) (to ())) ; end the nonStructural block region
+	   (&foreach Y (0 1 2) (transform (prob (continueClass / 3)) (from (ns_next) ) (to ((&. ns Y)))))
+
+	   (&foreach-integer C (1 CLASSES) 
+;			     (&? (&= X 2)
+;				(&? (&= C 1) 
+;				(transform (prob 1) (from ((&. ns X _emit))) (to ((&. ns C X _emit ) ))) 
+;				() ); Codon 2 is only allowed rate class 1 (unchanged)
+				(transform (prob (1 / CLASSES))(from ((&. ns X _emit))) (to  ((&. ns C X _emit) )))
+				;)
+			     
+			     (transform (from ((&. ns C X _emit))) (to ((&. NUL C X) (&. ns C X _emit *)))
+					(annotate (row SubRate) (column (&. NUL C X)) (label (&chr (&+ C (&ord 0)))))
+					(annotate (row SS_cons) (column (&. NUL C X)) (label ,)) 
+					(annotate (row RdFrame) (column (&. NUL C X)) (label X)))
+			     (transform (from ((&. ns C X _emit *))) (to () ) )
+				
+			     ); end class loop
+	   ); end X loop
+; NB: the old codon-centric way, using modular arithmetic to enforce reading frame was like this:
+; (transform (prob newClass) (from ((&. ns C X *))) (to ((&. ns D (&% (&+ X 1) 3) )))))))
+
+;; End nonstructural submodel
+
+ ;; structural submodel
+ ;; struct -> pfoldCodingS (NB 'noncoding' sections are just an area of position-2 columns)
+
+ (nonterminal (name struct))
+ (transform (prob 1) (from (struct)) (to (pfoldCodingFi)))
+; old:  (transform (prob struct2pfoldS) (from (struct)) (to (pfoldS)))
+
+ ;; PFOLD subgrammar (coding and nonCoding (really just codon pos 2 ))
+ ;; pfoldCodingS -> pfoldCodingL | pfoldCodingB
+ (nonterminal (name pfoldCodingS))
+ (transform (prob S2L) (from (pfoldCodingS)) (to (pfoldCodingL)))
+ (transform (prob S2B) (from (pfoldCodingS)) (to (pfoldCodingB)))
+
+
+; A pfoldCodingF nonterminal can be made into any pfoldCodingXY where X,Y are codon positions
+(&foreach X (0 1 2)
+		  (&foreach Y (0 1 2)
+ (transform (prob (1 / ( 9 * CLASSES) )) (from (pfoldCodingF)) (to ((&. pfoldCodingF X Y)) ) ) ))
+; A pfoldCodingFi nonterminal can be made into any pfoldCodingXY where X,Y are codon positions
+(&foreach X (0 1 2)
+		  (&foreach Y (0 1 2)
+ (transform (prob (1 / (9 * CLASSES) )) (from (pfoldCodingFi)) (to ((&. pfoldCodingFi X Y)) ) ) ))
+
+
+ ; Big nested loop for X,Y codon tuple.  Only one of these will be consistent with the alignment's annotation
+ ;; pfoldCodingF -> PP_LXY pfoldCodingF* PP_RXY
+(&foreach X (0 1 2)
+		  (&foreach Y (0 1 2)
+ (transform (gaps-ok)
+  (from ((&. pfoldCodingF X Y)))
+  (to ((&. PP_L X Y) (&. pfoldCodingF X Y *) (&. PP_R X Y)))
+  (annotate (row SubRate) (column (&. PP_L X Y)) (label ,))
+  (annotate (row SubRate) (column (&. PP_R X Y)) (label ,))
+  (annotate (row SS_cons) (column (&. PP_L X Y)) (label <))
+  (annotate (row SS_cons) (column (&. PP_R X Y)) (label >))
+  (annotate (row RdFrame) (column (&. PP_L X Y)) (label X))
+  (annotate (row RdFrame) (column (&. PP_R X Y)) (label Y)))
+
+ (transform (gaps-ok)
+  (from ((&. pfoldCodingFi X Y)))
+  (to ((&. PP_L X Y) (&. pfoldCodingFi X Y *) (&. PP_R X Y)))
+  (annotate (row SubRate) (column (&. PP_L X Y)) (label ,))
+  (annotate (row SubRate) (column (&. PP_R X Y)) (label ,))
+  (annotate (row SS_cons) (column (&. PP_L X Y)) (label <))
+  (annotate (row SS_cons) (column (&. PP_R X Y)) (label >))
+  (annotate (row RdFrame) (column (&. PP_L X Y)) (label X))
+  (annotate (row RdFrame) (column (&. PP_R X Y)) (label Y))
+;;  (minlen 8)
+  )
+
+
+ ;; pfoldCodingFi* -> pfoldCodingF 
+ (transform (prob 1) (from ((&. pfoldCodingFi X Y *))) (to (pfoldCodingF)))
+ ;; pfoldCodingF* -> pfoldCodingF | pfoldCodingL pfoldCodingS
+ (transform (prob F2F) (from ((&. pfoldCodingF X Y *))) (to (pfoldCodingF)))
+ (transform (prob F2B) (from ((&. pfoldCodingF X Y *))) (to (pfoldCodingB))) ))
+
+ (nonterminal (name pfoldCodingB))
+ (transform (prob 1) (from (pfoldCodingB)) (to (pfoldCodingL pfoldCodingS))); probability 1 event
+
+ ;; pfoldCodingL -> pfoldCodingF | pfoldCodingU
+ (nonterminal (name pfoldCodingL))
+ (transform (prob L2F) (from (pfoldCodingL)) (to (pfoldCodingFi)))
+ (transform (prob L2U) (from (pfoldCodingL)) (to (pfoldCodingU)))
+
+ ;; pfoldCodingU -> NUC
+;; (nonterminal (name pfoldCodingU) (minlen 4))
+(nonterminal (name pfoldCodingU))
+
+(&foreach X (0 1 2)
+  (transform (from (pfoldCodingU)) (to ((&. pfoldCodingU X))) (prob (1 / (3 * CLASSES) )) ) ; probability 1 event
+
+ (transform (gaps-ok)
+ (from ((&. pfoldCodingU X)))			
+  (to ((&. L X) (&. pfoldCodingU X *)  ) )
+  (annotate (row SubRate) (column (&. L X) ) (label ,)) ; no rate classes within structural submodel (I think...)
+  (annotate (row SS_cons) (column (&. L X) ) (label -))
+  (annotate (row RdFrame) (column (&. L X) ) (label X))) 
+ (&foreach Y (0 1 2)
+	   (transform (prob (1 / ( 3 * CLASSES ))) (from ((&. pfoldCodingU X *))) (to ((&. pfoldCodingU Y)))) )
+ (transform (prob 1) (from ((&. pfoldCodingU X *))) (to ())) ; probability 1 event
+ )
+
+
+(wiggle (name pairProb)
+(&foreach X (0 1 2)
+	;	  (component (terminal (&. L X) )  (weight 1))
+		  (&foreach Y (0 1 2)
+					(component (terminal (&. PP_L X Y) )  (weight 1))
+					(component (terminal (&. PP_R X Y) )  (weight 1))					
+					)
+		  )
+)
+
+
+ ;; Codon grammars
+ ;; outer loop over reading frames
+ (&foreach X (0 1 2)
+	   ;; matrix (LX)
+	   ;; codon-specific chain, for codons in structure (e.g. loops).  
+	   ;; Each nucleotide in codon position X has the same equilibrium distribution as the non
+	   ;; structural chain, but its rate is scaled by r_loop, and there is a different kappa.  
+       ;; At present, there are no rate-class multipliers
+	   ;; for loop regions.  This is a possible extension (e.g. to account for pseudoknots)
+	   (chain
+	    (terminal ((&. L X)))
+	    (update-policy parametric)
+	    (&foreach-token i
+			    (initial (state (i)) (prob ((&. nulprob i X)))))
+		;transitions
+		(mutate (from (u)) (to (c)) (rate r_loop *  (&. nulprob c X) * (&. kappaL X) * (&. Lmul X)))
+		(mutate (from (a)) (to (g)) (rate r_loop *  (&. nulprob g X) * (&. kappaL X) * (&. Lmul X)))
+		(mutate (from (c)) (to (u)) (rate r_loop *  (&. nulprob u X) * (&. kappaL X) * (&. Lmul X)))
+		(mutate (from (g)) (to (a)) (rate r_loop *  (&. nulprob a X) * (&. kappaL X) * (&. Lmul X)))
+
+		; transversions
+		(mutate (from (a)) (to (c)) (rate r_loop *  (&. nulprob c X) * (&. Lmul X)))
+		(mutate (from (a)) (to (u)) (rate r_loop *  (&. nulprob u X) * (&. Lmul X)))
+		(mutate (from (c)) (to (a)) (rate r_loop *  (&. nulprob a X) * (&. Lmul X)))
+		(mutate (from (c)) (to (g)) (rate r_loop *  (&. nulprob g X) * (&. Lmul X)))
+		(mutate (from (g)) (to (c)) (rate r_loop *  (&. nulprob c X) * (&. Lmul X)))
+		(mutate (from (g)) (to (u)) (rate r_loop *  (&. nulprob u X) * (&. Lmul X)))
+		(mutate (from (u)) (to (a)) (rate r_loop *  (&. nulprob a X) * (&. Lmul X)))
+		(mutate (from (u)) (to (g)) (rate r_loop *  (&. nulprob g X) * (&. Lmul X)))
+		)
+
+	   ;; Inner loop over reading frames, for
+	   ;; dinucleotide/codon model.  This governs basepair-codon interactions
+	   (&foreach Y (0 1 2)
+		     ;; matrix (PP_LXY PP_RXY)
+		     (chain
+		      (terminal ((&. PP_L X Y) (&. PP_R X Y)))
+		      (update-policy parametric)
+		      (&foreach-token i
+				      (&foreach-token j
+						      (initial (state (i j)) (prob ((&. PP i j))))
+						      (&foreach-token k
+								      (&foreach-token l
+										      (&? (&and (&!= j l) (&= i k))
+										            ; i=k, j!=l
+													(mutate (from (i j)) (to (k l)) 
+															(rate 
+															(&. PP i j 2 k l) ; (starting rate)
+															(&. structMul Y)   ; ('right' position change only)
+							   (&. r X Y) .5 r_struct ) )         ; (tree-scale rate x,y  = r_struct(rx+ry)/2
+															() )
+
+										      (&? (&and (&= j l) (&!= i k))
+													; j=l, i!=k
+													(mutate (from (i j)) (to (k l)) 
+															(rate 
+															(&. PP i j 2 k l) ; (starting rate)
+															(&. structMul X)   ; ('left' position change only)
+							   (&. r X Y) .5 r_struct) )         ; (tree-scale rate x,y  = r_struct(rx+ry)/2
+;							  (&* (&+ (&. Lmul X) (&. Lmul Y)) .5 r_struct)))      ; (tree-scale rate x,y  = r_struct(rx+ry)/2
+													() )
+							                      
+										      (&? (&and (&!= j l) (&!= i k))
+												 ; j!=l, i!=k
+													(mutate (from (i j)) (to (k l)) 
+															(rate 
+															(&. PP i j 2 k l)                 ; (starting rate)
+															(&. structMul X) (&. structMul Y)   ; (both positions change)
+;							  (&+ (&. Lmul X) (&. Lmul Y) ) .5 .38)         ; (tree-scale rate x,y  = r_struct(rx+ry)/2
+							   (&. r X Y) .5 r_struct))         ; (tree-scale rate x,y  = r_struct(rx+ry)/2
+															 () 
+															  ))))))))
+													
+															
+
+ (const-rate
+  (PPaa2ca 0.0600986)
+  (PPaa2ga 0.0560814)
+  (PPaa2ua 0.722548)
+  (PPaa2ac 0.00801522)
+  (PPaa2cc 0.000500964)
+  (PPaa2gc 0.220784)
+  (PPaa2uc 0.00275364)
+  (PPaa2ag 0.0555913)
+  (PPaa2cg 0.181145)
+  (PPaa2gg 0.0123296)
+  (PPaa2ug 0.0732074)
+  (PPaa2au 0.38294)
+  (PPaa2cu 0.00263527)
+  (PPaa2gu 0.104946)
+  (PPaa2uu 0.0101865)
+  (PPca2aa 0.0550617)
+  (PPca2ga 0.000248377)
+  (PPca2ua 1.52268)
+  (PPca2ac 0.0106921)
+  (PPca2cc 0.00909657)
+  (PPca2gc 0.0226681)
+  (PPca2uc 0.048088)
+  (PPca2ag 0.0116228)
+  (PPca2cg 1.44542)
+  (PPca2gg 6.52292)
+  (PPca2ug 0.142471)
+  (PPca2au 0.144192)
+  (PPca2cu 0.0285873)
+  (PPca2gu 0.0448919)
+  (PPca2uu 0.0758845)
+  (PPga2aa 0.0468908)
+  (PPga2ca 0.000179098)
+  (PPga2ua 0.0664109)
+  (PPga2ac 0.0136496)
+  (PPga2cc 2.13375)
+  (PPga2gc 0.359512)
+  (PPga2uc 0.0365082)
+  (PPga2ag 0.0559623)
+  (PPga2cg 0.289524)
+  (PPga2gg 0.123137)
+  (PPga2ug 0.0249727)
+  (PPga2au 0.0924175)
+  (PPga2cu 0.00720614)
+  (PPga2gu 0.138561)
+  (PPga2uu 1.10955)
+  (PPua2aa 0.0116365)
+  (PPua2ca 0.0264064)
+  (PPua2ga 0.00130226)
+  (PPua2ac 0.00152053)
+  (PPua2cc 0.000164548)
+  (PPua2gc 0.169927)
+  (PPua2uc 0.015992)
+  (PPua2ag 0.00110859)
+  (PPua2cg 0.595657)
+  (PPua2gg 0.00122839)
+  (PPua2ug 0.18163)
+  (PPua2au 0.190888)
+  (PPua2cu 0.00188783)
+  (PPua2gu 0.0477751)
+  (PPua2uu 0.0068114)
+  (PPac2aa 0.00841425)
+  (PPac2ca 0.0116368)
+  (PPac2ga 0.016023)
+  (PPac2ua 0.100195)
+  (PPac2cc 7.48296)
+  (PPac2gc 0.801266)
+  (PPac2uc 0.0429033)
+  (PPac2ag 0.0098591)
+  (PPac2cg 0.14827)
+  (PPac2gg 0.00710364)
+  (PPac2ug 0.0544213)
+  (PPac2au 2.24099)
+  (PPac2cu 0.00174961)
+  (PPac2gu 0.158405)
+  (PPac2uu 0.0538624)
+  (PPcc2aa 0.00154035)
+  (PPcc2ca 0.0290034)
+  (PPcc2ga 3.09766)
+  (PPcc2ua 0.0312161)
+  (PPcc2ac 0.00018022)
+  (PPcc2gc 0.756131)
+  (PPcc2uc 0.000115355)
+  (PPcc2ag 0.00178109)
+  (PPcc2cg 0.880955)
+  (PPcc2gg 0.00182354)
+  (PPcc2ug 0.000357246)
+  (PPcc2au 0.307587)
+  (PPcc2cu 0.305967)
+  (PPcc2gu 0.00228456)
+  (PPcc2uu 0.424535)
+  (PPgc2aa 0.00226888)
+  (PPgc2ca 0.000221077)
+  (PPgc2ga 0.00442428)
+  (PPgc2ua 0.108136)
+  (PPgc2ac 0.0077065)
+  (PPgc2cc 0.00265237)
+  (PPgc2uc 0.0047607)
+  (PPgc2ag 0.00252173)
+  (PPgc2cg 0.161692)
+  (PPgc2gg 0.00468077)
+  (PPgc2ug 0.0369679)
+  (PPgc2au 0.363911)
+  (PPgc2cu 0.000237221)
+  (PPgc2gu 0.146935)
+  (PPgc2uu 0.000921564)
+  (PPuc2aa 0.0050849)
+  (PPuc2ca 0.0929205)
+  (PPuc2ga 0.0680928)
+  (PPuc2ua 1.74279)
+  (PPuc2ac 0.0699375)
+  (PPuc2cc 0.00010949)
+  (PPuc2gc 0.767942)
+  (PPuc2ag 0.0920627)
+  (PPuc2cg 0.221304)
+  (PPuc2gg 7.51353)
+  (PPuc2ug 0.224965)
+  (PPuc2au 0.416059)
+  (PPuc2cu 0.725971)
+  (PPuc2gu 0.54302)
+  (PPuc2uu 0.395759)
+  (PPag2aa 0.0736214)
+  (PPag2ca 0.0133319)
+  (PPag2ga 0.0851861)
+  (PPag2ua 0.0884144)
+  (PPag2ac 0.0129818)
+  (PPag2cc 0.000689574)
+  (PPag2gc 0.314135)
+  (PPag2uc 0.055443)
+  (PPag2cg 0.378244)
+  (PPag2gg 0.684434)
+  (PPag2ug 0.130778)
+  (PPag2au 0.345818)
+  (PPag2cu 0.0105537)
+  (PPag2gu 0.102139)
+  (PPag2uu 0.00331333)
+  (PPcg2aa 0.00203881)
+  (PPcg2ca 0.017434)
+  (PPcg2ga 0.0039756)
+  (PPcg2ua 0.418131)
+  (PPcg2ac 0.00164065)
+  (PPcg2cc 0.00334865)
+  (PPcg2gc 0.178829)
+  (PPcg2uc 0.00127102)
+  (PPcg2ag 0.00338039)
+  (PPcg2gg 0.0020812)
+  (PPcg2ug 0.168745)
+  (PPcg2au 0.145702)
+  (PPcg2cu 0.00244459)
+  (PPcg2gu 0.0388902)
+  (PPcg2uu 0.00342286)
+  (PPgg2aa 0.00921008)
+  (PPgg2ca 2.78353)
+  (PPgg2ga 0.110856)
+  (PPgg2ua 0.0565478)
+  (PPgg2ac 0.00539509)
+  (PPgg2cc 0.000473867)
+  (PPgg2gc 0.329049)
+  (PPgg2uc 1.14866)
+  (PPgg2ag 0.405389)
+  (PPgg2cg 0.135011)
+  (PPgg2ug 0.237254)
+  (PPgg2au 0.0942869)
+  (PPgg2cu 5.99633)
+  (PPgg2gu 0.101844)
+  (PPgg2uu 6.79864)
+  (PPug2aa 0.00304058)
+  (PPug2ca 0.00624757)
+  (PPug2ga 0.00124873)
+  (PPug2ua 0.470255)
+  (PPug2ac 0.00227149)
+  (PPug2cc 3.91899)
+  (PPug2gc 0.150634)
+  (PPug2uc 0.0053021)
+  (PPug2ag 0.00425216)
+  (PPug2cg 0.623185)
+  (PPug2gg 0.0132827)
+  (PPug2au 0.0928019)
+  (PPug2cu 0.00054114)
+  (PPug2gu 0.0501015)
+  (PPug2uu 0.0175326)
+  (PPau2aa 0.00707689)
+  (PPau2ca 0.00276467)
+  (PPau2ga 0.00204505)
+  (PPau2ua 0.217944)
+  (PPau2ac 0.0407537)
+  (PPau2cc 0.00189936)
+  (PPau2gc 0.656173)
+  (PPau2uc 0.00432559)
+  (PPau2ag 0.00497806)
+  (PPau2cg 0.236585)
+  (PPau2gg 0.00241152)
+  (PPau2ug 0.0408929)
+  (PPau2cu 0.00270805)
+  (PPau2gu 0.193703)
+  (PPau2uu 0.0171095)
+  (PPcu2aa 0.00270672)
+  (PPcu2ca 0.0330145)
+  (PPcu2ga 0.0093404)
+  (PPcu2ua 0.124358)
+  (PPcu2ac 0.00153177)
+  (PPcu2cc 0.107342)
+  (PPcu2gc 0.0245369)
+  (PPcu2uc 0.459612)
+  (PPcu2ag 0.0126742)
+  (PPcu2cg 0.225204)
+  (PPcu2gg 3.56543)
+  (PPcu2ug 0.0134794)
+  (PPcu2au 0.157059)
+  (PPcu2gu 0.0106611)
+  (PPcu2uu 0.116896)
+  (PPgu2aa 0.00428753)
+  (PPgu2ca 0.00192258)
+  (PPgu2ga 0.00675078)
+  (PPgu2ua 0.120924)
+  (PPgu2ac 0.00612704)
+  (PPgu2cc 2.70186)
+  (PPgu2gc 0.58713)
+  (PPgu2uc 0.0124049)
+  (PPgu2ag 0.00330918)
+  (PPgu2cg 0.139835)
+  (PPgu2gg 0.00567916)
+  (PPgu2ug 0.0489215)
+  (PPgu2au 0.427378)
+  (PPgu2cu 0.000420502)
+  (PPgu2uu 0.0129376)
+  (PPuu2aa 0.00654874)
+  (PPuu2ca 0.0518951)
+  (PPuu2ga 9.80974)
+  (PPuu2ua 0.268948)
+  (PPuu2ac 0.0311739)
+  (PPuu2cc 0.0863386)
+  (PPuu2gc 0.0587096)
+  (PPuu2uc 0.134384)
+  (PPuu2ag 0.00182589)
+  (PPuu2cg 0.191769)
+  (PPuu2gg 5.82577)
+  (PPuu2ug 0.262991)
+  (PPuu2au 0.597663)
+  (PPuu2cu 0.0677624)
+  (PPuu2gu 0.201889))
+ 
+ ) ;; end grammar
+
+;; RNA alphabet
+(alphabet
+ (name RNA)
+ (token (a c g u))
+ (complement (u g c a))
+ (extend (to n) (from a) (from c) (from g) (from u))
+ (extend (to x) (from a) (from c) (from g) (from u))
+ (extend (to t) (from u))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from u))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from u))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from u))
+ (extend (to h) (from a) (from c) (from u))
+ (extend (to b) (from c) (from g) (from u))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from u))
+ (wildcard *)
+ ) ;; end alphabet RNA
+
+ ;; Here is an (older) overview of the entire RNA-decoder phylo-grammar, including:
+ ;;  - Pseudoterminal tuples, corresponding to covariant substitution matrices.
+ ;;  - Trainable parameters.
+ ;;  - Constant parameters.
+ ;;  - Production rules.
+
+ ;; Pseudoterminal tuples, corresponding to covariant substitution matrices:
+
+ ;; for C = 1 to CLASSES:
+ ;;   (NULC)
+ ;;   for X = 0 to 2:
+ ;;     (LCX) (NSX)
+ ;;     for Y = 0 to 2:
+ ;;      (PP_LXY PP_RXY)
+
+
+ ;; Trainable parameters:
+
+ ;; for I in {a,c,g,t}
+ ;;    nulprobI (pgroup)
+ ;;    NSI (pgroup)
+ ;;    for J in {a,c,g,t} with J != I
+ ;;       nulrateI2J (rate)
+ ;;       NSI2J (rate)
+
+ ;; Multipliers for structure-codon overlap.  Sub. rate of a loop on codon X is scaled by LmulX, etc
+ ;; for X = 0 to 2
+ ;;    LmulX (rate)
+ ;;    for Y = 0 to 2
+ ;;       PPmulXY (rate)
+
+
+ ;; Constant parameters:
+
+ ;; for I in {a,c,g,t}
+ ;;    LI (const-pgroup)
+ ;;    for J in {a,c,g,t} with J != I
+ ;;       LI2J (const-rate)
+ ;;    for J in {a,c,g,t}
+ ;;       PPIJ (const-pgroup)
+ ;;       for {K,L} in {a,c,g,t}, with IJ != KL
+ ;;          PPIJ2KL (const-rate)
+
+
+ ;; Production rules:
+
+ ;; begin -> pre_ns | pre_s
+ ;; pre_ns -> nonstruct inter_ns_s (note: different from RNAdecoder grammar)
+ ;; pre_s -> struct inter_ns_s | end
+ ;; inter_ns_s -> pre_ns | pre_s
+
+ ;; nonstruct -> ns1 | ns2 | ... | nsCLASSES
+ ;; for C = 1 to CLASSES:
+ ;;    nonstruct -> nsC
+ ;;    nsC -> NULC nsC*
+ ;;    nsC* -> end
+ ;;    for D = 1 to CLASSES:
+ ;;       nsC* -> nsD
+
+ ;; pfoldS -> pfoldL | pfoldB
+ ;; pfoldF -> PP_LXY pfoldF* PP_RXY
+ ;; pfoldF* -> pfoldF | pfoldL pfoldS
+ ;; pfoldL -> pfoldF | pfoldU
+ ;; pfoldU -> NUC
+
+
+
+ ;; Now the actual code, arranged by production rule.
+ ;; First, the trainable parameters:
+;; (pgroup
+;; ((newNS SEED) (newS SEED))
+;; ((preSbif SEED) (preSend SEED))
+;; ((begin2ns SEED) (begin2s SEED))
+;; ((endClass SEED) (nonStruct SEED) (newClass SEED))
+;; ((struct2pfoldCoding SEED) (struct2pfoldS SEED))
+;; ((S2B SEED) (S2L SEED))
+;; ((F2F SEED) (F2B SEED))
+;; ((L2U SEED) (L2F SEED))
+;; )
