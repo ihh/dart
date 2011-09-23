@@ -257,6 +257,10 @@ class Profile
   state_path sample_DP(int, int, bool, bool, bool viterbi=false);
   void cache_state(M_id m, M_id mPrime, bfloat weight);
   void cache_path(vector<M_id>); 
+  state_path convert_path(state_path&); 
+  int find_next_state(state_path::iterator, state_path&, string);
+
+
   void store_summed_nulls(vector<M_id>); 
 
   vector<M_id> sampled_states;

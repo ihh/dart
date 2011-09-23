@@ -13,6 +13,8 @@
 #include "seq/stockholm.h"
 
 using namespace std;
+#define L "left"
+#define R "right"
 
 // Mini-class M_id methods
 int M_id::operator==(const M_id &right)
@@ -2161,6 +2163,9 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 
 		}
 	  cache_path(pi); 
+	  bool convert_paths = true; 
+	  if ( convert_paths )
+	    convert_path(pi); 
 	  // this operation is now handled within cache_path:
 	  //  store_summed_nulls(pi); 
 	  
@@ -4368,3 +4373,101 @@ MyMap<node, int> merge_seq_coords( MyMap<node, int> l, MyMap<node, int> r)
   out.insert(r.begin(), r.end()); 
   return out; 
 }
+
+state_path Profile::convert_path(vector<M_id> &path)
+{
+  M_id toAdd; 
+  int waitIndex; 
+  bool logging = true; 
+  if (logging)
+    {
+      cerr<< "The original alignment:\n"; 
+      cerr << show_alignment(path, false); 
+    }
+  state_path converted_path; 
+  for (state_path::iterator stateIter=--path.end(); stateIter!=--path.begin(); stateIter--)
+    {
+      stateIter->display(Q); 
+      continue; 
+      if (is_left_int(*stateIter))
+	{
+	  cerr <<"Left insertion state: \n"; 
+	  stateIter->display(Q); 
+	  waitIndex = find_next_state(stateIter, path, L); 
+	  cerr << "The next state was : " << waitIndex << endl; 
+
+	  toAdd.q_state = stateIter->q_state; 
+	  toAdd.left_type = profile_delete; 
+	  toAdd.right_type = profile_wait; 
+
+	  toAdd.left_state = stateIter->left_state; 
+	  toAdd.right_state = waitIndex; 
+
+	  cerr<<"State to be replaced (minus Q state):\n"; 
+	  toAdd.display(Q); 
+	  
+
+	}
+      else if (is_right_int(*stateIter))
+	{
+	  cerr <<"Right insertion state: \n"; 
+	  stateIter->display(Q); 
+	  waitIndex = find_next_state(stateIter, path, R); 
+	  cerr << "The next state was : " << waitIndex << endl; 
+
+	  toAdd.q_state = stateIter->q_state; 
+	  toAdd.left_type = profile_wait; 
+	  toAdd.right_type = profile_delete; 
+
+	  toAdd.right_state = stateIter->right_state; 
+	  toAdd.left_state = waitIndex; 
+
+	  cerr<<"State to be replaced (minus Q state):\n"; 
+	  toAdd.display(Q); 
+
+	}
+      else
+	{
+	  cerr << "State that needs no converting: \n"; 
+	  stateIter->display(Q); 
+	  converted_path.push_back(*stateIter); 
+	}
+	  
+    }
+  exit(0); 
+  return converted_path; 
+}
+
+int Profile::find_next_state(state_path::iterator stateIter, state_path &path, string side)
+{
+  int startIdx; 
+  cerr << "Starting point:\n"; 
+  if (side==L)
+    {
+      startIdx = stateIter->right_state; 
+      while (stateIter != --path.begin())
+	{
+	  if (stateIter->right_state != startIdx)
+	    return stateIter->right_state; 
+	  else
+	    stateIter--; 
+	}
+    }
+  else if (side==R)
+    {
+      startIdx = stateIter->left_state; 
+      while (stateIter != --path.begin())
+	{
+	  if (stateIter->left_state != startIdx)
+	    return stateIter->left_state; 
+	  else
+	    stateIter--; 
+	}
+    }
+  else
+    THROWEXPR("Unknown side in find_next_state function: " + side); 
+  cerr << "Warning: got to end of state path with no change in state!\n"; 
+  return 0; 
+}
+
+// M_id Profile::make_new_M_id(state Q_state, 

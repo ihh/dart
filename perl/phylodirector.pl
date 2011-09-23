@@ -5,6 +5,7 @@ my $scriptDir = $0;
 $scriptDir =~ s!/[^/]+$!!;
 push @INC, $scriptDir;
 
+use GD;
 use Stockholm;
 use Newick;
 
