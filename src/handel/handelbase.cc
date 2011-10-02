@@ -7,11 +7,13 @@ Handel_base::Handel_base (const Handel_base& hand)
     handel_seq_scores (hand.handel_seq_scores),
     handel_branch_scores (hand.handel_branch_scores),
     target_loglike (hand.target_loglike),
+    factor_indels_into_target_loglike (hand.factor_indels_into_target_loglike),
     sample_stream (hand.sample_stream)
 { }
 
 Handel_base::Handel_base()
   : target_loglike (0),
+    factor_indels_into_target_loglike (false),
     sample_stream (0)
 { }
 
@@ -20,6 +22,7 @@ Handel_base& Handel_base::operator= (const Handel_base& hand)
   handel_seq_scores = hand.handel_seq_scores;
   handel_branch_scores = hand.handel_branch_scores;
   target_loglike = hand.target_loglike;
+  factor_indels_into_target_loglike = hand.factor_indels_into_target_loglike;
   sample_stream = hand.sample_stream;
   Tree_alignment::operator= (hand);   // this will call the virtual method tree_changed(), which then updates handel_branch_scores
   return *this;
@@ -403,10 +406,10 @@ bool Handel_base::proposal_accept (Handel_base* old_align, double kT)
   if (target_loglike != 0)
     {
       const Loge old_proposal_loglike = Score2Nats (old_align->alignment_score());
-      const Loge old_target_loglike = target_loglike->loglike (*old_align);
+      const Loge old_target_loglike = compute_target_loglike (*old_align);
       
       const Loge new_proposal_loglike = Score2Nats (alignment_score());
-      const Loge new_target_loglike = target_loglike->loglike (*this);
+      const Loge new_target_loglike = compute_target_loglike (*this);
 
       const Prob accept_prob = min (1., Nats2Prob (kT * (new_target_loglike - old_target_loglike - new_proposal_loglike + old_proposal_loglike)));
 
@@ -431,6 +434,14 @@ bool Handel_base::proposal_accept (Handel_base* old_align, double kT)
     }
   else
     return true;
+}
+
+Loge Handel_base::compute_target_loglike (const Handel_base& tree_align) const
+{
+  Loge tl = target_loglike->loglike (tree_align);
+  if (factor_indels_into_target_loglike)
+    NatsPMulAcc (tl, Score2Nats (tree_align.alignment_path_score()));
+  return tl;
 }
 
 Score Handel_base::anneal (double kT_start, double kT_end, int annealing_steps,

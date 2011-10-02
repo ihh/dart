@@ -45,6 +45,7 @@ struct Handel_base : Tree_alignment
 
   // MCMC sampling
   Tree_alignment_likelihood* target_loglike;
+  bool factor_indels_into_target_loglike;
   ostream* sample_stream;
 
   // constructors
@@ -185,6 +186,9 @@ struct Handel_base : Tree_alignment
    // Returns true if accepted.
    */
   bool proposal_accept (Handel_base* old_align, double kT = 1.);
+
+  // helper to compute log-likelihood using target_loglike and factor_indels_into_target_loglike
+  Loge compute_target_loglike (const Handel_base& tree_align) const;
 
   /** Methods that do several rounds of DP
    */
