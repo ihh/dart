@@ -1472,7 +1472,7 @@ bfloat AbsorbingTransducer::get_absorb_weight(state e, int charIndex)
 		  std::cerr<<"Error: the state "<<e<<" appears OK, but have no entry in the emission matrix.\n";
 		  THROWEXPR("Generic profile error");
 		}
-	  else if (charIndex >= absorption_weight[e].size())
+	  else if (charIndex >= int(absorption_weight[e].size()))
 		{
 		  std::cerr<<" The character index "<< charIndex<<" appears too big for the state "<<e<<" which has emission vector of size: "<< absorption_weight[e].size()<<endl;
 		  THROWEXPR("Generic profile error");

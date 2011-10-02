@@ -378,29 +378,29 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   add_transition("pre_read_ins", "delete", .005); 
 
   // from match
-  add_transition("match", "match", 0.75); 
-  add_transition("match", "read_ins", 0.1); 
-  add_transition("match", "delete", 0.1); 
-  add_transition("match", "post_read_ins", 0.04); 
-  add_transition("match", "end", 0.01); 
+  add_transition("match", "match", 0.999); 
+  add_transition("match", "read_ins", 0.00025); 
+  add_transition("match", "delete", 0.00025); 
+  add_transition("match", "post_read_ins", 0.00025); 
+  add_transition("match", "end", 0.00025); 
 
 
   // from read_ins
-  add_transition("read_ins", "read_ins", 0.1); 
-  add_transition("read_ins", "match", 0.75); 
-  add_transition("read_ins", "delete", 0.1); 
-  add_transition("read_ins", "post_read_ins", 0.04); 
-  add_transition("read_ins", "end", 0.01); 
+  add_transition("read_ins", "read_ins", 0.00025); 
+  add_transition("read_ins", "match", .999); 
+  add_transition("read_ins", "delete", 0.00025); 
+  add_transition("read_ins", "post_read_ins", 0.00025); 
+  add_transition("read_ins", "end", 0.00025); 
 
   // from delete
-  add_transition("delete", "read_ins", 0.1); 
-  add_transition("delete", "match", 0.75); 
-  add_transition("delete", "delete", 0.1); 
-  add_transition("delete", "post_read_ins", 0.04); 
-  add_transition("delete", "end", 0.01); 
+  add_transition("delete", "read_ins", 0.00025); 
+  add_transition("delete", "match", 0.999); 
+  add_transition("delete", "delete", 0.00025); 
+  add_transition("delete", "post_read_ins", 0.00025); 
+  add_transition("delete", "end", 0.00025); 
 
   // from post_read_ins
-  add_transition("post_read_ins", "post_read_ins", 0.99); 
+  add_transition("post_read_ins", "post_read_ins", 0.999); 
   add_transition("post_read_ins", "end", 0.01); 
 }
 

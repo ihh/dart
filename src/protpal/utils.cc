@@ -501,3 +501,13 @@ bool bfloat_is_nonzero(bfloat in)
 
 
 
+string remove_from_string(string in , string toRm)
+{
+  if (toRm.size() != 1)
+    THROWEXPR( "Error: remove_from_string only allowed for single-character removals (e.g. quotes)\n"); 
+  string out = "";
+  for (unsigned int i=0; i<in.size(); ++i)
+    if (stringAt(in, i) != toRm)
+      out += stringAt(in, i); 
+  return out; 
+}
