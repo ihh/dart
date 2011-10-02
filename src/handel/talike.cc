@@ -20,8 +20,8 @@ bool Likelihood_executable::display_help (Opts_list* ol)
   return false;
 }
 
-sstring Likelihood_executable::shell_executable ("/bin/sh");
-sstring Likelihood_executable::shell_command_switch ("-c");
+sstring Likelihood_executable::shell_executable ("/bin/sh");  // TODO: use autoconf to set this in config.h
+sstring Likelihood_executable::shell_command_switch ("-c");  // TODO: set this in config.h as well
 
 Likelihood_executable::Likelihood_executable (const Alphabet& alph,
 					      const char* command)
