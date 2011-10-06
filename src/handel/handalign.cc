@@ -42,6 +42,7 @@ int main(int argc, char* argv[])
   int centroid_band_width;
   bool force_binary;
   sstring exec_filename;
+  bool factor_indels;
   sstring mcmc_sample_filename;
   bool use_best;
 
@@ -93,6 +94,7 @@ int main(int argc, char* argv[])
   opts.add ("ts -total-samples", annealing_steps_total = "", "specify *total* (not per-node) number of MCMC sampling steps", false);
   opts.add ("xl -execlike", exec_filename = "", "use external alignment-likelihood executable for Metropolis-Hastings sampling", false);
   Likelihood_executable::add_help (&opts);
+  opts.add ("fi -factorindels", factor_indels = false, "multiply external alignment-likelihood by transducer indel-likelihood");
   opts.add ("fn -first-node", first_node = "", "start sampling at specified node (useful for debugging)", false);
   opts.add ("fb -force-binary", force_binary = true,    "force binary tree");
   opts.add ("rs -redsuch", use_Redelings_Suchard = false,    "use Redelings-Suchard proposal scheme when sampling");
@@ -325,6 +327,7 @@ int main(int argc, char* argv[])
       Likelihood_executable like_exec (trans.alphabet(), exec_filename.c_str());
       if (exec_filename.size())
 	  trans.target_loglike = &like_exec;
+      trans.factor_indels_into_target_loglike = factor_indels;
       ofstream* mcmc_sample_stream = 0;
       if (mcmc_sample_filename.size())
 	{

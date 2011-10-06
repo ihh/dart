@@ -6346,7 +6346,7 @@ done
 
 
 # create the makefiles and other files
-ac_config_files="$ac_config_files Makefile src/make.defs src/make.common src/Weighbor/Makefile src/amap/Makefile src/ecfg/Makefile src/evoldoer/Makefile src/guile/Makefile src/handel/Makefile src/hmm/Makefile src/hsm/Makefile src/indiegram/Makefile src/irrev/Makefile src/newmat/Makefile src/ontology/Makefile src/protpal/Makefile src/psw/Makefile src/randlib/Makefile src/scfg/Makefile src/seq/Makefile src/stemloc/Makefile src/telegraph/Makefile src/tkf/Makefile src/tree/Makefile src/util/Makefile src/util/unixenv.h"
+ac_config_files="$ac_config_files Makefile src/make.defs src/make.common src/Weighbor/Makefile src/amap/Makefile src/ecfg/Makefile src/evoldoer/Makefile src/guile/Makefile src/handel/Makefile src/hmm/Makefile src/hsm/Makefile src/indiegram/Makefile src/irrev/Makefile src/newmat/Makefile src/ontology/Makefile src/protpal/Makefile src/psw/Makefile src/randlib/Makefile src/scfg/Makefile src/seq/Makefile src/stemloc/Makefile src/telegraph/Makefile src/tkf/Makefile src/tree/Makefile src/util/Makefile src/util/unixenv.h workflow/make/ancrec.mk"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6927,6 +6927,7 @@ do
     "src/tree/Makefile") CONFIG_FILES="$CONFIG_FILES src/tree/Makefile" ;;
     "src/util/Makefile") CONFIG_FILES="$CONFIG_FILES src/util/Makefile" ;;
     "src/util/unixenv.h") CONFIG_FILES="$CONFIG_FILES src/util/unixenv.h" ;;
+    "workflow/make/ancrec.mk") CONFIG_FILES="$CONFIG_FILES workflow/make/ancrec.mk" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
