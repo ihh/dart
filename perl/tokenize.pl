@@ -90,7 +90,8 @@ GetOptions ("frame=i" => \$frame,
 	    "align=s" => \$align_file,
 	    "decode" => \$untokenize) or die $usage;
 
-if (defined($align_file) && $untokenize) { die "Can't use -decode and -align options together" }
+if (defined($align_file) && $untokenize) { die "Can't use -decode and -align options together\n" }
+if (defined($align_file) && !$truncate) { warn "Warning: -align option is best used with -truncate\n" }
 my $stock;
 if (defined $align_file) { $stock = Stockholm->from_file ($align_file) }
 
