@@ -13,21 +13,16 @@ xrate := $(dartbin)/xrate
 protpal := $(dartbin)/protpal
 handalign := $(dartbin)/handalign
 
-tokenize := $(dartperl)/tokenize.pl
-untokenize := $(tokenize) -decode
-
 #Set these as needed for your own machine:
 muscle := muscle # assumed in path, change if need be
 
 #xrate grammars (for tree estimation)
 protein_grammar := $(grammars)/nullprot.eg
 dna_grammar := $(grammars)/hky85.eg
-tokenized_codon_grammar := $(models)/tcod.eg
 
 #protpal substitution models
 protein_chain := $(models)/prot3.hsm
 dna_chain := $(models)/hidden.hsm
-tokenized_codon_chain := $(models)/tcod.hsm
 
 #directory structure
 sequences := sequences
@@ -35,12 +30,6 @@ reconstructions := reconstructions
 
 
 # Rules
-
-$(sequences)/tokenized/%.$(frame).fa: $(sequences)/dna/%.fa
-	cat $< | $(tokenize) -f $(frame) > $@
-
-$(sequences)/dna/%.$(frame).fa:$(sequences)/dna/%.fa
-	cat $< | $(tokenize) -f $(frame) | $(tokenize) -decode > $@
 
 $(sequences)/protein/%.muscle.fa: $(sequences)/protein/%.fa
 	@mkdir -pv $(@D)
@@ -52,8 +41,6 @@ $(sequences)/protein/%.xrate.stk: $(sequences)/protein/%.muscle.fa
 
 $(sequences)/%.xrate.nh: $(sequences)/%.xrate.stk
 	cat $< | $(dartperl)/stocktree.pl >$@
-
-
 
 # Use protpal
 branch_scale := 1.0
@@ -74,20 +61,6 @@ logLevel := 7
 del_rate := 0.01
 $(reconstructions)/protein/%.handalign.stk: $(sequences)/protein/%.xrate.stk
 	$(handalign) -d $(del_rate)  $< -af $(@D)/$*.handalign_trace.stk -hc2d $(band) -hc3d $(band) -hc4d $(band) -ha -p -s $(handalign_samples) -ub -log $(logLevel) --redsuch  > $@
-
-$(reconstructions)/tokenized/%.$(frame).handalign.stk: $(sequences)/tokenized/%.$(frame).stk  $(tokenized_codon_chain)
-	$(handalign)  -d $(del_rate) $< -af $(subst handalign,handalign_trace,$@) -hc2d $(band) -hc3d $(band) -hc4d $(band) -p -s $(handalign_samples) -ub -log $(logLevel)  -m $(tokenized_codon_chain) -ht tmp > $@
-
-$(reconstructions)/tokenized/%.$(frame).protpal.stk: $(sequences)/tokenized/%.$(frame).fa $(sequences)/dna/%.xrate.nh $(tokenized_codon_chain)
-	@mkdir -pv $(@D)
-	$(protpal) -fa $< -b $(tokenized_codon_chain) -bs $(branch_scale)  -e 30 --ancrec-postprob -tf $(sequences)/dna/$*.xrate.nh --write-root-profile $(subst stk,sexpr,$@) > $@
-
-
-## Convert XRATE-style ancestral alignments to fasta format
-$(reconstructions)/dna/%.$(frame).protpal.fa: $(reconstructions)/tokenized/%.$(frame).protpal.stk
-	@mkdir -pv $(@D)
-	cat $< | $(dartperl)/ancrec_to_seq.pl | $(dartperl)/stockholm2fasta.pl -g | $(untokenize) > $@
-
 
 %.rmk:
 	rm -fv $*;
