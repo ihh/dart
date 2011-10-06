@@ -2,15 +2,19 @@
 
 use Getopt::Long;
 use SequenceIterator qw(iterseq printseq revcomp);
+use Stockholm;
 
 my $usage = "";
 $usage .= "$0 -- convert DNA to tokenized-codon sequence (or protein sequence)\n";
 $usage .= "\n";
-$usage .= "Usage: $0 [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [-truncate] [filename(s)]\n";
+$usage .= "Usage: $0 [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [-truncate] [-align <alignment file>] [filename(s)]\n";
 $usage .= "\n";
 $usage .= "The 'frame' (i.e. reading frame) can be 0, 1, or 2.\n";
 $usage .= "If '-truncate' is specified, terminal stop codons will be discarded,\n";
 $usage .= "and premature stop codons will result in truncation and a warning being issued.\n";
+$usage .= "\n";
+$usage .= "If a (Stockholm) alignment file is specified, the output will be that alignment\n";
+$usage .= "but with all sequences replaced by the correspondingly-named tokenized sequences.\n";
 $usage .= "\n";
 
 my $colWidth = 50;    # column width for output
@@ -76,13 +80,19 @@ my $use_aa = 0;
 my $is_rna = 0;
 my $untokenize = 0;
 my $truncate = 0;
+my $align_file;
 
 GetOptions ("frame=i" => \$frame,
 	    "revcomp" => \$revcomp,
 	    "aa"  => \$use_aa,
 	    "rna"  => \$is_rna,
 	    "truncate" => \$truncate,
+	    "align=s" => \$align_file,
 	    "decode" => \$untokenize) or die $usage;
+
+if (defined($align_file) && $untokenize) { die "Can't use -decode and -align options together" }
+my $stock;
+if (defined $align_file) { $stock = Stockholm->from_file ($align_file) }
 
 my $trans_ref = $use_aa ? \%aa : \%tok;
 my %untok = map (($$trans_ref{$_} => $_), keys %$trans_ref);
@@ -95,12 +105,44 @@ for my $filename (@ARGV) {
     iterseq ($filename,
 	     sub {
 		 my ($name, $seq) = @_;
-		 printseq ($name, $untokenize ? untokenize($seq,$name) : tokenize($seq,$name));
+		 my $newseq = $untokenize ? untokenize($seq,$name) : tokenize($seq,$name,$trans_ref);
+		 if (defined $align_file) {
+		     if (defined ($stock->seqdata->{$name})) {
+			 my $stockrow = uc $stock->seqdata->{$name};
+			 my $stockseq = $stockrow;
+			 $stockseq =~ s/[\-\.]//g;
+			 my $aaseq = tokenize($seq,$name,\%aa);
+			 if ($stockseq ne $aaseq) {
+			     die
+				 "Translation of sequence '$name' does not match corresponding alignment row.\n",
+				 " Alignment row: $stockrow\n",
+				 " Alignment seq: $stockseq\n",
+				 "Translated seq: $aaseq\n",
+				 " Tokenized seq: $newseq\n";
+			 }
+			 my $newseq_pos = 0;
+			 for (my $row_pos = 0; $row_pos < length($stockrow); ++$row_pos) {
+			     my $row_char = substr ($stockrow, $row_pos, 1);
+			     if ($row_char ne '-' && $row_char ne '.') {
+				 substr ($stockrow, $row_pos, 1) = substr ($newseq, $newseq_pos++, 1);
+			     }
+			 }
+		     } else {
+			 warn "Sequence '$name' not found in alignment; ignoring\n";
+		     }
+		 } else {
+		     printseq ($name, $newseq);
+		 }
 	     });
 }
 
+if (defined $align_file) {
+    print $stock->to_string;
+}
+
+
 sub tokenize {
-    my ($seq, $name) = @_;
+    my ($seq, $name, $trans_ref) = @_;
     $seq = lc $seq;
     $seq =~ s/u/t/g;  # do this even if -rna was not specified; no need to punish user
     if ($revcomp) { $seq = revcomp ($seq); $name .= " (reverse strand)" }
