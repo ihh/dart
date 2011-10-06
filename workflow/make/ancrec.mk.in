@@ -31,30 +31,36 @@ reconstructions := reconstructions
 
 # Rules
 
+# Align with muscle
 $(sequences)/protein/%.muscle.fa: $(sequences)/protein/%.fa
 	@mkdir -pv $(@D)
 	$(muscle) -in $< -out $@
 
+# Estimate tree with xrate
 $(sequences)/protein/%.xrate.stk: $(sequences)/protein/%.muscle.fa
 	@mkdir -pv $(@D)
 	cat $< | $(dartperl)/fasta2stockholm.pl | $(xrate) -e $(protein_grammar) -g $(protein_grammar) > $@
 
+# Extract tree to file
 %.nh: %.stk
 	cat $< | $(dartperl)/stocktree.pl >$@
 
-# Use protpal
+# Reconstruct ancestors with protpal
 branch_scale := 1.0
 $(reconstructions)/protein/%.protpal.stk: $(sequences)/protein/%.xrate.stk
 	@mkdir -pv $(@D)
 	$(protpal) -bs $(branch_scale) -ga $< -b $(protein_chain) --ancrec-postprob --write-root-profile $(subst stk,sexpr,$@) > $@
 
+# Extract ancestors as alignment rows
 %.protpal.seqs.stk: %.protpal.stk
 	$(dartperl)/ancrec_to_seq.pl $< > $@
 
+# Convert Stockholm to FASTA format
 %.fa: %.stk
 	$(dartperl)/stockholm2fasta.pl -g $< > $@
 
-# Use handalign
+
+# Run handalign for a while... (does nothing much with this, yet)
 handalign_samples := 25
 band := 15
 logLevel := 7
@@ -62,10 +68,6 @@ del_rate := 0.01
 $(reconstructions)/protein/%.handalign.stk: $(sequences)/protein/%.xrate.stk
 	$(handalign) -d $(del_rate)  $< -af $(@D)/$*.handalign_trace.stk -hc2d $(band) -hc3d $(band) -hc4d $(band) -ha -p -s $(handalign_samples) -ub -log $(logLevel) --redsuch  > $@
 
-%.rmk:
-	rm -fv $*;
-	$(MAKE) $*;
-%.open:%
-	open $*
 
+# Keep secondary targets
 .SECONDARY:
