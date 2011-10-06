@@ -1,54 +1,41 @@
 
+# set by configure script
 DARTDIR := @abs_top_srcdir@
+hmmoc_root := @HMMOC_ROOT@
+
+#dart directories
+models := $$DARTDIR/data/handalign
+grammars := $$DARTDIR/grammars
+dartbin := $$DARTDIR/bin
+dartperl := $$DARTDIR/perl
+
+#dart executables
+xrate := $(dartbin)/xrate
+protpal := $(dartbin)/protpal
+handalign := $(dartbin)/handalign
+
+tokenize := $(dartperl)/tokenize.pl
+untokenize := $(tokenize) -decode
 
 #Set these as needed for your own machine:
-#NB that $(python) and $(perl) consist of the path to the interpreter, followed by the local path to the relevant scripts subdirectory, with no trailing whitespace
-python := python python
-perl := perl perl
-dart_perl := $$DARTDIR/perl
 muscle := muscle # assumed in path, change if need be
-xrate := xrate  # assumed in path, change if need be
-protpal := protpal  # assumed in path, change if need be
-handalign := handalign  # assumed in path, change if need be
-prank := prank  # assumed in path, change if need be
-java := java # assumed in path, change if need be
-javaws := javaws # assumed in path, change if need be
-hmmoc_root := /Users/oscar/src/hmmoc
 
-forester := data/forester.jar
-type := protein
 #xrate grammars (for tree estimation)
-protein_grammar := $$DARTDIR/grammars/nullprot.eg
-dna_grammar := $$DARTDIR/grammars/hky85.eg
+protein_grammar := $(grammars)/nullprot.eg
+dna_grammar := $(grammars)/hky85.eg
+tokenized_codon_grammar := $(models)/tcod.eg
 
-#protpal models
-protein_chain := $$DARTDIR/data/handalign/prot3.hsm
-dna_chain := $$DARTDIR/data/handalign/hidden.hsm # eventually change to codon model, and will require a bit more
+#protpal substitution models
+protein_chain := $(models)/prot3.hsm
+dna_chain := $(models)/hidden.hsm
+tokenized_codon_chain := $(models)/tcod.hsm
 
 #directory structure
 sequences := sequences
 reconstructions := reconstructions
-plots := plots
-models := models
 
-#codon tokenization
-tokenized_codon_chain := $(models)/tcod.hsm
-tokenized_codon_grammar := $(models)/tcod.eg
-tokenize := $$DARTDIR/perl/tokenize.pl
-untokenize := $$DARTDIR/perl/tokenize.pl -decode
-#in order to create the tokenized codon model, we need at least one tokenized sequence file as a 'corpus' to estimate codon frequencies
-tokenized_codon_corpus := AAV16789
-# we also need the original empirical codon model estimated by Kosiol et al (tweaked for easy parsing by our fragile conversion script)
-empirical_codon_model := models/ECMunrest.dat
-# finally, an arbitrary pseudocount to protect against zero/infinitesimal codon frequencies
-codon_freq_pseudocount := 10
 
-$(tokenized_codon_chain): $(sequences)/tokenized/$(tokenized_codon_corpus).fa
-	$(perl)/ecm2eg.pl $(empirical_codon_model) -seqfile $< -pseudocount $(codon_freq_pseudocount) >$@
-
-$(sequences)/$(type)/%.fa:
-	@mkdir -pv $(@D)
-	cat data/seqIDs/info.csv | $(python)/getVP1.py data/seqIDs/$*.clade $(type) > $@
+# Rules
 
 $(sequences)/tokenized/%.$(frame).fa: $(sequences)/dna/%.fa
 	cat $< | $(tokenize) -f $(frame) > $@
@@ -56,37 +43,30 @@ $(sequences)/tokenized/%.$(frame).fa: $(sequences)/dna/%.fa
 $(sequences)/dna/%.$(frame).fa:$(sequences)/dna/%.fa
 	cat $< | $(tokenize) -f $(frame) | $(tokenize) -decode > $@
 
-$(sequences)/$(type)/%.muscle.fa: $(sequences)/$(type)/%.fa
+$(sequences)/protein/%.muscle.fa: $(sequences)/protein/%.fa
 	@mkdir -pv $(@D)
 	$(muscle) -in $< -out $@
 
-$(sequences)/$(type)/%.xrate.stk: $(sequences)/$(type)/%.muscle.fa
+$(sequences)/protein/%.xrate.stk: $(sequences)/protein/%.muscle.fa
 	@mkdir -pv $(@D)
-	cat $< | fasta2stockholm.pl | $(xrate) -e $($(type)_grammar) -g $($(type)_grammar) > $@
+	cat $< | $(dartperl)/fasta2stockholm.pl | $(xrate) -e $(protein_grammar) -g $(protein_grammar) > $@
 
 $(sequences)/%.xrate.nh: $(sequences)/%.xrate.stk
-	cat $< | perl -ne 'if(/^#=GF\s+NH\s+(.*)/){print$$1}' >$@
+	cat $< | $(dartperl)/stocktree.pl >$@
 
-# Fragile hack - use something better if/when PRANK usage becomes critical...
-# This depends on internal nodes being named node_n or root (by xrate)
-$(sequences)/%.xrate.noAnc.nh: $(sequences)/%.xrate.nh
-	cat $< | sed -E s/node_[0-9]+//g | sed s/root// > $@
+
 
 # Use protpal
 branch_scale := 1.0
 $(reconstructions)/protein/%.protpal.stk: $(sequences)/protein/%.xrate.stk
 	@mkdir -pv $(@D)
-	protpal -bs $(branch_scale) -ga $< -b $(protein_chain) --ancrec-postprob --write-root-profile $(subst stk,sexpr,$@) > $@
+	$(protpal) -bs $(branch_scale) -ga $< -b $(protein_chain) --ancrec-postprob --write-root-profile $(subst stk,sexpr,$@) > $@
+
 $(reconstructions)/protein/%.protpal.seqs.stk: $(reconstructions)/protein/%.protpal.stk
-	$(perl)/ancrec_to_seq.pl $< > $@
+	$(dartperl)/ancrec_to_seq.pl $< > $@
 
 $(reconstructions)/protein/%.protpal.seqs.fa: $(reconstructions)/protein/%.protpal.seqs.stk
-	$(dart_perl)/stockholm2fasta.pl -g $< > $@
-
-$(sequences)/tokenized/%.$(frame).stk: $(sequences)/tokenized/%.$(frame).fa $(sequences)/dna/%.xrate.nh
-	echo "#=GF NH" `cat $(word 2,$^)` > $@
-	cat $< | $(python)/padGaps.py >> $@
-
+	$(dartperl)/stockholm2fasta.pl -g $< > $@
 
 # Use handalign
 handalign_samples := 25
@@ -94,75 +74,21 @@ band := 15
 logLevel := 7
 del_rate := 0.01
 $(reconstructions)/protein/%.handalign.stk: $(sequences)/protein/%.xrate.stk
-	$(handalign) -d $(del_rate)  $< -af $(@D)/$*.handalign_trace.stk -hc2d $(band) -hc3d $(band) -hc4d $(band) -ha -hr $(hmmoc_root) -p -s $(handalign_samples) -ub -log $(logLevel) -hcx /usr/bin/g++ --redsuch  > $@
+	$(handalign) -d $(del_rate)  $< -af $(@D)/$*.handalign_trace.stk -hc2d $(band) -hc3d $(band) -hc4d $(band) -ha -hr $(hmmoc_root) -p -s $(handalign_samples) -ub -log $(logLevel) --redsuch  > $@
 
 $(reconstructions)/tokenized/%.$(frame).handalign.stk: $(sequences)/tokenized/%.$(frame).stk  $(tokenized_codon_chain)
-	$(handalign)  -d $(del_rate) $< -af $(subst handalign,handalign_trace,$@) -hc2d $(band) -hc3d $(band) -hc4d $(band)  -hr $(hmmoc_root) -p -s $(handalign_samples) -ub -log $(logLevel) -hcx /usr/bin/g++  -m $(tokenized_codon_chain) -ht tmp > $@
+	$(handalign)  -d $(del_rate) $< -af $(subst handalign,handalign_trace,$@) -hc2d $(band) -hc3d $(band) -hc4d $(band)  -hr $(hmmoc_root) -p -s $(handalign_samples) -ub -log $(logLevel)  -m $(tokenized_codon_chain) -ht tmp > $@
 
 $(reconstructions)/tokenized/%.$(frame).protpal.stk: $(sequences)/tokenized/%.$(frame).fa $(sequences)/dna/%.xrate.nh $(tokenized_codon_chain)
 	@mkdir -pv $(@D)
-	protpal -fa $< -b $(tokenized_codon_chain) -bs $(branch_scale)  -e 30 --ancrec-postprob -tf $(sequences)/dna/$*.xrate.nh --write-root-profile $(subst stk,sexpr,$@) > $@
-
-## Test Handalign on small alignment
-testing/smallToken.handalign.stk: testing/smallToken.stk
-	$(handalign)  -d $(del_rate) $< -af $(subst handalign,handalign_trace,$@) -hc2d $(band) -hc3d $(band) -hc4d $(band)  -hr $(hmmoc_root) -p -s $(handalign_samples) -ub -log $(logLevel) -log HANDEL_COLUMN_EMIT_SCORE -hcx /usr/bin/g++  -m $(tokenized_codon_chain) -ht tmp > $@
-
-testing/stop.handalign.stk: testing/stop.stk
-	$(handalign)  -d $(del_rate) $< -af $(subst handalign,handalign_trace,$@) -hc2d $(band) -hc3d $(band) -hc4d $(band)  -hr $(hmmoc_root) -p -s $(handalign_samples) -ub -log $(logLevel) -log HANDEL_COLUMN_EMIT_SCORE -hcx /usr/bin/g++  -m $(tokenized_codon_chain) -ht tmp > $@
+	$(protpal) -fa $< -b $(tokenized_codon_chain) -bs $(branch_scale)  -e 30 --ancrec-postprob -tf $(sequences)/dna/$*.xrate.nh --write-root-profile $(subst stk,sexpr,$@) > $@
 
 
 ## Convert XRATE-style ancestral alignments to fasta format
 $(reconstructions)/dna/%.$(frame).protpal.fa: $(reconstructions)/tokenized/%.$(frame).protpal.stk
 	@mkdir -pv $(@D)
-	cat $< | $(perl)/ancrec_to_seq.pl | $(dart_perl)/stockholm2fasta.pl -g | $(untokenize) > $@
+	cat $< | $(dartperl)/ancrec_to_seq.pl | $(dartperl)/stockholm2fasta.pl -g | $(untokenize) > $@
 
-
-# Use PRANK for reconstruction
-# Prank has a somewhat-fragile codon model
-$(reconstructions)/dna/%.$(frame).prank.stk: $(sequences)/dna/%.$(frame).fa $(sequences)/dna/%.xrate.noAnc.nh $(sequences)/dna/%.xrate.nh 
-	@mkdir -p $(@D)
-	$(prank) -d=$< -noxml -realbranches -writeanc -o=tmp/prankTmp -t=$(word 2,$^) +F 
-	perl $$DARTDIR/perl/prank2stock.pl tmp/prankTmp.1.ancseq $(word 3,$^) > $@
-	rm -fv tmp/prankTmp.*
-
-# Same as above but proteins
-$(reconstructions)/protein/%.prank.stk: $(sequences)/protein/%.fa $(sequences)/dna/%.xrate.noAnc.nh $(sequences)/dna/%.xrate.nh 
-	@mkdir -p $(@D)
-	$(prank) -d=$< -noxml -realbranches -writeanc -o=tmp/prankTmp -t=$(word 2,$^) +F 
-	perl $$DARTDIR/perl/prank2stock.pl tmp/prankTmp.1.ancseq $(word 3,$^) > $@
-	rm -fv tmp/prankTmp.*
-
-
-#$(reconstructions)/dna/%.2.protpal.fa
-
-# Quick rule to make an alignment of all the root-node ancestors predicted for different reading frames
-# Eventually we'd like something like this, but be able to specify a series of "interesting" nodes 
-# (e.g. roots of clades we're interested in).  I've left this here for now though 
-$(reconstructions)/dna/%.allFrames.fa: $(reconstructions)/dna/%.0.protpal.fa $(reconstructions)/dna/%.1.protpal.fa 
-	echo root_frame_0 `cat $(word 1,$^) | fasta2stockholm.pl | grep -v "#" | grep root | cut -f 2 -d ' '` > $@.tmp
-	echo root_frame_1 `cat $(word 2,$^) | fasta2stockholm.pl | grep -v "#" | grep root | cut -f 2 -d ' '` >> $@.tmp
-#	echo root_frame_2 `cat $(word 3,$^) | fasta2stockholm.pl | grep -v "#" | grep root | cut -f 2 -d ' '` >> $@.tmp
-	cat $@.tmp | stockholm2fasta.pl > $@; 
-
-$(reconstructions)/dna/%.allFrames.muscle.fa: $(reconstructions)/dna/%.allFrames.fa
-	$(muscle) -in $< -out $@
-
-$(reconstructions)/protein/%.protpal.sexpr: $(reconstructions)/protein/%.protpal.stk
-	touch $@
-
-$(plots)/$(type)/%.protpal.pdf: $(reconstructions)/protein/%.protpal.stk
-	@mkdir -pv $(@D)
-	cat $< | $(python)/plotReconstruction.py -plot $@ -ancestors root
-
-$(plots)/%.viewTree: $(sequences)/%.xrate.nh
-	$(java) -cp $(forester) org.forester.archaeopteryx.Archaeopteryx $<
-
-jalview:
-	$(javaws) data/jalview.jnlp
-
-# this is experimental - not to be used yet, but a reminder that this "exists", and might eventually be useful
-$(plots)/$(type)/%.protpal.profile.pdf: reconstruction/$(type)/%.protpal.sexpr
-	cat $< | $$DARTDIR/python/visualizeReconstruction.py -plot $@
 
 %.rmk:
 	rm -fv $*;
