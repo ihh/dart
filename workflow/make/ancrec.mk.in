@@ -39,7 +39,7 @@ $(sequences)/protein/%.xrate.stk: $(sequences)/protein/%.muscle.fa
 	@mkdir -pv $(@D)
 	cat $< | $(dartperl)/fasta2stockholm.pl | $(xrate) -e $(protein_grammar) -g $(protein_grammar) > $@
 
-$(sequences)/%.xrate.nh: $(sequences)/%.xrate.stk
+%.nh: %.stk
 	cat $< | $(dartperl)/stocktree.pl >$@
 
 # Use protpal
@@ -48,10 +48,10 @@ $(reconstructions)/protein/%.protpal.stk: $(sequences)/protein/%.xrate.stk
 	@mkdir -pv $(@D)
 	$(protpal) -bs $(branch_scale) -ga $< -b $(protein_chain) --ancrec-postprob --write-root-profile $(subst stk,sexpr,$@) > $@
 
-$(reconstructions)/protein/%.protpal.seqs.stk: $(reconstructions)/protein/%.protpal.stk
+%.protpal.seqs.stk: %.protpal.stk
 	$(dartperl)/ancrec_to_seq.pl $< > $@
 
-$(reconstructions)/protein/%.protpal.seqs.fa: $(reconstructions)/protein/%.protpal.seqs.stk
+%.fa: %.stk
 	$(dartperl)/stockholm2fasta.pl -g $< > $@
 
 # Use handalign
