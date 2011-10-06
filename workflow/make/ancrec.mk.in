@@ -1,7 +1,6 @@
 
 # set by configure script
 DARTDIR := @abs_top_srcdir@
-hmmoc_root := @HMMOC_ROOT@
 
 #dart directories
 models := $$DARTDIR/data/handalign
@@ -74,10 +73,10 @@ band := 15
 logLevel := 7
 del_rate := 0.01
 $(reconstructions)/protein/%.handalign.stk: $(sequences)/protein/%.xrate.stk
-	$(handalign) -d $(del_rate)  $< -af $(@D)/$*.handalign_trace.stk -hc2d $(band) -hc3d $(band) -hc4d $(band) -ha -hr $(hmmoc_root) -p -s $(handalign_samples) -ub -log $(logLevel) --redsuch  > $@
+	$(handalign) -d $(del_rate)  $< -af $(@D)/$*.handalign_trace.stk -hc2d $(band) -hc3d $(band) -hc4d $(band) -ha -p -s $(handalign_samples) -ub -log $(logLevel) --redsuch  > $@
 
 $(reconstructions)/tokenized/%.$(frame).handalign.stk: $(sequences)/tokenized/%.$(frame).stk  $(tokenized_codon_chain)
-	$(handalign)  -d $(del_rate) $< -af $(subst handalign,handalign_trace,$@) -hc2d $(band) -hc3d $(band) -hc4d $(band)  -hr $(hmmoc_root) -p -s $(handalign_samples) -ub -log $(logLevel)  -m $(tokenized_codon_chain) -ht tmp > $@
+	$(handalign)  -d $(del_rate) $< -af $(subst handalign,handalign_trace,$@) -hc2d $(band) -hc3d $(band) -hc4d $(band) -p -s $(handalign_samples) -ub -log $(logLevel)  -m $(tokenized_codon_chain) -ht tmp > $@
 
 $(reconstructions)/tokenized/%.$(frame).protpal.stk: $(sequences)/tokenized/%.$(frame).fa $(sequences)/dna/%.xrate.nh $(tokenized_codon_chain)
 	@mkdir -pv $(@D)

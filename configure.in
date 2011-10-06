@@ -143,5 +143,6 @@ AC_CONFIG_FILES([Makefile
                  src/tkf/Makefile
                  src/tree/Makefile
                  src/util/Makefile
-		 src/util/unixenv.h])
+		 src/util/unixenv.h
+		 workflow/make/ancrec.mk])
 AC_OUTPUT
