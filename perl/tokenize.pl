@@ -109,30 +109,31 @@ for my $filename (@ARGV) {
     iterseq ($filename,
 	     sub {
 		 my ($name, $seq) = @_;
-		 my $newseq = $untokenize ? untokenize($seq,$name) : tokenize($seq,$name,$trans_ref);
+		 my $newseq = $untokenize ? untokenize($seq,$name) : tokenize($seq,$name,$trans_ref,1);
 		 if (defined $align_file) {
 		     if (defined ($stock->seqdata->{$name})) {
 			 my $stockrow = uc $stock->seqdata->{$name};
 			 my $stockseq = $stockrow;
 			 $stockseq =~ s/[\-\.]//g;
-			 my $aaseq = tokenize($seq,$name,\%aa);
+			 my $aaseq = tokenize($seq,$name,\%aa,0);
 			 if ($stockseq ne $aaseq) {
-			     die
+			     warn
 				 "Translation of sequence '$name' does not match corresponding alignment row.\n",
 				 " Alignment row: $stockrow\n",
 				 " Alignment seq: $stockseq\n",
 				 "Translated seq: $aaseq\n",
-				 " Tokenized seq: $newseq\n";
-			 }
-			 my $newseq_pos = 0;
-			 for (my $row_pos = 0; $row_pos < length($stockrow); ++$row_pos) {
-			     my $row_char = substr ($stockrow, $row_pos, 1);
-			     if ($row_char ne '-' && $row_char ne '.') {
-				 substr ($stockrow, $row_pos, 1) = substr ($newseq, $newseq_pos++, 1);
+				 " Tokenized seq: $newseq\n\n";
+			 } else {
+			     my $newseq_pos = 0;
+			     for (my $row_pos = 0; $row_pos < length($stockrow); ++$row_pos) {
+				 my $row_char = substr ($stockrow, $row_pos, 1);
+				 if ($row_char ne '-' && $row_char ne '.') {
+				     substr ($stockrow, $row_pos, 1) = substr ($newseq, $newseq_pos++, 1);
+				 }
 			     }
+			     $stock->seqdata->{$name} = $stockrow;
+			     delete $untranslated{$name};
 			 }
-			 $stock->seqdata->{$name} = $stockrow;
-			 delete $untranslated{$name};
 		     } else {
 			 warn "Sequence '$name' not found in alignment; ignoring\n";
 		     }
@@ -152,7 +153,7 @@ if (defined $align_file) {
 
 
 sub tokenize {
-    my ($seq, $name, $trans_ref) = @_;
+    my ($seq, $name, $trans_ref, $warning) = @_;
     $seq = lc $seq;
     $seq =~ s/u/t/g;  # do this even if -rna was not specified; no need to punish user
     if ($revcomp) { $seq = revcomp ($seq); $name .= " (reverse strand)" }
@@ -162,13 +163,15 @@ sub tokenize {
 	$codon = substr ($seq, $pos, 3);
 	if (exists $$trans_ref{$codon}) {
 	    if ($truncate && $is_stop{$codon}) {
-		warn "Premature stop codon ($codon) found with $remaining_chars characters remaining while tokenizing sequence $name\n" if $remaining_chars > 0;
+		if ($warning && $remaining_chars > 0) {
+		    warn "Premature stop codon ($codon) found with $remaining_chars characters remaining while tokenizing sequence $name\n";
+		}
 		last CODON;
 	    }
 	    $trans .= $$trans_ref{$codon};
-	} elsif (length($codon) == 1) { $trans .= $$trans_ref{'n'}; warn "Extra character ($codon) at end of sequence $name\n" }
-	elsif (length($codon) == 2) { $trans .= $$trans_ref{'nn'}; warn "Extra characters ($codon) at end of sequence $name\n" }
-	else { $trans .= $$trans_ref{'nnn'}; warn "Unrecognized codon ($codon) at position $pos of sequence $name\n" }
+	} elsif (length($codon) == 1) { $trans .= $$trans_ref{'n'}; warn "Extra character ($codon) at end of sequence $name\n" if $warning }
+	elsif (length($codon) == 2) { $trans .= $$trans_ref{'nn'}; warn "Extra characters ($codon) at end of sequence $name\n" if $warning }
+	else { $trans .= $$trans_ref{'nnn'}; warn "Unrecognized codon ($codon) at position $pos of sequence $name\n" if $warning }
     }
     return $trans;
 }
