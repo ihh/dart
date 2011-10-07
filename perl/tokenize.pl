@@ -92,8 +92,11 @@ GetOptions ("frame=i" => \$frame,
 
 if (defined($align_file) && $untokenize) { die "Can't use -decode and -align options together\n" }
 if (defined($align_file) && !$truncate) { warn "Warning: -align option is best used with -truncate\n" }
-my $stock;
-if (defined $align_file) { $stock = Stockholm->from_file ($align_file) }
+my ($stock, %untranslated);
+if (defined $align_file) {
+    $stock = Stockholm->from_file ($align_file);
+    %untranslated = map ($stock->seqdata->{$_} =~ /[^\-\*\.]/ ? ($_ => 1) : (), @{$stock->seqname});
+}
 
 my $trans_ref = $use_aa ? \%aa : \%tok;
 my %untok = map (($$trans_ref{$_} => $_), keys %$trans_ref);
@@ -129,6 +132,7 @@ for my $filename (@ARGV) {
 			     }
 			 }
 			 $stock->seqdata->{$name} = $stockrow;
+			 delete $untranslated{$name};
 		     } else {
 			 warn "Sequence '$name' not found in alignment; ignoring\n";
 		     }
@@ -139,7 +143,11 @@ for my $filename (@ARGV) {
 }
 
 if (defined $align_file) {
+    for my $name (keys %untranslated) { $stock->seqdata->{$name} =~ s/[^\-\.]/*/g }
     print $stock->to_string;
+    if (%untranslated) {
+	warn "The following alignment rows could not be tokenized, so were replaced with wildcards:\n", join (" ", keys %untranslated), "\n";
+    }
 }
 
 
