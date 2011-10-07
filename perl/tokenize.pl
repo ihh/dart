@@ -128,6 +128,7 @@ for my $filename (@ARGV) {
 				 substr ($stockrow, $row_pos, 1) = substr ($newseq, $newseq_pos++, 1);
 			     }
 			 }
+			 $stock->seqdata->{$name} = $stockrow;
 		     } else {
 			 warn "Sequence '$name' not found in alignment; ignoring\n";
 		     }
