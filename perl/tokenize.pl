@@ -4,17 +4,25 @@ use Getopt::Long;
 use SequenceIterator qw(iterseq printseq revcomp);
 use Stockholm;
 
+my $gr_aa = "AA";  # 3-letter amino acid annotation
+
 my $usage = "";
 $usage .= "$0 -- convert DNA to tokenized-codon sequence (or protein sequence)\n";
 $usage .= "\n";
-$usage .= "Usage: $0 [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [-truncate] [-align <alignment file>] [filename(s)]\n";
+$usage .= "Usage: $0 [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [-truncate] [-align <Stockholm alignment file>] [FASTA filename(s)]\n";
 $usage .= "\n";
 $usage .= "The 'frame' (i.e. reading frame) can be 0, 1, or 2.\n";
 $usage .= "If '-truncate' is specified, terminal stop codons will be discarded,\n";
 $usage .= "and premature stop codons will result in truncation and a warning being issued.\n";
 $usage .= "\n";
-$usage .= "If a (Stockholm) alignment file is specified, the output will be that alignment\n";
-$usage .= "but with all sequences replaced by the correspondingly-named tokenized sequences.\n";
+$usage .= "The interpretation of the alignment file is slightly different when encoding and decoding:\n";
+$usage .= "\n";
+$usage .= " If a protein alignment file is specified when tokenizing, the output will be that alignment\n";
+$usage .= " with all sequences replaced by the correspondingly-named tokenized sequences.\n";
+$usage .= "\n";
+$usage .= " If a tokenized alignment file is specified when decoding, the output will be that alignment\n";
+$usage .= " with all de-tokenized sequences, and annotated with their protein-coding translation.\n";
+$usage .= " (No FASTA file need be specified in this case.)\n";
 $usage .= "\n";
 
 my $colWidth = 50;    # column width for output
@@ -42,6 +50,32 @@ my (%aa, %tok);
 
 	'n'=>'z', 'nn'=>'Z', 'nnn'=>'X',
 	map (($_ x 3 => $_), qw(* - ? . x)) );
+
+my %aa_to_aa3 = ('A' => 'Ala',
+		 'C' => 'Cys',
+		 'D' => 'Asp',
+		 'E' => 'Glu',
+		 'F' => 'Phe',
+		 'G' => 'Gly',
+		 'H' => 'His',
+		 'I' => 'Ile',
+		 'K' => 'Lys',
+		 'L' => 'Leu',
+		 'M' => 'Met',
+		 'N' => 'Asn',
+		 'P' => 'Pro',
+		 'Q' => 'Gln',
+		 'R' => 'Arg',
+		 'S' => 'Ser',
+		 'T' => 'Thr',
+		 'V' => 'Val',
+		 'W' => 'Trp',
+		 'Y' => 'Tyr',
+		 map (($_ => 'Stp'), qw(0 1 2)),
+		 'z'=>'n', 'Z'=>'nn', 'X'=>'nnn',
+		 map (($_ => $_ x 3), qw(* - ? . x)) );
+
+my %aa3 = map (($_ => $aa_to_aa3{$aa{$_}}), keys %aa);
 
 # ASCII characters 33 through 126:
 # !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
@@ -90,57 +124,36 @@ GetOptions ("frame=i" => \$frame,
 	    "align=s" => \$align_file,
 	    "decode" => \$untokenize) or die $usage;
 
-if (defined($align_file) && $untokenize) { die "Can't use -decode and -align options together\n" }
-if (defined($align_file) && !$truncate) { warn "Warning: -align option is best used with -truncate\n" }
 my ($stock, %untranslated);
+if (defined($align_file) && !$truncate && !$untokenize) { warn "Warning: -align option is best used with -truncate\n" }
 if (defined $align_file) {
     $stock = Stockholm->from_file ($align_file);
     %untranslated = map ($stock->seqdata->{$_} =~ /[^\-\*\.]/ ? ($_ => 1) : (), @{$stock->seqname});
 }
 
 my $trans_ref = $use_aa ? \%aa : \%tok;
+my $annot_ref = $use_aa ? \%aa : \%aa3;
+
 my %untok = map (($$trans_ref{$_} => $_), keys %$trans_ref);
+my %annot = map (($$trans_ref{$_} => $$annot_ref{$_}), keys %$trans_ref);
 
 # Uncomment to check for duplicate tokens
 for my $c (keys %tok) { die $c unless $untok{$tok{$c}} eq $c }
 
-@ARGV = ("-") unless @ARGV;
-for my $filename (@ARGV) {
-    iterseq ($filename,
-	     sub {
-		 my ($name, $seq) = @_;
-		 my $newseq = $untokenize ? untokenize($seq,$name) : tokenize($seq,$name,$trans_ref,1);
-		 if (defined $align_file) {
-		     if (defined ($stock->seqdata->{$name})) {
-			 my $stockrow = uc $stock->seqdata->{$name};
-			 my $stockseq = $stockrow;
-			 $stockseq =~ s/[\-\.]//g;
-			 my $aaseq = tokenize($seq,$name,\%aa,0);
-			 if ($stockseq ne $aaseq) {
-			     warn
-				 "Translation of sequence '$name' does not match corresponding alignment row.\n",
-				 " Alignment row: $stockrow\n",
-				 " Alignment seq: $stockseq\n",
-				 "Translated seq: $aaseq\n",
-				 " Tokenized seq: $newseq\n\n";
-			 } else {
-			     my $newseq_pos = 0;
-			     for (my $row_pos = 0; $row_pos < length($stockrow); ++$row_pos) {
-				 my $row_char = substr ($stockrow, $row_pos, 1);
-				 if ($row_char ne '-' && $row_char ne '.') {
-				     substr ($stockrow, $row_pos, 1) = substr ($newseq, $newseq_pos++, 1);
-				 }
-			     }
-			     $stock->seqdata->{$name} = $stockrow;
-			     delete $untranslated{$name};
-			 }
-		     } else {
-			 warn "Sequence '$name' not found in alignment; ignoring\n";
-		     }
-		 } else {
-		     printseq ($name, $newseq);
-		 }
-	     });
+if (defined($align_file) && $untokenize && @ARGV == 0) {
+    for my $name (@{$stock->seqname}) {
+	if (defined ($stock->seqdata->{$name})) {
+	    my $stockrow = $stock->seqdata->{$name};
+	    my $stockseq = $stockrow;
+	    $stockseq =~ s/[\-\.]//g;
+	    visit_seq ($name, $stockseq);
+	}
+    }
+} else {
+    @ARGV = ("-") unless @ARGV;
+    for my $filename (@ARGV) {
+	iterseq ($filename, \&visit_seq);
+    }
 }
 
 if (defined $align_file) {
@@ -151,6 +164,73 @@ if (defined $align_file) {
     }
 }
 
+sub visit_seq {
+    my ($name, $seq) = @_;
+    my $gr;
+    my $newseq = $untokenize ? untokenize($seq,$name,\$gr) : tokenize($seq,$name,$trans_ref,1);
+    if (defined $align_file) {
+	if (defined ($stock->seqdata->{$name})) {
+	    my $stockrow = $stock->seqdata->{$name};
+	    my $stockseq = $stockrow;
+	    $stockseq =~ s/[\-\.]//g;
+	    if ($untokenize) {
+		if ($stockseq ne $seq) {
+		    warn
+			"Sequence '$name' does not match corresponding alignment row.\n",
+			" Alignment row: $stockrow\n",
+			" Alignment seq: $stockseq\n",
+			" Tokenized seq: $seq\n\n";
+		} else {
+		    my $newrow = "";
+		    my $newgr = "";
+		    my $newseq_pos = 0;
+		    for (my $row_pos = 0; $row_pos < length($stockrow); ++$row_pos) {
+			my $row_char = substr ($stockrow, $row_pos, 1);
+			if ($row_char eq '-' || $row_char eq '.') {
+			    $newrow .= $row_char x 3;
+			    $newgr .= $row_char x 3 if defined $gr;
+			} else {
+			    $newrow .= substr ($newseq, $newseq_pos, 3);
+			    $newgr .= substr ($gr, $newseq_pos, 3) if defined $gr;
+			    $newseq_pos += 3;
+			}
+		    }
+		    $stock->seqdata->{$name} = $newrow;
+		    $stock->gr->{$gr_aa}->{$name} = $newgr if defined $gr;
+		    delete $untranslated{$name};
+		}
+	    } else {
+		my $aaseq = tokenize($seq,$name,\%aa,0);
+		if (uc($stockseq) ne $aaseq) {
+		    warn
+			"Translation of sequence '$name' does not match corresponding alignment row.\n",
+			" Alignment row: $stockrow\n",
+			" Alignment seq: $stockseq\n",
+			"Translated seq: $aaseq\n",
+			" Tokenized seq: $newseq\n\n";
+		} else {
+		    my $newrow = "";
+		    my $newseq_pos = 0;
+		    for (my $row_pos = 0; $row_pos < length($stockrow); ++$row_pos) {
+			my $row_char = substr ($stockrow, $row_pos, 1);
+			if ($row_char eq '-' || $row_char eq '.') {
+			    $newrow .= $row_char;
+			} else {
+			    $newrow .= substr ($newseq, $newseq_pos++, 1);
+			}
+		    }
+		    $stock->seqdata->{$name} = $newrow;
+		    $stock->gr->{$gr_aa}->{$name} = $stockrow;
+		    delete $untranslated{$name};
+		}
+	    }
+	} else {
+	    warn "Sequence '$name' not found in alignment; ignoring\n";
+	}
+    } else {
+	printseq ($name, $newseq);
+    }
+}
 
 sub tokenize {
     my ($seq, $name, $trans_ref, $warning) = @_;
@@ -177,14 +257,16 @@ sub tokenize {
 }
 
 sub untokenize {
-    my ($seq, $name) = @_;
+    my ($seq, $name, $aa3_ref) = @_;
     my $untrans = "n" x $frame;
+    my $annot = $untrans;
     for (my $pos = 0; $pos < length($seq); ++$pos) {
 	$token = substr ($seq, $pos, 1);
-	if (exists $untok{$token}) { $untrans .= $untok{$token} }
-	else { $untrans .= 'nnn'; warn "Unrecognized token ($token) at position $pos of sequence $name\n" }
+	if (exists $untok{$token}) { $untrans .= $untok{$token}; $annot .= $annot{$token} }
+	else { $untrans .= 'nnn'; $annot .= '...'; warn "Unrecognized token ($token) at position $pos of sequence $name\n" }
     }
-    if ($revcomp) { $untrans = revcomp ($untrans) }
+    if ($revcomp) { $untrans = revcomp ($untrans); $annot = reverse $annot }
     if ($is_rna) { $untrans =~ s/t/u/g }
+    if (ref $aa3_ref) { $$aa3_ref = $annot }
     return $untrans;
 }
