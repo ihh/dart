@@ -19,9 +19,10 @@ $usage .= "The interpretation of the alignment file is slightly different when e
 $usage .= "\n";
 $usage .= " If a protein alignment file is specified when tokenizing, the output will be that alignment\n";
 $usage .= " with all sequences replaced by the correspondingly-named tokenized sequences.\n";
+$usage .= " (The translations of the DNA sequences in the FASTA file must match the protein sequences in the Stockholm file.)\n";
 $usage .= "\n";
 $usage .= " If a tokenized alignment file is specified when decoding, the output will be that alignment\n";
-$usage .= " with all de-tokenized sequences, and annotated with their protein-coding translation.\n";
+$usage .= " with all sequences de-tokenized (to DNA), annotated with their protein-coding translation.\n";
 $usage .= " (No FASTA file need be specified in this case.)\n";
 $usage .= "\n";
 
