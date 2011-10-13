@@ -1,15 +1,17 @@
 #!/usr/bin/perl
 
 use Getopt::Long;
+use File::Basename;
+
 use SequenceIterator qw(iterseq printseq revcomp);
 use Stockholm;
 
-my $gr_aa = "AA";  # 3-letter amino acid annotation
+my ($progname) = fileparse($0);
 
 my $usage = "";
-$usage .= "$0 -- convert DNA to tokenized-codon sequence (or protein sequence)\n";
+$usage .= "$progname -- convert DNA to tokenized-codon sequence (or protein sequence)\n";
 $usage .= "\n";
-$usage .= "Usage: $0 [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [-truncate] [-align <Stockholm alignment file>] [FASTA filename(s)]\n";
+$usage .= "Usage: $progname [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [-truncate] [-align <Stockholm alignment file>] [FASTA filename(s)]\n";
 $usage .= "\n";
 $usage .= "The 'frame' (i.e. reading frame) can be 0, 1, or 2.\n";
 $usage .= "If '-truncate' is specified, terminal stop codons will be discarded,\n";
@@ -29,8 +31,33 @@ $usage .= " (For decoding, no FASTA file need be specified if a Stockholm file i
 $usage .= "\n";
 $usage .= "Note that in both cases, the alignment file uses one character per codon\n";
 $usage .= "(i.e. alignments of protein-coding DNA are not accepted.)\n";
+$usage .= "Note also that reading-frame and reverse-strand options (-f,-revcomp) cannot yet be used in combination with -align.\n";
+$usage .= "\n";
+$usage .= "EXAMPLES\n";
+$usage .= "\n";
+$usage .= "$progname FASTAFILE\n";
+$usage .= "...to get a FASTA file of token sequences from the DNA sequences in FASTAFILE\n";
+$usage .= "\n";
+$usage .= "$progname FASTAFILE -aa\n";
+$usage .= "...to get a FASTA file of protein sequences from the DNA sequences in FASTAFILE\n";
+$usage .= "\n";
+$usage .= "$progname FASTAFILE -align STOCKFILE -truncate\n";
+$usage .= "...to get a Stockholm alignment of token sequences from the DNA sequences in FASTAFILE, aligned as per the protein alignment in STOCKFILE\n";
+$usage .= "\n";
+$usage .= "$progname -decode FASTAFILE\n";
+$usage .= "...to get a FASTA file of DNA sequences from the token sequences in FASTAFILE\n";
+$usage .= "\n";
+$usage .= "$progname -decode FASTAFILE -aa\n";
+$usage .= "...to get a FASTA file of protein sequences from the token sequences in FASTAFILE\n";
+$usage .= "\n";
+$usage .= "$progname -decode -align STOCKFILE\n";
+$usage .= "...to get a Stockholm alignment of DNA sequences (annotated with protein translations) from the token alignment in STOCKFILE\n";
+$usage .= "\n";
+$usage .= "$progname -decode -align STOCKFILE -aa\n";
+$usage .= "...to get a Stockholm alignment of protein sequences from the token alignment in STOCKFILE\n";
 $usage .= "\n";
 
+my $gr_aa = "AA";  # 3-letter amino acid annotation
 my $colWidth = 50;    # column width for output
 
 my (%aa, %tok);
@@ -132,7 +159,7 @@ GetOptions ("frame=i" => \$frame,
 
 my ($stock, %untranslated);
 if (defined($align_file) && !$truncate && !$untokenize) { warn "Warning: -align option is best used with -truncate\n" }
-if (defined($align_file) && $untokenize && ($frame != 0 || $revcomp)) { warn "Warning: alignment decoding is not currently compatible with -f or -revcomp options\n" }
+if (defined($align_file) && ($frame != 0 || $revcomp)) { warn "Warning: -align option is not currently compatible with -f or -revcomp options\n" }
 if (defined $align_file) {
     $stock = Stockholm->from_file ($align_file);
     %untranslated = map ($stock->seqdata->{$_} =~ /[^\-\*\.]/ ? ($_ => 1) : (), @{$stock->seqname});
