@@ -71,7 +71,7 @@ my %aa_to_aa3 = ('A' => 'Ala',
 		 'V' => 'Val',
 		 'W' => 'Trp',
 		 'Y' => 'Tyr',
-		 map (($_ => 'Stp'), qw(0 1 2)),
+		 map (($_ => '!!!'), qw(0 1 2)),
 		 'z'=>'n', 'Z'=>'nn', 'X'=>'nnn',
 		 map (($_ => $_ x 3), qw(* - ? . x)) );
 
@@ -126,6 +126,7 @@ GetOptions ("frame=i" => \$frame,
 
 my ($stock, %untranslated);
 if (defined($align_file) && !$truncate && !$untokenize) { warn "Warning: -align option is best used with -truncate\n" }
+if (defined($align_file) && $untokenize && ($frame != 0 || $revcomp)) { warn "Warning: alignment decoding is not currently compatible with -frame or -revcomp options\n" }
 if (defined $align_file) {
     $stock = Stockholm->from_file ($align_file);
     %untranslated = map ($stock->seqdata->{$_} =~ /[^\-\*\.]/ ? ($_ => 1) : (), @{$stock->seqname});
@@ -262,8 +263,14 @@ sub untokenize {
     my $annot = $untrans;
     for (my $pos = 0; $pos < length($seq); ++$pos) {
 	$token = substr ($seq, $pos, 1);
-	if (exists $untok{$token}) { $untrans .= $untok{$token}; $annot .= $annot{$token} }
-	else { $untrans .= 'nnn'; $annot .= '...'; warn "Unrecognized token ($token) at position $pos of sequence $name\n" }
+	if (exists $untok{$token}) {
+	    my $untok = $untok{$token};
+	    if (defined($align_file) && length($untok) != 3) {
+		die "Can't cope with ($token=>$untok) tokens when decoding alignments\n";
+	    }
+	    $untrans .= $untok;
+	    $annot .= $annot{$token};
+	} else { $untrans .= 'nnn'; $annot .= '...'; warn "Unrecognized token ($token) at position $pos of sequence $name\n" }
     }
     if ($revcomp) { $untrans = revcomp ($untrans); $annot = reverse $annot }
     if ($is_rna) { $untrans =~ s/t/u/g }
