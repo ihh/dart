@@ -132,7 +132,7 @@ GetOptions ("frame=i" => \$frame,
 
 my ($stock, %untranslated);
 if (defined($align_file) && !$truncate && !$untokenize) { warn "Warning: -align option is best used with -truncate\n" }
-if (defined($align_file) && $untokenize && ($frame != 0 || $revcomp)) { warn "Warning: alignment decoding is not currently compatible with -frame or -revcomp options\n" }
+if (defined($align_file) && $untokenize && ($frame != 0 || $revcomp)) { warn "Warning: alignment decoding is not currently compatible with -f or -revcomp options\n" }
 if (defined $align_file) {
     $stock = Stockholm->from_file ($align_file);
     %untranslated = map ($stock->seqdata->{$_} =~ /[^\-\*\.]/ ? ($_ => 1) : (), @{$stock->seqname});
