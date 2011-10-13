@@ -24,8 +24,8 @@ $usage .= " (The translations of the DNA sequences in the FASTA file must match 
 $usage .= "\n";
 $usage .= " When decoding, the FASTA file is assumed to be tokenized, and the (optional) Stockholm file is also tokenized.\n";
 $usage .= " If an alignment file is specified when decoding, the output will be that alignment\n";
-$usage .= " with all sequences de-tokenized (to DNA), annotated with their protein-coding translation.\n";
-$usage .= " (No FASTA file need be specified if a Stockholm file is specified, since they both contain tokenized sequences.)\n";
+$usage .= " with all sequences de-tokenized, annotated with their protein-coding translation.\n";
+$usage .= " (For decoding, no FASTA file need be specified if a Stockholm file is specified, since both are tokenized.)\n";
 $usage .= "\n";
 $usage .= "Note that in both cases, the alignment file uses one character per codon\n";
 $usage .= "(i.e. alignments of protein-coding DNA are not accepted.)\n";
@@ -141,11 +141,13 @@ if (defined $align_file) {
 my $trans_ref = $use_aa ? \%aa : \%tok;
 my $annot_ref = $use_aa ? \%aa : \%aa3;
 
-my %untok = map (($$trans_ref{$_} => $_), keys %$trans_ref);
-my %annot = map (($$trans_ref{$_} => $$annot_ref{$_}), keys %$trans_ref);
+my %untok = map (($tok{$_} => ($use_aa ? $aa{$_} : $_)), keys %tok);
+my %annot = map (($tok{$_} => ($use_aa ? $aa{$_} : $aa3{$_})), keys %tok);
+
+my $cod_size = $use_aa ? 1 : 3;
 
 # Uncomment to check for duplicate tokens
-for my $c (keys %tok) { die $c unless $untok{$tok{$c}} eq $c }
+#for my $c (keys %tok) { die $c unless $untok{$tok{$c}} eq $c }
 
 if (defined($align_file) && $untokenize && @ARGV == 0) {
     for my $name (@{$stock->seqname}) {
@@ -194,12 +196,12 @@ sub visit_seq {
 		    for (my $row_pos = 0; $row_pos < length($stockrow); ++$row_pos) {
 			my $row_char = substr ($stockrow, $row_pos, 1);
 			if ($row_char eq '-' || $row_char eq '.') {
-			    $newrow .= $row_char x 3;
-			    $newgr .= $row_char x 3 if defined $gr;
+			    $newrow .= $row_char x $cod_size;
+			    $newgr .= $row_char x $cod_size if defined $gr;
 			} else {
-			    $newrow .= substr ($newseq, $newseq_pos, 3);
-			    $newgr .= substr ($gr, $newseq_pos, 3) if defined $gr;
-			    $newseq_pos += 3;
+			    $newrow .= substr ($newseq, $newseq_pos, $cod_size);
+			    $newgr .= substr ($gr, $newseq_pos, $cod_size) if defined $gr;
+			    $newseq_pos += $cod_size;
 			}
 		    }
 		    $stock->seqdata->{$name} = $newrow;
@@ -271,11 +273,15 @@ sub untokenize {
 	$token = substr ($seq, $pos, 1);
 	if (exists $untok{$token}) {
 	    my $untok = $untok{$token};
-	    if (defined($align_file) && length($untok) != 3) {
+	    my $annot_sym = $annot{$token};
+	    if (defined($align_file) && length($untok) != $cod_size) {
 		die "Can't cope with ($token=>$untok) tokens when decoding alignments\n";
 	    }
+	    if (defined($align_file) && length($annot_sym) != $cod_size) {
+		die "Can't cope with ($token=>$annot_sym) tokens when decoding alignments\n";
+	    }
 	    $untrans .= $untok;
-	    $annot .= $annot{$token};
+	    $annot .= $annot_sym;
 	} else { $untrans .= 'nnn'; $annot .= '...'; warn "Unrecognized token ($token) at position $pos of sequence $name\n" }
     }
     if ($revcomp) { $untrans = revcomp ($untrans); $annot = reverse $annot }
