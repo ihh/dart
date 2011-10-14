@@ -44,6 +44,9 @@ $usage .= "\n";
 $usage .= "$progname DNASEQS.fasta -align PROTALIGN.stockholm -truncate  > TOKALIGN.stockholm\n";
 $usage .= "...to get a Stockholm alignment of token sequences from the DNA sequences in DNASEQS.fasta, aligned as per the protein alignment in PROTALIGN.stockholm\n";
 $usage .= "\n";
+$usage .= "$progname -align DNAALIGN.stockholm  > TOKALIGN.stockholm\n";
+$usage .= "...to get a Stockholm alignment of token sequences from the DNA sequences in DNAALIGN.stockholm, maintaining the alignment\n";
+$usage .= "\n";
 $usage .= "$progname -decode TOKSEQS.fasta  > DNASEQS.fasta\n";
 $usage .= "...to get a FASTA file of DNA sequences from the token sequences in TOKSEQS.fasta\n";
 $usage .= "\n";
@@ -158,8 +161,8 @@ GetOptions ("frame=i" => \$frame,
 	    "decode" => \$untokenize) or die $usage;
 
 my ($stock, %untranslated);
-if (defined($align_file) && !$truncate && !$untokenize) { warn "Warning: -align option is best used with -truncate\n" }
-if (defined($align_file) && ($frame != 0 || $revcomp)) { warn "Warning: -align option is not currently compatible with -f or -revcomp options\n" }
+if (defined($align_file) && @ARGV > 0 && !$truncate && !$untokenize) { warn "Warning: -align option is best used with -truncate\n" }
+if (defined($align_file) && @ARGV > 0 && ($frame != 0 || $revcomp)) { warn "Warning: -align option is not currently compatible with -f or -revcomp options\n" }
 if (defined $align_file) {
     $stock = Stockholm->from_file ($align_file);
     %untranslated = map ($stock->seqdata->{$_} =~ /[^\-\*\.]/ ? ($_ => 1) : (), @{$stock->seqname});
@@ -176,13 +179,17 @@ my $cod_size = $use_aa ? 1 : 3;
 # Uncomment to check for duplicate tokens
 #for my $c (keys %tok) { die $c unless $untok{$tok{$c}} eq $c }
 
-if (defined($align_file) && $untokenize && @ARGV == 0) {
+if (defined($align_file) && @ARGV == 0) {
     for my $name (@{$stock->seqname}) {
 	if (defined ($stock->seqdata->{$name})) {
 	    my $stockrow = $stock->seqdata->{$name};
 	    my $stockseq = $stockrow;
-	    $stockseq =~ s/[\-\.]//g;
-	    visit_seq ($name, $stockseq);
+	    if ($untokenize) {
+		$stockseq =~ s/[\-\.]//g;
+		visit_seq ($name, $stockseq);
+	    } else {
+		visit_seq ($name, $stockseq, 1);
+	    }
 	}
     }
 } else {
@@ -201,7 +208,8 @@ if (defined $align_file) {
 }
 
 sub visit_seq {
-    my ($name, $seq) = @_;
+    my ($name, $seq, $seq_is_alignment_row) = @_;
+    $seq_is_alignment_row = 0 unless defined $seq_is_alignment_row;
     my $gr;
     my $newseq = $untokenize ? untokenize($seq,$name,\$gr) : tokenize($seq,$name,$trans_ref,1);
     if (defined $align_file) {
@@ -235,6 +243,9 @@ sub visit_seq {
 		    $stock->gr->{$gr_aa}->{$name} = $newgr if defined $gr;
 		    delete $untranslated{$name};
 		}
+	    } elsif ($seq_is_alignment_row) {
+		$stock->seqdata->{$name} = $newseq;
+		delete $untranslated{$name};
 	    } else {
 		my $aaseq = tokenize($seq,$name,\%aa,0);
 		if (uc($stockseq) ne $aaseq) {
