@@ -241,7 +241,9 @@ sub visit_seq {
 		    delete $untranslated{$name};
 		}
 	    } elsif ($seq_is_alignment_row) {
+		my $aaseq = tokenize($seq,$name,\%aa,0);
 		$stock->seqdata->{$name} = $newseq;
+		$stock->gr->{$gr_aa}->{$name} = $aaseq;
 		delete $untranslated{$name};
 	    } else {
 		my $aaseq = tokenize($seq,$name,\%aa,0);
