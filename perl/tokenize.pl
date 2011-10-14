@@ -11,7 +11,7 @@ my ($progname) = fileparse($0);
 my $usage = "";
 $usage .= "$progname -- convert DNA to tokenized-codon sequence (or protein sequence)\n";
 $usage .= "\n";
-$usage .= "Usage: $progname [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [-truncate] [-align <Stockholm alignment file>] [FASTA filename(s)]\n";
+$usage .= "Usage: $progname [-table] [-f <frame>] [-revcomp] [-aa] [-rna] [-decode] [-truncate] [-align <Stockholm alignment file>] [FASTA filename(s)]\n";
 $usage .= "\n";
 $usage .= "The 'frame' (i.e. reading frame) can be 0, 1, or 2.\n";
 $usage .= "If '-truncate' is specified, terminal stop codons will be discarded,\n";
@@ -31,6 +31,9 @@ $usage .= " with all sequences de-tokenized, annotated with their protein-coding
 $usage .= " (For decoding, no FASTA file need be specified if a Stockholm file is specified, since both are tokenized.)\n";
 $usage .= "\n";
 $usage .= "EXAMPLES\n";
+$usage .= "\n";
+$usage .= "$progname -table\n";
+$usage .= "...to print the table of codons, tokens and amino acids\n";
 $usage .= "\n";
 $usage .= "$progname DNASEQS.fasta  > TOKSEQS.fasta\n";
 $usage .= "...to get a FASTA file of token sequences from the DNA sequences in DNASEQS.fasta\n";
@@ -104,7 +107,7 @@ my %aa_to_aa3 = ('A' => 'Ala',
 		 'V' => 'Val',
 		 'W' => 'Trp',
 		 'Y' => 'Tyr',
-		 map (($_ => '!!!'), qw(0 1 2)),
+		 map (($_ => '!!!'), qw(! 0 1 2)),
 		 'z'=>'n', 'Z'=>'nn', 'X'=>'nnn',
 		 map (($_ => $_ x 3), qw(* - ? . x)) );
 
@@ -147,6 +150,7 @@ my $use_aa = 0;
 my $is_rna = 0;
 my $untokenize = 0;
 my $truncate = 0;
+my $print_table = 0;
 my $align_file;
 
 GetOptions ("frame=i" => \$frame,
@@ -154,8 +158,14 @@ GetOptions ("frame=i" => \$frame,
 	    "aa"  => \$use_aa,
 	    "rna"  => \$is_rna,
 	    "truncate" => \$truncate,
+	    "table" => \$table,
 	    "align=s" => \$align_file,
 	    "decode" => \$untokenize) or die $usage;
+
+if ($table) {
+    print map (join(" ",$_,$aa3{$_},$aa{$_},$tok{$_})."\n", sort keys %tok);
+    exit;
+}
 
 my ($stock, %untranslated);
 if (defined($align_file) && @ARGV > 0 && !$truncate && !$untokenize) { warn "Warning: -align option is best used with -truncate\n" }
