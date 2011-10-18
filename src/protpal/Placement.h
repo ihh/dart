@@ -24,6 +24,10 @@ class PlacementLimiter : public map<string, vector<Node> >
   map<string, vector<int> > read_node_map;
   bool is_allowed(string, string); 
   string treeString; 
+  PHYLIP_tree* tree; 
+  bool is_within_distance(string, double, vector<int>); 
+  double tree_distance(Node, Node); 
+  double distance_cutoff; 
 };
 
 
@@ -64,6 +68,7 @@ class Placement
 
   // Limiting placements
   bool using_limiter; 
+  double distance_cutoff; 
   sstring jsonInputFileName; 
   PlacementLimiter placementLimiter; 
 };

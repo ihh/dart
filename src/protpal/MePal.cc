@@ -1,13 +1,11 @@
-#include<iostream>
-#include<fstream>
 #include "protpal/Placement.h"
 
 int main(int argc, char* argv[])
 {
   try{
-    
-   // create main placement object and run the analysis
+   // Create main placement object 
     Placement placement(argc, argv);
+    // Run the analysis
     placement.Run();
   }
   

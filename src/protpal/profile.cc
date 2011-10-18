@@ -1501,6 +1501,7 @@ bfloat AbsorbingTransducer::get_absorb_weight(state e, int charIndex)
 
 bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
 {
+  #ifdef DART_DEBUG
   // Transition accessor - checks validity of transition between the queried states
   if (! checkState(e))
 	{
@@ -1555,10 +1556,15 @@ bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
 	    }
 	  
 	}
+  #endif 
+  transitionPair.first=e, transitionPair.second=ePrime;
+  return transition_weight[transitionPair]; 
+  
 }
 
 vector<state> AbsorbingTransducer::get_incoming(state e)
 {
+  #ifdef DART_DEBUG
   // Access the incoming states of a given state - checks that the state is valid and not 
   // the start state.
   if (e == start_state) 
@@ -1573,6 +1579,8 @@ vector<state> AbsorbingTransducer::get_incoming(state e)
 	  std::cerr<<"State "<<e<< " appears not to have any incoming transitions, though it is not the start state.  Very peculiar. \n";
 	  THROWEXPR("Generic profile error");
 	}
+  #endif
+  return incoming[e]; 
 }
 
 // Some boolean 'checking/testing' functions
@@ -2163,7 +2171,7 @@ state_path Profile::sample_DP(int num_paths, int logging, bool showAlignments, b
 
 		}
 	  cache_path(pi); 
-	  bool convert_paths = true; 
+	  bool convert_paths = false; 
 	  if ( convert_paths )
 	    convert_path(pi); 
 	  // this operation is now handled within cache_path:

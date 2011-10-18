@@ -381,14 +381,14 @@ void PHYLIP_tree::write_node(ostream& out,
 	sprintf (tmp_buf, ":%-.10f", l);
 	out << tmp_buf;
 	if (numbered_branches)
-	  out << "[" << node << "]"; 
+	  out << "{" << node << "}"; 
 	columns += strlen(tmp_buf) + 1;
       }
     }
   else
     {
       if (numbered_branches) // Added 7/22/11 OW
-	out << "[" << node << "]"; 
+	out << "{" << node << "}"; // Changed from [] to {} as per pplacer spec, 10/18/11  OW
       out << ";";
       if (newline) // Added 7/22/11 OW
 	out<< "\n";

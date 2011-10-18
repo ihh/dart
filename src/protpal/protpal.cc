@@ -45,7 +45,8 @@ int main(int argc, char* argv[])
   string alignString; 
   // create main reconstruction object
   Reconstruction reconstruction(argc, argv);
-
+  cerr << "Alphabet name: " << reconstruction.alphabet.name << endl; 
+  
   // yeccch - I've mostly moved over to using weight_profiles, but some 
   // hackiness still persists! -OW
   // It seems like this is used only in reading transducers in from a file...def. fixable
@@ -130,7 +131,7 @@ int main(int argc, char* argv[])
       if (reconstruction.have_stockholm)
       // NB parse_gapped_fasta asserts the alignment is flush.  
 	gapped_seqs = parse_gapped_stockholm(reconstruction.stkFileName.c_str(), reconstruction.alphabet); 	
-      // Gapped fasta parsing is not yet implemented - this currently throws and exception:
+      // Gapped fasta parsing is not yet implemented - this currently throws an exception:
       else if (reconstruction.have_fasta)
 	gapped_seqs = parse_gapped_fasta(reconstruction.fastaFileName.c_str(), reconstruction.alphabet); 	
       alignString = "";
@@ -220,7 +221,8 @@ int main(int argc, char* argv[])
 		  cerr<<"\tNB: branch length "<< reconstruction.tree.branch_length(treeNode ,*child);
 		  cerr<<" rounded to "<< branch_length<< endl; 
 		}
-	      branchLengths.push_back(branch_length); 
+	      branchLengths.push_back(0.01); 
+	      //branchLengths.push_back(branch_length); 
 	    }
 
 	  // Instantiate the Q transducer object and its prerequisites.  

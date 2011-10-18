@@ -32,6 +32,8 @@ class ReadProfileModel
 
   // Substitution model
   Alphabet sub_alphabet;
+  vector<sstring> toks; 
+  bfloat toAdd; 
   int alphabet_size; 
   Irrev_EM_matrix rate_matrix; 
   double branch_length; 
@@ -121,7 +123,8 @@ class ReadProfileScore
 
   // The states of this profile that are relevant
   vector<state> profile_states;
-
+  vector<state> incoming_profile_states; 
+  
   // Pair HMM that directs the alignment calculation
   ReadProfileModel pairHMM; 
 

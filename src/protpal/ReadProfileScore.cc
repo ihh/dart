@@ -134,7 +134,7 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
   vector<state>::iterator j, jPrime; 
   list<state> incoming_HMM_states, possible_HMM_states;
   vector<state> incoming_profile_states; 
-  bfloat toAdd;
+  bfloat toAdd, toAddToDP;
   if (DP_matrix.size() != 0)
     {
       cerr<<"Filling DP matrix that is not empty! (This should not happen)\n";
@@ -171,6 +171,7 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 	  // Range is 5-10
 	  for (k=possible_HMM_states.begin(); k!=possible_HMM_states.end(); k++)
 	    {
+	      toAddToDP = 0.0; 
 	      if (logging)
 		cerr<<"\n\nProcessing state " << pairHMM.state_name[*k]  <<  " of HMM...\n"; 
 	      // the pairHMM "changes" state at every  step, so this is a trivial lookup
@@ -228,8 +229,10 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 		      if (hmmoc_only)
 			add_state_to_HMMoC(hmmoc, *j,*k,*jPrime, *kPrime);
 		      
-		      // Set the value
-		      add_to_DP_cell(i,*j,*k, toAdd); 
+		      // Set the value outside inner loop
+		      toAddToDP += toAdd; 
+		      //		      if (bfloat_is_nonzero(toAdd))
+		      //			add_to_DP_cell(i,*j,*k, toAdd); 
 		      if (backPointers) // backpointers might be requested for viterbi traceback
 			add_backPointer(i,*j,*k, iPrime, *jPrime, *kPrime); 
 		      if (logging)
@@ -246,6 +249,8 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 		}
 	      if (logging)
 		cerr<<"\n\n Final forward value for this state: " << get_DP_cell(i,*j,*k)  << "\n\n"; 
+	      if (bfloat_is_nonzero(toAddToDP))
+		  add_to_DP_cell(i,*j,*k, toAddToDP); 
 	    }
 	}
     }
@@ -337,11 +342,11 @@ inline int ReadProfileScore::get_incoming_read_state(int readIndex, state hmm_st
 
 inline vector<state> ReadProfileScore::get_incoming_profile_states(state profileState, state hmm_state)
 {
-  vector<state> toReturn; 
+  incoming_profile_states.clear(); 
   if (pairHMM.state_type[hmm_state] == "delete")
     {
-      toReturn.push_back(profileState); 
-      return toReturn; 
+      incoming_profile_states.push_back(profileState); 
+      return incoming_profile_states; 
     }
   else
     return profile->get_incoming(profileState); 
@@ -352,36 +357,38 @@ inline vector<state> ReadProfileScore::get_incoming_profile_states(state profile
 // ReadProfileModel methods.  Basic pairHMM to 'align' a read to a profile
 ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matrix& rate_matrix_in)
 {
+  // Alpahbet tokens
+  vector<sstring> toks = sub_alphabet.tokens();
   // eventually we'd like to optimize this value!
-  branch_length = 0.01; 
+  branch_length = 0.001; 
   
   // Build up the HMM 
   num_states=-1; 
   // A basic model - here for now as a placeholder
   add_state("start","start");
-  add_state("insert","pre_read_ins");
-  add_state("insert","post_read_ins");
+  //  add_state("insert","pre_read_ins");
+  //  add_state("insert","post_read_ins");
   add_state("insert","read_ins");
   add_state("delete","delete");
   add_state("match","match");
   add_state("end","end");
 
   // from start
-  add_transition("start", "pre_read_ins", .9);
+  //  add_transition("start", "pre_read_ins", .9);
   add_transition("start", "match", .05);
   add_transition("start", "delete", .05);
-  //  add_transition("start", "read_ins", .01);
+  add_transition("start", "read_ins", .99);
 
   // from pre_read_ins
-  add_transition("pre_read_ins", "pre_read_ins", .99); 
-  add_transition("pre_read_ins", "match", .005); 
-  add_transition("pre_read_ins", "delete", .005); 
+  //  add_transition("pre_read_ins", "pre_read_ins", .99); 
+  //  add_transition("pre_read_ins", "match", .005); 
+  //  add_transition("pre_read_ins", "delete", .005); 
 
   // from match
   add_transition("match", "match", 0.999); 
   add_transition("match", "read_ins", 0.00025); 
   add_transition("match", "delete", 0.00025); 
-  add_transition("match", "post_read_ins", 0.00025); 
+  //  add_transition("match", "post_read_ins", 0.00025); 
   add_transition("match", "end", 0.00025); 
 
 
@@ -389,27 +396,26 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   add_transition("read_ins", "read_ins", 0.00025); 
   add_transition("read_ins", "match", .999); 
   add_transition("read_ins", "delete", 0.00025); 
-  add_transition("read_ins", "post_read_ins", 0.00025); 
+  //  add_transition("read_ins", "post_read_ins", 0.00025); 
   add_transition("read_ins", "end", 0.00025); 
 
   // from delete
   add_transition("delete", "read_ins", 0.00025); 
   add_transition("delete", "match", 0.999); 
   add_transition("delete", "delete", 0.00025); 
-  add_transition("delete", "post_read_ins", 0.00025); 
+  //  add_transition("delete", "post_read_ins", 0.00025); 
   add_transition("delete", "end", 0.00025); 
 
   // from post_read_ins
-  add_transition("post_read_ins", "post_read_ins", 0.999); 
-  add_transition("post_read_ins", "end", 0.01); 
+  //  add_transition("post_read_ins", "post_read_ins", 0.999); 
+  //  add_transition("post_read_ins", "end", 0.01); 
 }
 
 void ReadProfileModel::add_transition(string from, string to, bfloat weight)
 {
   if (!state_index.count(from) || !state_index.count(to))
     {
-      cerr<<"Defining transition between unknown states: " << to << " and " << from << endl;
-      exit(1); 
+      THROWEXPR("Defining transition between unknown states: " + to + " and " + from);
     }
   // Add transition weight info
   pair<state, state> transitionPair; 
@@ -428,8 +434,7 @@ void ReadProfileModel::add_state(string type, string name)
     {
       if (*stateIter == name)
 	{
-	  cerr<<"State name " << name  << " already exists in HMM!\n";
-	  exit(1); 
+	  THROWEXPR("State name " + name + " already exists in HMM!\n");
 	}
     }
   state_name.push_back(name);
@@ -463,8 +468,7 @@ inline bfloat ReadProfileModel::get_transition_weight(state from, state to)
     {
       if (! tmpIter->second > 0)
 	{
-	  cerr <<"ERROR: transition weight was zero!\n"; 
-	  exit(1); 
+	  THROWEXPR("ERROR: transition weight was zero in read-profile model!\n"); 
 	}
       return tmpIter->second;
     }
@@ -481,20 +485,23 @@ inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profile
   emissionWeight = 0.0;
   //  cerr<< "Size of read profile: " << read_profile.size() << endl; 
   //  cerr<< "Index queried: " << readIndex << endl; 
-  vector<sstring> toks = sub_alphabet.tokens();
   
   // Match state: emit to both read and profile
   if (state_type[hmm_state]  == "match")
     {
-      for (symbolIter = read_profile[readIndex].begin(); 
-	   symbolIter != read_profile[readIndex].end(); symbolIter++)
-	for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
-	  {
-	    emissionWeight += bfloat(equilibrium_dist[alphIdx])* // prior on this character
-	      profile->get_absorb_weight(profileState, alphIdx)* //absorption by profile
-	      bfloat(conditional_sub_matrix(alphIdx,symbolIter->first))* // substitute to read's character
-	      bfloat(symbolIter->second); // read's affinity for the given character
-	  }
+      for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
+	{
+	  toAdd = 0.0; 
+	  for (symbolIter = read_profile[readIndex].begin(); 
+	       symbolIter != read_profile[readIndex].end(); symbolIter++)
+	    {
+	      toAdd += 
+		bfloat(conditional_sub_matrix(alphIdx,symbolIter->first))* // substitute to read's character
+		bfloat(symbolIter->second); // read's affinity for the given character
+	    }
+	  emissionWeight += toAdd * bfloat(equilibrium_dist[alphIdx]) // prior on this character
+	    *profile->get_absorb_weight(profileState, alphIdx); //absorption by profile
+	}
       //cerr<<"\n\nThe emission weight was: " << emissionWeight << endl; 
     }
 
@@ -516,8 +523,8 @@ inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profile
   else
     emissionWeight = bfloat(1.0);
 
-  if (! emissionWeight > 0)
-    cerr <<"\n\nWARNING: emission weight is zero!\n\n"; 
+  if (! bfloat_is_nonzero(emissionWeight) > 0)
+    THROWEXPR("emission weight is NONPOSITIVE"); 
   //  cerr<<"Done\t";
   return emissionWeight; 
 }

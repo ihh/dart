@@ -115,7 +115,7 @@ for my $filename (@ARGV) {
 			 my $stockrow = uc $stock->seqdata->{$name};
 			 my $stockseq = $stockrow;
 			 $stockseq =~ s/[\-\.]//g;
-			 my $aaseq = tokenize($seq,$name,\%aa,0);
+			 my $aaseq = tokenize($seq,$name,\%aa,1);
 			 if ($stockseq ne $aaseq) {
 			     warn
 				 "Translation of sequence '$name' does not match corresponding alignment row.\n",

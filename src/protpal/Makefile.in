@@ -1,7 +1,7 @@
 # Requires GNU Make
 
 TESTS      = 
-TARGETS    = $(TESTS) protpal
+TARGETS    = $(TESTS) protpal MePal
 DIRNAME    = protpal
 
 DEPS       = ecfg @GUILE_DEPS@ scfg hmm hsm irrev tree seq util newmat randlib

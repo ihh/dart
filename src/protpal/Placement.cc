@@ -17,7 +17,7 @@ Placement::Placement(int argc, char* argv[])
   opts.program_name = "MePal"; 
   opts.short_description = "Phylogenetic placement of sequence reads using ancestral profiles"; 
   opts.syntax = "-r <reads.fa> -spp <directory containing posterior profiles> -tf <TREE_FILE> [OPTIONS] > [PLACEMENT FILE]"; 
-  opts.add("l -logging-level", loggingLevel=0, "Logging level", false); 
+  opts.add("l -logging-level", loggingLevel=1, "Logging level"); 
 
   opts.newline();
   opts.print_title("Input options");
@@ -27,7 +27,8 @@ Placement::Placement(int argc, char* argv[])
 
   opts.print_title("Limiting heuristics");
   opts.add("ji -json-input", jsonInputFileName=nullValue, "Use JSON placement file to constrain read/node pairs considered", false); 
-  // Possibly: specify neighborhood around json placement(s)
+  opts.add("dc -distance-cutoff", distance_cutoff=0.0, "Consider only placements which are within this distance to a placement in the input JSON file. "); 
+
   
   opts.print_title("Read-profile scoring"); 
   opts.add("b -subst-model", rateMatrixFileName = default_chain_filename, "DART format chain file to be used for profile - read pairHMM.  NB: this should be the same chain used when calling ProtPal to make profiles.");
@@ -59,7 +60,7 @@ Placement::Placement(int argc, char* argv[])
   if (treeFileName != nullValue)
     {
       if (!FileExists( string(treeFileName)))
-	THROWEXPR("\nERROR: sequence file " + treeFileName  + " does not exist. Exiting...\n\n");
+	THROWEXPR("\nERROR: tree file " + treeFileName  + " does not exist. Exiting...\n\n");
       parse_tree(treeFileName.c_str()); 
     }
   else
@@ -88,9 +89,16 @@ Placement::Placement(int argc, char* argv[])
     {
       placementLimiter.parse_JSON(jsonInputFileName.c_str());
       using_limiter = true; 
-      if (loggingLevel >= 1)
+      placementLimiter.tree = &tree; 
+      if (distance_cutoff < 0.0)
+	THROWEXPR("Distance cutoff ( -dc --distance-cutoff ) value must be positive!")
+      placementLimiter.distance_cutoff = distance_cutoff; 
+      if ( loggingLevel >= 1)
 	cerr << "Limiter initialized using file: " << jsonInputFileName << endl;
     }
+  
+  if (distance_cutoff > 0.0 and jsonInputFileName == nullValue)
+    cerr << "Warning: you specified a distance cutoff ( -dc --distance-cutoff ) but no JSON input file, making the distance cutoff meaningless.  Proceeding with exhaustive read/profile scoring...\n"; 
 
   // Store the arguments to MePal for the JSON string.
   for (int i =0; i< argc; i++)
@@ -106,11 +114,20 @@ Placement::Placement(int argc, char* argv[])
 
 void Placement::Run()
 {
-  if (loggingLevel >=1 )
-    cerr << "Beginning placement operations...\n"; 
   // Make sure we have a profile for each node - warn the user if some are missing
   profile_filenames = check_profile_filenames(); 
   Read read;
+  int readsAtNode; 
+
+  if (loggingLevel >=1 )
+    {
+      cerr << "Beginning placement operations with the following input data:\n"; 
+      cerr << "\t" << reads.size() << " reads read from input.\n"; 
+      cerr << "\t" << profile_filenames.size() << " posterior profiles found.\n"; 
+      if (using_limiter)
+	cerr <<"\tUsing limiter to constrain placements.  Max allowed distance to input placement: " << distance_cutoff << "\n"; 
+    }
+  
 
   // Move through the nodes, scoring a subset (possibly all) of the reads to the profile
   // associated with that node
@@ -120,16 +137,18 @@ void Placement::Run()
     {
       const Phylogeny::Branch& b = *bi;
       int profileNode = b.second; 
-      for_rooted_children(tree, profileNode, child)
-	cerr << tree.branch_length(profileNode, *child) << endl;
+      //      for_rooted_children(tree, profileNode, child
+      //	cerr << tree.branch_length(profileNode, *child) << endl;
 
       if (profile_filenames[profileNode] == nullValue)
-	continue;
+	{
+	  cerr << "Warning: no profile found for node: " << tree.node_name[profileNode] << endl; 
+	  continue;
+	}
+      readsAtNode = 0; 
       if (loggingLevel >=1)
-	cerr << "Scoring reads to profile at node: " << tree.node_name[profileNode]<<"...\n";
-      
-      
-      
+	cerr << "Scoring reads to profile at node: " << tree.node_name[profileNode]<<" ... ";
+
       // Read in the profile from a file
       AbsorbingTransducer ancestralProfile(profile_filenames[profileNode].c_str(),
 					   alphabetVector, tree);
@@ -147,16 +166,16 @@ void Placement::Run()
 	  if (using_limiter)
 	    if ( ! placementLimiter.is_allowed(readIter->first, tree.node_name[profileNode]) )
 	      {
-		if (loggingLevel >=1)
-		  cerr << "Skipping read/node pair: " << readIter->first << " " << tree.node_name[profileNode] << endl; 
+		if (loggingLevel >=3)
+		  cerr << "\n\tSkipping read/node pair: " << readIter->first << " " << tree.node_name[profileNode] << endl; 
 		continue;
 	      }
 	  // Update 'read'
 	  read.identifier = readIter->first;
 	  read.set( readIter->second );
-
-	  if (loggingLevel >= 1)
-	    cerr<<"\tScoring read/profile pair: " << read.identifier << " - " << profile_scorer.name <<"; ";
+	  ++readsAtNode; 
+	  if (loggingLevel >= 2)
+	    cerr<<"\n\tScoring read/profile pair: " << read.identifier << " - " << profile_scorer.name <<";\t";
 
 	  // Here goes the atual dynamic programming - the score is deposited in the scores map
           profile_scorer.score_and_store(read, scores, false);
@@ -174,7 +193,7 @@ void Placement::Run()
 					     true ); // do log                            
 		    THROWEXPR("Nonpositive read/profile score");
 		  }
-		if (loggingLevel >= 1)
+		if (loggingLevel >= 2)
 		  {
 		    cerr<<" Score: " << score << endl;
 		  }
@@ -182,8 +201,8 @@ void Placement::Run()
 	    else
 	      THROWEXPR("Read had no score for profile " + profile_scorer.name + " (this shouldn't happen)"); 
 	}
-      if (loggingLevel >=1 )
-	cerr<< "\n";
+      if (loggingLevel >=1)
+	cerr << readsAtNode << " reads scored at this node.\n"; 
     }
   if (loggingLevel >=1 )  
     cerr <<"\n\n";
@@ -248,7 +267,8 @@ void Placement::parse_tree(const char* fileName)
 
 
 void Placement::write_placement_JSON(ostream& out, ScoreMap& scores)
-//Now that we're using a 'real' JSON parser/writer, I might do away with this business below:
+// Now that we're using a 'real' JSON parser/writer, I might do away with this business below:
+// (which is an "ungainly mix of code and formatting text" if I ever saw one!!)
 {
   out <<"{\n";
   out <<"\"tree\":   ";
@@ -310,49 +330,49 @@ void Placement::write_numbered_newick(ostream& out, bool quotes)
 
 void PlacementLimiter::parse_JSON(const char* JSON_file)
 {
-    Json::Value root; 
-    Json::Reader reader; 
-    ifstream jsonFile; 
-    string readName; 
-    unsigned int idx, edge_field; 
-
-    // Open the file and attempt to parse it.
-    jsonFile.open(JSON_file); 
-    bool parsingSuccessful = reader.parse(jsonFile, root); 
-    if (!parsingSuccessful)
-      {
-	cerr << "Error in parsing JSON file:\n" << reader.getFormattedErrorMessages(); 
-	THROWEXPR("JSON parsing error"); 
-      }
-    
-    // Get the tree and extract the node/branch names
-    // This is fairly hacky - originally tried w/ Regexps, but troublesome
-    const Json::Value tree = root["tree"]; 
-    vector<sstring> node_vector =  sstring((tree.asString())).split("(),;"); 
-    int branch; 
-    sstring node; 
-    vector<sstring> splitName;
-    Regexp re("\\[[0-9]+\\]"); 
-    for (vector<sstring>::iterator nIter=node_vector.begin(); nIter!=node_vector.end(); ++nIter)
-      {
-	if (! re.Match(nIter->c_str()))
-	  THROWEXPR("This node does not appear to have a pplacer-style branch index label like this:\n nodeName:branchLength[branchIndex]\nrendering the JSON data unusable. The string was:\n" + *nIter);
-	if (index( ":", *nIter) != -1)
-	  {
-	    // if there is no node name this cannot continue
+  Json::Value root; 
+  Json::Reader reader; 
+  ifstream jsonFile; 
+  string readName; 
+  unsigned int idx, edge_field; 
+  
+  // Open the file and attempt to parse it.
+  jsonFile.open(JSON_file); 
+  bool parsingSuccessful = reader.parse(jsonFile, root); 
+  if (!parsingSuccessful)
+    {
+      cerr << "Error in parsing JSON file:\n" << reader.getFormattedErrorMessages(); 
+      THROWEXPR("JSON parsing error"); 
+    }
+  
+  // Get the tree and extract the node/branch names
+  // This is fairly hacky - originally tried w/ Regexps, but troublesome
+  const Json::Value tree = root["tree"]; 
+  vector<sstring> node_vector =  sstring((tree.asString())).split("(),;"); 
+  int branch; 
+  sstring node; 
+  vector<sstring> splitName;
+  Regexp re("\\{[0-9]+\\}"); 
+  for (vector<sstring>::iterator nIter=node_vector.begin(); nIter!=node_vector.end(); ++nIter)
+    {
+      if (! re.Match(nIter->c_str()))
+	THROWEXPR("This node does not appear to have a pplacer-style branch index label like this:\n nodeName:branchLength[branchIndex]\nrendering the JSON data unusable. The string was:\n" + *nIter);
+      if (index( ":", *nIter) != -1)
+	{
+	  // if there is no node name this cannot continue
 	    splitName  = nIter->split(":"); 
 	    if (splitName.size() < 2)
 	      THROWEXPR("Internal nodes must have names, but this one seems not to " + *nIter + "   (This makes mapping between nodes very tricky, and this is not yet supported");
 	     
 	    node = nIter->split(":")[0]; 
-	    branch = atoi(remove_from_string( nIter->split(":")[1].split("[")[1], "]").c_str()); 
+	    branch = atoi(remove_from_string( nIter->split(":")[1].split("{")[1], "}").c_str()); 
 	    branches2nodes[branch] = node; 
 	    nodes2branches[node] = branch; 
 	  }
 	else
 	  {
-	    node = nIter->split("[")[0]; 
-	    branch = atoi(remove_from_string( nIter->split("[")[1], "]").c_str());
+	    node = nIter->split("{")[0]; 
+	    branch = atoi(remove_from_string( nIter->split("{")[1], "}").c_str());
 	    branches2nodes[branch] = node; 
 	    nodes2branches[node] = branch; 
 	  }
@@ -382,19 +402,53 @@ void PlacementLimiter::parse_JSON(const char* JSON_file)
 // 	  cerr << *nIter << " "; 
 // 	cerr <<endl;
 //       }
-
 }
 bool PlacementLimiter::is_allowed(string readName,  string nodeName)
 {
-  if (!nodes2branches.count(nodeName))
+  if (distance_cutoff == 0.0)
     {
-      cerr << "Warning: tree node has no entry in branch list!\n"; 
-      return true; 
+      if ( !nodes2branches.count(nodeName))
+	{
+	  cerr << "Warning: tree node has no entry in branch list!\n"; 
+	  return true; 
+	}
+      else
+	return bool(index(nodes2branches[nodeName], read_node_map[readName]) != -1);
     }
-  else
-    return bool(index(nodes2branches[nodeName], read_node_map[readName]) != -1);
+  else 
+    return is_within_distance(nodeName, distance_cutoff, read_node_map[readName]);
 }
- 
+
+
+bool PlacementLimiter::is_within_distance(string nodeName, double distance_cutoff, 
+					  vector<int> input_branches)
+{
+  // Is the node named nodeName within distance of one of the nodes in input_branches?
+  Node node1 = tree->find_node_or_die(nodeName), node2; 
+  for (vector<int>::iterator branch = input_branches.begin(); 
+       branch!= input_branches.end(); ++branch)
+    {
+      node2 = tree->find_node_or_die(branches2nodes[*branch]);
+      if (tree_distance(node1, node2) < distance_cutoff)
+	return true; 
+    }      
+  return false; 
+}
+
+double PlacementLimiter::tree_distance(Node node1, Node node2)
+{
+  double totalDist; 
+  Phylogeny::Node_vector path, parents = tree->find_parents(0,-1); 
+  path = tree->node_path(node1, node2, parents); 
+  for (unsigned int i=0; i<path.size()-1; ++i)
+    {
+      totalDist += tree->branch_length( path[i], path[i+1] );
+    }	
+  //  cerr << "Total distance between nodes: " <<  tree->node_name[node1] << " , ";
+  //  cerr << tree->node_name[node2] << " " << totalDist << endl; 
+  return totalDist; 
+}
+  
   
 
 PlacementLimiter::PlacementLimiter(void)

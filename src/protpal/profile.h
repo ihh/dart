@@ -124,6 +124,7 @@ class AbsorbingTransducer
   
   // query whether or not a given transition exists in the transducer
   bool has_transition(state e, state ePrime);
+  pair<state, state> transitionPair; 
 
   //displaying states, transitions, absorption weights
   void display(bool states, bool transitions, bool absorptions);
