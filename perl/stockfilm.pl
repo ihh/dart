@@ -32,7 +32,8 @@ for my $filename (@ARGV) {
     my $db = Stockholm::Database->from_file ($filename);
     for my $stock (@$db) {
 	# prepare text
-	my $stockText = $stock->to_string ($screenColumns);
+	my $stockText = $stock->to_string ("MAXCOLS" => $screenColumns,
+					   "COLOR" => "AMINO");
 
 	# clear screen
 	system "clear";

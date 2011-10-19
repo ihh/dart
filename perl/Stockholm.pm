@@ -125,6 +125,8 @@ Returns the object as a Stockholm-formatted string.
 ARGs can include...
         MAXCOLS    -- limit maximum number of columns (can also be specified as a single scalar arg)
         NOSEQDATA  -- don\'t print any sequence data (can be used this to compress output)
+        COLOR      -- callback function: when called with (residue,rowname,colnum), returns 2-elt list of (fg,bg) colors
+                      Alternatively, use shorthand string "AMINO" for amino acid coloring.
 
 =cut
 
@@ -147,6 +149,9 @@ sub to_string {
 	$maxcols = $args{'MAXCOLS'};
     }
     $maxcols = 80 unless defined $maxcols;     # default 80-column output
+
+    my $color_sub = $args{'COLOR'};
+    if (uc($color_sub) eq 'AMINO') { $color_sub = \&amino_color_scheme }
 
     # init output array
     my @out;
@@ -200,10 +205,14 @@ sub to_string {
 	    my $seqname = $gr_seqname[$i];
 	    # Sequences
 #	    warn "Writing cols $col+$colstep for $seqname";
-	    push @out, $self->prettify ($lcols, $seqname,
-					safe_substr ($self->seqdata->{$seqname}, $col, $colstep))
-		if exists $self->seqdata->{$seqname}
-		&& !$args{'NOSEQDATA'};
+	    if (exists $self->seqdata->{$seqname} && !$args{'NOSEQDATA'}) {
+		my $substr = safe_substr ($self->seqdata->{$seqname}, $col, $colstep);
+		if (defined $color_sub) {
+		    my @substr = split //, $substr;
+		    $substr = join ("", map (color_code(&$color_sub($substr[$_],$seqname,$col+$_)).$substr[$_], 0..@substr-1), white_color_code());
+		}
+		push @out, $self->prettify ($lcols, $seqname, $substr);
+	    }
 	    # GR lines
 	    foreach my $feature (grep (exists ($self->gr->{$_}->{$seqname}), keys %{$self->gr})) {
 #		warn "Writing cols $col+$colstep for $seqname $feature";
@@ -219,6 +228,42 @@ sub to_string {
 
     # convert output array to string & return
     return join ("", map ("$_\n", @out));
+}
+
+# ANSI control characters
+sub esc { join ("", map (chr(27)."[$_"."m", @_)) }
+sub color_code {
+    my ($bg, $fg) = @_;
+    return esc(27,30+$fg,40+$bg);
+}
+sub white_color_code { color_code(0,7) }
+
+# color schemes
+my %aa_color = ('a' => [7,0],
+		'r' => [4,6],
+		'n' => [6,7],
+		'd' => [1,7],
+		'c' => [3,7],
+		'q' => [6,0],
+		'e' => [1,0],
+		'g' => [7,2],
+		'h' => [4,7],
+		'i' => [2,0],
+		'k' => [2,3],
+		'l' => [4,0],
+		'm' => [3,0],
+		'f' => [4,2],
+		'p' => [5,0],
+		's' => [3,1],
+		't' => [3,2],
+		'w' => [5,7],
+		'y' => [4,0],
+		'v' => [2,7]);
+
+sub amino_color_scheme {
+    my ($residue, $seqname, $pos) = @_;
+    my $cols = $aa_color{lc $residue};
+    return defined($cols) ? @$cols : (0,7);
 }
 
 =head2 copy
