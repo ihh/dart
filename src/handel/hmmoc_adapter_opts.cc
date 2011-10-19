@@ -22,6 +22,10 @@ void HMMoC_adapter_options::init_opts_list (Opts_list& opts, bool dump_hmmoc_fil
   opts.add ("hk -hmmoc-keep-tmp", HMMoC_adapter::leave_debris, "don't delete temporary files");
   opts.add ("hcx -hmmoc-cc-exec", HMMoC_adapter::gcc_exec, "path to C++ compiler executable");
   opts.add ("hca -hmmoc-cc-args", HMMoC_adapter::gcc_args, "C++ compiler options");
+
+  opts.newline();
+  opts.print_title ("HMMoC adapter banding");
+
   opts.add ("hc2d -hmmoc-2d-banding", HMMoC_adapter::two_d_banding, "2-D DP banding width, 0 for no banding");
   opts.add ("hc3d -hmmoc-3d-banding", HMMoC_adapter::three_d_banding, "3-D DP banding diameter, 0 for no banding");
   opts.add ("hc4d -hmmoc-4d-banding", HMMoC_adapter::four_d_banding, "4-D DP banding diameter, 0 for no banding");

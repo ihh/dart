@@ -100,11 +100,6 @@ int main(int argc, char* argv[])
   opts.add ("rs -redsuch", use_Redelings_Suchard = false,    "use Redelings-Suchard proposal scheme when sampling");
 
   opts.newline();
-  opts.add ("ub -use-best",    use_best = false, "report best (most probable) alignment, rather than final sampled one");
-  opts.add ("r -refine",     refine = false,  "periodically, do iterative refinement to optimize alignment (does not use Redelings-Suchard)");
-  opts.add ("rp -refine-period",    refine_period_per_node = 10, "number of sampling steps between each refinement");
-
-  opts.newline();
   opts.print_title ("MCMC move rates");
 
   opts.add ("bf -branch-freq", shuffler.branch_realign_rate = 1, "relative rate of branch-sampling: realigning adjacent sequences by DP");
@@ -130,6 +125,14 @@ int main(int argc, char* argv[])
   opts.add ("c -composition", comp_dir = "", "save phylocomposer files to this directory during sampling", false);
   opts.add ("dot -dotfile", dotfile_dir = "", "save composite transducer dotfiles to this directory", false);
   opts.add ("af -align-file", mcmc_sample_filename = "", "write Stockholm alignments to file during sampling", false);
+
+  opts.newline();
+  opts.print_title ("Stochastic search mode");
+
+  opts.newline();
+  opts.add ("ub -use-best",    use_best = false, "report best (most probable) alignment, rather than final sampled one");
+  opts.add ("r -refine",     refine = false,  "periodically, do iterative refinement to optimize alignment (does not use Redelings-Suchard)");
+  opts.add ("rp -refine-period",    refine_period_per_node = 10, "number of sampling steps between each refinement");
 
   // HMMoC adapter
 
