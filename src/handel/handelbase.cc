@@ -189,6 +189,7 @@ void Handel_base::propose_sample_branch_slide (Node grumpa, Node dad, Node son, 
   const double dad_son_len = tree.branch_length (dad, son);
   const double grumpa_son_len = grumpa_dad_len + dad_son_len;
   vector<double> x (sample_points + 1), p (sample_points + 1);
+  vector<Score> sc (sample_points + 1);
   x[0] = grumpa_dad_len / grumpa_son_len;
   for (int i = 1; i <= sample_points; ++i)
     x[i] = Rnd::prob();
@@ -197,12 +198,29 @@ void Handel_base::propose_sample_branch_slide (Node grumpa, Node dad, Node son, 
       tree.branch_length (grumpa, dad) = grumpa_son_len * x[i];
       tree.branch_length (dad, son) = grumpa_son_len * (1. - x[i]);
       tree_changed();
-      p[i] = Score2Prob ((Score) (kT * (double) alignment_score()));
+      sc[i] = alignment_score();
     }
+
+  Score min_sc = sc[0];
+  for (int i = 1; i <= sample_points; ++i)
+    if (sc[i] < min_sc)
+      min_sc = sc[i];
+
+  for (int i = 0; i <= sample_points; ++i)
+    p[i] = Score2Prob ((Score) (kT * (double) (sc[i] - min_sc)));
 
   const int i = Rnd::choose (p);
   tree.branch_length (grumpa, dad) = grumpa_son_len * x[i];
   tree.branch_length (dad, son) = grumpa_son_len * (1. - x[i]);
+  tree_changed();
+
+  if (CTAGGING(5,MCMC BRANCH_SLIDE))
+    {
+      CL << "Branch-sliding: grumpa->son length is " << grumpa_son_len << "\n";
+      CL << "Proposed (grumpa->dad/grumpa->son) fractions: " << x << "\n";
+      CL << "Proposed (grumpa->dad/grumpa->son) weights: " << p << "\n";
+      CL << "Final sampled fraction " << x[i] << " has weight " << p[i] << "\n";
+    }
 }
 
 void Handel_base::sample_branch_slide (Node grumpa, Node dad, Node son, double kT, int sample_points)
@@ -242,6 +260,7 @@ bool Handel_base::sample_branch_swap (Node aunt, Node nephew, Node grumpa, Node 
 void Handel_base::propose_sample_branch_length (const Undirected_pair& branch, double kT, double tmax, int sample_points)
 {
   vector<double> x (sample_points + 1), p (sample_points + 1);
+  vector<Score> sc (sample_points + 1);
   x[0] = tree.branch_length (branch);
   for (int i = 1; i <= sample_points; ++i)
     x[i] = Rnd::prob() * tmax;
@@ -249,11 +268,28 @@ void Handel_base::propose_sample_branch_length (const Undirected_pair& branch, d
     {
       tree.branch_length (branch) = x[i];
       tree_changed();
-      p[i] = Score2Prob ((Score) (kT * (double) alignment_score()));
+      sc[i] = alignment_score();
     }
+
+  Score min_sc = sc[0];
+  for (int i = 1; i <= sample_points; ++i)
+    if (sc[i] < min_sc)
+      min_sc = sc[i];
+
+  for (int i = 0; i <= sample_points; ++i)
+    p[i] = Score2Prob ((Score) (kT * (double) (sc[i] - min_sc)));
 
   const int i = Rnd::choose (p);
   tree.branch_length (branch) = x[i];
+  tree_changed();
+
+  if (CTAGGING(5,MCMC BRANCH_LENGTH))
+    {
+      CL << "Branch-sliding:\n";
+      CL << "Proposed lengths: " << x << "\n";
+      CL << "Proposed weights: " << p << "\n";
+      CL << "Final sampled length " << x[i] << " has weight " << p[i] << "\n";
+    }
 }
 
 void Handel_base::sample_branch_length (const Undirected_pair& branch, double kT, double tmax, int sample_points)
