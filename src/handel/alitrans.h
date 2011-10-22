@@ -2,10 +2,10 @@
 #define ALITRANS_INCLUDED
 
 #include "handel/transducer.h"
-#include "handel/handelalign.h"
+#include "handel/handelbase.h"
 #include "handel/recorder.h"
 #include "handel/hmmoc_adapter_opts.h"
-#include "irrev/irrev_em_matrix.h"
+#include "ecfg/ecfg.h"
 
 // default banding coefficient -- estimated using t/simband.pl
 #define DEFAULT_BANDING_COEFFICIENT 10.
@@ -120,16 +120,36 @@ struct Transducer_alignment
 struct Transducer_alignment_with_subst_model : Transducer_alignment
 {
   // substitution model
-  Irrev_EM_matrix subst_model;
+  ECFG_matrix_set* ems;
+  PScores subst_pscores;
+  PCounts subst_pcounts;
+  set<int> subst_mutable_pgroups;
 
   // constructor
   Transducer_alignment_with_subst_model() :
     Transducer_alignment(),
-    subst_model (1, 2)  // dummy binary alphabet
+    ems (NULL)
   { }
 
+  // destructor
+  ~Transducer_alignment_with_subst_model() { if (ems) delete ems; ems = NULL; }
+
+  // assign
+  void assign_subst_model (const Transducer_alignment_with_subst_model& ta);
+
   // submat_factory method (virtual from Handel_base)
-  Substitution_matrix_factory& submat_factory() const { return (Substitution_matrix_factory&) subst_model; }
+  Substitution_matrix_factory& submat_factory() const;
+
+  // helpers for submat_factory
+  void eval_funcs() { ems->eval_funcs (subst_pscores); }
+  EM_matrix_base& subst_model();
+
+  // more virtual methods from Handel_base
+  void sample_subst_params();
+  sstring subst_parameter_string() const; 
+
+  // more helpers
+  PScores propose_subst_params();
 };
 
 

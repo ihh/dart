@@ -32,9 +32,11 @@ public:
   double branch_swap_rate;
   double branch_scale_rate;
   double indel_param_sampling_rate;
+  double subst_param_sampling_rate;
 
   enum Action { Sample_node = 0, Sample_branch, Slide_node,
-		Scale_branch, Swap_branches, Sample_indel_params, Total_moves };
+		Scale_branch, Swap_branches, Sample_indel_params, Sample_subst_params,
+		Total_moves };
 
   void set_tree (const PHYLIP_tree& tree);
   void reset();  // call after a successful branch-swapping move

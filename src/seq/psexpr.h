@@ -29,6 +29,8 @@ struct PFunc_builder
   static void pscores2stream (ostream& out, const PScores& pscores, const char* tag, const vector<int>& pgroups_to_show, const char* indent = "", const PCounts* pcounts = 0, bool use_bitscores = false);
   static void pscores2stream (ostream& out, const PScores& pscores, const set<int>& mutable_pgroups, const PCounts* pcounts = 0, bool use_bitscores = false);  // uses mutable_pgroups to figure out const & pgroup/rate tags
 
+  static sstring mutable_pscores2string (const PScores& pscores, const set<int>& mutable_pgroups);
+
   static void pcounts2stream (ostream& out, const PCounts& pcounts, const char* tag, const PCounts* baseline_pcounts = 0,
 			      bool interpret_single_element_pgroups_as_rate_variables = true,
 			      bool print_zero_counts = false);

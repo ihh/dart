@@ -403,6 +403,8 @@ public:
   void optimise (PScores& scores, const set<int>& mutable_groups) const;    // uses these counts to optimise scores for the specified set of parameter groups
   void optimise (PScores& scores) const;    // uses these counts to optimise scores for all parameter groups
 
+  void randomize (PScores& scores, const set<int>& pgroups_to_randomize);
+
   PCounts& operator+= (const PCounts& counts);
 
   // output

@@ -9,7 +9,8 @@
 #define Stockholm_alignment_type_sampled "Sampled"
 #define Stockholm_alignment_type_refined "Refined"
 #define Stockholm_alignment_type_final   "Final"
-#define Stockholm_indel_parameter_tag	 "PARAMS"
+#define Stockholm_indel_parameter_tag	 "INDELPARAMS"
+#define Stockholm_subst_parameter_tag	 "SUBSTPARAMS"
 
 // Stockholm tag for alignment sample number
 #define Stockholm_alignment_step_tag     "STEP"
@@ -178,6 +179,12 @@ struct Handel_base : Tree_alignment
    */
    virtual void sample_indel_params();
    virtual sstring indel_parameter_string() const; 
+
+  /** subst_parameters
+   // dummy functions - samples substitution parameters in derived classes
+   */
+   virtual void sample_subst_params();
+   virtual sstring subst_parameter_string() const; 
 
   /** proposal_accept
    // Metropolis-Hastings sampling method.

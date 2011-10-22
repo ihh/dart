@@ -136,6 +136,7 @@ Tree_shuffler::Action Tree_shuffler::next_action()
   weight[3] = branch_scale_rate;
   weight[4] = branch_swap_rate;
   weight[5] = indel_param_sampling_rate;
+  weight[6] = subst_param_sampling_rate;
 
   switch (Rnd::choose (weight))
     {
@@ -145,6 +146,7 @@ Tree_shuffler::Action Tree_shuffler::next_action()
     case 3: return Scale_branch;
     case 4: return Swap_branches;
     case 5: return Sample_indel_params;
+    case 6: return Sample_subst_params;
     default: break;
     }
   return Sample_branch;  // default, should be unreachable

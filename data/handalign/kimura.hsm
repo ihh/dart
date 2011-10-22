@@ -1,0 +1,60 @@
+;; Here are the parameters for Kimura's model.
+(rate
+ (alpha .4)  ;; transition rate
+ (beta .1))  ;; transversion rate
+
+;; Now the hyperparameters for the prior over parameters.
+(pseudocounts
+ (alpha 4 10)  ;; gamma distribution
+ (beta 1 10))  ;; gamma distribution
+
+;; Now here is the algebraic structure of the rate matrix.
+(chain
+ ;; The state of this chain is a single symbol from alphabet DNA.
+ ;; Call this symbol X.
+ (terminal (X))
+ ;; The following line indicates that the initial probabilities and mutation rates
+ ;; should be treated as fixed parametric functions, not free variables.
+ (update-policy parametric)
+
+ ;; initial probability distribution
+ (initial (state (a)) (prob 0.25))
+ (initial (state (c)) (prob 0.25))
+ (initial (state (g)) (prob 0.25))
+ (initial (state (t)) (prob 0.25))
+
+ ;; mutation rates
+ (mutate (from (a)) (to (c)) (rate beta))
+ (mutate (from (a)) (to (g)) (rate alpha))
+ (mutate (from (a)) (to (t)) (rate beta))
+ (mutate (from (c)) (to (a)) (rate beta))
+ (mutate (from (c)) (to (g)) (rate beta))
+ (mutate (from (c)) (to (t)) (rate alpha))
+ (mutate (from (g)) (to (a)) (rate alpha))
+ (mutate (from (g)) (to (c)) (rate beta))
+ (mutate (from (g)) (to (t)) (rate beta))
+ (mutate (from (t)) (to (a)) (rate beta))
+ (mutate (from (t)) (to (c)) (rate alpha))
+ (mutate (from (t)) (to (g)) (rate beta))
+ )  ;; end chain X
+
+;; Standard DNA alphabet
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *)
+ )  ;; end alphabet DNA

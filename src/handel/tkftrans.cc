@@ -1,10 +1,19 @@
 #include "handel/tkftrans.h"
 
-TKF91_transducer_factory::TKF91_transducer_factory (double lambda, double mu)
-  : Transducer_alignment_with_subst_model(),
-    lambda (lambda),
-    mu (mu)
+#define TKF91_PRIOR_SAMPLES 100
+
+// hyperparams copied from rivas.cc
+double TKF91_transducer_factory::alpha = 195.437;
+double TKF91_transducer_factory::beta = 3.861;
+double TKF91_transducer_factory::gamma_alpha = 8.597;
+double TKF91_transducer_factory::gamma_beta = 0.488;
+
+TKF91_transducer_factory::TKF91_transducer_factory (double l, double m)
+  : TKF91_transducer_factory_param_container(),
+    Transducer_alignment_with_subst_model()
 {
+  lambda = l;
+  mu = m;
   sort_indels = false;  // TKF91 transducer has something to say about indel ordering
 }
 
@@ -15,7 +24,7 @@ Pair_transducer_scores TKF91_transducer_factory::prior_pair_trans_sc()
   prior.state_type[0] = Transducer_state_type_enum::TransducerInsertType;
   prior.state_type[1] = Transducer_state_type_enum::TransducerWaitType;
 
-  prior.alphabet_size = subst_model.m();
+  prior.alphabet_size = subst_model().m();
   prior.alloc_pair_emit (Prob2Score(1.));
 
   prior.state_name[0] = "I";
@@ -25,8 +34,8 @@ Pair_transducer_scores TKF91_transducer_factory::prior_pair_trans_sc()
     if (prior.state_type[s] != TransducerWaitType)
       prior.emit_label[s] = prior.state_name[s];
 
-  const vector<Prob> ins = subst_model.create_prior();
-  for (int i = 0; i < subst_model.m(); ++i)
+  const vector<Prob> ins = subst_model().create_prior();
+  for (int i = 0; i < subst_model().m(); ++i)
     prior.insert_val(0,i) = Prob2Score(ins[i]);
 
   prior.transition (Start, 0) = Prob2Score (lambda / mu);
@@ -49,7 +58,7 @@ Pair_transducer_scores TKF91_transducer_factory::branch_pair_trans_sc (double ti
   branch.state_type[2] = Transducer_state_type_enum::TransducerMatchType;
   branch.state_type[3] = Transducer_state_type_enum::TransducerDeleteType;
 
-  branch.alphabet_size = subst_model.m();
+  branch.alphabet_size = subst_model().m();
   branch.alloc_pair_emit (Prob2Score(1.));
 
   branch.state_name[0] = "I";
@@ -61,14 +70,14 @@ Pair_transducer_scores TKF91_transducer_factory::branch_pair_trans_sc (double ti
     if (branch.state_type[s] != TransducerWaitType)
       branch.emit_label[s] = branch.state_name[s];
 
-  const vector<Prob> ins = subst_model.create_prior();
-  const array2d<Prob> mat = subst_model.create_conditional_substitution_matrix (time);
+  const vector<Prob> ins = subst_model().create_prior();
+  const array2d<Prob> mat = subst_model().create_conditional_substitution_matrix (time);
 
-  for (int i = 0; i < subst_model.m(); ++i)
+  for (int i = 0; i < subst_model().m(); ++i)
     {
       branch.insert_val(0,i) = Prob2Score(ins[i]);
       branch.delete_val(3,i) = Prob2Score(1.);
-      for (int j = 0; j < subst_model.m(); ++j)
+      for (int j = 0; j < subst_model().m(); ++j)
 	branch.match_val(2,i,j) = Prob2Score (mat(i,j));
     }
 
@@ -101,7 +110,7 @@ double TKF91_transducer_factory::mean_gap_size() { return 1.; }
 TKF91_transducer_factory* TKF91_transducer_factory::clone()
 {
   TKF91_transducer_factory* ttf = new TKF91_transducer_factory (lambda, mu);
-  ttf->subst_model = subst_model;
+  ttf->assign_subst_model (*this);
   // clone Handel_base
   (Handel_base&) *ttf = (Handel_base&) *this;
   // clone selected Tree_alignment members (this should be in Tree_alignment, seriously...)
@@ -113,4 +122,47 @@ TKF91_transducer_factory* TKF91_transducer_factory::clone()
   ttf->handel_branch_scores = handel_branch_scores;
   // return
   return ttf;
+}
+
+TKF91_transducer_factory_param_container TKF91_transducer_factory::propose_indel_params()
+{
+  TKF91_transducer_factory_param_container container;
+  const double gamma = Rnd::sample_beta (gamma_alpha, gamma_beta);
+  container.mu = Rnd::sample_gamma (alpha, beta);
+  container.lambda = gamma * mu;
+  return container;
+} 
+
+void TKF91_transducer_factory::sample_indel_params()
+{
+  for (int sample = 0; sample < TKF91_PRIOR_SAMPLES; ++sample)
+    {
+      Score old_sc = alignment_path_score();
+
+      TKF91_transducer_factory_param_container
+	old_params = *this,
+	new_params = propose_indel_params();
+
+      (TKF91_transducer_factory_param_container&) *this = new_params;
+      const Score new_sc = alignment_path_score();
+
+      CTAG(5, PARAM_SAMPLE) << "Sampled parameters ("
+			    << sample+1 << " of " << TKF91_PRIOR_SAMPLES
+			    << " delete_rate=" << mu
+			    << " insert_rate=" << lambda
+			    << " new_bitscore=" << Score2Bits(new_sc)
+			    << " old_bitscore=" << Score2Bits(old_sc)
+			    << "; move ";
+  
+      if (new_sc > old_sc ? true : Rnd::decide (Score2Prob (ScorePMul (new_sc, -old_sc))))
+	{
+	  CL << "accepted\n";
+	  old_sc = new_sc;
+	}
+      else
+	{
+	  CL << "rejected\n";
+	  (TKF91_transducer_factory_param_container&) *this = old_params;
+	}
+    }
 }

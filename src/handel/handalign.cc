@@ -107,7 +107,8 @@ int main(int argc, char* argv[])
   opts.add ("ff -flip-freq", shuffler.branch_swap_rate = 0, "relative rate of branch-flipping: exchanging a node & its niece, then re-aligning by DP");
   opts.add ("sf -slide-freq", shuffler.node_slide_rate = 0, "relative rate of node-sliding moves that preserve topology & total branch length");
   opts.add ("lf -length-freq", shuffler.branch_scale_rate = 0, "relative rate of sampling branch lengths");
-  opts.add ("pf -param-freq", shuffler.indel_param_sampling_rate = 0, "relative rate of sampling indel parameters");
+  opts.add ("ipf -indel-param-freq", shuffler.indel_param_sampling_rate = 0, "relative rate of sampling indel parameters");
+  opts.add ("spf -subst-param-freq", shuffler.subst_param_sampling_rate = 0, "relative rate of sampling substitution parameters");
 
   opts.newline();
   opts.print_title ("Shorthands for individual moves");
@@ -212,9 +213,9 @@ int main(int argc, char* argv[])
       trans.composition_recorder.directory = comp_dir;
 
       // read alphabet & substitution matrix
-      SExpr_file param_sexpr (subst_model_filename.c_str());
+      SExpr_file param_chain_alph_sexpr (subst_model_filename.c_str());
       Alphabet alph;
-      ECFG_builder::init_chain_and_alphabet (alph, trans.subst_model, param_sexpr.sexpr);
+      ECFG_builder::init_param_chain_alphabet (alph, trans.ems, trans.subst_pscores, trans.subst_pcounts, trans.subst_mutable_pgroups, param_chain_alph_sexpr.sexpr);
       trans.update_seq_scores();
 
       // convert sequences, discard wild sequences

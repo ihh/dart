@@ -309,6 +309,23 @@ void PFunc_builder::pscores2stream (ostream& out, const PScores& pscores, const 
     }
 }
 
+sstring PFunc_builder::mutable_pscores2string (const PScores& pscores, const set<int>& mutable_pgroups)
+{
+  sstring out;
+  for_const_contents (set<int>, mutable_pgroups, g)
+    {
+      out << '(';
+      const int sz = pscores.group_size(*g);
+      if (sz == 1)
+	out << SExpr_atom(pscores.group_suffix[*g][0]) << ' ' << score_sexpr (pscores[PVar(*g,0)], false);
+      else
+	for (int v = 0; v < sz; ++v)
+	  out << '(' << SExpr_atom(pscores.group_suffix[*g][v]) << ' ' << score_sexpr (pscores[PVar(*g,v)], false) << ')';
+      out << ')';
+    }
+  return out;
+}
+
 void PFunc_builder::pcounts2stream (ostream& out, const PCounts& pcounts, const char* tag, const PCounts* baseline_pcounts,
 				   bool interpret_single_element_pgroups_as_rate_variables, bool print_zero_counts)
 {
@@ -353,7 +370,7 @@ void PFunc_builder::pfunc2stream (ostream& out, const PScores& pscores, const PF
 
 void PFunc_builder::init_pgroups (PScores& pscores, SymPVar& sym2pvar, SExpr& grammar_sexpr, const char* tag, set<int>* mutable_pgroups, bool force_rate, bool disallow_rate, bool use_bitscores)
 {
-  const vector<SExpr*> all_sexpr = grammar_sexpr.find_all (tag, 1);
+  const vector<SExpr*> all_sexpr = grammar_sexpr.find_all (tag);
   for_const_contents (vector<SExpr*>, all_sexpr, sexpr)
     {
       const vector<SExpr*> all_child_sexpr = (*sexpr)->values();

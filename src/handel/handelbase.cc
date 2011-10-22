@@ -321,6 +321,19 @@ sstring Handel_base::indel_parameter_string() const
    return dummy;
 }
 
+void Handel_base::sample_subst_params()
+{
+  // base class; do nothing
+  return;
+}
+
+sstring Handel_base::subst_parameter_string() const
+{
+   CTAG(1, PARAM_SAMPLE) << "Called Handel_base::subst_parameter_string()\n";
+   sstring dummy;
+   return dummy;
+}
+
 bool Handel_base::optimise_node (Node node, bool sample_seq)
 {
   if (target_loglike)
@@ -589,6 +602,14 @@ Score Handel_base::anneal (double kT_start, double kT_end, int annealing_steps,
 	   CTAG(5,MCMC PARAM_SAMPLE) << "Sampling indel parameters\n";
 	   sample_indel_params();
 	 }
+       else if (action == Tree_shuffler::Sample_subst_params)
+	 {
+	   // print the log message here, because the sample_subst_params() method is virtual
+	   CTAG(5,MCMC PARAM_SAMPLE) << "Sampling substitution parameters\n";
+	   sample_subst_params();
+	 }
+       else
+	 CLOGERR << "Unknown Tree_shuffler action\n";
       
       tree_changed();
       align_changed();
@@ -1124,6 +1145,7 @@ void Handel_base::write_Stockholm_with_score (ostream& out, const char* alignmen
   const Loge null_ll = Score2Nats (null_score());
   const Loge odds_ratio_ll = NatsPMul (align_ll, -null_ll);
   const sstring indel_param = indel_parameter_string();
+  const sstring subst_param = subst_parameter_string();
 
   out << Stockholm_header;
 
@@ -1131,6 +1153,8 @@ void Handel_base::write_Stockholm_with_score (ostream& out, const char* alignmen
   out << Stockholm_file_annotation << ' ' << Stockholm_alignment_step_tag << ' ' << alignment_step + 1 << '\n';
   if (!indel_param.empty())
     out << Stockholm_file_annotation << ' ' << Stockholm_indel_parameter_tag << ' '<< indel_param << '\n';
+  if (!subst_param.empty())
+    out << Stockholm_file_annotation << ' ' << Stockholm_subst_parameter_tag << ' '<< subst_param << '\n';
   out << Stockholm_file_annotation << ' ' << Stockholm_bit_score_tag << ' ' << Nats2Bits (odds_ratio_ll)  << '\n';
 
   tree.write_Stockholm (out);

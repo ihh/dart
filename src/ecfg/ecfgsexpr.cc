@@ -364,8 +364,29 @@ void ECFG_builder::init_chain_and_alphabet (Alphabet& alph, EM_matrix_base& hsm,
 
   hsm.init_matrix (read_hsm.C, read_hsm.A);
   hsm.assign_matrix_params (read_hsm);
+
   hsm.init_alphabet (alph);
   hsm.update();
+}
+
+void ECFG_builder::init_param_chain_alphabet (Alphabet& alph, ECFG_matrix_set*& ems_ptr, PScores& pscores, PCounts& pcounts, set<int>& mutable_pgroups, SExpr& alph_chain_param_sexpr)
+{
+  init_alphabet (alph, alph_chain_param_sexpr.find_or_die (PK_ALPHABET));
+  ems_ptr = new ECFG_matrix_set (alph);
+  ECFG_matrix_set& ems (*ems_ptr);
+
+  SymIndex term2chain;
+  SymPVar sym2pvar;
+
+  init_pgroups_and_rates (pscores, sym2pvar, alph_chain_param_sexpr, &mutable_pgroups);
+  init_pseudocounts (pcounts, pscores, sym2pvar, alph_chain_param_sexpr);
+  init_chain (ems, term2chain, sym2pvar, alph_chain_param_sexpr.find_or_die (EG_CHAIN), DEFAULT_TIMEPOINT_RES, false);
+
+  ECFG_chain& chain = ems.chain[0];
+  EM_matrix_base& hsm = *chain.matrix;
+  hsm.init_alphabet (alph);
+
+  ems.eval_funcs (pscores);
 }
 
 ECFG_builder::ECFG_symbol_sequence::ECFG_symbol_sequence (const ECFG_matrix_set& ems, const SymIndex& nonterm2state, const SymIndex& term2chain, SExpr& symseq_sexpr)

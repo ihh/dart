@@ -40,8 +40,12 @@ struct ECFG_builder : ECFG_enum, PFunc_builder
   // initialize a hybrid chain
   static void init_hybrid_chain (ECFG_matrix_set& ems, SymIndex& term2chain, const SymPVar& sym2pvar, SExpr& hybrid_chain_sexpr);
 
-  // initialise a chain and an alphabet together. This routine is used by Handel
+  // initialise a chain and an alphabet together. This routine is used by protpal
   static void init_chain_and_alphabet (Alphabet& alph, EM_matrix_base& hsm, SExpr& alph_chain_sexpr, bool allow_multi_char_tokens = false);
+
+  // initialise a chain, alphabet, parameters and pseudocounts. This routine is used by Handel
+  // Creates a new ECFG_matrix_set and returns pointer in ems_ptr
+  static void init_param_chain_alphabet (Alphabet& alph, ECFG_matrix_set*& ems_ptr, PScores& pscores, PCounts& pcounts, set<int>& mutable_pgroups, SExpr& alph_chain_param_sexpr);
 
   // initialise a chain given an alphabet. Used by evoldoer
   static void init_chain_given_alphabet (EM_matrix_base& hsm, const Alphabet& alph, SExpr& chain_sexpr, int required_pseudoterms = 1);

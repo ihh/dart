@@ -4,7 +4,7 @@
 // #define ALLOW_DELETE_TO_INSERT_TRANSITIONS
 
 // number of times to sample parameters during parameter-sampling step
-#define PRIOR_SAMPLES 100
+#define RIVAS_PRIOR_SAMPLES 100
 
 // static inits
 // May want to allow these to be configurable from cmdline?
@@ -83,7 +83,7 @@ Rivas_transducer_factory* Rivas_transducer_factory::clone()
   Rivas_transducer_factory* rtf = new Rivas_transducer_factory (prior.states(), branch.states());
   rtf->prior = prior;
   rtf->branch = branch;
-  rtf->subst_model = subst_model;
+  rtf->assign_subst_model (*this);
   rtf->del_rate = del_rate;
   rtf->mean_del_size = mean_del_size;
   // clone Handel_base
@@ -136,11 +136,11 @@ void Rivas_transducer_factory::set_trans_prob_rate (int src_state, int old_dest_
 
 Pair_transducer_scores Rivas_transducer_factory::prior_pair_trans_sc()
 {
-  prior.alphabet_size = subst_model.m();
+  prior.alphabet_size = subst_model().m();
   prior.alloc_pair_emit (0);  // prior.state_type already initialized by calls to init_prior_* from constructor
 
-  const vector<Prob> ins = subst_model.create_prior();
-  for (int i = 0; i < subst_model.m(); ++i)
+  const vector<Prob> ins = subst_model().create_prior();
+  for (int i = 0; i < subst_model().m(); ++i)
     prior.insert_val(0,i) = Prob2Score(ins[i]);
 
   for (int s = 0; s < prior.states(); ++s)
@@ -159,18 +159,18 @@ void Rivas_transducer_factory::update_trans_probs()
 
 Pair_transducer_scores Rivas_transducer_factory::branch_pair_trans_sc (double time)
 {
-  branch.alphabet_size = subst_model.m();
+  branch.alphabet_size = subst_model().m();
   branch.alloc_pair_emit (0);  // branch.state_type already initialized by calls to init_branch_* from set_transitions_method (called by constructor)
 
-  const vector<Prob> ins = subst_model.create_prior();
-  const array2d<Prob> match = subst_model.create_conditional_substitution_matrix (time);
+  const vector<Prob> ins = subst_model().create_prior();
+  const array2d<Prob> match = subst_model().create_conditional_substitution_matrix (time);
 
-  for (int i = 0; i < subst_model.m(); ++i)
+  for (int i = 0; i < subst_model().m(); ++i)
     for (int s = 0; s < branch.states(); ++s)
       switch (branch.state_type[s])
 	{
 	case TransducerMatchType:
-	  for (int j = 0; j < subst_model.m(); ++j)
+	  for (int j = 0; j < subst_model().m(); ++j)
 	    branch.match_val(s,i,j) = Prob2Score(match(i,j));
 	  break;
 
@@ -309,7 +309,7 @@ void Affine_transducer_factory::sample_indel_params()
 {
   Score old_sc = alignment_path_score();
 
-  for (int sample = 0; sample < PRIOR_SAMPLES; ++sample)
+  for (int sample = 0; sample < RIVAS_PRIOR_SAMPLES; ++sample)
     {
       Affine_transducer_factory_param_container
 	old_params = *this,
@@ -319,7 +319,7 @@ void Affine_transducer_factory::sample_indel_params()
       const Score new_sc = alignment_path_score();
 
       CTAG(5, PARAM_SAMPLE) << "Sampled parameters ("
-			    << sample+1 << " of " << PRIOR_SAMPLES
+			    << sample+1 << " of " << RIVAS_PRIOR_SAMPLES
 			    << "): gamma=" << gamma_param
 			    << " delete_rate=" << delete_rate_param
 			    << " delete_extend=" << delete_extend_prob_param
@@ -342,7 +342,7 @@ void Affine_transducer_factory::sample_indel_params()
 
 void Convex_transducer_factory::sample_indel_params()
 {
-  for (int sample = 0; sample < PRIOR_SAMPLES; ++sample)
+  for (int sample = 0; sample < RIVAS_PRIOR_SAMPLES; ++sample)
     {
       Score old_sc = alignment_path_score();
 
@@ -354,7 +354,7 @@ void Convex_transducer_factory::sample_indel_params()
       const Score new_sc = alignment_path_score();
 
       CTAG(5, PARAM_SAMPLE) << "Sampled parameters ("
-			    << sample+1 << " of " << PRIOR_SAMPLES
+			    << sample+1 << " of " << RIVAS_PRIOR_SAMPLES
 			    << "): gamma=" << gamma_param
 			    << " delete_rate=" << delete_rate_param
 			    << " cpt_weight=(" << cpt_weight_param

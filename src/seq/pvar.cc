@@ -162,6 +162,29 @@ void PCounts::optimise (PScores& scores, const set<int>& mutable_groups) const
     optimise_group (*g, scores);
 }
 
+void PCounts::randomize (PScores& scores, const set<int>& pgroups_to_randomize)
+{
+  for_const_contents (set<int>, pgroups_to_randomize, g)
+    {
+      const int sz = (*g < (int) group.size()) ? scores.group_size(*g) : 0;
+      if (sz == 1)
+	{
+	  const bool uniform_prior = *g >= (int) group.size() || group[*g].size() != 1 || (group[*g][0] < TINY || wait[*g] < TINY);
+	  scores.group[*g][0] = Prob2FScore (Rnd::sample_gamma (uniform_prior ? 1. : wait[*g],
+								uniform_prior ? 1. : group[*g][0]));
+	}
+      else
+	{
+	  bool uniform_prior = true;
+	  if (*g < (int) group.size() && (int) group[*g].size() == sz)
+	    for_const_contents (vector<double>, group[*g], pv)
+	      if (*pv > TINY) { uniform_prior = false; break; }
+
+	  scores.group[*g] = Prob2FScoreVec (Rnd::sample_dirichlet (uniform_prior ? vector<double> (scores.group[*g].size(), 1.) : group[*g]));
+	}
+    }
+}
+
 PCounts& PCounts::operator+= (const PCounts& counts)
 {
   assert_same_dimensions (counts);

@@ -1,6 +1,8 @@
 #include "handel/alitrans.h"
 #include "handel/movement.h"
 
+#define SUBST_PRIOR_SAMPLES 100 /* for subst model */
+
 // prefix character for auto-creating PVar's
 #define PVAR_PREFIX_CHAR ':'
 
@@ -755,4 +757,79 @@ sstring Transducer_alignment::safe_tape_name (const PHYLIP_tree& tree, int node)
       names.insert (name);
     }
   return name;
+}
+
+void Transducer_alignment_with_subst_model::assign_subst_model (const Transducer_alignment_with_subst_model& ta)
+{
+  if (ems) delete ems;
+  ems = new ECFG_matrix_set (*ta.ems);
+  subst_pscores = ta.subst_pscores;
+  subst_pcounts = ta.subst_pcounts;
+  subst_mutable_pgroups = ta.subst_mutable_pgroups;
+  eval_funcs();
+}
+
+Substitution_matrix_factory& Transducer_alignment_with_subst_model::submat_factory() const {
+  Transducer_alignment_with_subst_model* mutable_this = (Transducer_alignment_with_subst_model*) this;
+  mutable_this->eval_funcs();
+  return (Substitution_matrix_factory&) (mutable_this->subst_model());
+}
+
+EM_matrix_base& Transducer_alignment_with_subst_model::subst_model()
+{
+  if (ems->chain.size() != 1)
+    THROWEXPR("In Transducer_alignment_with_subst_model::subst_model, ECFG_matrix_set is uninitialized");
+  return *(ems->chain[0].matrix);
+}
+
+sstring Transducer_alignment_with_subst_model::subst_parameter_string() const
+{
+  return PFunc_builder::mutable_pscores2string (subst_pscores, subst_mutable_pgroups);
+}
+
+PScores Transducer_alignment_with_subst_model::propose_subst_params()
+{
+  PScores proposal (subst_pscores);
+  subst_pcounts.randomize (proposal, subst_mutable_pgroups);
+  return proposal;
+}
+
+void Transducer_alignment_with_subst_model::sample_subst_params()
+{
+  const int sample_points = SUBST_PRIOR_SAMPLES;
+
+  vector<PScores> x (sample_points + 1);
+  vector<Prob> p (sample_points + 1);
+  vector<Score> sc (sample_points + 1);
+
+  x[0] = subst_pscores;
+  for (int i = 1; i <= sample_points; ++i)
+    x[i] = propose_subst_params();
+
+  for (int i = 0; i <= sample_points; ++i)
+    {
+      subst_pscores = x[i];
+      eval_funcs();
+      tree_changed();
+      sc[i] = alignment_score();
+
+      if (CTAGGING(5,MCMC PARAM_SAMPLE))
+	CL << "Subst-param sample " << i << ": " << Score2Bits(sc[i]) << " bits " << subst_parameter_string() << '\n';
+    }
+
+  Score min_sc = sc[0];
+  for (int i = 1; i <= sample_points; ++i)
+    if (sc[i] < min_sc)
+      min_sc = sc[i];
+
+  for (int i = 0; i <= sample_points; ++i)
+    p[i] = Score2Prob (sc[i] - min_sc);
+
+  const int i = Rnd::choose (p);
+  subst_pscores = x[i];
+  eval_funcs();
+  tree_changed();
+
+  if (CTAGGING(5,MCMC PARAM_SAMPLE))
+    CL << "Chose sample " << i << ": " << Score2Bits(sc[i]) << " bits " << subst_parameter_string() << '\n';
 }
