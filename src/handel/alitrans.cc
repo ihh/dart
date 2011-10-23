@@ -811,7 +811,7 @@ void Transducer_alignment_with_subst_model::sample_subst_params()
       subst_pscores = x[i];
       eval_funcs();
       tree_changed();
-      sc[i] = alignment_score();
+      sc[i] = alignment_emit_score();
 
       if (CTAGGING(5,MCMC PARAM_SAMPLE))
 	CL << "Subst-param sample " << i << ": " << Score2Bits(sc[i]) << " bits " << subst_parameter_string() << '\n';
