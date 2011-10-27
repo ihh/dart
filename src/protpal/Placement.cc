@@ -1,4 +1,3 @@
-
 #include "protpal/Placement.h"
 #include "protpal/profile.h"
 #include "protpal/json.h"
@@ -107,9 +106,6 @@ Placement::Placement(int argc, char* argv[])
       if (i != argc-1)
 	args << " "; 
     }
-  
-
-      
 }
 
 void Placement::Run()
@@ -125,7 +121,7 @@ void Placement::Run()
       cerr << "\t" << reads.size() << " reads read from input.\n"; 
       cerr << "\t" << profile_filenames.size() << " posterior profiles found.\n"; 
       if (using_limiter)
-	cerr <<"\tUsing limiter to constrain placements.  Max allowed distance to input placement: " << distance_cutoff << "\n"; 
+	cerr <<"\tUsing limiter to constrain placements.\n\t\tMax allowed distance to input placement: " << distance_cutoff << "\n"; 
     }
   
 
@@ -146,12 +142,24 @@ void Placement::Run()
 	  continue;
 	}
       readsAtNode = 0; 
-      if (loggingLevel >=1)
-	cerr << "Scoring reads to profile at node: " << tree.node_name[profileNode]<<" ... ";
+      if ( !placementLimiter.nodes_with_reads.count( tree.node_name[profileNode] ))
+	continue;
+
+      // This is slightly clunky - and not really needed unless testing on small datasets.  
+      // Probably rm it soon.
+      bool some_read_possible=false;
+      for ( map<string, string>::iterator readIter = reads.begin();
+	    readIter != reads.end(); ++readIter )
+	if (placementLimiter.is_allowed(readIter->first, tree.node_name[profileNode]))
+	  { some_read_possible=true; break;}
+      if (! some_read_possible)
+	continue; 
 
       // Read in the profile from a file
       AbsorbingTransducer ancestralProfile(profile_filenames[profileNode].c_str(),
 					   alphabetVector, tree);
+      if (loggingLevel >=1)
+	cerr << "Scoring reads to profile at node: " << tree.node_name[profileNode]<<" (" << ancestralProfile.num_delete_states << " states) ... ";
       // The ancestor name is not currently written/parsed in sexpr format. 
       // Fix this later!
       ancestralProfile.name = tree.node_name[profileNode];
@@ -164,27 +172,50 @@ void Placement::Run()
 	{
 	  // We may want to avoid this read/node pair based on input data (e.g. prior placements). 
 	  if (using_limiter)
-	    if ( ! placementLimiter.is_allowed(readIter->first, tree.node_name[profileNode]) )
-	      {
-		if (loggingLevel >=3)
-		  cerr << "\n\tSkipping read/node pair: " << readIter->first << " " << tree.node_name[profileNode] << endl; 
-		continue;
-	      }
+	    {
+	      if ( ! placementLimiter.is_allowed(readIter->first, tree.node_name[profileNode]) )
+		{
+		  if (loggingLevel >=3)
+		    cerr << "\n\tSkipping read/node pair: " << readIter->first << " " << tree.node_name[profileNode] << endl; 
+		  continue;
+		}
+	    }
 	  // Update 'read'
 	  read.identifier = readIter->first;
 	  read.set( readIter->second );
 	  ++readsAtNode; 
 	  if (loggingLevel >= 2)
 	    cerr<<"\n\tScoring read/profile pair: " << read.identifier << " - " << profile_scorer.name <<";\t";
+	  else
+	    cerr << "."; 
+	  // For testing:
+	  //	  profile_scorer.get_score(read, false, //no viterbi                    
+	  //				   true ); // do log                         
+	  //	  cerr << "Score has been stored (DP function exited normally)\n";    	  
+	  //	  exit(0); 
 
-	  // Here goes the atual dynamic programming - the score is deposited in the scores map
-          profile_scorer.score_and_store(read, scores, false);
+	  if (using_limiter)
+	    if ( 0 )// placementLimiter.is_single_possibility(readIter->first))
+	      scores[readIter->first][profile_scorer.name] = 1.0; 
+	    else
+	      // Here goes the atual dynamic programming - the score is deposited in the scores map
+	      profile_scorer.score_and_store(read, scores, false);	  
+	  else
+	    // Awkward repetition
+	      profile_scorer.score_and_store(read, scores, false);	  
+
+	  if (loggingLevel >= 2)
+	    cerr << "Score: " << scores.at(read.identifier).at(profile_scorer.name) << endl;
+
+	  #ifdef DART_DEBUG
 	  bfloat score;
 	  
 	  if (scores.count(read.identifier))
 	    if (scores[read.identifier].count(profile_scorer.name))
 	      {
 		score = scores[read.identifier][profile_scorer.name];
+		if (loggingLevel >=2 )
+		  cerr << "Score has been retreived: " << score << endl; 
 		if ( ! bfloat_is_nonzero(score))
 		  {
 		    cerr<<"ERROR: score is non-positive!\n";
@@ -193,16 +224,14 @@ void Placement::Run()
 					     true ); // do log                            
 		    THROWEXPR("Nonpositive read/profile score");
 		  }
-		if (loggingLevel >= 2)
-		  {
-		    cerr<<" Score: " << score << endl;
-		  }
+
 	      }
 	    else
 	      THROWEXPR("Read had no score for profile " + profile_scorer.name + " (this shouldn't happen)"); 
+	  #endif
 	}
       if (loggingLevel >=1)
-	cerr << readsAtNode << " reads scored at this node.\n"; 
+	cerr << readsAtNode << " reads scored.\n"; 
     }
   if (loggingLevel >=1 )  
     cerr <<"\n\n";
@@ -284,7 +313,10 @@ void Placement::write_placement_JSON(ostream& out, ScoreMap& scores)
       for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
            nodeIter != (readIter->second).end(); ++nodeIter)
         totalScore += nodeIter->second;
-
+      if (! bfloat_is_nonzero(totalScore) )
+	THROWEXPR("Sum-over-nodes score for read is zero:" + readIter->first); 
+      if (bfloat_is_nan(totalScore) )
+	THROWEXPR("Sum-over-nodes score for read is NaN:" + readIter->first); 
       //      out << "\t{\"p\":\n\t[";                                                            
       out << "\t{\"p\": [\n\t";
       for (map<string, bfloat>::iterator nodeIter = (readIter->second).begin();
@@ -392,7 +424,11 @@ void PlacementLimiter::parse_JSON(const char* JSON_file)
 	readName = remove_from_string(placements[idx]["n"][0].asString(), "\""); 
 	const Json::Value probs = placements[idx]["p"]; 
 	for (Json::ValueConstIterator pIter = probs.begin(); pIter!=probs.end(); ++pIter)
-	  read_node_map[ readName ].push_back( int( (*pIter)[edge_field].asInt() ));
+	  {
+	    branch = int( (*pIter)[edge_field].asInt());
+	    read_node_map[ readName ].push_back( branch );
+	    nodes_with_reads[branches2nodes[branch]] = true; 
+	  }
       }    
 //     for (map<string, vector<int> >::iterator placeIter=read_node_map.begin();
 // 	 placeIter!=read_node_map.end(); placeIter++)
@@ -402,7 +438,14 @@ void PlacementLimiter::parse_JSON(const char* JSON_file)
 // 	  cerr << *nIter << " "; 
 // 	cerr <<endl;
 //       }
+    cerr << nodes_with_reads.size() << " nodes have reads in limiter\n"; 
 }
+
+bool PlacementLimiter::is_single_possibility(string readName)
+{
+  return bool(read_node_map.at(readName).size() == 1);
+}  
+
 bool PlacementLimiter::is_allowed(string readName,  string nodeName)
 {
   if (distance_cutoff == 0.0)

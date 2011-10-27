@@ -115,6 +115,10 @@ class ReadProfileScore
   // public for now...
   void fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmmoc_only=false, bool backPointers=false, bool logging=false); 
   void clear_DP_matrix(void);
+  // Call up results after DP
+  bfloat get_forward_value(void); 
+  bfloat get_viterbi_value(void); 
+
  private:
   // Profile - one emission side
   AbsorbingTransducer *profile; 
@@ -128,9 +132,6 @@ class ReadProfileScore
   // Pair HMM that directs the alignment calculation
   ReadProfileModel pairHMM; 
 
-  // Call up results after DP
-  inline bfloat get_forward_value(void); 
-  bfloat get_viterbi_value(void); 
   
   // Viterbi traceback requires pointers to be stored during DP
   inline void add_backPointer(int, state, state, int, state, state); 

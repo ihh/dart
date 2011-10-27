@@ -499,6 +499,13 @@ bool bfloat_is_nonzero(bfloat in)
   return  (in != in*2.0);
 }
 
+bool bfloat_is_nan(bfloat in)
+{
+  // if you don't equal yourself, somthin's really wrong
+  return log(in) != log(in); 
+}
+
+
 
 
 string remove_from_string(string in , string toRm)

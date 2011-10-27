@@ -2,6 +2,7 @@
 
 #include "protpal/utils.h"
 #include "protpal/ReadProfileScore.h"
+#include <cmath>
 
 void Read::pad(void)
 {
@@ -34,8 +35,9 @@ ReadProfileScore::ReadProfileScore(AbsorbingTransducer* prof_in, Alphabet& alpha
 
   // Collect the various types of profile states
   profile_states.clear();
-  for (int i=0; i<profile->num_delete_states; i++)
-    profile_states.push_back(i); 
+  //  for (int i=0; i<profile->delete_states.size(); i++)
+  //    profile_states.push_back(i); 
+  profile_states = profile->delete_states; 
   profile_states.push_back(profile->pre_end_state); 
   DP_ID.resize(3); 
   pairHMM.set_substitution_model(alphabet_in, rate_matrix_in, profile);
@@ -65,7 +67,19 @@ bfloat ReadProfileScore::get_score(const Read& read, bool viterbi, bool logging)
 		     logging); // display logging messages
       value = get_forward_value(); 
     }
-  clear_DP_matrix(); 
+  if (isinf(log(value)) || bfloat_is_nan(value) ||   !bfloat_is_nonzero(value))
+    {
+      cerr << "Bad read-profile score between profile: " << name << " , read: " << read.identifier << " score: " << value <<endl;
+      clear_DP_matrix(); 
+      fill_DP_matrix(read, 
+		     dummy_ostream, // hmmoc filestream
+		     false, // only write hmmoc file, don't do actual DP
+		     false,  // keep backPointers - for finding viterbi traceback
+		     true); // display logging messages
+      THROWEXPR("Bad read-profile score." ); 
+    }
+
+  clear_DP_matrix();
   return value; 
 }
 
@@ -147,14 +161,13 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
     cerr<<"Seting initial state of DP matrix\n"; 
   set_DP_cell(-1,profile->start_state, pairHMM.start_state, 1.0); 
   
-  // "practical" range is 35 to ~500
-
+  // "Normal" range is 35 to ~500
   for (i=0; i<readSize; ++i) 
     {
       if (logging)
 	cerr<<"\n\nProcessing position " << i  <<  " of read...\n"; 
 
-      // practical range is 300 - 1000s
+      // Normal range is 300 - 1000s
       for (j=profile_states.begin(); j<profile_states.end(); j++)
 	{
 	  if (logging)
@@ -168,7 +181,7 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 		cerr<< pairHMM.state_name[*k] << " "; 
 	      cerr<<"\n"; 
 	    }
-	  // Range is 5-10
+	  // Normal Range is 5-10
 	  for (k=possible_HMM_states.begin(); k!=possible_HMM_states.end(); k++)
 	    {
 	      toAddToDP = 0.0; 
@@ -240,17 +253,34 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 			  cerr<<"Added to DP matrix: \n";
 			  cerr<<"\tHMM state " << pairHMM.state_name[*kPrime] << endl; 
 			  cerr << "\tRead position " << iPrime <<"\n\tProfile state " << *jPrime << "\n\tValue " << toAdd << "\n"; 
-			  cerr<<"Forward value for this state: " << get_DP_cell(iPrime,
+			  cerr<<"Forward value for source state: " << get_DP_cell(iPrime,
 										*jPrime, *kPrime) << "\n";
 			  cerr<<"Emission value for the dest. state: " << pairHMM.get_emission_weight(i,*j,*k) << endl; 
-			  cerr<< "HMM transition weight: " << hmm_transition_weight  << "\n\n"; 
+			  cerr<< "HMM transition weight: " << hmm_transition_weight  << endl; 
+			  bfloat profTransWeight = profile->get_transition_weight(*jPrime, *j);
+			  if (*j != *jPrime)
+			    {
+			      cerr << "Profile transition weight: (" << *jPrime << "->" << *j <<") "<< profile->get_transition_weight(*jPrime, *j) << endl; 
+			      if (bfloat_is_nan(profTransWeight))
+				{
+				  cerr << "Transition between " << *jPrime << " and " << *j << " is not kosher\n"; 
+				  THROWEXPR("ERROR: profile trans weight is NaN.  This is not good. ");
+				}
+			    }
+
+
+			  //			  cerr << "Added value: " << toAddToDP << endl;
 			}
 		    }
 		}
-	      if (logging)
-		cerr<<"\n\n Final forward value for this state: " << get_DP_cell(i,*j,*k)  << "\n\n"; 
 	      if (bfloat_is_nonzero(toAddToDP))
 		  add_to_DP_cell(i,*j,*k, toAddToDP); 
+	      if (logging)
+		{
+		  cerr<<"\n\n Final forward value for this state: " << get_DP_cell(i,*j,*k)  << "\n"; 
+		  cerr << "\t(State was: hmm " << pairHMM.state_name[*k]  << " , read " << i << " , profile " << *j << ")\n"; 
+		}
+	      
 	    }
 	}
     }
@@ -318,9 +348,9 @@ inline bfloat ReadProfileScore::get_DP_cell(int i, state j, state k)
 
 
 
-inline bfloat ReadProfileScore::get_forward_value(void)
+bfloat ReadProfileScore::get_forward_value(void)
 {
-  return get_DP_cell(readSize-1, profile->pre_end_state, pairHMM.end_state); 
+  return 1.0/get_DP_cell(readSize-1, profile->pre_end_state, pairHMM.end_state); 
 }      
 
 bfloat ReadProfileScore::get_viterbi_value(void)
@@ -360,7 +390,7 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   // Alpahbet tokens
   vector<sstring> toks = sub_alphabet.tokens();
   // eventually we'd like to optimize this value!
-  branch_length = 0.001; 
+  branch_length = 0.1; 
   
   // Build up the HMM 
   num_states=-1; 
@@ -374,10 +404,10 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   add_state("end","end");
 
   // from start
-  //  add_transition("start", "pre_read_ins", .9);
+  //  add_transition("start", "pre_read_ins", .85);
   add_transition("start", "match", .05);
   add_transition("start", "delete", .05);
-  add_transition("start", "read_ins", .99);
+  add_transition("start", "read_ins", .05);
 
   // from pre_read_ins
   //  add_transition("pre_read_ins", "pre_read_ins", .99); 
@@ -507,24 +537,28 @@ inline bfloat ReadProfileModel::get_emission_weight(int readIndex, state profile
 
   // Insert state: emit only to profile - product of equilibrium prob and absorb weight
   else if ( state_type[hmm_state] == "insert" )
-    for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++)
-      emissionWeight += profile->get_absorb_weight(profileState, alphIdx) * // absorption by profile
-	bfloat(equilibrium_dist[alphIdx]); // prior on this character
+    emissionWeight = 1.0; // CHANGED
+//      for (alphIdx = 0; alphIdx < alphabet_size; alphIdx++) 
+//        emissionWeight += profile->get_absorb_weight(profileState, alphIdx) * // absorption by profile
+// 	 bfloat(equilibrium_dist[alphIdx]); // prior on this character
 
   // Delete state: emit only to read - product of equilibrium prob and affinity for character
   else if ( state_type[hmm_state] == "delete" )
-      for (symbolIter = read_profile[readIndex].begin(); 
-	   symbolIter != read_profile[readIndex].end(); symbolIter++)
-	{
-	  // cerr<<toks[*symbolIter] << " has weight: " << equilibrium_dist[alphIdx] <<endl; 
-	  emissionWeight += bfloat(equilibrium_dist[symbolIter->first])*// prior on character
-	    bfloat(symbolIter->second); // read's affinity for given character
-	}
+    emissionWeight = 1.0; // CHANGED 
+//       for (symbolIter = read_profile[readIndex].begin(); 
+// 	   symbolIter != read_profile[readIndex].end(); symbolIter++)
+// 	{
+// 	  // cerr<<toks[*symbolIter] << " has weight: " << equilibrium_dist[alphIdx] <<endl; 
+// 	  emissionWeight += bfloat(equilibrium_dist[symbolIter->first])*// prior on character
+// 	    bfloat(symbolIter->second); // read's affinity for given character
+// 	}
   else
-    emissionWeight = bfloat(1.0);
-
-  if (! bfloat_is_nonzero(emissionWeight) > 0)
-    THROWEXPR("emission weight is NONPOSITIVE"); 
+    {
+      cerr << "Warning: emission weight defaulting to 1.0.  State type: " << state_type[hmm_state] << endl;
+      emissionWeight = bfloat(1.0);
+    }
+  if (! bfloat_is_nonzero(emissionWeight))
+    THROWEXPR("Emission weight is NONPOSITIVE"); 
   //  cerr<<"Done\t";
   return emissionWeight; 
 }
