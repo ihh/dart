@@ -23,11 +23,13 @@ class PlacementLimiter : public map<string, vector<Node> >
   map<string, int> nodes2branches; 
   map<string, vector<int> > read_node_map;
   bool is_allowed(string, string); 
+  bool is_single_possibility(string readName);
   string treeString; 
   PHYLIP_tree* tree; 
   bool is_within_distance(string, double, vector<int>); 
   double tree_distance(Node, Node); 
   double distance_cutoff; 
+  map<string, bool> nodes_with_reads; 
 };
 
 

@@ -77,6 +77,7 @@ void displayVector(vector <vector <int> > in);
 
 bool FileExists(string); 
 bool bfloat_is_nonzero(bfloat);
+bool bfloat_is_nan(bfloat); 
 string remove_from_string(string, string); 
 
 /* vector<sstring> all_codons(void);  */

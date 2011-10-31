@@ -1538,14 +1538,17 @@ bfloat AbsorbingTransducer::get_transition_weight(state e, state ePrime)
 	  pair<state, state> transitionPair; transitionPair.first=e, transitionPair.second=ePrime;
 	  if (transition_weight.count(transitionPair)) 
 	    {
-	      bool isReal = false;
-	      if (transition_weight[transitionPair] > 0.0)
-		isReal = true; 
-	      if (!isReal)
+	      if (!bfloat_is_positive(transition_weight[transitionPair]))
 		{
 		  std::cerr<< "Error: the transition between states "<<e<<" , "<<ePrime<<" is valid, but it is zero\n"; 
-		  THROWEXPR("Generic profile error");
+		  THROWEXPR(" Error in profile's transition weights.");
 		}
+	      else if ( bfloat_is_nan(transition_weight[transitionPair]))
+		{
+		  std::cerr<< "Error: the transition between states "<<e<<" , "<<ePrime<<" is valid, but it is NaN\n"; 
+		  THROWEXPR(" Error in profile's transition weights.");
+		}
+
 	      else
 		return transition_weight[transitionPair];
 	    }

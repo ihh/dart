@@ -110,6 +110,7 @@ class AbsorbingTransducer
 
   // Number of delete states.  If in SNF, there will be num_delete_states + 3 states in the transducer
   int num_delete_states;
+  vector<state> delete_states; 
 
   // Keep track of these directly.  Assume integers in 0 <= i <  num_states  are delete states.  
   state start_state, pre_end_state, end_state; 

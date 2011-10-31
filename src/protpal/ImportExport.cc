@@ -187,9 +187,6 @@ void AbsorbingTransducer::read_profile(const char* profile_filename, bool loggin
     }
   if (logging)
     cerr<<"Parsed the whole profile, done.\n"; 
-
-
-
 }
 
 
@@ -200,6 +197,7 @@ void AbsorbingTransducer::parse_state(SExpr* s)
   try{
     sstring stateType = s->find_or_die("type").value().get_atom();
     int stateIndex = s->find_or_die("name").value().get_atom().to_int();
+
     if (stateType != "delete")
       {
 	if (stateType == "start" )
@@ -211,6 +209,7 @@ void AbsorbingTransducer::parse_state(SExpr* s)
       }
     else
       {
+	delete_states.push_back(stateIndex); 
 	// parse a delete state - in order of hairyness
 	// Leaf coords
 	vector<sstring> leafCoords = s->find_or_die("leaf_indices").value().atoms_to_strings();
@@ -246,7 +245,7 @@ void AbsorbingTransducer::parse_state(SExpr* s)
 	  
 	for (vector<sstring>::iterator absVal = absorbValues.begin()+1; absVal != absorbValues.end(); absVal++)
 	  {
-	    weight = exp(absVal->to_double());
+	    weight = bfloat_doubleexp(absVal->to_double());
 	    // cerr<< "State " << stateIndex << " absorbs weight, character: " << weight << endl; 
 	    absorption_weight[stateIndex].push_back(weight);
 	  }
@@ -267,7 +266,19 @@ void AbsorbingTransducer::parse_transition(SExpr* s)
   to = s->find_or_die("to").value().get_atom().to_int();  
   from = s->find_or_die("from").value().get_atom().to_int();  
   weight = s->find_or_die("weight").value().get_atom().to_double();  
-  bweight = exp(weight); 
+//   if (isinf(log(bfloat_doubleexp(weight))))
+//     {
+//       cerr << "Problematic transition weight: " << weight << endl;
+//       THROWEXPR("ERROR in reading profile from file: exp(Log(Transition)) is Inf.");
+//     }
+  bweight = bfloat_doubleexp(weight);// exp(weight);  OW changed 10-27-11 after underflows
+  if (!bfloat_is_nonzero(bweight))
+    {
+      cerr << "Problematic transition weight: " << weight << endl;
+      bfloat b = bfloat_doubleexp(weight);
+      cerr << b << " bfloat" << endl;
+      THROWEXPR("ERROR in reading profile from file: Transition is zero.");
+    }
   //  cerr<< "Parsed the transition: from " << from << " to "  << to << " with weight " << " " << bweight << endl; 
 
   // Set transition weight
@@ -346,17 +357,19 @@ bool AbsorbingTransducer::test_equality(AbsorbingTransducer& other, bool logging
     x    leaf_seq_coords
     x    transition_weight
   */
+  if (logging and drillDown)
+    cerr << "Drilling down into transducer differences...\n"; 
   bool same = true; 
   if (transition_weight != other.transition_weight)
     {
-      if (logging)
-	cerr<< "The two transducers differ in their  transitions' weights \n"; 
-      same =  false; 
+      //      if (logging)
+      //	cerr<< "The two transducers differ in their  transitions' weights \n"; 
+      //      same =  false; 
       if (drillDown)
 	{
 	  for (map< pair<state, state>, bfloat>::iterator transIter=transition_weight.begin(); transIter!=transition_weight.end(); ++transIter)
 	    {
-	      if (other.transition_weight.find(transIter->first) == other.transition_weight.end())
+	      if (!other.transition_weight.count(transIter->first))
 		cerr<<"Current profile has key that other doesn't: " << transIter->first; 
 	      
 	      else 
@@ -370,12 +383,12 @@ bool AbsorbingTransducer::test_equality(AbsorbingTransducer& other, bool logging
 	    }
 	}
     }
-  if (absorption_weight != other.absorption_weight)
-    {
-      if (logging)
-	cerr<< "The two transducers differ in their absorption weights \n"; 
-      same =  false; 
-    }
+  //  if (absorption_weight != other.absorption_weight)
+  //    {
+  //      if (logging)
+  //	cerr<< "The two transducers differ in their absorption weights \n"; 
+  //      same =  false; 
+  //    }
 
   if (start_state != other.start_state)
     {

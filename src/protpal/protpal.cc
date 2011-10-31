@@ -576,8 +576,7 @@ int main(int argc, char* argv[])
   // If  no reconstruction is requested ('alignment' mode) just print the leaf alignment
   if (reconstruction.leaves_only)
     stk.write_Stockholm(cout);
-  // Otherwise we must display characters at all nodes
-  else 
+  else   // Otherwise we must display characters at all nodes
     {
       ECFG_main ecfg; 
       if (reconstruction.input_alignment)
@@ -664,8 +663,6 @@ int main(int argc, char* argv[])
 		cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << sequence << endl; 
 	    }
 	}
-      cout << Stockholm_footer; 
-		  
       // if requested, show what was inserted/deleted on the tree  (written to file)
       if (reconstruction.indel_filename != nullValue && reconstruction.num_root_alignments == 1)
 	{
@@ -678,8 +675,9 @@ int main(int argc, char* argv[])
 	  indels.display_indel_info(indel_file, reconstruction.per_branch);
 	  indel_file.close();
 	}
-  
     }
+  // Always include the stockholm footer (//)
+  cout << Stockholm_footer; 
   
   if (reconstruction.loggingLevel >= 1)
     {
