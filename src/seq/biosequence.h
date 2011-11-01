@@ -658,10 +658,13 @@ public:
 
   const Named_profile& get_seq (int i) const { return *index.profile[i]; }
 
-  // constructor
+  // constructors
   FASTA_sequence_database (const char* filename = 0,
 			   const Alphabet* alphabet = 0,
 			   Profile_flags convert = ALL);   // calls read_from_file()
+
+  FASTA_sequence_database (const Sequence_database& db,
+			   const Alphabet* alphabet = 0);
 
   // I/O
   void read_FASTA (istream& in);  // calls superclass method & then updates index, but does not call seqs_update()

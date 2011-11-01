@@ -397,10 +397,11 @@ void Stockholm::set_np (int row, const Named_profile& row_np)
 
 void Stockholm::discard_wild_sequences (const Alphabet& alphabet)
 {
+  const vector<const Score_profile*> old_prof (prof);
   Alignment::discard_wild_sequences (alphabet);
   for (int r = 0; r < rows(); ++r)
-    if (!prof[r])
-      np[r] = 0;
+    if (old_prof[r] && !prof[r])
+      np[r] = NULL;
 }
 
 int Stockholm::add_row()
@@ -462,6 +463,14 @@ sstring Stockholm::get_gs_annot (const sstring& seqname, const sstring& tag) con
 	s = row_iter->second;
     }
   return s;
+}
+
+void Stockholm::clear_annot()
+{
+  clear_gf_annot();
+  gc_annot.clear();
+  gs_annot.clear();
+  gr_annot.clear();
 }
 
 void Stockholm::clear_gf_annot()
@@ -819,6 +828,7 @@ Stockade::Stockade (const Stockholm& s)
     {
       np[i] = Named_profile (*s.np[i]);
       align.np[i] = &np[i];
+      align.prof[i] = s.prof[i] ? &np[i].prof_sc : NULL;
     }
 }
 
@@ -827,7 +837,10 @@ Stockade& Stockade::operator= (const Stockade& s)
   align = s.align;
   np = s.np;
   for (int i = 0; i < (int) np.size(); ++i)
-    align.np[i] = &np[i];
+    {
+      align.np[i] = &np[i];
+      align.prof[i] = s.align.prof[i] ? &np[i].prof_sc : NULL;
+    }
   return *this;
 }
 
@@ -870,9 +883,10 @@ void Stockholm_database::write (ostream& out) const
     a->write_Stockholm (out);
 }
 
-void Stockholm_database::read_Stockholm_or_FASTA (istream& in, Sequence_database& seq_db)
+bool Stockholm_database::read_Stockholm_or_FASTA (istream& in, Sequence_database& seq_db)
 {
-  if (Named_profile::detect_FASTA (in))
+  const bool is_FASTA = Named_profile::detect_FASTA (in);
+  if (is_FASTA)
     {
       // read new sequences
       FASTA_sequence_database new_seqs;
@@ -894,6 +908,8 @@ void Stockholm_database::read_Stockholm_or_FASTA (istream& in, Sequence_database
     }
   else
     read (in, seq_db);  // calls update_index()
+
+  return !is_FASTA;
 }
 
 void Stockholm_database::update_index()

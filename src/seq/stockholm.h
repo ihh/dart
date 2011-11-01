@@ -126,6 +126,7 @@ struct Stockholm : Alignment, Fold_char_enum
 
   // nonconst annotation accessors
   // GF is problematic, can be split over multiple lines (well, all of them can really, but we ignore this)
+  void clear_annot();
   void clear_gf_annot();
   void clear_gf_annot (const sstring& tag);
   void add_gf_annot (const sstring& tag, const sstring& val);  // GF accessor; can only add lines
@@ -193,7 +194,8 @@ public:
   void add (const Stockholm_database& stock_db);
 
   // the following method autodetects FASTA/Stockholm (if FASTA, creates a separate alignment for each sequence)
-  void read_Stockholm_or_FASTA (istream& in, Sequence_database& seq_db);
+  // returns TRUE if Stockholm, FALSE if FASTA
+  bool read_Stockholm_or_FASTA (istream& in, Sequence_database& seq_db);
 
   // helpers for various annotations
   void propagate_consensus_folds (bool override_row_folds = FALSE);  // calls propagate_consensus_fold() on each alignment

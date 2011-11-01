@@ -534,3 +534,38 @@ void Pair_transducer_scores::sample (const Digitized_biosequence& parent_dsq, ve
 	break;
     }
 }
+
+Pair_HMM_scores Pair_transducer_scores::pair_hmm (const Alphabet& alph) const
+{
+  Pair_HMM_scores hmm (states(), &alph);
+  hmm.assign_transition_matrix (*this);
+  for (int s = 0; s < states(); ++s)
+    switch (state_type[s])
+      {
+      case TransducerMatchType:
+	hmm.init_emit (s, Pair_HMM_state_type_enum::EmitXY, -InfinityScore);
+	for (int x = 0; x < alphabet_size; ++x)
+	  for (int y = 0; y < alphabet_size; ++y)
+	    hmm.pair_emit[s](x,y) = ((Pair_transducer_scores&)*this).match_val(s,x,y);
+	break;
+
+      case TransducerDeleteType:
+	hmm.init_emit (s, Pair_HMM_state_type_enum::EmitX, -InfinityScore);
+	for (int x = 0; x < alphabet_size; ++x)
+	  hmm.single_emit[s][x] = ((Pair_transducer_scores&)*this).delete_val(s,x);
+	break;
+
+      case TransducerInsertType:
+	hmm.init_emit (s, Pair_HMM_state_type_enum::EmitY, -InfinityScore);
+	for (int y = 0; y < alphabet_size; ++y)
+	  hmm.single_emit[s][y] = ((Pair_transducer_scores&)*this).insert_val(s,y);
+	break;
+
+      case TransducerWaitType:
+	hmm.state_type[s] = Pair_HMM_state_type_enum::Null;
+      default:
+	break;
+      }
+
+  return hmm;
+}

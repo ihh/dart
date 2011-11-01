@@ -11,6 +11,7 @@ using namespace std;
 #include "util/multi_array.h"
 #include "seq/psexpr.h"
 #include "hmm/transmat.h"
+#include "hmm/pairhmm.h"
 #include "hsm/em_matrix_base.h"
 
 // default transducer state names
@@ -1937,6 +1938,9 @@ struct Pair_transducer_scores : Pair_transducer<Score>
   // sample a child path, conditional on a parent path
   // max_tries is the maximum number of attempts before emitting an empty child sequence (for transducers which can get stuck)
   void sample (const Digitized_biosequence& parent_dsq, vector<int>& parent_child_path, Digitized_biosequence& child_dsq, int max_tries = TRANSDUCER_SAMPLE_MAX_TRIES);
+
+  // convert to Pair_HMM_scores
+  Pair_HMM_scores pair_hmm (const Alphabet& alph) const;
 
   // string stuff
   void show_element (const Score& element, ostream& o) const

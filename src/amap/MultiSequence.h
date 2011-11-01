@@ -105,6 +105,7 @@ class MultiSequence {
       {
 	Sequence* seq = GetSequence (r);
 	stockade.align.row_name[r] = stockade.np[r].name = seq->GetHeader();
+	stockade.align.prof[r] = &stockade.np[r].prof_sc;
 	
 	// build the new (ungapped) Biosequence and align.path.row to store alignment information
 	// (align.path.row (r)[col] specifies whether or not the seq in row r has an aligned residue in column col)
@@ -122,6 +123,7 @@ class MultiSequence {
 	  }
 	stockade.np[r].seq = ungapped;
       }
+    stockade.align.update_row_index();
     
     return stockade;
   }

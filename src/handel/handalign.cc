@@ -3,6 +3,7 @@
 #include "handel/tkftrans.h"
 #include "handel/alitrans.h"
 #include "handel/recorder.h"
+#include "handel/initalign.h"
 
 #include "util/rnd.h"
 #include "util/logfile.h"
@@ -18,10 +19,15 @@
 
 #define DEFAULT_CHAIN_PATH JUKES_CANTOR_CHAIN_PATH
 
+// branch length for initial guesstimate alignment
+#define INIT_BRANCH_LEN 0.5
+
+
+// main
 int main(int argc, char* argv[])
 {
   // initialise handler
-  INIT_OPTS_LIST (opts, argc, argv, 1, "[options] <alignment>", "sample multiple alignments using a single-event 'long indel' transducer composition");
+  INIT_OPTS_LIST (opts, argc, argv, 1, "[options] <Stockholm alignment or FASTA sequences file>", "MCMC sampler over multiple alignments, phylogenies, and evolutionary parameters");
 
   // dummy options for Handel_base::anneal()
   const double kT_start = 1.;
@@ -170,16 +176,6 @@ int main(int argc, char* argv[])
 		<< "--use-best or to specify an alignment output file with --align-file,\n"
 		<< "otherwise the best refined alignments will be discarded.\n";
 
-      // read in starting alignment
-      Sequence_database seqs;
-      Stockholm stock;
-
-      ifstream align_file (opts.args[0].c_str());
-      if (!align_file) THROW String_exception ("Alignment file not found: ", opts.args[0].c_str());
-      CLOG(7) << "Reading initial alignment\n";
-
-      stock.read_Stockholm (align_file, seqs);
-
       // create Transducer_alignment
       Transducer_alignment_with_subst_model* trans_ptr = 0;
       const double gamma = 1 - 1 / (mean_seq_len + 1);
@@ -218,14 +214,47 @@ int main(int argc, char* argv[])
       ECFG_builder::init_param_chain_alphabet (alph, trans.ems, trans.subst_pscores, trans.subst_pcounts, trans.subst_mutable_pgroups, param_chain_alph_sexpr.sexpr);
       trans.update_seq_scores();
 
+      // read in starting alignment
+      Sequence_database seqs;
+      Stockholm stock;
+      Stockade stockade;
+      Stockholm_database stock_db;
+
+      ifstream align_file (opts.args[0].c_str());
+      if (!align_file) THROW String_exception ("Alignment file not found: ", opts.args[0].c_str());
+      CLOG(7) << "Reading initial alignment\n";
+
+      const bool is_Stockholm_input = stock_db.read_Stockholm_or_FASTA (align_file, seqs);
+      if (is_Stockholm_input)
+	{
+	  if (stock_db.size() != 1)
+	    THROWEXPR ("Error - expected only one alignment file on the input");
+	  stock = stock_db.align.front();
+	}
+      else
+	{
+	  // FASTA input, so need to estimate initial alignment
+	  FASTA_sequence_database fasta_seq_db (seqs, &alph);
+	  stockade = Stockade_initializer::align (fasta_seq_db, alph, trans, INIT_BRANCH_LEN);
+	  stock = stockade.align;
+	  stock.clear_annot();
+	}
+
       // convert sequences, discard wild sequences
       seqs.seqs2scores (alph);
+      for_contents (vector<Named_profile>, stockade.np, np)
+	np->seq2score (alph);
+
       stock.discard_wild_sequences (alph);
 
-      // TODO: if no tree, estimate by neighbor-joining (postpone this for a while: can use xrate at first)
-
       // get tree, convert to binary
-      Stockholm_tree tree (stock, true);
+      Stockholm_tree tree (stock, false);
+      const bool tree_parsed = tree.nodes() > 0;
+      if (!tree_parsed)
+	{
+	  Stockade_initializer::build_tree (stock, trans.submat_factory());
+	  tree = Stockholm_tree (stock, true);
+	}
       if (force_binary)
 	tree.force_binary();
 

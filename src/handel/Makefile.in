@@ -5,7 +5,7 @@ HANDEXECS  = handalign posthand phylocomposer
 TARGETS    = $(TESTS) $(HANDEXECS)
 DIRNAME    = handel
 
-DEPS       = ecfg @GUILE_DEPS@ scfg irrev hsm hmm tree seq util newmat randlib
+DEPS       = amap ecfg @GUILE_DEPS@ scfg irrev hsm hmm tree seq util newmat randlib
 
 CCDIR      = $(shell pwd)
 SRCDIR     = $(CCDIR)/..

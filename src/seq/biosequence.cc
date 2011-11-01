@@ -1418,6 +1418,14 @@ FASTA_sequence_database::FASTA_sequence_database (const char* filename,
     read_from_file (filename, alphabet, convert);
 }
 
+FASTA_sequence_database::FASTA_sequence_database (const Sequence_database& db,
+						  const Alphabet* alphabet)
+  : Sequence_database (db),
+    my_alphabet (alphabet)
+{
+  index.update (*this);
+}
+
 void FASTA_sequence_database::read_FASTA (istream& in)
 {
   ((Sequence_database*) this)->read_FASTA (in);
