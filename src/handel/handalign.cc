@@ -17,7 +17,7 @@
 #define JUKES_CANTOR_CHAIN_PATH "/data/handalign/jc.hsm"
 #define PROT_CHAIN_PATH "/data/handalign/prot.hsm"
 
-#define DEFAULT_CHAIN_PATH JUKES_CANTOR_CHAIN_PATH
+#define DEFAULT_CHAIN_PATH PROT_CHAIN_PATH
 
 // branch length for initial guesstimate alignment
 #define INIT_BRANCH_LEN 0.5
@@ -65,10 +65,14 @@ int main(int argc, char* argv[])
   subst_model_filename << Dart_Unix::get_DARTDIR() << DEFAULT_CHAIN_PATH;
   subst_model_help_string << "xrate-format substitution rate matrix (default is $" << DARTDIR_ENV_VAR << DEFAULT_CHAIN_PATH << ')';
 
-  // set up alternate subst model
+  // set up alternate subst models
   sstring prot_model_alias, prot_model_help_string;
   prot_model_alias << "-m " << Dart_Unix::get_DARTDIR() << PROT_CHAIN_PATH;
   prot_model_help_string << "use alternate rate matrix ($" << DARTDIR_ENV_VAR << PROT_CHAIN_PATH << ')';
+
+  sstring jukes_cantor_model_alias, jukes_cantor_model_help_string;
+  jukes_cantor_model_alias << "-m " << Dart_Unix::get_DARTDIR() << JUKES_CANTOR_CHAIN_PATH;
+  jukes_cantor_model_help_string << "use alternate rate matrix ($" << DARTDIR_ENV_VAR << JUKES_CANTOR_CHAIN_PATH << ')';
 
   // misc parameters
   sstring dotfile_dir;
@@ -91,6 +95,7 @@ int main(int argc, char* argv[])
   opts.newline();
   opts.add ("m -subst-model", subst_model_filename, subst_model_help_string.c_str(), false);
   opts.add ("p -prot-model", prot_model_alias.c_str(), prot_model_help_string.c_str(), false);
+  opts.add ("jc -jukes-cantor-model", jukes_cantor_model_alias.c_str(), jukes_cantor_model_help_string.c_str(), false);
   opts.add ("tkf91", tkf91 = false, "use TKF91 model instead of long indel model");
 
   opts.newline();
