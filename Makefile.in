@@ -55,7 +55,7 @@ cleanlib:
 
 # Handel : MCMC statistical alignment package
 # Includes tkfalign, tkfemit, tkfdistance
-Handel handel:
+Handel handel handalign:
 	cd $(SRCDIR)/handel; $(MAKE) -k $(RELEASE) dep handel
 	cd $(SRCDIR)/tkf; $(MAKE) -k $(RELEASE) dep tkfhandel
 
@@ -75,7 +75,6 @@ StemLoc Stemloc stemloc:
 
 # dense-stemloc
 # Use dense(faster,fatter) rather than sparse(slower,slimmer) DP matrices for Pair SCFGs
-# Also uses explicit enumeration of bifurcations (see above)
 dense-stemloc:
 	cd $(SRCDIR)/stemloc; $(MAKE) -k $(RELEASE) alloc_dense dep stemloc
 
