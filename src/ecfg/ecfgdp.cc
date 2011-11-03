@@ -773,7 +773,7 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 		      for (int emit_pos = 0; emit_pos < info.l_emit + info.r_emit; ++emit_pos)
 			{
 			  const int col = info.column_index (coords, emit_pos);
-			  if (row_path[*n][col])
+			  if (col >= 0 && col < (int) row_path[*n].size() && row_path[*n][col])
 			    {
 			      const int emit_sym = sym_idx[emit_pos];
 			      const char emit_char = ecfg.alphabet.int2char (emit_sym);
@@ -805,7 +805,7 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 		{
 		  const int col = info.column_index (coords, emit_pos);
 		  const int pos = emit_pos + info.l_context;
-		  if (row_path[*n][col])
+		  if (col >= 0 && col < (int) row_path[*n].size() && row_path[*n][col])
 		    {
 		      const int emit_sym = (ml_chain_state / info.mul[emit_pos]) % ecfg.alphabet.size();
 		      const char emit_char = ecfg.alphabet.int2char (emit_sym);
