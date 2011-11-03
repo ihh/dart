@@ -745,6 +745,7 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 	  fill_down (env.find_subseq_idx (coords.start, coords.len), ecfg_state);
 
 	  // loop over nodes we want to reconstruct
+	  vector<int> sym_idx;
 	  for_const_contents (vector<int>, nodes_to_build, n)
 	    {
 	      // find max a posteriori chain state at this node (and record postprobs of all states)
@@ -768,12 +769,13 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 		    {
 		      sstring tuple;
 		      bool found_nongap = false;
+		      chain.get_symbol_indices (chain_state, sym_idx);
 		      for (int emit_pos = 0; emit_pos < info.l_emit + info.r_emit; ++emit_pos)
 			{
 			  const int col = info.column_index (coords, emit_pos);
 			  if (row_path[*n][col])
 			    {
-			      const int emit_sym = (ml_chain_state / info.mul[emit_pos]) % ecfg.alphabet.size();
+			      const int emit_sym = sym_idx[emit_pos];
 			      const char emit_char = ecfg.alphabet.int2char (emit_sym);
 			      tuple << emit_char;
 			      found_nongap = true;
@@ -781,6 +783,8 @@ void ECFG_EM_matrix::reconstruct_MAP (Stockholm& stock, const ECFG_cell_score_ma
 			  else
 			    tuple << Alignment::gap_char();
 			}
+		      if (chain.class_labels.size())
+			tuple << chain.class_labels[sym_idx.back()];
 		      if (found_nongap)
 			tuple_postprob[tuple] += chain_state_prob;
 		    }
