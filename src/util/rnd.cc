@@ -1,6 +1,9 @@
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/time.h>
+
 #include "util/rnd.h"
 #include "randlib/randlib.h"
-#include <time.h>
 
 #define DEFAULT_RND_SEED 1234567890
 
@@ -32,7 +35,11 @@ void Rnd::add_opts (Opts_list& ol)
 
 bool Rnd::seed_on_time (Opts_list* ol)
 {
-  set_seed (time (NULL));
+  struct timeval tv;
+  struct timezone tz;
+  struct tm *tm;
+  gettimeofday(&tv, &tz);
+  set_seed (((long) getpid()) ^ ((long) tv.tv_usec));
   return TRUE;
 }
 
