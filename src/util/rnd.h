@@ -21,7 +21,7 @@ class Rnd
   static void   set_seed (int val);
 
   static bool   force_seed (Opts_list* ol);
-  static bool   seed_on_time (Opts_list* ol);
+  static bool   seed_on_time (Opts_list* ol);  // actually seeds on (microseconds since 1/1/1970) XOR (current PID)
   static bool   log_seed (Opts_list* ol);
   
   static void   add_opts (Opts_list& ol);
