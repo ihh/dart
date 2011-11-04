@@ -33,7 +33,7 @@ int AlignmentEnvelope::name2int(sstring name)
 }
 
 
-void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring gap_char_in, int sausage_size_in, sstring type_in)
+void AlignmentEnvelope::build_index(sstring guide_alignment_filename, vector<string> leaf_names, sstring gap_char_in, int sausage_size_in, sstring type_in)
 {
   int  seq1, seq2; 
   sstring name1, name2;
@@ -53,6 +53,8 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
   for (seq1 = 0; seq1 < rows; ++seq1)
     {
       name1 = stk.row_name[seq1]; 
+      if (index(name1, leaf_names) == -1)
+	continue;
       //      std::cerr<<"\nIndexing from " << seqIter->first << " to: \n"; 
       //seqSize = (seqIter->second).size(); 
       for (seq2 = 0; seq2 < rows; ++seq2)
@@ -62,6 +64,9 @@ void AlignmentEnvelope::build_index(sstring guide_alignment_filename, sstring ga
 	  else
 	    {
 	      name2 = stk.row_name[seq2]; 
+	      if (index(name2, leaf_names) == -1)
+		continue;
+
 	      //	      std::cerr << " " << seqIter2->first << " "; 
 	      for (int idx = 0; idx < cols; idx++)
 		{

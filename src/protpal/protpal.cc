@@ -392,8 +392,7 @@ int main(int argc, char* argv[])
 				reconstruction.leaves_only, // only show leaves
 				reconstruction.viterbi // sample viterbi path (on the last time through - only really applies to null states)
 				); 
-	      // Now that we're done sampling, we can discard the DP matrix.  
-	      profile.clear_DP();
+
 	      
 	      if(reconstruction.loggingLevel>=1)
 		{
@@ -401,7 +400,21 @@ int main(int argc, char* argv[])
 		  cerr<<"\tResulting DAG has "<< profile.num_sampled_externals;
 		  cerr<< " absorbing states." << endl; 
 		}
-		  
+	      if (profile.num_sampled_externals == 0)
+		{
+// 		  cerr << "Warning: sampled DAG had no absorbing states.  This is unusual - proceeding to sample and display alignment paths now...\n";
+// 		  profile.sample_DP(
+// 				    reconstruction.num_sampled_paths, 
+// 				    reconstruction.loggingLevel, 
+// 				    true, // reconstruction.show_alignments, 
+// 				    true , // only show leaves
+// 				    false // sample viterbi path (on the last time through - only really applies to null states)
+// 				    ); 
+// 		  THROWEXPR("Empty DAG");
+		}
+	      // Now that we're done sampling, we can discard the DP matrix.  
+	      profile.clear_DP();
+
 	      // Transform the (null-in, null-out) transducer into an absorbing transducer:
 	      // Remove R-states, modify transition probabilities, sum over null states, 
 	      // index remaining delete states.  This is a *mildly* hairy operation...

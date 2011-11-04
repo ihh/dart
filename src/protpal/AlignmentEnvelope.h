@@ -16,7 +16,7 @@ class AlignmentEnvelope
  public:
   // constructor, initializer
   AlignmentEnvelope(void); 
-  void build_index(sstring guide_alignment_filename, sstring gap_char = "-", int sausage_size=0, sstring type="gap-sliding");
+  void build_index(sstring guide_alignment_filename, vector<string> leaf_names, sstring gap_char = "-", int sausage_size=0, sstring type="gap-sliding");
   // main data storage unit - nested maps
   map< string, map<int, map<string, pair<int, int> > > > coordinates; 
   pair<int, int> lookup(string seqName, int index, string otherSeqName);

@@ -71,11 +71,11 @@ bfloat ReadProfileScore::get_score(const Read& read, bool viterbi, bool logging)
     {
       cerr << "Bad read-profile score between profile: " << name << " , read: " << read.identifier << " score: " << value <<endl;
       clear_DP_matrix(); 
-      fill_DP_matrix(read, 
-		     dummy_ostream, // hmmoc filestream
-		     false, // only write hmmoc file, don't do actual DP
-		     false,  // keep backPointers - for finding viterbi traceback
-		     true); // display logging messages
+//       fill_DP_matrix(read, 
+// 		     dummy_ostream, // hmmoc filestream
+// 		     false, // only write hmmoc file, don't do actual DP
+// 		     false,  // keep backPointers - for finding viterbi traceback
+// 		     true); // display logging messages
       THROWEXPR("Bad read-profile score." ); 
     }
 

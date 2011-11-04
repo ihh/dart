@@ -142,22 +142,31 @@ void Placement::Run()
 	  continue;
 	}
       readsAtNode = 0; 
-      if ( !placementLimiter.nodes_with_reads.count( tree.node_name[profileNode] ))
-	continue;
+      if (using_limiter)
+	if ( !placementLimiter.nodes_with_reads.count( tree.node_name[profileNode] ))
+	  continue;
 
       // This is slightly clunky - and not really needed unless testing on small datasets.  
       // Probably rm it soon.
       bool some_read_possible=false;
-      for ( map<string, string>::iterator readIter = reads.begin();
-	    readIter != reads.end(); ++readIter )
-	if (placementLimiter.is_allowed(readIter->first, tree.node_name[profileNode]))
-	  { some_read_possible=true; break;}
-      if (! some_read_possible)
-	continue; 
-
+      if (using_limiter)
+	{
+	  for ( map<string, string>::iterator readIter = reads.begin();
+		readIter != reads.end(); ++readIter )
+	    if (placementLimiter.is_allowed(readIter->first, tree.node_name[profileNode]))
+	      { some_read_possible=true; break;}
+	  if (! some_read_possible)
+	    continue; 
+	}
       // Read in the profile from a file
       AbsorbingTransducer ancestralProfile(profile_filenames[profileNode].c_str(),
 					   alphabetVector, tree);
+      if (ancestralProfile.num_delete_states == 0)
+	{
+	  cerr << "WARNING: profile " << tree.node_name[profileNode] << " has no delete states.  This makes matching reads to it meaningless, so it is being skipped\n"; 
+	  continue;
+	}
+      
       if (loggingLevel >=1)
 	cerr << "Scoring reads to profile at node: " << tree.node_name[profileNode]<<" (" << ancestralProfile.num_delete_states << " states) ... ";
       // The ancestor name is not currently written/parsed in sexpr format. 

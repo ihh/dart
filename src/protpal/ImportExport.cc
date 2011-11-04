@@ -240,6 +240,7 @@ void AbsorbingTransducer::parse_state(SExpr* s)
 	if (int(absorbValues.size()) != alphabet_size+1)
 	  {
 	    cerr<<"ERROR: Imported absorb weights are not the same length as alphabet!\n"; 
+	    cerr << "Absorb size:" << absorbValues.size() << " alphabet size: " << alphabet_size+1 << endl;
 	    exit(1);
 	  }
 	  

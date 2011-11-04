@@ -1,5 +1,5 @@
 #include "protpal/Placement.h"
-
+#include "tree/phylogeny.h"
 int main(int argc, char* argv[])
 {
   try{

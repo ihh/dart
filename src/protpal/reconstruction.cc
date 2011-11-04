@@ -232,6 +232,11 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   // If a guide alignment was used, initialize the alignmentEnvelope
   if (have_guide_alignment)
     {
+      vector<node> leaf_idxs = tree.leaf_vector();
+      vector<string> leaf_names; 
+      for (vector<node>::iterator leafIter=leaf_idxs.begin(); leafIter!=leaf_idxs.end();
+	   leafIter++)
+	leaf_names.push_back(tree.node_name[*leafIter]); 
       if (loggingLevel >= 1)
 	std::cerr<<"\nBuilding alignment envelope from guide alignment...";
       if (guide_sausage < 0)
@@ -239,7 +244,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 	  std::cerr<<"Guide sausage size must be >= 0, setting to 0\n";
 	  guide_sausage = 0; 
 	}
-      envelope.build_index(guide_alignment_filename, gap_char, guide_sausage, envelope_type);
+      envelope.build_index(guide_alignment_filename, leaf_names, gap_char, guide_sausage, envelope_type); 
       if (loggingLevel >= 1)
 	std::cerr<<"Done.\n";
 	  
