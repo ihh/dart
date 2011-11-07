@@ -841,6 +841,25 @@ void EM_matrix_base::Column_matrix::fill_down (const vector<const EM_matrix_base
 		      U_basis[l] += U_nb * hsm_n.Uinv(l,*b);
 		  }
 
+		// Instead of accumulating counts in eigenvector space, one can do it in rate space
+		// One would add some code of the form
+		/*
+		for_const_contents (vector<int>, allowed[p], i) {
+		  if (node_post_prob (p, *i, tree, hsm) >= NODE_PROB_CUTOFF) {
+		    for_const_contents (vector<int>, allowed[n], j) {
+		      if (transition allowed from *i to *j ...) {
+			if (node_post_prob (n, *j, tree, hsm) >= NODE_PROB_CUTOFF) {
+			  if (branch_post_prob (p, *i, *j, tree, hsm) >= BRANCH_PROB_CUTOFF) {
+			    // ... Accumulate expected usage count for transitions on p->n branch ...
+			    // ... This involves transforming the eigenvector interaction matrix, pn.J(k,l), into rate space ...
+			  }
+			}
+		      }
+		    }
+		  }
+		}
+		*/
+
 		// get DJU stats for p-n branch
 		const double pn_branch_length = tree.branch_length (p, n);
 		const EM_matrix_base::Timepoint_data& pn = hsm_n.timepoint_data (pn_branch_length);
