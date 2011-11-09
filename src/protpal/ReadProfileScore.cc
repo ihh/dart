@@ -173,7 +173,7 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 	  if (logging)
 	    cerr<<"\nProcessing state " << *j  <<  " of profile...\n"; 
 	  // The HMM states compatible with a given (read, profile) state pair is determined:
-	  possible_HMM_states = get_possible_HMM_states(i, *j); 
+	  possible_HMM_states = get_possible_HMM_states(i, *j);  // could_optimize
 	  if (logging)
 	    {
 	      cerr<<"The possible HMM states are: "; 
@@ -188,7 +188,7 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 	      if (logging)
 		cerr<<"\n\nProcessing state " << pairHMM.state_name[*k]  <<  " of HMM...\n"; 
 	      // the pairHMM "changes" state at every  step, so this is a trivial lookup
-	      incoming_HMM_states = pairHMM.incoming[*k]; 
+	      incoming_HMM_states = pairHMM.incoming[*k];  // could_optimize
 	      if (logging)
 		{
 		  cerr<<"Summing over " << incoming_HMM_states.size() << " incoming HMM states:\t"; 
@@ -200,15 +200,15 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 		{
 		  if (logging)
 		    cerr<<"\tInvestigating transition from : "<< pairHMM.state_name[*kPrime] <<endl; 
-		  iPrime = get_incoming_read_state(i, *kPrime); 
+		  iPrime = get_incoming_read_state(i, *kPrime); // could_optimize
 		  // We can be sure this DP cell will be -inf, so we continue
 		  if (iPrime == -1 && pairHMM.state_type[*kPrime] != "start")
 		    continue;
-		  hmm_transition_weight = pairHMM.get_transition_weight(*kPrime, *k); 
+		  hmm_transition_weight = pairHMM.get_transition_weight(*kPrime, *k);  // could_optimize
 		  if (logging)
 		    cerr<<"\tTransition weight between HMM states: " << hmm_transition_weight << endl; 
 		  //                                                 (prof  hmm)
-		  incoming_profile_states = get_incoming_profile_states(*j, *kPrime); 
+		  incoming_profile_states = get_incoming_profile_states(*j, *kPrime); // could_optimize
 		  if (logging)
 		    {
 		      cerr<<"\tDetermined that there were " << incoming_profile_states.size() << " incoming profile states:\t"; 
@@ -236,7 +236,7 @@ void ReadProfileScore::fill_DP_matrix(const Read& read, ostream& hmmoc, bool hmm
 		      if (*j != *jPrime)
 			toAdd *= profile->get_transition_weight(*jPrime, *j); 
 		      if (pairHMM.state_type[*k] != "start" && pairHMM.state_type[*k] != "end")
-			toAdd *= pairHMM.get_emission_weight(i,*j,*k); 
+			toAdd *= pairHMM.get_emission_weight(i,*j,*k); // could_optimize
 		      toAdd *= hmm_transition_weight; 
 		      // if reqested, add this composite state's info (emission, transition) to the HMMoC stream
 		      if (hmmoc_only)
@@ -407,7 +407,7 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   //  add_transition("start", "pre_read_ins", .85);
   add_transition("start", "match", .05);
   add_transition("start", "delete", .05);
-  add_transition("start", "read_ins", .05);
+  add_transition("start", "read_ins", .9);
 
   // from pre_read_ins
   //  add_transition("pre_read_ins", "pre_read_ins", .99); 
@@ -415,26 +415,26 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   //  add_transition("pre_read_ins", "delete", .005); 
 
   // from match
-  add_transition("match", "match", 0.999); 
-  add_transition("match", "read_ins", 0.00025); 
-  add_transition("match", "delete", 0.00025); 
+  add_transition("match", "match", 0.99); 
+  add_transition("match", "read_ins", 0.00333); 
+  add_transition("match", "delete", 0.00333); 
   //  add_transition("match", "post_read_ins", 0.00025); 
-  add_transition("match", "end", 0.00025); 
+  add_transition("match", "end", 0.00333); 
 
 
   // from read_ins
-  add_transition("read_ins", "read_ins", 0.00025); 
-  add_transition("read_ins", "match", .999); 
-  add_transition("read_ins", "delete", 0.00025); 
+  add_transition("read_ins", "read_ins", 0.5); 
+  add_transition("read_ins", "match", .4); 
+  add_transition("read_ins", "delete", 0.05); 
   //  add_transition("read_ins", "post_read_ins", 0.00025); 
-  add_transition("read_ins", "end", 0.00025); 
+  add_transition("read_ins", "end", 0.05); 
 
   // from delete
-  add_transition("delete", "read_ins", 0.00025); 
-  add_transition("delete", "match", 0.999); 
-  add_transition("delete", "delete", 0.00025); 
+  add_transition("delete", "read_ins", 0.05); 
+  add_transition("delete", "match", 0.4); 
+  add_transition("delete", "delete", 0.5); 
   //  add_transition("delete", "post_read_ins", 0.00025); 
-  add_transition("delete", "end", 0.00025); 
+  add_transition("delete", "end", 0.05); 
 
   // from post_read_ins
   //  add_transition("post_read_ins", "post_read_ins", 0.999); 
