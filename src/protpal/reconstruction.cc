@@ -226,6 +226,9 @@ Reconstruction::Reconstruction(int argc, char* argv[])
       THROWEXPR("Error - prior on first mixture component is less than 0.  In specifying 2nd and 3rd components, remember that P(first) = 1 - P(2nd) - P(3rd)\n");
     }
   
+  if (use_dna)
+    rate_matrix_filename = default_dna_chain_filename; 
+  
   SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
   SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;
   ECFG_builder::init_chain_and_alphabet (alphabet, rate_matrix, ecfg_sexpr);
