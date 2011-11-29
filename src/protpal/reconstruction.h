@@ -128,6 +128,7 @@ class Reconstruction
   double get_root_ins_estimate(void);  
 
   // Placement algorithm
+  double distal_length;
   sstring reads_to_place_filename;
   sstring saved_profiles_directory; 
   sstring saved_subtree_profiles_directory; 

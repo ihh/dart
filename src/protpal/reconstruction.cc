@@ -143,6 +143,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("json -write-json", json_placements_filename=nullValue, "Write JSON format summary of placements (as per pplacer JSON spec)", false);
   opts.add("tab -tab-input", score_tabular_filename=nullValue, "Read tabular summary of placements (together with -write-json, this can be used to convert a tabular file to a pplacer-style JSON file)", false);
   opts.add("notab -no-placement-tabular", no_placements_tabular=false, "Do not write tabular format summary of placements");
+  opts.add("dl --distal-length", distal_length=-1, "Distal length for posterior profiles.  -1 to indicate splitting branch in half.", false); 
   
   
   opts.parse_or_die(); 

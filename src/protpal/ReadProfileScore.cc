@@ -415,24 +415,24 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   //  add_transition("pre_read_ins", "delete", .005); 
 
   // from match
-  add_transition("match", "match", 0.99); 
-  add_transition("match", "read_ins", 0.00333); 
-  add_transition("match", "delete", 0.00333); 
+  add_transition("match", "match", 0.999); 
+  add_transition("match", "read_ins", 0.0005); 
+  add_transition("match", "delete", 0.0005); 
   //  add_transition("match", "post_read_ins", 0.00025); 
-  add_transition("match", "end", 0.00333); 
+  add_transition("match", "end", 0.0001); 
 
 
   // from read_ins
-  add_transition("read_ins", "read_ins", 0.5); 
-  add_transition("read_ins", "match", .4); 
+  add_transition("read_ins", "read_ins", 0.7); 
+  add_transition("read_ins", "match", .2); 
   add_transition("read_ins", "delete", 0.05); 
   //  add_transition("read_ins", "post_read_ins", 0.00025); 
   add_transition("read_ins", "end", 0.05); 
 
   // from delete
   add_transition("delete", "read_ins", 0.05); 
-  add_transition("delete", "match", 0.4); 
-  add_transition("delete", "delete", 0.5); 
+  add_transition("delete", "match", 0.2); 
+  add_transition("delete", "delete", 0.7); 
   //  add_transition("delete", "post_read_ins", 0.00025); 
   add_transition("delete", "end", 0.05); 
 

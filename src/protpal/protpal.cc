@@ -71,20 +71,30 @@ int main(int argc, char* argv[])
 	  cerr<< reconstruction.profile_to_make << ".sexpr\n"; 
 	  reconstruction.root_profile_filename  = reconstruction.profile_to_make + ".sexpr";
 	}
-      
-      if (reconstruction.tree.is_leaf(new_root) )
+
+      if (new_root != reconstruction.tree.root)
 	{
-	  Phylogeny::Node n = reconstruction.tree.add_named_node("", new_root, 1e-5);
-          reconstruction.tree.node_name[new_root] = "tmpRoot";
-          reconstruction.tree.node_name[n] = reconstruction.profile_to_make; ;
-	}
-      // Re-root the tree at the desired node, and then proceed with reconstruction
-      if ( new_root != reconstruction.tree.root )
-	{
+	  double distal_length; 
+	  if (reconstruction.distal_length == -1 )
+	    distal_length = reconstruction.tree.branch_length(new_root, 
+								     reconstruction.tree.parent[new_root])/2.0; 
+	  else
+	    distal_length = reconstruction.distal_length; 
+	    
+	  Phylogeny::Node newNode = reconstruction.tree.add_named_node("", 
+								 reconstruction.tree.parent[new_root], 
+								 distal_length);
+	  reconstruction.tree.add_branch(newNode, new_root, distal_length); 
+	  reconstruction.tree.remove_branch(reconstruction.tree.parent[new_root], new_root); 
+	  reconstruction.tree.rebuild_parents();
+	  //	  reconstruction.tree.node_name[new_root] = "tmpRoot"; // removed
+          reconstruction.tree.node_name[newNode] = "temporary_root"; //reconstruction.profile_to_make;//changed
+	  
+	  // Re-root the tree at the desired node, and then proceed with reconstruction
 	  string tmpFileName = "tree_tmp.newick"; 
 	  ofstream tmpTreeFile(tmpFileName.c_str());
-	  // Write the tree rooted at the "new_root"
-	  reconstruction.tree.write(tmpTreeFile, -1, new_root); 
+	  // Write the tree rooted at temporary_root
+	  reconstruction.tree.write(tmpTreeFile, -1, newNode); 
 	  tmpTreeFile.close();
 	  // Read it in again  (there is possibly a better way to to this?)
 	  ifstream tree_file(tmpFileName.c_str());
