@@ -79,6 +79,16 @@ void AbsorbingTransducer::add_tag_value_pair(ostream& out, string tag, int value
 
 }
 
+void AbsorbingTransducer::add_tag_value_pair(ostream& out, string tag, double value, bool newline)
+{
+  out << "(" << tag << " " << value << ")"; 
+  if (newline)
+    out << "\n"; 
+  else
+    out << " "; 
+}
+
+
 void AbsorbingTransducer::add_basic_state(ostream& out, string type, int stateIndex)
 {
     out << "(state\n"; 
