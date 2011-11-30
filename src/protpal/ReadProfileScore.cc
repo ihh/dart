@@ -120,7 +120,7 @@ inline list<state> ReadProfileScore::get_possible_HMM_states(int readPosition, s
 	}
       else
 	{
-	  toReturn.push_back(pairHMM.state_index["post_read_ins"]); 
+	  toReturn.push_back(pairHMM.state_index["read_ins"]); 
 	  return toReturn;
 	}
     }
@@ -128,7 +128,8 @@ inline list<state> ReadProfileScore::get_possible_HMM_states(int readPosition, s
     {
       if (profileState == profile->pre_end_state)
 	{
-	  toReturn.push_back(pairHMM.end_state);
+	  toReturn.push_back(pairHMM.state_index["delete"]); 
+	  //toReturn.push_back(pairHMM.end_state);
 	  return toReturn; 
 	}
       else
@@ -390,7 +391,7 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   // Alpahbet tokens
   vector<sstring> toks = sub_alphabet.tokens();
   // eventually we'd like to optimize this value!
-  branch_length = 0.1; 
+  branch_length = 0.05; 
   
   // Build up the HMM 
   num_states=-1; 
