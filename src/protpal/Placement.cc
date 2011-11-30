@@ -377,7 +377,7 @@ void PlacementLimiter::parse_JSON(const char* JSON_file)
   Json::Reader reader; 
   ifstream jsonFile; 
   string readName; 
-  unsigned int idx, edge_field; 
+  unsigned int idx, edge_field=1; 
   
   // Open the file and attempt to parse it.
   jsonFile.open(JSON_file); 
@@ -428,7 +428,10 @@ void PlacementLimiter::parse_JSON(const char* JSON_file)
     for (idx = 0; idx< fields.size(); ++idx)
       if (fields[idx] == "edge_num" )
 	edge_field = idx; 
-
+    
+    if (edge_field == -1)
+      THROWEXPR("No edge field found in JSON file");
+    
     const Json::Value placements = root["placements"]; 
     for (idx=0; idx<placements.size(); ++idx)
       {
@@ -491,7 +494,7 @@ bool PlacementLimiter::is_within_distance(string nodeName, double distance_cutof
 
 double PlacementLimiter::tree_distance(Node node1, Node node2)
 {
-  double totalDist; 
+  double totalDist=0.0; 
   Phylogeny::Node_vector path, parents = tree->find_parents(0,-1); 
   path = tree->node_path(node1, node2, parents); 
   for (unsigned int i=0; i<path.size()-1; ++i)
