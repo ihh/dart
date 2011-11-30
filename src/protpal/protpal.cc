@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
       for (map<string, string>::iterator seqIter=gapped_seqs.begin(); seqIter != gapped_seqs.end(); ++seqIter)
 	alignString += seqIter->first +  "   " + seqIter->second + "\n"; 
     }
-  else
+  else // make an alignment
     {
       // Otherwise, we want an alignment, but have none on  input so we must make our own:
       // let the "progressive transducer-profile-based" ancestral reconstruction begin!  
@@ -460,7 +460,7 @@ int main(int argc, char* argv[])
 		  saved_profile.close();
 		}
 	    }
-	  else
+	  else // we are at the root node
 	    {
 	      // If writing the root profile was requested, sample paths through it, then write
 	      // The number of paths to sample at the root can be set independently of the number of subtree-sampling. 
@@ -499,9 +499,11 @@ int main(int argc, char* argv[])
 		    cerr<<"Wrote root profile to file: " << reconstruction.root_profile_filename << endl; 
 		  saved_profile.close();
 		}
-	      
-	      cout << Stockholm_header; 
-	      cout << "#=GF alignment_likelihood_bits "<<-log(profile.forward_prob)/log(2) << endl; 
+	      if ( ! reconstruction.noAlignment)
+		{
+		  cout << Stockholm_header; 
+		  cout << "#=GF alignment_likelihood_bits "<<-log(profile.forward_prob)/log(2) << endl; 
+		}
 	      ofstream db_file;
 	      state_path path = profile.sample_DP(
 						  1, // sample only one path
@@ -576,6 +578,13 @@ int main(int argc, char* argv[])
   if(reconstruction.loggingLevel>=1)
     cerr<<"done.\n";
 
+  if (reconstruction.noAlignment)
+    {
+      if(reconstruction.loggingLevel>=1)
+	cerr << "NB: alignment/reconstruction was not requested.\n";
+      exit(0); 
+    }
+  
   
   if (reconstruction.loggingLevel >= 1)
     cerr<<"\nFinished with alignment construction, now post-processing for ancestral characters and indels\n"; 

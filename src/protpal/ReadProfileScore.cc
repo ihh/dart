@@ -89,10 +89,13 @@ void ReadProfileScore::score_and_print(const Read& read, ostream& out, bool vite
   write_read_info(out, read, value); 
 }
 
-void ReadProfileScore::score_and_store(const Read& read, ScoreMap& scores, bool viterbi )
+void ReadProfileScore::score_and_store(const Read& read, ScoreMap& scores, bool viterbi, bool invert )
 {
   bfloat value = get_score(read, viterbi); 
-  scores[read.identifier][name] = value;
+  if (invert)
+    scores[read.identifier][name] = 1.0 / value;
+  else
+    scores[read.identifier][name] = value;
 }
 
 
@@ -351,7 +354,7 @@ inline bfloat ReadProfileScore::get_DP_cell(int i, state j, state k)
 
 bfloat ReadProfileScore::get_forward_value(void)
 {
-  return 1.0/get_DP_cell(readSize-1, profile->pre_end_state, pairHMM.end_state); 
+  return get_DP_cell(readSize-1, profile->pre_end_state, pairHMM.end_state); 
 }      
 
 bfloat ReadProfileScore::get_viterbi_value(void)

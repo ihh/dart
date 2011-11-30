@@ -31,6 +31,7 @@ Placement::Placement(int argc, char* argv[])
   
   opts.print_title("Read-profile scoring"); 
   opts.add("b -subst-model", rateMatrixFileName = default_chain_filename, "DART format chain file to be used for profile - read pairHMM.  NB: this should be the same chain used when calling ProtPal to make profiles.");
+  opts.add("is -invert-score", invert = false, "Invert read-profile score", false); 
   // Possibly: parameters of pairHMM (indel rate, etc)
 
   opts.print_title("Output");
@@ -208,10 +209,11 @@ void Placement::Run()
 	      scores[readIter->first][profile_scorer.name] = 1.0; 
 	    else
 	      // Here goes the atual dynamic programming - the score is deposited in the scores map
-	      profile_scorer.score_and_store(read, scores, false);	  
+	      profile_scorer.score_and_store(read, scores, false, invert);	  
 	  else
 	    // Awkward repetition
-	      profile_scorer.score_and_store(read, scores, false);	  
+	    profile_scorer.score_and_store(read, scores, false, invert);	  
+	  
 
 	  if (loggingLevel >= 2)
 	    cerr << "Score: " << scores.at(read.identifier).at(profile_scorer.name) << endl;

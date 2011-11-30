@@ -100,6 +100,7 @@ class Reconstruction
   double min_ancrec_postprob; 
   bool xrate_output; 
   bool fasta_output; 
+  bool noAlignment; 
   bool clock_seed; 
   bool estimate_params; 
   bool stoch_trace, viterbi, input_alignment, train_grammar; 

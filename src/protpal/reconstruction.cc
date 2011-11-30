@@ -70,6 +70,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.add("g -grammar-file", grammar_filename = default_grammar_filename, "<grammar filename> DART format grammar to be used for final character reconstruction");
   opts.add("a -leaves-only", leaves_only = false, "Show only leaves when displaying alignments, e.g. don't to ancestral reconstruction: 'alignment' mode (default false) ");
+  opts.add("na -no-alignment", noAlignment = false, "Do not display final alignment/reconstruction at all (useful when building memory-intensive posterior profiles");
 
 
   opts.add("arpp -ancrec-postprob", ancrec_postprob = false,"report posterior probabilities of alternate reconstructions");

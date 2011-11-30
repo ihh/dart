@@ -60,6 +60,7 @@ class Placement
   void write_placement_JSON(ostream&, ScoreMap&); 
   void write_numbered_newick(ostream&, bool quotes=true); 
   int loggingLevel;   
+  bool invert;
 
   // Model/tree related 
   Alphabet alphabet; 
