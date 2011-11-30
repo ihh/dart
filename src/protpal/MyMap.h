@@ -35,4 +35,4 @@ template <typename keyType, typename valType>
 /*       } */
 /*     valType& operator[] (keyType& k);   */
   };
-#endif MYMAP_H
+#endif
