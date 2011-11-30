@@ -370,11 +370,11 @@ int main(int argc, char* argv[])
 	      if(reconstruction.loggingLevel>=1)
 		cerr<<" (logging state connectivity for backward algorithm) "; 
 	      profile.fill_DP(reconstruction.loggingLevel, // log messages
-			      true); // do store incoming/outgoing information - for state postprobs
+			      false); // do store incoming/outgoing information - for state postprobs
 	      
-	      if(reconstruction.loggingLevel>=1)
-		cerr<<"\n\tFilling backward dynamic programming matrix... "; 	      
-	      profile.fill_backward_DP(reconstruction.loggingLevel); 
+// 	      if(reconstruction.loggingLevel>=1)
+// 		cerr<<"\n\tFilling backward dynamic programming matrix... "; 	      
+// 	      profile.fill_backward_DP(reconstruction.loggingLevel); 
 	    }
 
 	  // Done filling DP matrix - log some useful info about it

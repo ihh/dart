@@ -377,7 +377,7 @@ void PlacementLimiter::parse_JSON(const char* JSON_file)
   Json::Reader reader; 
   ifstream jsonFile; 
   string readName; 
-  unsigned int idx, edge_field=1e5; 
+  unsigned int idx, edge_field=1000; 
   
   // Open the file and attempt to parse it.
   jsonFile.open(JSON_file); 
@@ -429,7 +429,7 @@ void PlacementLimiter::parse_JSON(const char* JSON_file)
       if (fields[idx] == "edge_num" )
 	edge_field = idx; 
     
-    if (edge_field == 1e5)
+    if (edge_field == 1000)
       THROWEXPR("No edge field found in JSON file");
     
     const Json::Value placements = root["placements"]; 
