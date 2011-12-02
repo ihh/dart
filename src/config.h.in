@@ -110,6 +110,9 @@
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL
 
+/* Define to 1 if hmmoc is available. */
+#undef HMMOC_INCLUDED
+
 /* Path to root directory of Gerton Lunter's hmmoc. */
 #undef HMMOC_ROOT_DIR
 

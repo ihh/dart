@@ -15,7 +15,9 @@
 #include "util/Regexp.h"
 
 #define CLOGXMLTAGNAME    "log"
-#define INITIAL_LOG_LEVEL 9
+#define DEBUG_LOG_LEVEL   0
+#define INITIAL_LOG_LEVEL 5
+#define QUIET_LOG_LEVEL   9
 #define ERROR_LOG_LEVEL   10
 #define ERROR_TAG         "ERROR"
 

@@ -4,7 +4,7 @@
 #include "util/logtags.h"
 
 Log_streambuf clog_streambuf;
-Log_stream    clog_stream (clog_streambuf, 9);
+Log_stream    clog_stream (clog_streambuf, INITIAL_LOG_LEVEL);
 sstring       ERRSTR;   /* used as a temporary variable by THROWEXPR() macro */
 
 Log_streambuf::Log_streambuf()
@@ -194,7 +194,10 @@ Log_stream::Log_directive::Log_directive (const sstring& directive_string)
 
 bool Log_stream::Log_directive::syntax_help (Opts_list* ol)
 {
-  cerr << "\nLogging directives have a flexible syntax. The simplest kind of directive is a tag in upper-case,\nsuch as '-log INIT', or a priority level, e.g. '-log 6'; but you can also turn on (or off) messages\nby source file, by line, and by combinations of these.\n\n";
+  cerr << "\nLogging directives have a flexible syntax.\n";
+  cerr << "The simplest kind of directive is a tag in upper-case,\nsuch as '-log INIT', or a priority level, e.g. '-log 6'.\n";
+  cerr << "The lower the priority level, the more is reported; example levels are " << ERROR_LOG_LEVEL << " (errors only), " << QUIET_LOG_LEVEL << " (quiet), " << INITIAL_LOG_LEVEL << " (default), " << DEBUG_LOG_LEVEL << " (debug).\n";
+  cerr << "You can also turn on (or off) messages\nby source file, by line, and by combinations of these.\n\n";
   cerr << "Examples include:\n\n";
   cerr << "-log JAM               turns on logging for all messages with tag 'JAM' (see -logtags or -logtaginfo for list)\n";
   cerr << "-log 3                 turns on logging for messages of priority level 3 or higher\n";
@@ -327,6 +330,9 @@ void Log_stream::add_opts (Opts_list& ol)
 {
   ol.print_title ("Logging options");
   ol.add ("log", &Log_stream::clog_directive, " <string>\tturn on diagnostic logging (-loghelp shows syntax)");
+  sstring quiet_alias;
+  quiet_alias << "-log " << QUIET_LOG_LEVEL;
+  ol.add ("q -quiet", quiet_alias.c_str(), "suppress most log messages");
   ol.add ("logfile", &Log_stream::clog_to_file, " <file>\tlog to file");
   ol.add ("logcopy", &Log_stream::clog_everywhere, " <file>\tlog to file and standard error");
   ol.add ("logtime", clog_streambuf.verbose_on_stderr = 0, "timestamp standard error (logfile stamped automatically)");
