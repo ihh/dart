@@ -18,7 +18,7 @@ foreach my $arg (@ARGV) {
 my $n_align = 0;
 my (@seqname, %seq, @ungapped, %count, %rowindex, $rows);
 while (<>) {
-    if (/^\#/) {
+    if (/^\s*\#/) {
 	next;
 
     } elsif (/^\s*(\S+)\s+(\S+)\s*$/) {
@@ -108,7 +108,7 @@ my @count = map ($count{$_}, @id);
 @rank = %count = ();  # clear unused stuff
 
 # main DP loop
-warn "[Dynamic programming over ", @id+0, " column coords]\n";
+warn "[Dynamic programming over $dpcols column coords]\n";
 my @score = map (0, @id);
 my @max_score = @score;
 my @traceback_col = map (undef, @id);
@@ -118,7 +118,7 @@ for (my $dpcol = 0; $dpcol < $dpcols; ++$dpcol) {
     my ($col_text, $pos_array) = parse_column_id ($id[$dpcol]);
     my $score = 0;
     my $traceback_col;
-    # find highest-socring previous compatible column
+    # find highest-scoring previous compatible column
     for (my $prev_dpcol = $dpcol - 1; $prev_dpcol >= 0 && $score < $max_score[$prev_dpcol]; --$prev_dpcol) {
 	my $prev_score = $score[$prev_dpcol];
 	if ($prev_score > $score && compatible ($col_text, $pos_array, parse_column_id ($id[$prev_dpcol]))) {
@@ -155,31 +155,36 @@ for (my $dpcol = 0; $dpcol < $dpcols; ++$dpcol) {
 }
 
 # traceback
-my @trace;
+my (@trace, @trace_score);
 my $trace_col = $max_col;
 push @trace, [map (length($_), @ungapped)];  # final column
+push @trace_score, 1;
 while (defined $trace_col) {
     my ($col_text, $pos_array) = parse_column_id ($id[$trace_col]);
     push @trace, $pos_array;
+    push @trace_score, $count[$trace_col] / $n_align;
     $trace_col = $traceback_col[$trace_col];
 }
 push @trace, [map (0, @ungapped)];  # initial column
+push @trace_score, 1;
 
 # prepare output
 my @output = map ("", @seqname);
 my @pos = map (0, @seqname);
 my @inc = @pos;
+my $score_line;
 for (my $trace_index = @trace - 1; $trace_index >= 0; --$trace_index) {
     my @next_pos = @{$trace[$trace_index]};
     my $max_inc = 0;
     for (my $row = 0; $row < $rows; ++$row) {
 	$inc[$row] = $next_pos[$row] - $pos[$row];
-	$inc[$row] = 0 if $inc[$row] < 0;
+	if ($inc[$row] < 0) { $inc[$row] = 0; $next_pos[$row] = $pos[$row] }
 	$max_inc = $inc[$row] if $max_inc < $inc[$row];
     }
     for (my $row = 0; $row < $rows; ++$row) {
 	$output[$row] .= "." x ($max_inc - $inc[$row]) . substr ($ungapped[$row], $pos[$row], $inc[$row]);
     }
+    $score_line .= int ($trace_score[$trace_index] * 9) x $max_inc;
     @pos = @next_pos;
 }
 
@@ -192,6 +197,8 @@ print "# STOCKHOLM 1.0\n";
 for (my $row = 0; $row < $rows; ++$row) {
     print $seqname[$row], " " x ($name_len + 1 - length ($seqname[$row])), $output[$row], "\n";
 }
+my $trace_score_gc = "#=GC PP";
+print $trace_score_gc, " " x ($name_len + 1 - length ($trace_score_gc)), $score_line, "\n";
 print "//\n";
 
 # functions
