@@ -403,10 +403,10 @@ Handel_movement Transducer_alignment::prepare_movement (const PHYLIP_tree& new_t
       const int row_n = node2row[*phylip_n];
 
       if (row_p < 0)
-	THROWEXPR ("Couldn't find " << tree.node_name[old_phylip_p] << " in alignment");
+	THROWEXPR ("Couldn't find " << tree.node_name[old_phylip_p] << " in alignment, but it's in the tree");
 
       if (row_n < 0)
-	THROWEXPR ("Couldn't find " << tree.node_name[*phylip_n] << " in alignment");
+	THROWEXPR ("Couldn't find " << tree.node_name[*phylip_n] << " in alignment, but it's in the tree");
 
       const int etree_n = phylip2etree[*phylip_n];
       const Pairwise_path branch_path (align.path, row_p, row_n, true);
