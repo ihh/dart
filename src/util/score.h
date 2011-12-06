@@ -86,7 +86,9 @@ typedef double Log2;    // a Log2 is a log-probability in base 2
 #define Score2ProbVecNorm(SV)   Score_fns::score2prob_vector_normalised(SV)
 #define Score2ProbVecUnnorm(SV) Score_fns::score2prob_vector_unnormalised(SV)
 
-#define Prob2FScoreVec(PV)      Score_fns::prob2fscore_vector(PV)
+#define Prob2FScoreVec(PV)       Score_fns::prob2fscore_vector(PV)
+#define FScore2ProbVecNorm(SV)   Score_fns::fscore2prob_vector_normalised(SV)
+#define FScore2ProbVecUnnorm(SV) Score_fns::fscore2prob_vector_unnormalised(SV)
 
 #define Prob2ScoreArray2d(PA) Score_fns::prob2score_array2d(PA)
 #define Score2ProbArray2d(SA) Score_fns::score2prob_array2d(SA)
@@ -251,6 +253,9 @@ public:
 
   static vector<Prob> score2prob_vector_normalised (const vector<Score>& sc_vector);    // normalises probabilities
   static vector<Prob> score2prob_vector_unnormalised (const vector<Score>& sc_vector);  // doesn't normalise probabilities
+
+  static vector<Prob> fscore2prob_vector_normalised (const vector<FScore>& sc_vector);    // normalises probabilities
+  static vector<Prob> fscore2prob_vector_unnormalised (const vector<FScore>& sc_vector);  // doesn't normalise probabilities
 
   static void normalise_pr (vector<Prob>& weight_vector);
   static void normalise_sc (vector<Score>& score_vector);

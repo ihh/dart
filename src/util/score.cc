@@ -82,11 +82,29 @@ vector<Prob> Score_fns::score2prob_vector_normalised (const vector<Score>& sc_ve
   return v;
 }
 
-vector<Prob> Score_fns::score2prob_vector_unnormalised (const vector<Score>& sc_vector)
+vector<Prob> Score_fns::fscore2prob_vector_unnormalised (const vector<FScore>& sc_vector)
 {
   vector<Prob> v (sc_vector.size());
   for (int i = 0; i < (int) sc_vector.size(); i++)
     v[i] = score2prob (sc_vector[i]);
+  return v;
+}
+
+vector<Prob> Score_fns::fscore2prob_vector_normalised (const vector<FScore>& sc_vector)
+{
+  FScore max_sc = *max_element (sc_vector.begin(), sc_vector.end());
+  vector<Prob> v (sc_vector.size());
+  for (int i = 0; i < (int) sc_vector.size(); i++)
+    v[i] = fscore2prob (sc_vector[i] - max_sc);
+  normalise_pr (v);
+  return v;
+}
+
+vector<Prob> Score_fns::score2prob_vector_unnormalised (const vector<Score>& sc_vector)
+{
+  vector<Prob> v (sc_vector.size());
+  for (int i = 0; i < (int) sc_vector.size(); i++)
+    v[i] = fscore2prob (sc_vector[i]);
   return v;
 }
 

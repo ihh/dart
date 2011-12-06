@@ -185,6 +185,37 @@ void PCounts::randomize (PScores& scores, const set<int>& pgroups_to_randomize)
     }
 }
 
+Loge PCounts::log_prior (const PScores& scores, const set<int>& pgroups_to_include)
+{
+  Loge lp = 0.;
+  for_const_contents (set<int>, pgroups_to_include, g)
+    {
+      const int sz = (*g < (int) group.size()) ? scores.group_size(*g) : 0;
+      if (sz == 1)
+	{
+	  const bool uniform_prior = *g >= (int) group.size() || group[*g].size() != 1 || (group[*g][0] < TINY || wait[*g] < TINY);
+	  const double alpha = uniform_prior ? 1. : wait[*g];
+	  const double beta = uniform_prior ? 1. : group[*g][0];
+	  const FScore x_sc = ((PScores&)scores).group[*g][0];  // cast away const
+	  const Prob x = FScore2Prob (x_sc);
+	  const Loge log_x = FScore2Nats (x_sc);
+	  NatsPMulAcc (lp, alpha * Math_fn::math_log(beta) - Math_fn::log_gamma(alpha) + (alpha - 1.) * log_x - beta * x);
+	}
+      else
+	{
+	  bool uniform_prior = true;
+	  if (*g < (int) group.size() && (int) group[*g].size() == sz)
+	    for_const_contents (vector<double>, group[*g], pv)
+	      if (*pv > TINY) { uniform_prior = false; break; }
+
+	  const vector<Prob> a = uniform_prior ? vector<double> (scores.group[*g].size(), 1.) : group[*g];
+	  const vector<Prob> x = FScore2ProbVecNorm (scores.group[*g]);
+	  NatsPMulAcc (lp, Math_fn::log_dirichlet (x, a));
+	}
+    }
+  return lp;
+}
+
 PCounts& PCounts::operator+= (const PCounts& counts)
 {
   assert_same_dimensions (counts);

@@ -404,6 +404,7 @@ public:
   void optimise (PScores& scores) const;    // uses these counts to optimise scores for all parameter groups
 
   void randomize (PScores& scores, const set<int>& pgroups_to_randomize);
+  Loge log_prior (const PScores& scores, const set<int>& pgroups_to_include);
 
   PCounts& operator+= (const PCounts& counts);
 

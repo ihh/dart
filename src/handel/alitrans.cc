@@ -801,42 +801,42 @@ PScores Transducer_alignment_with_subst_model::propose_subst_params()
   return proposal;
 }
 
+Loge Transducer_alignment_with_subst_model::subst_params_prior (const PScores& params)
+{
+  return subst_pcounts.log_prior (params, subst_mutable_pgroups);
+}
+
 void Transducer_alignment_with_subst_model::sample_subst_params()
 {
   const int sample_points = SUBST_PRIOR_SAMPLES;
 
-  vector<PScores> x (sample_points + 1);
-  vector<Prob> p (sample_points + 1);
-  vector<Score> sc (sample_points + 1);
+  Score old_sc = alignment_emit_score();
 
-  x[0] = subst_pscores;
-  for (int i = 1; i <= sample_points; ++i)
-    x[i] = propose_subst_params();
-
-  for (int i = 0; i <= sample_points; ++i)
+  for (int sample = 0; sample < sample_points; ++sample)
     {
-      subst_pscores = x[i];
+      PScores
+	old_params = subst_pscores,
+	new_params = propose_subst_params();
+
+      subst_pscores = new_params;
       eval_funcs();
       tree_changed();
-      sc[i] = alignment_emit_score();
+      const Score new_sc = alignment_emit_score();
 
-      if (CTAGGING(5,MCMC PARAM_SAMPLE))
-	CL << "Subst-param sample " << i << ": " << Score2Bits(sc[i]) << " bits " << subst_parameter_string() << '\n';
+      if (CTAG(5,MCMC PARAM_SAMPLE))
+	CL << "Subst-param sample " << sample << ": " << Score2Bits(new_sc) << " bits " << subst_parameter_string() << ' ';
+  
+      if (new_sc > old_sc ? true : Rnd::decide (Score2Prob (ScorePMul (new_sc, -old_sc))))
+	{
+	  CL << "accepted\n";
+	  old_sc = new_sc;
+	}
+      else
+	{
+	  CL << "rejected\n";
+	  subst_pscores = old_params;
+	  eval_funcs();
+	  tree_changed();
+	}
     }
-
-  Score min_sc = sc[0];
-  for (int i = 1; i <= sample_points; ++i)
-    if (sc[i] < min_sc)
-      min_sc = sc[i];
-
-  for (int i = 0; i <= sample_points; ++i)
-    p[i] = Score2Prob (sc[i] - min_sc);
-
-  const int i = Rnd::choose (p);
-  subst_pscores = x[i];
-  eval_funcs();
-  tree_changed();
-
-  if (CTAGGING(5,MCMC PARAM_SAMPLE))
-    CL << "Chose sample " << i << ": " << Score2Bits(sc[i]) << " bits " << subst_parameter_string() << '\n';
 }
