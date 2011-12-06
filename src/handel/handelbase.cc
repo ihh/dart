@@ -259,11 +259,12 @@ bool Handel_base::sample_branch_swap (Node aunt, Node nephew, Node grumpa, Node 
 
 void Handel_base::propose_sample_branch_length (const Undirected_pair& branch, double kT, double tmax, int sample_points)
 {
+  // the following code only works if the prior is uniform
   vector<double> x (sample_points + 1), p (sample_points + 1);
   vector<Score> sc (sample_points + 1);
   x[0] = tree.branch_length (branch);
   for (int i = 1; i <= sample_points; ++i)
-    x[i] = Rnd::prob() * tmax;
+    x[i] = Rnd::prob() * tmax;   // assumes a uniform prior over branch lengths, in the range [0,tmax]
   for (int i = 0; i <= sample_points; ++i)
     {
       tree.branch_length (branch) = x[i];
