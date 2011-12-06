@@ -123,22 +123,12 @@ sub to_file {
 Returns the object as a Stockholm-formatted string.
 
 ARGs can include...
-        MAXCOLS    -- limit maximum number of columns (can also be specified as a single scalar arg)
-                      Alternatively, use shorthand string "SCREEN" to use all available screen columns.
-        NOSEQDATA  -- don\'t print any sequence data (can be used this to compress output)
-        COLOR      -- callback function: when called with (residue,rowname,colnum), returns 2-elt list of (fg,bg) colors
-                      Alternatively, use shorthand string "AMINO" for amino acid coloring.
+        MAXCOLS    -- set this to an integer $maxcols to limit the maximum number of displayed screen columns to $maxcols. Alternatively, set this to the string "SCREEN" to use all available screen columns.
+        NOSEQDATA  -- set this to 1 to suppress printing the actual sequence data in the alignment (for example if you are only interested in the annotation lines)
+        COLOR      -- set this to a subroutine reference that, when called with (residue,rowname,colnum), returns 2-elt list of (fg,bg) colors. Alternatively, set this to the string "AMINO" for amino acid coloring.
 
 =cut
 
-# to_string method
-# Usage:
-#        $stock->to_string ($maxcols)
-#        $stock->to_string ($maxcols, ARG1=>VAL1, ARG2=>VAL2 ...)
-#        $stock->to_string (MAXCOLS=>$maxcols, ARG1=>VAL1, ARG2=>VAL2 ...)
-# Args:
-#        MAXCOLS    -- limit maximum number of columns (can also be specified as a single scalar arg)
-#        NOSEQDATA  -- don't print any sequence data ("windowlicker.pl" uses this to compress output)
 sub to_string {
     my ($self, @args) = @_;
     my (%args, $maxcols);
@@ -967,7 +957,7 @@ if there is no sequence in the given range (i.e. range contains all gaps in
 $seqName).
 
 You can provide $seqStart, which is the coordinate of the first non-gap
-character in $seqName.  If you don\'t, the default is that the sequence starts
+character in $seqName.  If you don't, the default is that the sequence starts
 at 1.
 
 =cut
