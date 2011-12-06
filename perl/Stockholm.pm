@@ -124,6 +124,7 @@ Returns the object as a Stockholm-formatted string.
 
 ARGs can include...
         MAXCOLS    -- limit maximum number of columns (can also be specified as a single scalar arg)
+                      Alternatively, use shorthand string "SCREEN" to use all available screen columns.
         NOSEQDATA  -- don\'t print any sequence data (can be used this to compress output)
         COLOR      -- callback function: when called with (residue,rowname,colnum), returns 2-elt list of (fg,bg) colors
                       Alternatively, use shorthand string "AMINO" for amino acid coloring.
@@ -148,10 +149,11 @@ sub to_string {
 	%args = @args;
 	$maxcols = $args{'MAXCOLS'};
     }
+    $maxcols = (`tput cols` + 0) || 80 if defined($maxcols) && $maxcols eq "SCREEN";
     $maxcols = 80 unless defined $maxcols;     # default 80-column output
 
     my $color_sub = $args{'COLOR'};
-    if (uc($color_sub) eq 'AMINO') { $color_sub = \&amino_color_scheme }
+    if (defined($color_sub) && uc($color_sub) eq 'AMINO') { $color_sub = \&amino_color_scheme }
 
     # init output array
     my @out;

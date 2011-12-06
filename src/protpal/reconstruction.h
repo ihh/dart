@@ -100,6 +100,7 @@ class Reconstruction
   double min_ancrec_postprob; 
   bool xrate_output; 
   bool fasta_output; 
+  bool noAlignment; 
   bool clock_seed; 
   bool estimate_params; 
   bool stoch_trace, viterbi, input_alignment, train_grammar; 
@@ -128,6 +129,7 @@ class Reconstruction
   double get_root_ins_estimate(void);  
 
   // Placement algorithm
+  double distal_length;
   sstring reads_to_place_filename;
   sstring saved_profiles_directory; 
   sstring saved_subtree_profiles_directory; 

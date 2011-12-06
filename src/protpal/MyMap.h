@@ -20,7 +20,6 @@ template <typename keyType, typename valType>
       else
 	return x_iter->second;
     }
-
 /*   public: */
 /*     const valType& */
 /*       operator[](keyType& k ) */
@@ -35,28 +34,5 @@ template <typename keyType, typename valType>
 /* 	  return x_iter->second; */
 /*       } */
 /*     valType& operator[] (keyType& k);   */
-    
   };
-
-
-
-#endif MYMAP_H
-/*     void set( pair<keyType& k, valType& v ) */
-/*     { */
-/*       if ( (*this).find(k) ) */
-/* 	(*this).erase(k); */
-/*       (*this).insert(pair<keyType, valType>(k, v) ); */
-/*     } */
-      
-
-/*     valType& */
-/*       at(const keyType& k) */
-/*       { */
-/*       	typename map<keyType, valType>::iterator x_iter = (*this).find(k); */
-/* 	if (x_iter == (*this).end() ) */
-/* 	  { */
-/* 	    THROWEXPR("Nonexistent key requested!"); */
-/* 	  } */
-/* 	else */
-/* 	  return x_iter->second; */
-//      }
+#endif

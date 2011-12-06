@@ -95,7 +95,7 @@ class ReadProfileScore
   // Main wrapper functions - get the likelihood score of a read to a profile, and print it to an ostream or store it
   // for later calculations
   void score_and_print(const Read& read, ostream& out, bool viterbi=false);
-  void score_and_store(const Read& read , ScoreMap& scores, bool viterbi=false);
+  void score_and_store(const Read& read , ScoreMap& scores, bool viterbi=false, bool invert=false);
 
   // Main workhorse function
   bfloat get_score(const Read&, bool viterbi, bool logging=false); 

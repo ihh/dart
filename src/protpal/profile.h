@@ -166,6 +166,7 @@ class AbsorbingTransducer
   void add_tag_value_pair(ostream& out, string tag, string value, bool newline=true);  
   void add_tag_value_pair(ostream& out, string tag, bfloat value, bool newline=true);  
   void add_tag_value_pair(ostream& out, string tag, int value, bool newline=true);  
+  void add_tag_value_pair(ostream& out, string tag, double value, bool newline=true);  
   void add_basic_state(ostream& out, string type, int stateIndex);  
   void add_delete_state(ostream& out, int stateIndex);  
   void add_transition(ostream& out, int fromState, int toState, bfloat weight); 

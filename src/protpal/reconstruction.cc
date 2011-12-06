@@ -70,6 +70,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
 
   opts.add("g -grammar-file", grammar_filename = default_grammar_filename, "<grammar filename> DART format grammar to be used for final character reconstruction");
   opts.add("a -leaves-only", leaves_only = false, "Show only leaves when displaying alignments, e.g. don't to ancestral reconstruction: 'alignment' mode (default false) ");
+  opts.add("na -no-alignment", noAlignment = false, "Do not display final alignment/reconstruction at all (useful when building memory-intensive posterior profiles");
 
 
   opts.add("arpp -ancrec-postprob", ancrec_postprob = false,"report posterior probabilities of alternate reconstructions");
@@ -143,6 +144,7 @@ Reconstruction::Reconstruction(int argc, char* argv[])
   opts.add("json -write-json", json_placements_filename=nullValue, "Write JSON format summary of placements (as per pplacer JSON spec)", false);
   opts.add("tab -tab-input", score_tabular_filename=nullValue, "Read tabular summary of placements (together with -write-json, this can be used to convert a tabular file to a pplacer-style JSON file)", false);
   opts.add("notab -no-placement-tabular", no_placements_tabular=false, "Do not write tabular format summary of placements");
+  opts.add("dl --distal-length", distal_length=-1, "Distal length for posterior profiles.  -1 to indicate splitting branch in half.", false); 
   
   
   opts.parse_or_die(); 
@@ -224,6 +226,9 @@ Reconstruction::Reconstruction(int argc, char* argv[])
     {
       THROWEXPR("Error - prior on first mixture component is less than 0.  In specifying 2nd and 3rd components, remember that P(first) = 1 - P(2nd) - P(3rd)\n");
     }
+  
+  if (use_dna)
+    rate_matrix_filename = default_dna_chain_filename; 
   
   SExpr_file ecfg_sexpr_file (rate_matrix_filename.c_str());
   SExpr& ecfg_sexpr = ecfg_sexpr_file.sexpr;

@@ -71,20 +71,30 @@ int main(int argc, char* argv[])
 	  cerr<< reconstruction.profile_to_make << ".sexpr\n"; 
 	  reconstruction.root_profile_filename  = reconstruction.profile_to_make + ".sexpr";
 	}
-      
-      if (reconstruction.tree.is_leaf(new_root) )
+
+      if (new_root != reconstruction.tree.root)
 	{
-	  Phylogeny::Node n = reconstruction.tree.add_named_node("", new_root, 1e-5);
-          reconstruction.tree.node_name[new_root] = "tmpRoot";
-          reconstruction.tree.node_name[n] = reconstruction.profile_to_make; ;
-	}
-      // Re-root the tree at the desired node, and then proceed with reconstruction
-      if ( new_root != reconstruction.tree.root )
-	{
+	  double distal_length; 
+	  if (reconstruction.distal_length == -1 )
+	    distal_length = reconstruction.tree.branch_length(new_root, 
+								     reconstruction.tree.parent[new_root])/2.0; 
+	  else
+	    distal_length = reconstruction.distal_length; 
+	    
+	  Phylogeny::Node newNode = reconstruction.tree.add_named_node("", 
+								 reconstruction.tree.parent[new_root], 
+								 distal_length);
+	  reconstruction.tree.add_branch(newNode, new_root, distal_length); 
+	  reconstruction.tree.remove_branch(reconstruction.tree.parent[new_root], new_root); 
+	  reconstruction.tree.rebuild_parents();
+	  //	  reconstruction.tree.node_name[new_root] = "tmpRoot"; // removed
+          reconstruction.tree.node_name[newNode] = "temporary_root"; //reconstruction.profile_to_make;//changed
+	  
+	  // Re-root the tree at the desired node, and then proceed with reconstruction
 	  string tmpFileName = "tree_tmp.newick"; 
 	  ofstream tmpTreeFile(tmpFileName.c_str());
-	  // Write the tree rooted at the "new_root"
-	  reconstruction.tree.write(tmpTreeFile, -1, new_root); 
+	  // Write the tree rooted at temporary_root
+	  reconstruction.tree.write(tmpTreeFile, -1, newNode); 
 	  tmpTreeFile.close();
 	  // Read it in again  (there is possibly a better way to to this?)
 	  ifstream tree_file(tmpFileName.c_str());
@@ -138,7 +148,7 @@ int main(int argc, char* argv[])
       for (map<string, string>::iterator seqIter=gapped_seqs.begin(); seqIter != gapped_seqs.end(); ++seqIter)
 	alignString += seqIter->first +  "   " + seqIter->second + "\n"; 
     }
-  else
+  else // make an alignment
     {
       // Otherwise, we want an alignment, but have none on  input so we must make our own:
       // let the "progressive transducer-profile-based" ancestral reconstruction begin!  
@@ -360,11 +370,11 @@ int main(int argc, char* argv[])
 	      if(reconstruction.loggingLevel>=1)
 		cerr<<" (logging state connectivity for backward algorithm) "; 
 	      profile.fill_DP(reconstruction.loggingLevel, // log messages
-			      true); // do store incoming/outgoing information - for state postprobs
+			      false); // do store incoming/outgoing information - for state postprobs
 	      
-	      if(reconstruction.loggingLevel>=1)
-		cerr<<"\n\tFilling backward dynamic programming matrix... "; 	      
-	      profile.fill_backward_DP(reconstruction.loggingLevel); 
+// 	      if(reconstruction.loggingLevel>=1)
+// 		cerr<<"\n\tFilling backward dynamic programming matrix... "; 	      
+// 	      profile.fill_backward_DP(reconstruction.loggingLevel); 
 	    }
 
 	  // Done filling DP matrix - log some useful info about it
@@ -450,7 +460,7 @@ int main(int argc, char* argv[])
 		  saved_profile.close();
 		}
 	    }
-	  else
+	  else // we are at the root node
 	    {
 	      // If writing the root profile was requested, sample paths through it, then write
 	      // The number of paths to sample at the root can be set independently of the number of subtree-sampling. 
@@ -489,9 +499,11 @@ int main(int argc, char* argv[])
 		    cerr<<"Wrote root profile to file: " << reconstruction.root_profile_filename << endl; 
 		  saved_profile.close();
 		}
-	      
-	      cout << Stockholm_header; 
-	      cout << "#=GF alignment_likelihood_bits "<<-log(profile.forward_prob)/log(2) << endl; 
+	      if ( ! reconstruction.noAlignment)
+		{
+		  cout << Stockholm_header; 
+		  cout << "#=GF alignment_likelihood_bits "<<-log(profile.forward_prob)/log(2) << endl; 
+		}
 	      ofstream db_file;
 	      state_path path = profile.sample_DP(
 						  1, // sample only one path
@@ -566,6 +578,13 @@ int main(int argc, char* argv[])
   if(reconstruction.loggingLevel>=1)
     cerr<<"done.\n";
 
+  if (reconstruction.noAlignment)
+    {
+      if(reconstruction.loggingLevel>=1)
+	cerr << "NB: alignment/reconstruction was not requested.\n";
+      exit(0); 
+    }
+  
   
   if (reconstruction.loggingLevel >= 1)
     cerr<<"\nFinished with alignment construction, now post-processing for ancestral characters and indels\n"; 

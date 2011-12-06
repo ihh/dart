@@ -89,10 +89,13 @@ void ReadProfileScore::score_and_print(const Read& read, ostream& out, bool vite
   write_read_info(out, read, value); 
 }
 
-void ReadProfileScore::score_and_store(const Read& read, ScoreMap& scores, bool viterbi )
+void ReadProfileScore::score_and_store(const Read& read, ScoreMap& scores, bool viterbi, bool invert )
 {
   bfloat value = get_score(read, viterbi); 
-  scores[read.identifier][name] = value;
+  if (invert)
+    scores[read.identifier][name] = 1.0 / value;
+  else
+    scores[read.identifier][name] = value;
 }
 
 
@@ -120,7 +123,7 @@ inline list<state> ReadProfileScore::get_possible_HMM_states(int readPosition, s
 	}
       else
 	{
-	  toReturn.push_back(pairHMM.state_index["post_read_ins"]); 
+	  toReturn.push_back(pairHMM.state_index["read_ins"]); 
 	  return toReturn;
 	}
     }
@@ -128,7 +131,8 @@ inline list<state> ReadProfileScore::get_possible_HMM_states(int readPosition, s
     {
       if (profileState == profile->pre_end_state)
 	{
-	  toReturn.push_back(pairHMM.end_state);
+	  toReturn.push_back(pairHMM.state_index["delete"]); 
+	  //toReturn.push_back(pairHMM.end_state);
 	  return toReturn; 
 	}
       else
@@ -350,7 +354,7 @@ inline bfloat ReadProfileScore::get_DP_cell(int i, state j, state k)
 
 bfloat ReadProfileScore::get_forward_value(void)
 {
-  return 1.0/get_DP_cell(readSize-1, profile->pre_end_state, pairHMM.end_state); 
+  return get_DP_cell(readSize-1, profile->pre_end_state, pairHMM.end_state); 
 }      
 
 bfloat ReadProfileScore::get_viterbi_value(void)
@@ -390,7 +394,7 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   // Alpahbet tokens
   vector<sstring> toks = sub_alphabet.tokens();
   // eventually we'd like to optimize this value!
-  branch_length = 0.1; 
+  branch_length = 0.05; 
   
   // Build up the HMM 
   num_states=-1; 
@@ -415,24 +419,24 @@ ReadProfileModel::ReadProfileModel(void) //Alphabet& alphabet_in, Irrev_EM_matri
   //  add_transition("pre_read_ins", "delete", .005); 
 
   // from match
-  add_transition("match", "match", 0.99); 
-  add_transition("match", "read_ins", 0.00333); 
-  add_transition("match", "delete", 0.00333); 
+  add_transition("match", "match", 0.999); 
+  add_transition("match", "read_ins", 0.0005); 
+  add_transition("match", "delete", 0.0005); 
   //  add_transition("match", "post_read_ins", 0.00025); 
-  add_transition("match", "end", 0.00333); 
+  add_transition("match", "end", 0.0001); 
 
 
   // from read_ins
-  add_transition("read_ins", "read_ins", 0.5); 
-  add_transition("read_ins", "match", .4); 
+  add_transition("read_ins", "read_ins", 0.7); 
+  add_transition("read_ins", "match", .2); 
   add_transition("read_ins", "delete", 0.05); 
   //  add_transition("read_ins", "post_read_ins", 0.00025); 
   add_transition("read_ins", "end", 0.05); 
 
   // from delete
   add_transition("delete", "read_ins", 0.05); 
-  add_transition("delete", "match", 0.4); 
-  add_transition("delete", "delete", 0.5); 
+  add_transition("delete", "match", 0.2); 
+  add_transition("delete", "delete", 0.7); 
   //  add_transition("delete", "post_read_ins", 0.00025); 
   add_transition("delete", "end", 0.05); 
 
