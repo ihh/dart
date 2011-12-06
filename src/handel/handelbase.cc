@@ -185,6 +185,8 @@ void Handel_base::sample_sequence (Node node, double kT)
 
 void Handel_base::propose_sample_branch_slide (Node grumpa, Node dad, Node son, double kT, int sample_points)
 {
+  // technically, we should pass a maximum branch length into this subroutine,
+  // and reject x[i] values that create branches longer than this maximum.
   const double grumpa_dad_len = tree.branch_length (grumpa, dad);
   const double dad_son_len = tree.branch_length (dad, son);
   const double grumpa_son_len = grumpa_dad_len + dad_son_len;
