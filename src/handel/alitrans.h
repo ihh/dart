@@ -153,6 +153,8 @@ struct Transducer_alignment_with_subst_model : Transducer_alignment
 
   // Variance of normal for indel proposal function
   double indel_proposal_variance; 
+
+  Loge subst_params_prior (const PScores& pscores);
 };
 
 

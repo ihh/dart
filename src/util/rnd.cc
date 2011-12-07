@@ -37,7 +37,6 @@ bool Rnd::seed_on_time (Opts_list* ol)
 {
   struct timeval tv;
   struct timezone tz;
-  struct tm *tm;
   gettimeofday(&tv, &tz);
   set_seed (((long) getpid()) ^ ((long) tv.tv_usec));
   return TRUE;

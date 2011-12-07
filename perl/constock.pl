@@ -31,6 +31,7 @@ for my $filename (@ARGV) {
 my $n_align = 0;
 my (@seqname, %seq, @ungapped, %count, %rowindex, $rows);
 for my $stock (@db) {
+    warn "...processing alignment #", $n_align+1, " of ", @db+0, "\n";
     my $tree;
     if (defined $stock->gf->{'NH'}) {
 	$tree = Newick->from_string (@{$stock->gf_NH});
@@ -127,7 +128,11 @@ my @max_score = @score;
 my @traceback_col = map (undef, @id);
 my $max_score = 0;
 my $max_col;
+my $report_interval = int ($dpcols / @db) + 1;
 for (my $dpcol = 0; $dpcol < $dpcols; ++$dpcol) {
+    if ($dpcol % $report_interval == 0) {
+	warn "...processing column ", $dpcol+1, " of ", $dpcols, "\n";
+    }
     my ($col_text, $pos_array) = parse_column_id ($id[$dpcol]);
     my $score = 0;
     my $traceback_col;

@@ -73,8 +73,9 @@ http://biowiki.org/XRATE
 
 ** handalign
 
-This is a package for doing multiple sequence alignment under an
-evolutionary model.
+This is a package for inferring multiple sequence alignment,
+phylogeny, and ancestral sequences, under an evolutionary model for
+substitutions and indels.
 
 Since it uses a probabilistic (MCMC) approach, as well as "greedy"
 heuristics (progressive alignment etc),	the program can generate

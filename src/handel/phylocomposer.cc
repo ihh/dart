@@ -22,8 +22,8 @@ int main(int argc, char* argv[])
   opts.add ("cd -compdot", movement.dotfile = "", "save composite transducer as graphviz dotfile", false);
   opts.add ("cp -composite-path", movement.show_constrained_composite_paths = false, "show composite paths for constrained branches");
   opts.add ("a -acyclic", movement.acyclic = false, "display acyclic composite transducer, from which \"unobserved\" states are eliminated");
-  opts.add ("q -quiet", movement.quiet = false, "don't display branch transducers");
-  opts.add ("qq -hush", "--quiet --nocomposite", "don't display any transducers");
+  opts.add ("nb -nobranch", movement.quiet = false, "don't display branch transducers");
+  opts.add ("nt -notrans", "--nobranch --nocomposite", "don't display any transducers");
   opts.add ("al -alignment", movement.stockfile = "", "save input sequences & paths as a Stockholm alignment", false);
 
   // DP options

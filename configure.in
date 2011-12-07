@@ -89,9 +89,13 @@ if test "x$HMMOC_EXEC" != "xno"
 then
 	HMMOC_BIN=`dirname $HMMOC_EXEC`
 	HMMOC_ROOT=`dirname $HMMOC_BIN`
+        HMMOC_INCLUDED=1
 else
 	HMMOC_ROOT="/usr/local/hmmoc"
+        HMMOC_INCLUDED=0
 fi
+
+AC_DEFINE_UNQUOTED([HMMOC_INCLUDED], [$HMMOC_INCLUDED], [Define to 1 if Gerton Lunter's hmmoc is available.])
 AC_DEFINE_UNQUOTED([HMMOC_ROOT_DIR],["$HMMOC_ROOT"],[Path to root directory of Gerton Lunter's hmmoc.])
 
 # Checks for header files.

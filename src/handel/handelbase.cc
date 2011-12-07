@@ -185,6 +185,8 @@ void Handel_base::sample_sequence (Node node, double kT)
 
 void Handel_base::propose_sample_branch_slide (Node grumpa, Node dad, Node son, double kT, int sample_points)
 {
+  // technically, we should pass a maximum branch length into this subroutine,
+  // and reject x[i] values that create branches longer than this maximum.
   const double grumpa_dad_len = tree.branch_length (grumpa, dad);
   const double dad_son_len = tree.branch_length (dad, son);
   const double grumpa_son_len = grumpa_dad_len + dad_son_len;
@@ -259,11 +261,12 @@ bool Handel_base::sample_branch_swap (Node aunt, Node nephew, Node grumpa, Node 
 
 void Handel_base::propose_sample_branch_length (const Undirected_pair& branch, double kT, double tmax, int sample_points)
 {
+  // the following code only works if the prior is uniform
   vector<double> x (sample_points + 1), p (sample_points + 1);
   vector<Score> sc (sample_points + 1);
   x[0] = tree.branch_length (branch);
   for (int i = 1; i <= sample_points; ++i)
-    x[i] = Rnd::prob() * tmax;
+    x[i] = Rnd::prob() * tmax;   // assumes a uniform prior over branch lengths, in the range [0,tmax]
   for (int i = 0; i <= sample_points; ++i)
     {
       tree.branch_length (branch) = x[i];
