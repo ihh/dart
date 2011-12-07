@@ -5,6 +5,7 @@
 #include "util/rnd.h"
 #include "util/score.h"
 #include "randlib/randlib.h"
+#include "util/math_fn.h"
 
 // Rivas_transducer_factory
 // Implements a class of time-parametric transducers described in the following article:
@@ -36,7 +37,7 @@ struct Rivas_transducer_factory : Transducer_alignment_with_subst_model
 
   // gamma method
   double gamma() const { return gamma_val; }
-
+  
   // clone method
   Rivas_transducer_factory* clone();
 
@@ -95,9 +96,13 @@ struct Affine_transducer_factory : Affine_transducer_factory_param_container, Ri
 
   void sample_indel_params ();
 
+  double proposal_prob(double old_param, double new_param);
+
   sstring indel_parameter_string() const;
 
   Affine_transducer_factory_param_container propose_indel_params ();
+
+  Score  alignment_path_score_with_prior();
 };
 
 // Convex_transducer_factory

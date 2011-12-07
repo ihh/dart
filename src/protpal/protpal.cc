@@ -76,8 +76,8 @@ int main(int argc, char* argv[])
 	{
 	  double distal_length; 
 	  if (reconstruction.distal_length == -1 )
-	    distal_length = reconstruction.tree.branch_length(new_root, 
-								     reconstruction.tree.parent[new_root])/2.0; 
+	    distal_length = \
+	      reconstruction.tree.branch_length(new_root, reconstruction.tree.parent[new_root]) / 2.0; 
 	  else
 	    distal_length = reconstruction.distal_length; 
 	    
@@ -549,7 +549,7 @@ int main(int argc, char* argv[])
 		      if (indels.avg_insert_rate > 0.0)
 			tot_ins_ext += indels.avg_insert_ext; 
 		      tot_del += indels.avg_delete_rate; 
-		      if (indels.avg_delete_rate > 0.0)
+<		      if (indels.avg_delete_rate > 0.0)
 			tot_del_ext += indels.avg_delete_ext; 
 		      
 		      // do a simple average over alignments' inferred param estimates

@@ -60,6 +60,9 @@ int main(int argc, char* argv[])
   double long_gap_len;
   bool tkf91;
 
+  // proposal fn variables
+  double indel_proposal_variance; 
+  
   // set up path to subst model
   sstring subst_model_filename, subst_model_help_string;
   subst_model_filename << Dart_Unix::get_DARTDIR() << DEFAULT_CHAIN_PATH;
@@ -109,6 +112,7 @@ int main(int argc, char* argv[])
   opts.add ("fn -first-node", first_node = "", "start sampling at specified node (useful for debugging)", false);
   opts.add ("fb -force-binary", force_binary = true,    "force binary tree");
   opts.add ("rs -redsuch", use_Redelings_Suchard = false,    "use Redelings-Suchard proposal scheme when sampling");
+  opts.add ("ipv -indel-proposal-variance", indel_proposal_variance = 0.01,    "Variance of proposal function for indel rate moves");
 
   opts.newline();
   opts.print_title ("MCMC move rates");
@@ -201,6 +205,7 @@ int main(int argc, char* argv[])
 	}
       else
 	trans_ptr = new Affine_transducer_factory (gamma, delete_rate, 1. - 1. / (gap_len + 1.));
+
       Transducer_alignment_with_subst_model& trans (*trans_ptr);
 
       // populate Transducer_alignment
@@ -212,7 +217,8 @@ int main(int argc, char* argv[])
       trans.centroid_band_width = centroid_band_width;
       trans.dotfile_recorder.directory = dotfile_dir;
       trans.composition_recorder.directory = comp_dir;
-
+      trans.indel_proposal_variance = indel_proposal_variance; 
+      
       // read alphabet & substitution matrix
       SExpr_file param_chain_alph_sexpr (subst_model_filename.c_str());
       Alphabet alph;
