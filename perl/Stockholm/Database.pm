@@ -242,7 +242,7 @@ sub add_alignment {
     my ($self, $stock, $verbose) = @_;
     push @$self, $stock;
     my $id = $stock->get_gf ('ID');
-    warn "...loaded Stockholm alignment", defined $id ? " '$id'" : '', " (", $stock->sequences, " sequences)\n" if $verbose;
+    warn "...loaded Stockholm alignment #", @$self+0, " ", defined $id ? " '$id'" : '', " (", $stock->sequences, " sequences)\n" if $verbose;
     return $self;
 }
 
