@@ -271,9 +271,23 @@ void Affine_transducer_factory::set_transitions(double gamma_val, double delete_
 Affine_transducer_factory_param_container Affine_transducer_factory::propose_indel_params()
 {
   Affine_transducer_factory_param_container container;
-  container.gamma_param = Rnd::sample_beta (gamma_alpha, gamma_beta);
-  container.delete_extend_prob_param = Rnd::sample_beta (delete_extend_alpha, delete_extend_beta);
-  container.delete_rate_param = Rnd::sample_gamma (alpha, beta);
+  // Sample a normal distribution with variance=indel_proposal_variance
+  // and exp it to generate from log-normal
+  float multiplier = exp(gennor(0, indel_proposal_variance)); 
+  //  CTAG(5, PARAM_SAMPLE) << "\nvariance, multiplier, new rate: " << indel_proposal_variance << " " << multiplier << " " << delete_rate_param*multiplier << endl; 
+
+  // Currently holding  fixed all parameters except delete rate param
+  // They seem to slow the mixing, and are generally not investigated downstream
+  // These could be given their own multipliers as above, but it would
+  // complicate things (very) slightly. 
+  container.gamma_param = gamma_param; //Rnd::sample_beta (gamma_alpha, gamma_beta);
+  container.delete_extend_prob_param = delete_extend_prob_param; //Rnd::sample_beta (delete_extend_alpha, delete_extend_beta);
+
+  // Old sampling from prior:
+  //container.delete_rate_param = Rnd::sample_gamma (alpha, beta);
+
+  // New - scale rate parameter by log-normal multiplier
+  container.delete_rate_param = delete_rate_param*multiplier; 
   return container;
 } 
 
@@ -305,9 +319,29 @@ sstring Convex_transducer_factory::indel_parameter_string() const
   return param_string;
 }
 
+Score  Affine_transducer_factory::alignment_path_score_with_prior()
+{
+  Score path_score = alignment_path_score(); 
+  path_score += Nats2Score(Math_fn::gamma_density(delete_rate_param, alpha, beta));
+  path_score += Nats2Score( Math_fn::beta_density(delete_extend_prob_param, delete_extend_alpha, delete_extend_beta));
+  path_score += Nats2Score( Math_fn::beta_density(gamma_param, gamma_alpha, gamma_beta));
+  return path_score; 
+}
+
+double Affine_transducer_factory::proposal_prob(double old_param, double new_param)
+{
+  // This assumes a log-normal proposal density
+  // and returns the probability of proposing new_param given the chain
+  // is at old_param.  
+  return Math_fn::normal_density(log(new_param/old_param), 0, indel_proposal_variance); 
+}
+
+
 void Affine_transducer_factory::sample_indel_params()
 {
-  Score old_sc = alignment_path_score();
+  //  Score old_sc = alignment_path_score();
+  // Use score with prior on indel params
+  Score old_sc = alignment_path_score_with_prior();
 
   for (int sample = 0; sample < RIVAS_PRIOR_SAMPLES; ++sample)
     {
@@ -316,8 +350,18 @@ void Affine_transducer_factory::sample_indel_params()
 	new_params = propose_indel_params();
 
       set_transitions (new_params.gamma_param, new_params.delete_rate_param, new_params.delete_extend_prob_param);
-      const Score new_sc = alignment_path_score();
-
+      //      const Score new_sc = alignment_path_score();
+      const Score new_sc = alignment_path_score_with_prior();
+      
+      // Proposal probabilities for hastings ratio.  
+      // P(propose(new|old))
+      double propose_new_prob = proposal_prob(new_params.delete_rate_param,
+					      old_params.delete_rate_param); 
+      // P(propose(old|new))
+      double propose_old_prob = proposal_prob(old_params.delete_rate_param,
+					      new_params.delete_rate_param);
+      double hastingsRatio = 
+	Score2Prob (ScorePMul (new_sc, -old_sc)) * (propose_old_prob / propose_new_prob);
       CTAG(5, PARAM_SAMPLE) << "Sampled parameters ("
 			    << sample+1 << " of " << RIVAS_PRIOR_SAMPLES
 			    << "): gamma=" << gamma_param
@@ -325,9 +369,13 @@ void Affine_transducer_factory::sample_indel_params()
 			    << " delete_extend=" << delete_extend_prob_param
 			    << " new_bitscore=" << Score2Bits(new_sc)
 			    << " old_bitscore=" << Score2Bits(old_sc)
-			    << "; move ";
+			    << " old |new proposal: " << propose_old_prob 
+			    << " new|old proposal: " << propose_new_prob 
+			    << "; \n\tHastings ratio:"  << hastingsRatio
+			    << ";  move ";
+      
   
-      if (new_sc > old_sc ? true : Rnd::decide (Score2Prob (ScorePMul (new_sc, -old_sc))))
+      if (hastingsRatio > 1.0 ? true : Rnd::decide(hastingsRatio))
 	{
 	  CL << "accepted\n";
 	  old_sc = new_sc;

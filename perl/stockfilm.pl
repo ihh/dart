@@ -19,9 +19,6 @@ $usage .= "\n";
 
 GetOptions ("delay=i" => \$delay) or die $usage;
 
-# Get terminal size
-my $screenColumns = (`tput cols` + 0) || 80;
-
 # Process
 unless (@ARGV) {
     @ARGV = qw(-);
@@ -31,6 +28,9 @@ unless (@ARGV) {
 for my $filename (@ARGV) {
     my $db = Stockholm::Database->from_file ($filename);
     for my $stock (@$db) {
+        # Get terminal size
+	my $screenColumns = (`tput cols` + 0) || 80;
+
 	# prepare text
 	my $stockText = $stock->to_string ("MAXCOLS" => $screenColumns,
 					   "COLOR" => "AMINO");

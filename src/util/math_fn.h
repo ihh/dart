@@ -39,6 +39,10 @@ struct Math_fn
   // p_extend() calculates a loop probability from a waiting time
   // NB total length = mean_extend_len + 1
   static double p_extend (double mean_extend_len);
+  static double normal_density(double x, double mean, double sigma);
+  static double gamma_density(double x, double location, double shape); 
+  static double beta_density(double x, double a, double b); 
+  static double beta(double a,double b); 
 };
 
 // Numerical functions

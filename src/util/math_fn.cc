@@ -1,5 +1,25 @@
 #include "util/math_fn.h"
 
+double Math_fn::normal_density(double x, double mean, double sigma)
+{
+  return pow( ( 2*Pi *  pow(sigma, 2)), .5)*  exp( -pow(( x - mean),2) / 2*pow(sigma, 2));
+}
+
+double Math_fn::gamma_density(double x, double location, double shape)
+{
+  return pow(x,shape-1) * exp(-x/location) / ( pow(location, shape) * exp(log_gamma(shape)));
+}
+double Math_fn::beta_density(double x, double a, double b)
+{
+  return pow(x,(a-1)) * pow((1-x),(b-1)) / beta(a,b); 
+}
+
+double Math_fn::beta(double a, double b)
+{
+  return exp(log_gamma(a)) * exp(log_gamma(b)) / ( exp(log_gamma(a+b))); 
+}
+
+
 // Much of this code is shamelessly ripped off from HMMER
 
 /* Function: log_gamma()
