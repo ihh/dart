@@ -28,6 +28,8 @@ DART contains various utilities related to the primary datatypes:
 DNA, RNA and protein sequence.
 
 The package was mostly written by Ian Holmes <ihh@berkeley.edu>
+with contributions by Gerton Lunter, Oscar Westesson, Rob Bradley,
+Lars Barquist, and others.
 For a full list of contributors see http://biowiki.org/dart
 
 Some free packages from external sources are included in the distribution:
