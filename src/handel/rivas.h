@@ -96,6 +96,8 @@ struct Affine_transducer_factory : Affine_transducer_factory_param_container, Ri
 
   void sample_indel_params ();
 
+  double multiplier; 
+
   double proposal_prob(double old_param, double new_param);
 
   sstring indel_parameter_string() const;
