@@ -176,10 +176,10 @@ int main(int argc, char* argv[])
       // issue warning if hmmoc adapter not in use
 #if defined(HMMOC_INCLUDED) && HMMOC_INCLUDED
       if (!hmmoc_opts.try_to_use_hmmoc_adapter)
-	CLOGERR << "Warning: with the HMMoC adapter turned off, tree-sampling MCMC moves that use dynamic programming may be very slow.\n";
+	CLOGERR << "\nWarning: with the HMMoC adapter turned off, MCMC moves that use dynamic programming may be slow.\n\n";
 #else
       if (!opts.try_to_use_hmmoc_adapter)
-	CLOGERR << "Warning: without HMMoC installed, tree-sampling MCMC moves that use dynamic programming may be very slow.\n";
+	CLOGERR << "\nWarning: without HMMoC installed, MCMC moves that use dynamic programming may be slow.\n\n";
 #endif
 
       // display initial logging messages

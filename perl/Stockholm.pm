@@ -23,6 +23,8 @@ use vars '@ISA';
 
 use Carp qw(carp cluck croak);
 
+use Newick;
+
 # define the gap alphabet
 my $gapChars = '-._';
 my $gapCharsRegexp = '\-\._';
@@ -1223,15 +1225,40 @@ sub max  {
   return $x;
 }
 
+=head2 NH
+
+    my $new_hampshire_tree_string = $stock->NH;
+    $stock->NH ($new_hampshire_tree_string);
+
+Retrieves/sets the "#=GF NH" annotation of a Stockholm alignment.
+
+=cut
+
 # Get/set the New Hampshire tree
 sub NH {
-    my ($self, $newval) = @_;
+    my ($self, $newval, $tag) = @_;
+    $tag = "NH" unless defined $tag;
     if (defined $newval) {
-	@{$self->gf_NH} = ($newval);
+	@{$self->gf->{$tag}} = ($newval);
     }
-    return join ("", @{$self->gf_NH});
+    return join ("", @{$self->gf->{$tag}});
 }
 
+=head2 newick
+
+    my $newick = $stock->newick;
+    print $newick->to_string;
+
+Retrieves the "#=GF NH" annotation of a Stockholm alignment,
+as a Newick tree object.
+
+=cut
+
+sub newick {
+    my ($self, $tag) = @_;
+    my $nh = $self->NH (undef, $tag);
+    return defined($nh) ? Newick->from_string($nh) : undef;
+}
 
 =head2 add_row
 
