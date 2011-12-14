@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
   opts.add ("fi -factorindels", factor_indels = false, "multiply external alignment-likelihood by transducer indel-likelihood");
   opts.add ("fn -first-node", first_node = "", "start sampling at specified node (useful for debugging)", false);
   opts.add ("fb -force-binary", force_binary = true,    "force binary tree");
-  opts.add ("rs -redsuch", use_Redelings_Suchard = false,    "use Redelings-Suchard proposal scheme when sampling");
+  opts.add ("rs -redsuch", use_Redelings_Suchard = true,    "use Redelings-Suchard proposal scheme when sampling");
   opts.add ("ipv -indel-proposal-variance", indel_proposal_variance = 0.01,    "Variance of proposal function for indel rate moves");
 
   opts.newline();
