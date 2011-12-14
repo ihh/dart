@@ -4,6 +4,8 @@ use Stockholm;
 use Stockholm::Database;
 use Newick;
 
+my $postprob_tag = 'PP';
+
 my $usage = "Usage: $0 [-tcs|-sps] [-pp|-aa] [<Stockholm file(s)...>]\n\n";
 $usage .= "Finds the \"consensus\" of a set of Stockholm-format multiple alignments,\n";
 $usage .= "each of which is a global alignment of the same set of underlying sequences.\n";
@@ -11,12 +13,14 @@ $usage .= "Use -tcs for \"Total Column Score\", -sps for \"Sum-of-Pairs Score\" 
 $usage .= "Use -pp for posterior-probability coloring in output, -aa for amino-acid coloring.\n";
 
 my $sps = 1;
+my $pipe_to_cat = 0;
 my @arg;
 foreach my $arg (@ARGV) {
     if ($arg eq "-sps") { $sps = 1 }
     elsif ($arg eq "-tcs") { $sps = 0 }
     elsif ($arg eq "-aa") { $color = "AMINO" }
     elsif ($arg eq "-pp") { $color = \&pp_color_scheme }
+    elsif ($arg eq "-less") { $pipe_to_cat = 0 }
     elsif ($arg =~ /^-/) { die $usage }
     else { push @arg, $arg }
 }
@@ -87,14 +91,16 @@ for my $stock (@db) {
     my @rowindex = 0..$rows-1;  # useful array of row indices
     my @row = map ($seq{$_}, @seqname);  # sort alignment rows
     my @pos = map (0, @seqname);  # initialise sequence coords
+    my $pp = $stock->gc->{$postprob_tag};
     for (my $col = 0; $col < $cols; ++$col) {
 	my @col = map (substr ($_, $col, 1), @row);  # get column as ASCII chars
 	my $n_ungapped = 0;
 	grep ($col[$_] eq "." || (++$n_ungapped && ++$pos[$_]), @rowindex);  # increment sequence coords & count non-gaps
 	next if $sps && $n_ungapped < 2;  # skip columns with zero or one ungapped chars
 	my $id = join ("", @col) . " @pos";  # unique text ID for column
+	my $weight = defined($pp) ? ((1 + substr($pp,$col,1)) / 10) : 1;
 	$count{$id} = 0 unless defined $count{$id};
-	++$count{$id};  # increment count for this column ID
+	$count{$id} += $weight;  # increment count for this column ID
     }
 
     # clear alignment info
@@ -211,10 +217,16 @@ my $stock = Stockholm->new;
 for (my $row = 0; $row < $rows; ++$row) {
     $stock->add_row ($seqname[$row], $output[$row]);
 }
-$stock->gc->{'PP'} = $score_line;
+$stock->gc->{$postprob_tag} = $score_line;
+
+my $pager = $pipe_to_cat ? "cat" : "less -r";
+local *LESS;
+open (LESS, "|$pager") or open (LESS, ">-");
 
 my @score_col = ([0,4], [0,2], [0,1], [0,6], [0,3], [0,7], [4,7], [2,7], [3,7], [6,7]);
-print $stock->to_string ("MAXCOLS" => "SCREEN", defined($color) ? ("COLOR" => $color) : ());
+print LESS $stock->to_string ("MAXCOLS" => "SCREEN", defined($color) ? ("COLOR" => $color) : ());
+
+close LESS;
 
 sub pp_color_scheme {
     my ($residue, $seqname, $pos) = @_;
