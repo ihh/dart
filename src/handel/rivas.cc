@@ -339,6 +339,7 @@ double Affine_transducer_factory::proposal_prob(double old_param, double new_par
 
 void Affine_transducer_factory::sample_indel_params()
 {
+  CTAG(5,MCMC PARAM_SAMPLE) << "Sampling indel parameters\n";
   //  Score old_sc = alignment_path_score();
   // Use score with prior on indel params
   Score old_sc = alignment_path_score_with_prior();
@@ -394,6 +395,7 @@ void Affine_transducer_factory::sample_indel_params()
 
 void Convex_transducer_factory::sample_indel_params()
 {
+  CTAG(5,MCMC PARAM_SAMPLE) << "Sampling indel parameters\n";
   for (int sample = 0; sample < RIVAS_PRIOR_SAMPLES; ++sample)
     {
       Score old_sc = alignment_path_score();
@@ -405,7 +407,7 @@ void Convex_transducer_factory::sample_indel_params()
       set_transitions (new_params.gamma_param, new_params.delete_rate_param, new_params.cpt_weight_param, new_params.cpt_delete_extend);
       const Score new_sc = alignment_path_score();
 
-      CTAG(5, PARAM_SAMPLE) << "Sampled parameters ("
+      CTAG(4, PARAM_SAMPLE) << "Sampled parameters ("
 			    << sample+1 << " of " << RIVAS_PRIOR_SAMPLES
 			    << "): gamma=" << gamma_param
 			    << " delete_rate=" << delete_rate_param

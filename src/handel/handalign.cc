@@ -173,6 +173,15 @@ int main(int argc, char* argv[])
 
   try
     {
+      // issue warning if hmmoc adapter not in use
+#if defined(HMMOC_INCLUDED) && HMMOC_INCLUDED
+      if (!hmmoc_opts.try_to_use_hmmoc_adapter)
+	CLOGERR << "Warning: with the HMMoC adapter turned off, tree-sampling MCMC moves that use dynamic programming may be very slow.\n";
+#else
+      if (!opts.try_to_use_hmmoc_adapter)
+	CLOGERR << "Warning: without HMMoC installed, tree-sampling MCMC moves that use dynamic programming may be very slow.\n";
+#endif
+
       // display initial logging messages
       Score_fns::describe_scoring_scheme (CLOG(8));
 

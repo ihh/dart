@@ -808,6 +808,7 @@ Loge Transducer_alignment_with_subst_model::subst_params_prior (const PScores& p
 
 void Transducer_alignment_with_subst_model::sample_subst_params()
 {
+  CTAG(5,MCMC PARAM_SAMPLE) << "Sampling substitution parameters\n";
   const int sample_points = SUBST_PRIOR_SAMPLES;
 
   Score old_sc = alignment_emit_score();
@@ -823,7 +824,7 @@ void Transducer_alignment_with_subst_model::sample_subst_params()
       tree_changed();
       const Score new_sc = alignment_emit_score();
 
-      if (CTAG(5,MCMC PARAM_SAMPLE))
+      if (CTAG(4,MCMC PARAM_SAMPLE))
 	CL << "Subst-param sample " << sample << ": " << Score2Bits(new_sc) << " bits " << subst_parameter_string() << ' ';
   
       if (new_sc > old_sc ? true : Rnd::decide (Score2Prob (ScorePMul (new_sc, -old_sc))))

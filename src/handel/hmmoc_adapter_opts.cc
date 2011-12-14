@@ -11,8 +11,6 @@ void HMMoC_adapter_options::init_opts_list (Opts_list& opts, bool dump_hmmoc_fil
 {
 #if defined(HMMOC_INCLUDED) && HMMOC_INCLUDED
   try_to_use_hmmoc_adapter = true;
-#else
-  CLOGERR << "Warning: without HMMoC installed, tree-sampling MCMC moves that use dynamic programming may be very slow.\n";
 #endif
 
   opts.newline();
