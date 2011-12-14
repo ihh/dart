@@ -273,7 +273,7 @@ Affine_transducer_factory_param_container Affine_transducer_factory::propose_ind
   Affine_transducer_factory_param_container container;
   // Sample a normal distribution with variance=indel_proposal_variance
   // and exp it to generate from log-normal
-  float multiplier = exp(gennor(0, indel_proposal_variance)); 
+  multiplier = exp(gennor(0, indel_proposal_variance)); 
   //  CTAG(5, PARAM_SAMPLE) << "\nvariance, multiplier, new rate: " << indel_proposal_variance << " " << multiplier << " " << delete_rate_param*multiplier << endl; 
 
   // Currently holding  fixed all parameters except delete rate param
@@ -347,6 +347,7 @@ void Affine_transducer_factory::sample_indel_params()
     {
       Affine_transducer_factory_param_container
 	old_params = *this,
+	// Note the variable 'multiplier' gets set within this function:
 	new_params = propose_indel_params();
 
       set_transitions (new_params.gamma_param, new_params.delete_rate_param, new_params.delete_extend_prob_param);
@@ -361,8 +362,10 @@ void Affine_transducer_factory::sample_indel_params()
       double propose_old_prob = proposal_prob(old_params.delete_rate_param,
 					      new_params.delete_rate_param);
       double hastingsRatio = 
-	Score2Prob (ScorePMul (new_sc, -old_sc)) * (propose_old_prob / propose_new_prob);
-      CTAG(5, PARAM_SAMPLE) << "Sampled parameters ("
+	Score2Prob (ScorePMul (new_sc, -old_sc)) * 
+	(propose_old_prob / propose_new_prob) * (1.0/multiplier); // added jacobian multipler as per Lakner et al 2008 Sys Bio
+      // Bumped  this down to 4, since 5 is now the default log level.  -OW
+      CTAG(4, PARAM_SAMPLE) << "Sampled parameters ("
 			    << sample+1 << " of " << RIVAS_PRIOR_SAMPLES
 			    << "): gamma=" << gamma_param
 			    << " delete_rate=" << delete_rate_param
@@ -371,7 +374,8 @@ void Affine_transducer_factory::sample_indel_params()
 			    << " old_bitscore=" << Score2Bits(old_sc)
 			    << " old |new proposal: " << propose_old_prob 
 			    << " new|old proposal: " << propose_new_prob 
-			    << "; \n\tHastings ratio:"  << hastingsRatio
+			    << " Rate multiplier " << multiplier 
+			    << " ; \n\tHastings ratio:"  << hastingsRatio
 			    << ";  move ";
       
   
