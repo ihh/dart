@@ -119,11 +119,11 @@ int main(int argc, char* argv[])
 
   opts.add ("bf -branch-freq", shuffler.branch_realign_rate = 1, "relative rate of branch-sampling: realigning parent-child pairs by DP. This resamples the alignment, keeping the tree fixed");
   opts.add ("nf -node-freq", shuffler.node_realign_rate = 1, "relative rate of node-sampling: realigning grandparent-sibling triplets by DP. This resamples the alignment, keeping the tree fixed");
-  opts.add ("ff -flip-freq", shuffler.branch_swap_rate = 0, "relative rate of branch-flipping: exchanging a node & its niece, then re-aligning by DP. This is the only move that resamples tree topology");
-  opts.add ("sf -slide-freq", shuffler.node_slide_rate = 0, "relative rate of node-sliding moves that preserve topology & total branch length. This resamples tree branch lengths, but not tree topology");
-  opts.add ("lf -length-freq", shuffler.branch_scale_rate = 0, "relative rate of sampling branch lengths. This does not change alignment or tree topology, only tree branch lengths");
-  opts.add ("ipf -indel-param-freq", shuffler.indel_param_sampling_rate = 0, "relative rate of sampling indel parameters. This does not change tree or alignment");
-  opts.add ("spf -subst-param-freq", shuffler.subst_param_sampling_rate = 0, "relative rate of sampling substitution parameters. This does not change tree or alignment");
+  opts.add ("ff -flip-freq", shuffler.branch_swap_rate = 1, "relative rate of branch-flipping: exchanging a node & its niece, then re-aligning by DP. This is the only move that resamples tree topology");
+  opts.add ("sf -slide-freq", shuffler.node_slide_rate = 1, "relative rate of node-sliding moves that preserve topology & total branch length. This resamples tree branch lengths, but not tree topology");
+  opts.add ("lf -length-freq", shuffler.branch_scale_rate = 1, "relative rate of sampling branch lengths. This does not change alignment or tree topology, only tree branch lengths");
+  opts.add ("ipf -indel-param-freq", shuffler.indel_param_sampling_rate = 1, "relative rate of sampling indel parameters. This does not change tree or alignment");
+  opts.add ("spf -subst-param-freq", shuffler.subst_param_sampling_rate = 1, "relative rate of sampling substitution parameters. This does not change tree or alignment");
 
   opts.newline();
   opts.print_title ("Shorthands for individual moves");
