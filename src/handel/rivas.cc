@@ -363,7 +363,7 @@ void Affine_transducer_factory::sample_indel_params()
 					      new_params.delete_rate_param);
       double hastingsRatio = 
 	Score2Prob (ScorePMul (new_sc, -old_sc)) * 
-	(propose_old_prob / propose_new_prob) * multiplier; // added jacobian multipler -OW
+	(propose_old_prob / propose_new_prob) * (1.0/multiplier); // added jacobian multipler as per Lakner et al 2008 Sys Bio
       // Bumped  this down to 4, since 5 is now the default log level.  -OW
       CTAG(4, PARAM_SAMPLE) << "Sampled parameters ("
 			    << sample+1 << " of " << RIVAS_PRIOR_SAMPLES
