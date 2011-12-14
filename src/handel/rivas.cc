@@ -374,7 +374,7 @@ void Affine_transducer_factory::sample_indel_params()
 			    << " old_bitscore=" << Score2Bits(old_sc)
 			    << " old |new proposal: " << propose_old_prob 
 			    << " new|old proposal: " << propose_new_prob 
-			    << " Jacobian multiplier " << multiplier 
+			    << " Rate multiplier " << multiplier 
 			    << " ; \n\tHastings ratio:"  << hastingsRatio
 			    << ";  move ";
       
