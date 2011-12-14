@@ -117,22 +117,22 @@ int main(int argc, char* argv[])
   opts.newline();
   opts.print_title ("MCMC move rates");
 
-  opts.add ("bf -branch-freq", shuffler.branch_realign_rate = 1, "relative rate of branch-sampling: realigning adjacent sequences by DP");
-  opts.add ("nf -node-freq", shuffler.node_realign_rate = 1, "relative rate of node-sampling: adding/removing unobserved residues by DP");
-  opts.add ("ff -flip-freq", shuffler.branch_swap_rate = 0, "relative rate of branch-flipping: exchanging a node & its niece, then re-aligning by DP");
-  opts.add ("sf -slide-freq", shuffler.node_slide_rate = 0, "relative rate of node-sliding moves that preserve topology & total branch length");
-  opts.add ("lf -length-freq", shuffler.branch_scale_rate = 0, "relative rate of sampling branch lengths");
-  opts.add ("ipf -indel-param-freq", shuffler.indel_param_sampling_rate = 0, "relative rate of sampling indel parameters");
-  opts.add ("spf -subst-param-freq", shuffler.subst_param_sampling_rate = 0, "relative rate of sampling substitution parameters");
+  opts.add ("bf -branch-freq", shuffler.branch_realign_rate = 1, "relative rate of branch-sampling: realigning parent-child pairs by DP. This resamples the alignment, keeping the tree fixed");
+  opts.add ("nf -node-freq", shuffler.node_realign_rate = 1, "relative rate of node-sampling: realigning grandparent-sibling triplets by DP. This resamples the alignment, keeping the tree fixed");
+  opts.add ("ff -flip-freq", shuffler.branch_swap_rate = 0, "relative rate of branch-flipping: exchanging a node & its niece, then re-aligning by DP. This is the only move that resamples tree topology");
+  opts.add ("sf -slide-freq", shuffler.node_slide_rate = 0, "relative rate of node-sliding moves that preserve topology & total branch length. This resamples tree branch lengths, but not tree topology");
+  opts.add ("lf -length-freq", shuffler.branch_scale_rate = 0, "relative rate of sampling branch lengths. This does not change alignment or tree topology, only tree branch lengths");
+  opts.add ("ipf -indel-param-freq", shuffler.indel_param_sampling_rate = 0, "relative rate of sampling indel parameters. This does not change tree or alignment");
+  opts.add ("spf -subst-param-freq", shuffler.subst_param_sampling_rate = 0, "relative rate of sampling substitution parameters. This does not change tree or alignment");
 
   opts.newline();
   opts.print_title ("Shorthands for individual moves");
 
-  opts.add ("branch", "-ts 1 -bf 1 -nf 0 -sf 0 -lf 0 -ff 0", "resample a random branch");
-  opts.add ("node", "-ts 1 -bf 0 -nf 1 -sf 0 -lf 0 -ff 0", "resample a random node's outgoing branches");
-  opts.add ("slide", "-ts 1 -bf 0 -nf 0 -sf 1 -lf 0 -ff 0", "slide a node along a random branch");
-  opts.add ("length", "-ts 1 -bf 0 -nf 0 -sf 0 -lf 1 -ff 0", "resample a random branch's length");
-  opts.add ("flip", "-ts 1 -bf 0 -nf 0 -sf 0 -lf 0 -ff 1", "flip a random niece-node pair");
+  opts.add ("branch", "-ts 1 -bf 1 -nf 0 -sf 0 -lf 0 -ff 0 -ipf 0 -spf 0", "resample a random branch");
+  opts.add ("node", "-ts 1 -bf 0 -nf 1 -sf 0 -lf 0 -ff 0 -ipf 0 -spf 0", "resample a random node's outgoing branches");
+  opts.add ("slide", "-ts 1 -bf 0 -nf 0 -sf 1 -lf 0 -ff 0 -ipf 0 -spf 0", "slide a node along a random branch");
+  opts.add ("length", "-ts 1 -bf 0 -nf 0 -sf 0 -lf 1 -ff 0 -ipf 0 -spf 0", "resample a random branch's length");
+  opts.add ("flip", "-ts 1 -bf 0 -nf 0 -sf 0 -lf 0 -ff 1 -ipf 0 -spf 0", "flip a random niece-node pair");
 
   opts.newline();
   opts.print_title ("MCMC sampling transcripts");
