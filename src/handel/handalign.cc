@@ -88,12 +88,12 @@ int main(int argc, char* argv[])
 
   opts.add ("l -seq-len", mean_seq_len = 100, "expected sequence length at equilibrium");
   opts.add ("d -delete-rate", delete_rate = .01, "deletion rate");
-  opts.add ("g -gap-len", gap_len = 5, "expected deletion length");
+  opts.add ("g -gap-len", gap_len = 4, "expected deletion length");
 
   opts.newline();
   opts.add ("lw -long-gap-weight", long_gap_cpt_weight_str = "", 0);
   opts.print ("-lw,--long-gap-weight <real>\tmixture component weight for long gaps (default is zero)\n");
-  opts.add ("lg -long-gap-len", long_gap_len = 10, "expected long deletion length");
+  opts.add ("lg -long-gap-len", long_gap_len = 9, "expected long deletion length");
 
   opts.newline();
   opts.add ("m -subst-model", subst_model_filename, subst_model_help_string.c_str(), false);
@@ -160,6 +160,10 @@ int main(int argc, char* argv[])
   opts.add ("cb -centroid-band", use_centroid_band = false, "use centroid banding (Redelings-Suchard MCMC only)", false);
   opts.add ("cbw -centroid-band-width", centroid_band_width = DEFAULT_CENTROID_BAND_WIDTH, "width of centroid band");
 
+  opts.newline();
+  opts.newline();
+  opts.print ("More documentation available at http://biowiki.org/HandAlign\n");
+  
   try
     {
       if (!opts.parse()) { CLOGERR << opts.short_help(); exit(1); }
@@ -178,7 +182,7 @@ int main(int argc, char* argv[])
       if (!hmmoc_opts.try_to_use_hmmoc_adapter)
 	CLOGERR << "\nWarning: with the HMMoC adapter turned off, MCMC moves that use dynamic programming may be slow.\n\n";
 #else
-      if (!opts.try_to_use_hmmoc_adapter)
+      if (!hmmoc_opts.try_to_use_hmmoc_adapter)
 	CLOGERR << "\nWarning: without HMMoC installed, MCMC moves that use dynamic programming may be slow.\n\n";
 #endif
 
@@ -186,8 +190,11 @@ int main(int argc, char* argv[])
       Score_fns::describe_scoring_scheme (CLOG(8));
 
       // check params
-      if (mean_seq_len <= 0 || gap_len <= 0 || long_gap_len <= 0)
-	THROWEXPR ("All expected lengths (equilibrium sequence length & gap lengths) must be positive");
+      if (mean_seq_len <= 0)
+	THROWEXPR ("Expected equilibrium sequence length must be positive");
+
+      if (gap_len <= 1 || long_gap_len <= 1)
+	THROWEXPR ("Expected gap lengths must be greater than 1");
 
       if (refine && !use_best && mcmc_sample_filename.empty())
 	CLOGERR << "When using the --refine option, it's usually a good idea either to turn on\n"
@@ -205,15 +212,15 @@ int main(int argc, char* argv[])
 	  const double long_gap_cpt_weight = long_gap_cpt_weight_str.to_double();
 
 	  cpt_weight.push_back (1. - long_gap_cpt_weight);
-	  cpt_gap_extend.push_back (1. - 1. / (gap_len + 1.));
+	  cpt_gap_extend.push_back (1. - 1. / gap_len);
 
 	  cpt_weight.push_back (long_gap_cpt_weight);
-	  cpt_gap_extend.push_back (1. - 1. / (long_gap_len + 1.));
+	  cpt_gap_extend.push_back (1. - 1. / long_gap_len);
 
 	  trans_ptr = new Convex_transducer_factory (gamma, delete_rate, cpt_weight, cpt_gap_extend);
 	}
       else
-	trans_ptr = new Affine_transducer_factory (gamma, delete_rate, 1. - 1. / (gap_len + 1.));
+	trans_ptr = new Affine_transducer_factory (gamma, delete_rate, 1. - 1. / gap_len);
 
       Transducer_alignment_with_subst_model& trans (*trans_ptr);
 
