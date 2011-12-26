@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
 
   opts.add ("s -samples", annealing_steps_per_node = 1, "number of MCMC sampling steps per node of the tree");
   opts.add ("ts -total-samples", annealing_steps_total = "", "specify *total* (not per-node) number of MCMC sampling steps", false);
-  opts.add ("xl -execlike", exec_filename = "", "use external alignment-likelihood executable for Metropolis-Hastings sampling", false);
+  opts.add ("xl -exec-like", exec_filename = "", "use external alignment-likelihood executable for Metropolis-Hastings sampling", false);
   Likelihood_executable::add_help (&opts);
   opts.add ("fi -factor-indels", factor_indels = false, "multiply external alignment-likelihood by transducer indel-likelihood");
   opts.add ("fn -first-node", first_node = "", "start sampling at specified node (useful for debugging)", false);
