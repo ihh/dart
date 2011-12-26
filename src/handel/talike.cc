@@ -7,7 +7,7 @@
 
 void Likelihood_executable::add_help (Opts_list* ol)
 {
-  ol->add ("xlh -execlike-help", &Likelihood_executable::display_help, "\thelp on alignment-likelihood executables");
+  ol->add ("xlh -exec-like-help", &Likelihood_executable::display_help, "\thelp on alignment-likelihood executables");
 }
 
 bool Likelihood_executable::display_help (Opts_list* ol)
