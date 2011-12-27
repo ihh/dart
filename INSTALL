@@ -1,6 +1,13 @@
 INSTALLATION
 ============
 
+The primary documentation for DART is on biowiki.org. This includes
+the installation instructions, a detailed and hyperlinked version of
+which may be found here:
+http://biowiki.org/BuildingDART
+
+However, the brief version goes like this:
+
 Type the following...
 
 	./configure
@@ -37,3 +44,32 @@ To compile, you'll need the following tools:
 
 You may be able to get away without having GNU ar, but probably not
 without GNU make and definitely not without GNU gcc.
+
+
+CAVEATS WITH THE CONFIGURE SCRIPT
+=================================
+
+The configure script is somewhat subfunctional; it does not currently
+implement all autoconf options correctly (for example, it does not
+yet allow building object files outside the main source directory).
+
+
+OPTIONAL DEPENDENCIES
+=====================
+
+There are several optional packages that can be installed to extend
+the features of DART. The configuration script will automatically look
+for these features, or you can show it where to look using
+command-line options.
+
+The packages are:
+- hmmoc (Gerton Lunter's Hidden Markov Model Compiler)
+- guile (the GNU Scheme extension language)
+- libhmsbeagle (fast computation of phylogenetic likelihoods using GPUs)
+
+For full details of the roles of these packages in DART and the
+command-line options required to clue in the 'configure' script on
+where to find them, see the main installation page:
+
+http://biowiki.org/BuildingDart
+
