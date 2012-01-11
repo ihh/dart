@@ -9,7 +9,8 @@ use Stockholm::Database;
 
 my ($progname) = fileparse($0);
 
-my ($prefix, $fasta_suffix, $param_suffix, $tree_suffix) = qw(./C1 P1.fastas p trees);
+my ($default_file_prefix, $fasta_suffix, $param_suffix, $tree_suffix) = qw(C1 P1.fastas p trees);
+my $prefix = "./$default_file_prefix";
 
 my $usage = "$progname -- convert a BaliPhy MCMC trace to a Stockholm alignment database\n";
 $usage .= "\n";
@@ -20,6 +21,7 @@ $usage .= "Default <prefix> is '$prefix'\n";
 $usage .= "\n";
 
 GetOptions ("prefix=s" => \$prefix) or die $usage;
+$prefix .= "/$default_file_prefix" if -d $prefix;
 my ($fasta_file, $param_file, $tree_file) = map ("$prefix.$_", $fasta_suffix, $param_suffix, $tree_suffix);
 
 local *FASTA;
