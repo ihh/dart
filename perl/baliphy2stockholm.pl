@@ -16,7 +16,7 @@ my $usage = "$progname -- convert a BaliPhy MCMC trace to a Stockholm alignment 
 $usage .= "\n";
 $usage .= "Usage: $progname [-prefix <prefix>]\n";
 $usage .= "\n";
-$usage .= "Looks for '<prefix>.$fasta_suffix' (FASTA), '<prefix>.p' (params), '<prefix>.trees' (Newick)\n";
+$usage .= "Looks for '<prefix>.$fasta_suffix' (FASTA), '<prefix>.$param_suffix' (params), '<prefix>.$tree_suffix' (Newick)\n";
 $usage .= "Default <prefix> is '$prefix'\n";
 $usage .= "\n";
 
