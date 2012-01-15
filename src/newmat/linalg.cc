@@ -339,6 +339,7 @@ int MatrixExpEigenPrepare(double **a, int n, double *v, double **u, double **uin
       /* retrieve original matrix, and perturb it to get rid of non-simple eigenvalues */  
 //      if (VERBOSE)  
 //	printf("MatrixExpPrepare: Perturbing matrix.  Losing precision!\n");  
+      CLOGERR << "MatrixExpPrepare: Perturbing matrix.  Losing precision!\n";
 
       for (i=0; i<n; i++) {  
 	for (j=0; j<n; j++) {  
