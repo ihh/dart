@@ -45,7 +45,7 @@ void Irrev_EM_matrix::diagonalize()
       Sb(j+1,i+1) = S_ji;
     }
   if (CTAGGING(1,RATE_EM_SYM))
-    CL << "Rate matrix R:\n" << R << "Matrix Sb:\n" << S << "Equilibrium pi: (" << pi << ")\n";
+    CL << "Rate matrix R:\n" << R << "Matrix Sb:\n" << Sb << "Equilibrium pi: (" << pi << ")\n";
 
   // call Newmat for eigenvector decomposition
   bool used_MatrixExpEigen = true;
@@ -132,6 +132,19 @@ void Irrev_EM_matrix::diagonalize()
 	      {
 		U(i,k) = U_mx(i+1,k+1);
 		Uinv(k,i) = Uinv_mx(k+1,i+1);
+	      }
+
+	    if (CTAGGING(3,RATE_EM))
+	      {
+		CL << "MatrixExpEigenPrepare right eigenvector #" << k+1 << ": [";
+		for (int i = 0; i < m(); ++i)
+		  CL << ' ' << U(i,k);
+		CL << " ]\n";
+
+		CL << "MatrixExpEigenPrepare left eigenvector #" << k+1 << ": [";
+		for (int i = 0; i < m(); ++i)
+		  CL << ' ' << Uinv(k,i);
+		CL << " ]\n";
 	      }
 	  }
       }

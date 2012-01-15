@@ -264,6 +264,9 @@ void EM_matrix_base::sanitize_eigenvalues()
   }
 
   // recalculate R after messing with the eigenvalues, so everything's consistent
+  if (CTAGGING(1,RATE_EM_EQ))
+    CL << "R pre-sanitization:\n" << R;
+
   for (int i = 0; i < m(); ++i)
     for (int j = 0; j < m(); ++j)
       {
