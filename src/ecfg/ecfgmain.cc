@@ -289,7 +289,7 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
 
   // figure out what we need to do
   const bool convert_seq_db = do_neighbor_joining || do_branch_length_EM || attach_rows;
-  const bool need_tree_estimation_chain = convert_seq_db;
+  const bool need_tree_estimation_chain = do_neighbor_joining || (do_branch_length_EM && avoid_ECFG_for_branch_length_EM);
   const bool need_tree_estimation_grammar = do_neighbor_joining || do_branch_length_EM || attach_rows;
 
   // read tree-estimation grammar & alphabet from file or SExpr
@@ -347,7 +347,10 @@ void ECFG_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_database
   // convert sequences to Score_profile's for tree estimation
   if (convert_seq_db)
     {
-      tree_estimation_hidden_alphabet.init_hidden (tree_estimation_grammar_alphabet, tree_estimation_chain->class_labels);
+      if (tree_estimation_chain)
+	tree_estimation_hidden_alphabet.init_hidden (tree_estimation_grammar_alphabet, tree_estimation_chain->class_labels);
+      else
+	tree_estimation_hidden_alphabet.init_hidden (tree_estimation_grammar_alphabet);
       seq_db_ptr->seqs2scores (tree_estimation_hidden_alphabet);
     }
 
