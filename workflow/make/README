@@ -1,3 +1,4 @@
 Makefiles for dart.
 
 ancrec.mk: Ancestral reconstruction
+alignmentMCMC.mk: Statistical alignment  
