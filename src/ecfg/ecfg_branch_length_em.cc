@@ -40,7 +40,7 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
 	{
 	  // get chain
 	  const int chain_idx = info.matrix;
-	  const ECFG_chain& chain = ecfg.matrix_set.chain[chain_idx];
+	  const vector<const EM_matrix_base*>& chain = em_matrix.lineage_matrix[chain_idx];
 
 	  // call fill_down
 	  em_matrix.fill_down (em_matrix.env.find_subseq_idx (coords.start, coords.len), ecfg_state);
@@ -67,7 +67,7 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
 		  for_const_contents (vector<int>, colmat.allowed[p], i)
 		    for_const_contents (vector<int>, colmat.allowed[n], j)
 		    {
-		      const Prob branch_pp = colmat.branch_post_prob (n, *i, *j, em_matrix.tree, *chain.matrix);
+		      const Prob branch_pp = colmat.branch_post_prob (n, *i, *j, em_matrix.tree, *chain[n]);
 		      bcounts(*i,*j) += weight * branch_pp;
 		      // CTAG(1,TREE_EM_DEBUG) << "p="<<em_matrix.tree.node_name[p]<<" n="<<em_matrix.tree.node_name[n]<<" i="<<*i<<" j="<<*j<<" prob="<<branch_pp<<"\n";
 		    }
@@ -80,11 +80,12 @@ Loge ECFG_branch_state_counts_map::collect_branch_counts (ECFG_EM_matrix& em_mat
   return final_ll;
 }
 
-void ECFG_branch_state_counts_map::update_branch_lengths (PHYLIP_tree& tree, double resolution, double tmax, double tmin)
+void ECFG_branch_state_counts_map::update_branch_lengths (ECFG_EM_matrix& em_matrix, double resolution, double tmax, double tmin)
 {
+  PHYLIP_tree& tree = em_matrix.tree;
   for_rooted_branches_post (tree, b)
     {
-      ECFG_bell_funcs bell (*this, *b, resolution, tmax, tmin);
+      ECFG_bell_funcs bell (em_matrix, *this, *b, resolution, tmax, tmin);
       tree.branch_length (*b) = bell.bell_max();
     }
   // ensure Tree_alignment's tree stays in sync with this tree
@@ -162,7 +163,7 @@ Loge ECFG_branch_state_counts_map::do_EM (double resolution, double tmax, double
 	}
 
       // update the tree (this method will update tree_align.tree as well)
-      update_branch_lengths (cyk_mx.tree, resolution, tmax, tmin);
+      update_branch_lengths (cyk_mx, resolution, tmax, tmin);
 
       // log
       if (CTAGGING(5,TREE_EM))
@@ -203,9 +204,18 @@ ECFG_branch_expected_loglike_base::ECFG_branch_expected_loglike_base (const ECFG
     THROWEXPR ("Size of ECFG_branch_state_counts doesn't match number of chains in ECFG");
 }
 
+ECFG_branch_expected_loglike::ECFG_branch_expected_loglike (const ECFG_EM_matrix& em_matrix, Phylogeny::Node branch_idx, const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param)
+  : ECFG_branch_expected_loglike_base (counts, ecfg, prior_param)
+{
+  for (int c = 0; c < (int) counts.size(); ++c)
+    chain_bell.push_back (Branch_expected_loglike (counts[c], (Substitution_matrix_factory&) *em_matrix.lineage_matrix[c][branch_idx], 0.));
+}
+
 ECFG_branch_expected_loglike::ECFG_branch_expected_loglike (const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param)
   : ECFG_branch_expected_loglike_base (counts, ecfg, prior_param)
 {
+  if (ecfg.matrix_set.has_hybrid_chains())
+    THROWEXPR ("Attempt to initialize log-likelihood functions from hybrid chain without first initializing lineage-specific matrix lookup table");  // need to create an ECFG_EM_matrix and pass to alternate form of constructor
   for (int c = 0; c < (int) counts.size(); ++c)
     chain_bell.push_back (Branch_expected_loglike (counts[c], *ecfg.matrix_set.chain[c].matrix, 0.));
 }
@@ -218,9 +228,18 @@ Loge ECFG_branch_expected_loglike::operator() (double t)
   return val;
 }
 
+ECFG_branch_expected_loglike_deriv::ECFG_branch_expected_loglike_deriv (const ECFG_EM_matrix& em_matrix, Phylogeny::Node branch_idx, const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param)
+  : ECFG_branch_expected_loglike_base (counts, ecfg, prior_param)
+{
+  for (int c = 0; c < (int) counts.size(); ++c)
+    chain_bell_deriv.push_back (Branch_expected_loglike_deriv (counts[c], (Substitution_matrix_factory&) *em_matrix.lineage_matrix[c][branch_idx], 0.));
+}
+
 ECFG_branch_expected_loglike_deriv::ECFG_branch_expected_loglike_deriv (const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param)
   : ECFG_branch_expected_loglike_base (counts, ecfg, prior_param)
 {
+  if (ecfg.matrix_set.has_hybrid_chains())
+    THROWEXPR ("Attempt to initialize log-likelihood functions from hybrid chain without first initializing lineage-specific matrix lookup table");  // need to create an ECFG_EM_matrix and pass to alternate form of constructor
   for (int c = 0; c < (int) counts.size(); ++c)
     chain_bell_deriv.push_back (Branch_expected_loglike_deriv (counts[c], *ecfg.matrix_set.chain[c].matrix, 0.));
 }
@@ -233,12 +252,12 @@ double ECFG_branch_expected_loglike_deriv::operator() (double t)
   return val;
 }
 
-ECFG_bell_funcs::ECFG_bell_funcs (const ECFG_branch_state_counts_map& tree_counts, const Phylogeny::Undirected_pair& branch, double tres, double tmax, double tmin)
+ECFG_bell_funcs::ECFG_bell_funcs (const ECFG_EM_matrix& em_matrix, const ECFG_branch_state_counts_map& tree_counts, const Phylogeny::Undirected_pair& branch, double tres, double tmax, double tmin)
   : Cached_function <ECFG_branch_expected_loglike, ECFG_branch_expected_loglike_deriv> (func, deriv, tmin, tmax, tres)
 {
   const ECFG_branch_state_counts& bcounts = tree_counts.branch_state_counts.find(branch)->second;
 
-  init (bcounts, tree_counts.ecfg, tree_counts.prior_param);
+  init (em_matrix, branch.second, bcounts, tree_counts.ecfg, tree_counts.prior_param);
 
   CTAG(2,TREE_EM) << "Branch counts for branch " << tree_counts.tree_align.tree.branch_specifier (branch)
 		  << ":\n" << bcounts;
@@ -250,6 +269,12 @@ ECFG_bell_funcs::ECFG_bell_funcs (const ECFG_branch_state_counts& branch_counts,
   init (branch_counts, ecfg, prior_param);
 
   CTAG(2,TREE_EM) << "Branch counts:\n" << branch_counts;
+}
+
+void ECFG_bell_funcs::init (const ECFG_EM_matrix& em_matrix, Phylogeny::Node branch_idx, const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param)
+{
+  func = ECFG_branch_expected_loglike (em_matrix, branch_idx, branch_counts, ecfg, prior_param);
+  deriv = ECFG_branch_expected_loglike_deriv (em_matrix, branch_idx, branch_counts, ecfg, prior_param);
 }
 
 void ECFG_bell_funcs::init (const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param)

@@ -87,6 +87,7 @@ struct ECFG_matrix_set : ECFG_enum
   // helpers
   void eval_funcs (PScores& pscores);  // prepare parametric chains
   bool all_chains_use_default_alphabet() const;  // true if chain_uses_default_alphabet is true for all chains
+  bool has_hybrid_chains() const;  // true if any models are lineage-dependent
 };
 
 // state type info for an emit state of an Evolutionary CFG

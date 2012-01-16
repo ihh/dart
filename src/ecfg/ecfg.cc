@@ -298,6 +298,14 @@ bool ECFG_matrix_set::all_chains_use_default_alphabet() const
   return true;
 }
 
+bool ECFG_matrix_set::has_hybrid_chains() const
+{
+  for_const_contents (vector<ECFG_chain>, chain, c)
+    if (c->matrix == NULL)
+      return true;
+  return false;
+}
+
 // Do not change default initial values for ECFG_state_info - subclasses depend on these
 ECFG_state_info::ECFG_state_info()
   : bifurc (false),
@@ -481,7 +489,7 @@ void ECFG_scores::set_infix_len (int max_subseq_len)
 const ECFG_chain* ECFG_scores::first_single_pseudoterminal_chain() const
 {
   for (int m = 0; m < (int) matrix_set.chain.size(); ++m)
-    if (matrix_set.chain[m].word_len == 1)
+    if (matrix_set.chain[m].word_len == 1 && matrix_set.chain[m].matrix != NULL)
       return &matrix_set.chain[m];
   return (ECFG_chain*) 0;
 }

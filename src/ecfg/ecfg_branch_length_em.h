@@ -37,7 +37,7 @@ struct ECFG_branch_state_counts_map
   Loge collect_branch_counts (ECFG_EM_matrix& em_matrix, const ECFG_cell_score_map& annot, double weight = 1.);
 
   // tree update method
-  void update_branch_lengths (PHYLIP_tree& tree, double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
+  void update_branch_lengths (ECFG_EM_matrix& em_matrix, double resolution = TINY, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // EM method: optimizes all the branch lengths of the tree
   // At the moment, the counts are conditioned on the CYK parse tree; probably would be better to sum over all parse trees
@@ -69,6 +69,7 @@ struct ECFG_branch_expected_loglike : ECFG_branch_expected_loglike_base
 
   // constructors
   ECFG_branch_expected_loglike() { }
+  ECFG_branch_expected_loglike (const ECFG_EM_matrix& em_matrix, Phylogeny::Node branch_idx, const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param);
   ECFG_branch_expected_loglike (const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param);
 
   // evaluation
@@ -83,6 +84,7 @@ struct ECFG_branch_expected_loglike_deriv : ECFG_branch_expected_loglike_base
 
   // constructors
   ECFG_branch_expected_loglike_deriv() { }
+  ECFG_branch_expected_loglike_deriv (const ECFG_EM_matrix& em_matrix, Phylogeny::Node branch_idx, const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param);
   ECFG_branch_expected_loglike_deriv (const ECFG_branch_state_counts& counts, ECFG_scores& ecfg, double prior_param);
 
   // evaluation
@@ -98,13 +100,14 @@ struct ECFG_bell_funcs : Cached_function <ECFG_branch_expected_loglike, ECFG_bra
   ECFG_branch_expected_loglike_deriv deriv;
 
   // constructors
-  ECFG_bell_funcs (const ECFG_branch_state_counts_map& tree_counts, const Phylogeny::Undirected_pair& branch, double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
+  ECFG_bell_funcs (const ECFG_EM_matrix& em_matrix, const ECFG_branch_state_counts_map& tree_counts, const Phylogeny::Undirected_pair& branch, double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
   ECFG_bell_funcs (const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param = 0., double tres = .01, double tmax = DART_MAX_BRANCH_LENGTH, double tmin = 0.);
 
   // find_max wrapper
   double bell_max();
 
-  // helper init method
+  // helper init methods
+  void init (const ECFG_EM_matrix& em_matrix, Phylogeny::Node branch_idx, const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param);
   void init (const ECFG_branch_state_counts& branch_counts, ECFG_scores& ecfg, double prior_param);
 };
 
