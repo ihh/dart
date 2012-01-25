@@ -1,5 +1,7 @@
 #include "util/guile-defs.h"
 #include "util/logfile.h"
+#include "util/guile-keywords.h"
+#include "util/discrete_gamma.h"
 
 #if defined(GUILE_INCLUDED) && GUILE_INCLUDED
 
@@ -79,13 +81,6 @@ SCM sexpr_to_scm (SExpr* sexpr)
   return scm;
 }
 
-SCM scm_log_directive (SCM scm)
-{
-  const sstring log_dir (scm_to_string_unquoted (scm));
-  const bool ok = clog_stream.clog_directive (log_dir);
-  return ok ? SCM_BOOL_T : SCM_BOOL_F;
-}
-
 sstring scm_to_string_unquoted (SCM scm)
 {
   THROWASSERT (scm_is_string(scm));
@@ -95,9 +90,43 @@ sstring scm_to_string_unquoted (SCM scm)
   return str;
 }
 
+SCM scm_log_directive (SCM scm)
+{
+  const sstring log_dir (scm_to_string_unquoted (scm));
+  const bool ok = clog_stream.clog_directive (log_dir);
+  return ok ? SCM_BOOL_T : SCM_BOOL_F;
+}
+
+SCM scm_discrete_gamma (SCM alpha_scm, SCM beta_scm, SCM K_scm, bool medians)
+{
+  THROWASSERT (scm_is_real(alpha_scm));
+  THROWASSERT (scm_is_real(beta_scm));
+  THROWASSERT (scm_is_integer(K_scm));
+  const double alpha = scm_to_double (alpha_scm);
+  const double beta = scm_to_double (beta_scm);
+  const int K = scm_to_int (K_scm);
+  THROWASSERT (alpha > 0);
+  THROWASSERT (beta > 0);
+  THROWASSERT (K > 0);
+  Discrete_gamma dg (alpha, beta, K, medians);
+  return vector_to_scm (dg);
+}
+
+SCM scm_discrete_gamma_medians (SCM alpha_scm, SCM beta_scm, SCM K_scm)
+{
+  return scm_discrete_gamma (alpha_scm, beta_scm, K_scm, true);
+}
+
+SCM scm_discrete_gamma_means (SCM alpha_scm, SCM beta_scm, SCM K_scm)
+{
+  return scm_discrete_gamma (alpha_scm, beta_scm, K_scm, false);
+}
+
 void init_dart_primitives (void)
 {
   scm_c_define_gsubr (GUILE_LOG_DIRECTIVE, 1, 0, 0, (SCM (*)()) scm_log_directive);
+  scm_c_define_gsubr (GUILE_DISCRETE_GAMMA_MEDIANS, 3, 0, 0, (SCM (*)()) scm_discrete_gamma_medians);
+  scm_c_define_gsubr (GUILE_DISCRETE_GAMMA_MEANS, 3, 0, 0, (SCM (*)()) scm_discrete_gamma_means);
 }
 
 #endif /* GUILE_INCLUDED */

@@ -19,7 +19,6 @@ SCM vector_to_scm (const vector<double>& dv);
 SCM sexpr_to_scm (SExpr* sexpr);  // NOTE: this does **not** currently convert lists of the form (A . B) to SCM pairs!
 
 // logging
-#define GUILE_LOG_DIRECTIVE "dart-log"
 SCM scm_dart_log_directive (SCM scm);
 void init_dart_primitives (void);
 
