@@ -57,10 +57,18 @@ SCM string_to_scm (const sstring& s)
 
 SCM vector_to_scm (const vector<sstring>& sv)
 {
-  SCM string_tuple_scm = scm_list_n (SCM_UNDEFINED);  // empty list
+  SCM list_scm = scm_list_n (SCM_UNDEFINED);  // empty list
   for_const_reverse_contents (vector<sstring>, sv, s)
-    string_tuple_scm = scm_cons (scm_from_locale_string (s->c_str()), string_tuple_scm);
-  return string_tuple_scm;
+    list_scm = scm_cons (scm_from_locale_string (s->c_str()), list_scm);
+  return list_scm;
+}
+
+SCM vector_to_scm (const vector<double>& dv)
+{
+  SCM list_scm = scm_list_n (SCM_UNDEFINED);  // empty list
+  for_const_reverse_contents (vector<double>, dv, d)
+    list_scm = scm_cons (scm_from_double(*d), list_scm);
+  return list_scm;
 }
 
 SCM sexpr_to_scm (SExpr* sexpr)
