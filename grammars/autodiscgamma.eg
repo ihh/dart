@@ -1,0 +1,111 @@
+;; Autocorrelated discretized gamma distribution, as per (Yang, 1994) and (Yang, 1995)
+
+;; Begin by defining the number of rate classes and the gamma shape parameter (scale parameter is fixed at 1)
+(&define CLASSES 4)
+(&define SHAPE 0.5)
+
+;; Scheme stuff
+(&scheme-discard
+;; Import Scheme list library
+ (use-modules (srfi srfi-1))
+ ;; Define rate classes
+ ;; Uses the DART-provided Scheme function (discrete-gamma-medians alpha beta K)
+ (define RATES (discrete-gamma-medians SHAPE SHAPE CLASSES)))
+
+;; Now comes the grammar
+(grammar
+ (name AutoDiscGamma)
+ (parametric)
+
+ ;; Probability parameters
+ (pgroup
+
+  ;; Initial distribution over states
+  ((&foreach-token TOK ((&. p TOK) (&/ 1 &TOKENS))))
+  ;; The above expression should evaluate to
+  ;; ((pa .25) (pc .25) (pg .25) (pt .25))
+
+  ;; Probability of staying in the same rate class, or leaving
+  ((stayProb .9) (leaveProb .1)))
+
+ ;; Main loop over classes
+ (&foreach-integer
+  CLASS
+  (1 CLASSES)
+
+  ;; Markov chain for residue substitution
+  (chain
+   (update-policy parametric)
+   (terminal ((&. X CLASS)))
+
+   ;; initial probability distribution
+   (&foreach-token
+    TOK
+    (initial (state (TOK)) (prob (&. p TOK))))
+
+   ;; mutation rates
+   (&foreach-token
+    SRC
+    (&foreach-token
+     DEST
+     (&?
+      (&= SRC DEST)
+      ()
+      (mutate (from (SRC)) (to (DEST)) (rate ((&scheme (list-ref RATES (&- CLASS 1))) * (&. p DEST))))))))
+
+  ;; transformation rules for state S{CLASS}
+
+  (transform
+   (from (START))
+   (to ((&. S CLASS)))
+   (prob (&/ 1 CLASSES)))
+
+  (transform
+   (from ((&. S CLASS)))
+   (to ((&. X CLASS) (&. S CLASS *)))
+   (annotate
+    (row CONSERVATION)
+    (column (&. X CLASS))
+    (label (&chr (&+ (&- CLASS 1) (&ord a))))))  ;; classes are annotated 'a' (slowest), 'b', 'c' ...
+
+  (transform
+   (from ((&. S CLASS *)))
+   (to ()) (prob 1))
+
+  ;; transitions
+  (&foreach-integer
+   DEST_CLASS
+   (1 CLASSES)
+   (transform
+    (from ((&. S CLASS *)))
+    (to ((&. S DEST_CLASS)))
+    (prob (&?
+	   (&= CLASS DEST_CLASS)
+	   (stayProb)
+	   (leaveProb / (&- CLASSES 1))))))) ;; end main loop over classes
+
+ ;; Add a START->END transition, so empty alignments don't have zero likelihood
+ (transform
+  (from (START))
+  (to ())))  ;; end grammar
+
+
+(alphabet
+ (name RNA)
+ (token (a c g u))
+ (complement (u g c a))
+ (extend (to n) (from a) (from c) (from g) (from u))
+ (extend (to x) (from a) (from c) (from g) (from u))
+ (extend (to t) (from u))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from u))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from u))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from u))
+ (extend (to h) (from a) (from c) (from u))
+ (extend (to b) (from c) (from g) (from u))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from u))
+ (wildcard *))  ;; end alphabet RNA
+

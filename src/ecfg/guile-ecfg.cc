@@ -211,6 +211,7 @@ register_grammar_functions (void* data)
 
   init_scheme_environment (NULL);
 
+  init_dart_primitives();
   init_stockholm_type();
   init_newick_type();
   init_xrate_primitives();
