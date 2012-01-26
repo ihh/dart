@@ -6,19 +6,19 @@
 // All code in this file was taken from MrBayes (with superficial C->C++ conversion)
 // by Ian Holmes on January 25, 2012
 
-#define POINTGAMMA(prob,alpha,beta) 		PointChi2(prob,2.0*(alpha))/(2.0*(beta))
-
-double  PointChi2 (double prob, double v);
-double  LnGamma (double alp);
-double  PointNormal (double prob);
-double  IncompleteGamma (double x, double alpha, double LnGamma_alpha);
-
 /* For comparing floating points: two values are the same if the absolute difference is less then 
    this value.
 */
 #ifndef ETA
 #define ETA (1E-30)
 #endif
+
+// gamma density
+double GammaDensity (double x, double alpha, double beta)
+{
+  return pow(beta,alpha) * pow(x,alpha-1) * exp(-beta*x) / exp(LnGamma(alpha));
+}
+
 
 /*---------------------------------------------------------------------------------
 |

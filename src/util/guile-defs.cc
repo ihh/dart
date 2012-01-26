@@ -122,11 +122,67 @@ SCM scm_discrete_gamma_means (SCM alpha_scm, SCM beta_scm, SCM K_scm)
   return scm_discrete_gamma (alpha_scm, beta_scm, K_scm, false);
 }
 
+SCM scm_incomplete_gamma_inverse (SCM prob_scm, SCM alpha_scm, SCM beta_scm)
+{
+  THROWASSERT (scm_is_real(alpha_scm));
+  THROWASSERT (scm_is_real(beta_scm));
+  THROWASSERT (scm_is_real(prob_scm));
+  const double alpha = scm_to_double (alpha_scm);
+  const double beta = scm_to_double (beta_scm);
+  const double prob = scm_to_double (prob_scm);
+  THROWASSERT (alpha > 0);
+  THROWASSERT (beta > 0);
+  THROWASSERT (prob >= 0);
+  return scm_from_double (POINTGAMMA (prob, alpha, beta));
+}
+
+SCM scm_incomplete_gamma (SCM x_scm, SCM alpha_scm, SCM beta_scm)
+{
+  THROWASSERT (scm_is_real(alpha_scm));
+  THROWASSERT (scm_is_real(beta_scm));
+  THROWASSERT (scm_is_real(x_scm));
+  const double alpha = scm_to_double (alpha_scm);
+  const double beta = scm_to_double (beta_scm);
+  const double x = scm_to_double (x_scm);
+  THROWASSERT (alpha > 0);
+  THROWASSERT (beta > 0);
+  THROWASSERT (x >= 0);
+  return scm_from_double (IncompleteGamma (x*beta, alpha, LnGamma (alpha)));
+}
+
+SCM scm_ln_gamma (SCM alpha_scm)
+{
+  THROWASSERT (scm_is_real(alpha_scm));
+  const double alpha = scm_to_double (alpha_scm);
+  THROWASSERT (alpha > 0);
+  return scm_from_double (LnGamma (alpha));
+}
+
+SCM scm_gamma_density (SCM x_scm, SCM alpha_scm, SCM beta_scm)
+{
+  THROWASSERT (scm_is_real(alpha_scm));
+  THROWASSERT (scm_is_real(beta_scm));
+  THROWASSERT (scm_is_real(x_scm));
+  const double alpha = scm_to_double (alpha_scm);
+  const double beta = scm_to_double (beta_scm);
+  const double x = scm_to_double (x_scm);
+  THROWASSERT (alpha > 0);
+  THROWASSERT (beta > 0);
+  THROWASSERT (x >= 0);
+  return scm_from_double (GammaDensity (x, alpha, beta));
+}
+
 void init_dart_primitives (void)
 {
   scm_c_define_gsubr (GUILE_LOG_DIRECTIVE, 1, 0, 0, (SCM (*)()) scm_log_directive);
+
   scm_c_define_gsubr (GUILE_DISCRETE_GAMMA_MEDIANS, 3, 0, 0, (SCM (*)()) scm_discrete_gamma_medians);
   scm_c_define_gsubr (GUILE_DISCRETE_GAMMA_MEANS, 3, 0, 0, (SCM (*)()) scm_discrete_gamma_means);
+
+  scm_c_define_gsubr (GUILE_LOG_GAMMA, 1, 0, 0, (SCM (*)()) scm_ln_gamma);
+  scm_c_define_gsubr (GUILE_GAMMA_DENSITY, 3, 0, 0, (SCM (*)()) scm_gamma_density);
+  scm_c_define_gsubr (GUILE_INCOMPLETE_GAMMA, 3, 0, 0, (SCM (*)()) scm_incomplete_gamma);
+  scm_c_define_gsubr (GUILE_INCOMPLETE_GAMMA_INVERSE, 3, 0, 0, (SCM (*)()) scm_incomplete_gamma_inverse);
 }
 
 #endif /* GUILE_INCLUDED */
