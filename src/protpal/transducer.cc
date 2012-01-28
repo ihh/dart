@@ -259,6 +259,7 @@ SplittingTrans::SplittingTrans(void)
   transitionPair.push_back(0); transitionPair.push_back(1); 
   transition_weight[transitionPair] = 1; 
 
+  transitionPair.clear();
   transitionPair.push_back(0); transitionPair.push_back(2); 
   transition_weight[transitionPair] = 1; 
   
