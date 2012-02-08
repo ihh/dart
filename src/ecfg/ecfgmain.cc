@@ -741,7 +741,7 @@ void ECFG_main::annotate_alignments (ostream* align_stream)
 		      if (want_ancestral_reconstruction)
 			{
 			  CTAG(6,XRATE) << "Annotating ancestral reconstruction for CYK parse\n";
-			  inout_mx->inside.reconstruct_MAP (*stock, cyk_trace, CYK_MAP_reconstruction_tag, ancrec_CYK_MAP, ancrec_postprob);
+			  inout_mx->inside.reconstruct_MAP (*stock, cyk_trace, CYK_MAP_reconstruction_tag, ancrec_CYK_MAP, ancrec_postprob, min_ancrec_postprob);
 			}
 		    }
 		}
