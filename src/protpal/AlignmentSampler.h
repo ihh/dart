@@ -53,7 +53,8 @@ class IndelCounter
 {
   // Some functions and variables related to tabulating indel information
  public:
-  IndelCounter(Stockholm&, PHYLIP_tree*);
+  IndelCounter(void); 
+  IndelCounter(Stockholm&, PHYLIP_tree*, bool wildcard_alignment=false);
   IndelCounter(map<string,string>&, PHYLIP_tree*);
   void gather_indel_info(bool logging=false); 
   void display_indel_info(ostream&, bool per_branch=false); 

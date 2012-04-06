@@ -512,7 +512,14 @@ int main(int argc, char* argv[])
 						  false, // leaves only
 						  reconstruction.viterbi // sample the viterbi path
 						  );
-	      alignString = profile.show_alignment( path, reconstruction.leaves_only); 
+	      if (reconstruction.indel_filename != nullValue)
+		{
+		  alignString = profile.show_alignment( path, false); 
+		  cerr << "Warning: ancestral wildcards will be displayed since -pi was used\n"; 
+		}
+	     
+	      else
+		alignString = profile.show_alignment( path, reconstruction.leaves_only); 
 
 	      // Sample a bunch of paths at the root level and average indel counts (a hacky approximation to using 
 	      // an entire profile for indel rate estimation.
@@ -604,7 +611,8 @@ int main(int argc, char* argv[])
     stk.read_Stockholm(stockStream,db, 0,newGapChar); 
   else
     stk.read_Stockholm(stockStream,db);
-  
+
+  Stockholm annotated; 
   // If  no reconstruction is requested ('alignment' mode) just print the leaf alignment
   if (reconstruction.leaves_only)
     stk.write_Stockholm(cout);
@@ -658,7 +666,8 @@ int main(int argc, char* argv[])
       if (reconstruction.loggingLevel >=1) 
 	cerr<< "\tReconstructing ancestral characters conditional on ML indel history..."; 
       ecfg.annotate_alignments(); 
-      Stockholm annotated = *(ecfg.stock_db.align.begin()); 
+      // Stockholm annotated = *(ecfg.stock_db.align.begin()); 
+      annotated = *(ecfg.stock_db.align.begin()); 
 
       if (reconstruction.loggingLevel >=1) 
 	{
@@ -666,8 +675,6 @@ int main(int argc, char* argv[])
 	  cerr<<"\tDisplaying full ancestral alignment\n\n"; 
 	}
 
-      time(&end); 
-      cout << "#=GF TIME_MINUTES " << difftime (end, start)/60.0 <<endl; 
       if (reconstruction.xrate_output || reconstruction.ancrec_postprob)
 	annotated.write_Stockholm_body(cout);
       
@@ -695,21 +702,36 @@ int main(int argc, char* argv[])
 		cout<< seq->first << rep(maxNameLength-seq->first.size()+4," ") << sequence << endl; 
 	    }
 	}
-      // if requested, show what was inserted/deleted on the tree  (written to file)
-      if (reconstruction.indel_filename != nullValue && reconstruction.num_root_alignments == 1)
+    }
+  // if requested, show what was inserted/deleted on the tree  (written to file)
+  if (reconstruction.indel_filename != nullValue && reconstruction.num_root_alignments == 1)
+    {
+      if (reconstruction.loggingLevel >=1)
+	cerr<<"\nWriting indel information to file: " << reconstruction.indel_filename << endl; 
+      ofstream indel_file;
+      indel_file.open (reconstruction.indel_filename.c_str());
+      if (reconstruction.leaves_only)
 	{
-	  if (reconstruction.loggingLevel >=1)
-	    cerr<<"\nWriting indel information to file: " << reconstruction.indel_filename << endl; 
-	  ofstream indel_file;
-	  indel_file.open (reconstruction.indel_filename.c_str());
+	  IndelCounter indels(stk, &reconstruction.tree, true); 
+	  indels.gather_indel_info(false); 
+	  indels.display_indel_info(indel_file, reconstruction.per_branch);
+	  indel_file.close();
+	}
+      else
+	{
 	  IndelCounter indels(annotated, &reconstruction.tree); 
 	  indels.gather_indel_info(false); 
 	  indels.display_indel_info(indel_file, reconstruction.per_branch);
 	  indel_file.close();
 	}
+      
     }
+ 
+  time(&end); 
+  cout << "#=GF TIME_MINUTES " << difftime (end, start)/60.0 <<endl; 
   // Always include the stockholm footer (//)
   cout << Stockholm_footer; 
+
   
   if (reconstruction.loggingLevel >= 1)
     {

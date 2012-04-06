@@ -416,7 +416,11 @@ colMap AlignmentSampler::sample_expanded_path(node n, M_id start, M_id end, bool
 
 
 // *****Functions related to tabulating indel information.  *****
-IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in)
+IndelCounter::IndelCounter(void)
+{
+  //Null Constructor
+}
+IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in, bool wildcard_alignment)
 {
   tree = tree_in; 
   Phonebook::iterator seq;
@@ -427,8 +431,8 @@ IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in)
   for (seq = stk.row_index.begin(); seq!=stk.row_index.end(); seq++)
     {
       n = index(seq->first, tree->node_name); 
-      if ( tree->is_leaf(n) )
-	sequence =  stk.get_row_as_string(seq->second);
+      if ( wildcard_alignment || tree->is_leaf(n) )
+	    sequence =  stk.get_row_as_string(seq->second);
       else
 	sequence = stk.gr_annot[seq->first]["ancrec_CYK_MAP"]; //toCheck
       rows[n] = string(sequence.c_str()); 
@@ -438,15 +442,19 @@ IndelCounter::IndelCounter(Stockholm& stk, PHYLIP_tree* tree_in)
   for (rowIter = rows.begin(); rowIter!=rows.end(); rowIter++)
     {
       if (rowIter == rows.begin())
-	size = rowIter->second.size(); 
+	{
+	  size = rowIter->second.size(); 
+	}
       else if ( rowIter->second.size() != size )
 	{
 	  std::cerr<<"Error: input alignment appears not to be flush.  Indel counting not possible! Exiting. \n"; 
+	  std::cerr << "Row " << rowIter->first << " has " << rowIter->second.size() << " characters: ";
+	  std::cerr << rowIter->second << endl; 
 	  exit(1); 
 	}
     }
   L = size; 
-}  
+}
 
 IndelCounter::IndelCounter(map<string,string>& sequences, PHYLIP_tree* tree_in)
 {
