@@ -29,7 +29,7 @@ double TKF_dist_func_factory::TKF_dist_func::operator() (int i, int j)
     f = new TKF_unaligned_counts_function (iprof, jprof, &factory.params.submat_factory.alphabet());
   else if (factory.n_realign == 0)
     f = new TKF_aligned_counts_function (align, i, j, &factory.params.submat_factory.alphabet());
-  else if (factory.n_realign > 0)
+  else  // factory.n_realign > 0
     {
       // estimate a pairwise alignment
       TKF_joint_pair_HMM_scores tkf_pair_hmm (factory.params, factory.default_time);
