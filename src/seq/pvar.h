@@ -289,7 +289,7 @@ public:
   {
     for (int g = 0; g < groups(); ++g)
       for (int v = 0; v < (int) group[g].size(); ++v)
-	if (group_suffix[g][v] = suffix)
+	if (group_suffix[g][v] == suffix)
 	  return group[g][v];
     THROWEXPR ("PVar '" << suffix << "' not found");
   }

@@ -254,7 +254,7 @@ public:
       return _row_offset - i._row_offset;
     }
     Column_iterator begin() const { return *this; }
-    Column_iterator end() const { return Column_iterator (_array, _col, _array.rows()); }
+    Column_iterator end() const { return Column_iterator (_array, _col, _array->rows()); }
   };
 
   // row & column views

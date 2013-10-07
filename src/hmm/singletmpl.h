@@ -139,7 +139,7 @@ public:
 
   void reset (const T& t)
   {
-    reset_transitions (t);
+    Transition_matrix<T>::reset_transitions (t);
     emit = vector<vector<T> > (states(), vector<T> (alphabet().size(), t));
   }
 
@@ -385,7 +385,7 @@ void Single_HMM<T>::show (ostream& o) const
       o << i << " (";
       this->right_align (o);
       for (int x = 0; x < (int) emit[i].size(); x++)
-	{ o.width(w); show_element(emit[i][x],o); if (x < (int) emit[i].size()-1) o << " "; }
+	{ o.width(w); Single_HMM<T>::show_element(emit[i][x],o); if (x < (int) emit[i].size()-1) o << " "; }
       o << ")";
       if (state_type[i] == Null) o << "  [null]";
       o << "\n";

@@ -551,7 +551,7 @@ template<class T>
 Pair_CFG<T>& Pair_CFG<T>::operator= (const Pair_CFG<T>& cfg)
 {
   assign_state_typing (cfg);
-  assign_transition_matrix (cfg);
+  Transition_matrix<T>::assign_transition_matrix (cfg);
   name = cfg.name;
   state_name = cfg.state_name;
   emit = cfg.emit;
@@ -588,7 +588,7 @@ template<class T>
 template<class T>
 void Pair_CFG<T>::reset (const T& t)
 {
-  reset_transitions (t);
+  Transition_matrix<T>::reset_transitions (t);
   emit = vector<vector<T> > (states());
   for (int s = 0; s < states(); ++s) emit[s] = vector<T> (emit_size (state_type[s]), t);
   xlmeta_idx = vector<vector<int> > (states());
@@ -846,7 +846,7 @@ void Pair_CFG<T>::show (ostream& o) const
       o.width(20);
       o << text << " (";
       this->right_align (o);
-      for (int x = 0; x < (int) emit[i].size(); x++) { o.width(w); show_element(emit[i][x],o); if (x < (int) emit[i].size()-1) o << " "; }
+      for (int x = 0; x < (int) emit[i].size(); x++) { o.width(w); Pair_CFG<T>::show_element(emit[i][x],o); if (x < (int) emit[i].size()-1) o << " "; }
       o << ")";
       for_const_contents (vector<int>, xlmeta_idx[i], m) o << " +xl[" << *m << "]";
       for_const_contents (vector<int>, xrmeta_idx[i], m) o << " +xr[" << *m << "]";
