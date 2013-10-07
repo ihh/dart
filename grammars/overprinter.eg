@@ -75,6 +75,10 @@
   (to (NC))
   (prob noStart))
 
+ (transform
+  (from (NC*))
+  (to ()))
+
 
  (transform
   (from (ATG0))
@@ -127,12 +131,12 @@
 
  (transform
   (from (S2*))
-  (to (NC))
+  (to (TAG2))
   (prob stop))
 
  (transform
   (from (S2*))
-  (to (TAG2))
+  (to (S0))
   (prob noStop))
 
 
