@@ -33,25 +33,7 @@ my (%aa, %tok);
         'gtg'=>'V',  'gcg'=>'A',  'gag'=>'E',  'ggg'=>'G' );
 
 # this must match the token set in $DARTDIR/perl/tokenize.pl
-%tok = ( 'ttt'=>'F',  'tct'=>'S',  'tat'=>'Y',  'tgt'=>'C',
-	 'ttc'=>'f',  'tcc'=>'s',  'tac'=>'y',  'tgc'=>'c',
-	 'tta'=>'L',  'tca'=>'5',  'taa'=>'0',  'tga'=>'2',
-	 'ttg'=>'l',  'tcg'=>'$',  'tag'=>'1',  'tgg'=>'W',
-       
-	 'ctt'=>'<',  'cct'=>'P',  'cat'=>'H',  'cgt'=>'R',
-	 'ctc'=>'[',  'ccc'=>'p',  'cac'=>'h',  'cgc'=>'r',
-	 'cta'=>'{',  'cca'=>',',  'caa'=>'Q',  'cga'=>'+',
-	 'ctg'=>'/',  'ccg'=>'8',  'cag'=>'q',  'cgg'=>'}',
-       
-	 'att'=>'I',  'act'=>'T',  'aat'=>'N',  'agt'=>'%',
-	 'atc'=>'i',  'acc'=>'t',  'aac'=>'n',  'agc'=>'#',
-	 'ata'=>'|',  'aca'=>'~',  'aaa'=>'K',  'aga'=>'@',
-	 'atg'=>'M',  'acg'=>'`',  'aag'=>'k',  'agg'=>']',
-       
-	 'gtt'=>'V',  'gct'=>'A',  'gat'=>'D',  'ggt'=>'G',
-	 'gtc'=>'v',  'gcc'=>'a',  'gac'=>'d',  'ggc'=>'g',
-	 'gta'=>'^',  'gca'=>'4',  'gaa'=>'E',  'gga'=>'9',
-	 'gtg'=>'7',  'gcg'=>'&',  'gag'=>'e',  'ggg'=>'6' );
+%tok = map (($_ => join(" ",split(//,$_))), keys %aa);
 
 my $seqfile;
 my $pseudocount = 0;
@@ -85,14 +67,13 @@ if (defined $seqfile) {
 	     });
 }
 
-print "(alphabet\n (name TokenizedCodon)\n (token (@all_token))\n (wildcard *))\n\n";
-print "(chain\n (update-policy rev)\n (terminal (X))\n";
-print map (" (initial (state ($token[$_])) (prob $pi[$_]))  ;; $codon[$_] [$aa[$_]]\n", 0..@codon-1);
-#for my $i (0..@codon-1){
-#    print "(initial (state (";
-#    print join(' ',split '',$codon[$i]); 
-#    print ")) (prob $pi[$i])) \n"; 
-#}
+print "(alphabet\n (name DNA)\n (token (a c g t))\n (wildcard *))\n\n";
+print "(chain\n (update-policy rev)\n (terminal (X1 X2 X3))\n";
+for my $i (0..@codon-1){
+    print "(initial (state (";
+    print join(' ',split '',$codon[$i]); 
+    print ")) (prob $pi[$i]))  ;; $codon[$i] [", $aa{$codon[$i]}, "]\n"; 
+}
 
 
 my ($total, $original_total) = (0, 0);
@@ -113,10 +94,8 @@ for my $pass (1..2) {
 		} else {  # $pass == 2
 		    my $r_ij = $s_ij * $pi[$j] / $total;
 		    my $r_ji = $s_ij * $pi[$i] / $total;
-		    print " (mutate (from ($i_tok)) (to ($j_tok)) (rate $r_ij))  ;; $i_cod [$i_aa] -> $j_cod [$j_aa]\n" if $r_ij > 0;
-		    #print " (mutate (from ($i_cod_space)) (to ($j_cod_space)) (rate $r_ij))  ;; $i_cod [$i_aa] -> $j_cod [$j_aa]\n" if $r_ij > 0;
-		    print " (mutate (from ($j_tok)) (to ($i_tok)) (rate $r_ji))  ;; $j_cod [$j_aa] -> $i_cod [$i_aa]\n" if $r_ji > 0;
-		    #print " (mutate (from ($j_cod_space)) (to ($i_cod_space)) (rate $r_ji))  ;; $j_cod [$j_aa] -> $i_cod [$i_aa]\n" if $r_ji > 0;
+		    print " (mutate (from ($i_cod_space)) (to ($j_cod_space)) (rate $r_ij))  ;; $i_cod [$i_aa] -> $j_cod [$j_aa]\n" if $r_ij > 0;
+		    print " (mutate (from ($j_cod_space)) (to ($i_cod_space)) (rate $r_ji))  ;; $j_cod [$j_aa] -> $i_cod [$i_aa]\n" if $r_ji > 0;
 
 		}
 	    }
