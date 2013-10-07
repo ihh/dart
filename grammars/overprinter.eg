@@ -1,0 +1,589 @@
+(grammar
+ (name Overprinter)
+ (parametric)
+
+ ;; Probability parameters
+ (pgroup
+  ((start .5) (noStart .5))
+  ((stop .5) (noStop .5))
+  ((pA .25) (pC .25) (pG .25) (pT .25)))
+
+ ;; Rate parameters
+ (rate
+  (stopMutate 1)
+
+  (iNC 1) (vNC 1)
+
+  (i0 1) (v0 1)
+  (i1 1) (v1 1)
+  (i2 1) (v2 1)
+
+  (i01 1) (v01 1)
+  (i12 1) (v12 1)
+  (i20 1) (v20 1)
+
+  (i012 1) (v012 1))
+
+ ;; Priors
+ (pseudocounts
+  (start 1) (noStart 1)
+  (stop 1) (noStop 1)
+  (pA 1) (pC 1) (pG 1) (pT 1)
+
+  (stopMutate 1 1)
+
+  (iNC 1 1) (vNC 1 1)
+
+  (i0 1 1) (v0 1 1)
+  (i1 1 1) (v1 1 1)
+  (i2 1 1) (v2 1 1)
+
+  (i01 1 1) (v01 1 1)
+  (i12 1 1) (v12 1 1)
+  (i20 1 1) (v20 1 1)
+
+  (i012 1 1) (v012 1 1))
+
+ ;; Rules
+
+ (transform
+  (from (BEGIN))
+  (to ()))
+
+ (transform
+  (from (BEGIN))
+  (to (ATG0))
+  (prob start))
+
+ (transform
+  (from (BEGIN))
+  (to (NC))
+  (prob noStart))
+
+
+ (transform
+  (from (NC))
+  (to (XNC NC*)))
+
+ (transform
+  (from (NC*))
+  (to (ATG0))
+  (prob start))
+
+ (transform
+  (from (NC*))
+  (to (NC))
+  (prob noStart))
+
+
+ (transform
+  (from (ATG0))
+  (to (START0 START1 START2 ATG0*))
+  (annotate (row 0) (column START0) (label A))
+  (annotate (row 1) (column START1) (label T))
+  (annotate (row 2) (column START2) (label G)))
+
+ (transform
+  (from (ATG0*))
+  (to (S0)))
+
+
+ (transform
+  (from (S0))
+  (to (X0 S0*))
+  (annotate (row 0) (column X0) (label 0)))
+
+ (transform
+  (from (S0*))
+  (to (S1))
+  (prob noStart))
+
+ (transform
+  (from (S0*))
+  (to (ATG01))
+  (prob start))
+
+
+ (transform
+  (from (S1))
+  (to (X1 S1*))
+  (annotate (row 1) (column X1) (label 1)))
+
+ (transform
+  (from (S1*))
+  (to (S2))
+  (prob noStart))
+
+ (transform
+  (from (S1*))
+  (to (ATG20))
+  (prob start))
+
+
+ (transform
+  (from (S2))
+  (to (X2 S2*))
+  (annotate (row 2) (column X2) (label 2)))
+
+ (transform
+  (from (S2*))
+  (to (NC))
+  (prob stop))
+
+ (transform
+  (from (S2*))
+  (to (TAG2))
+  (prob noStop))
+
+
+ (transform
+  (from (TAG2))
+  (to (STOP0 STOP1 STOP2 TAG2*))
+  (annotate (row 0) (column STOP0) (label !))
+  (annotate (row 1) (column STOP1) (label !))
+  (annotate (row 2) (column STOP2) (label !)))
+
+ (transform
+  (from (TAG2*))
+  (to (NC)))
+
+
+ (transform
+  (from (ATG01))
+  (to (START0 START1 START2 ATG01*))
+  (annotate (row 0) (column START0) (label A))
+  (annotate (row 1) (column START1) (label T))
+  (annotate (row 2) (column START2) (label G))
+  (annotate (row 1) (column START0) (label 1))
+  (annotate (row 2) (column START1) (label 2))
+  (annotate (row 0) (column START2) (label 0)))
+
+ (transform
+  (from (ATG01*))
+  (to (S01)))
+
+
+ (transform
+  (from (ATG20))
+  (to (START0 START1 START2 ATG20*))
+  (annotate (row 0) (column START0) (label A))
+  (annotate (row 1) (column START1) (label T))
+  (annotate (row 2) (column START2) (label G))
+  (annotate (row 2) (column START0) (label 2))
+  (annotate (row 0) (column START1) (label 0))
+  (annotate (row 1) (column START2) (label 1)))
+
+ (transform
+  (from (ATG20*))
+  (to (S20)))
+
+
+
+ (transform
+  (from (S01))
+  (to (X01 S01*))
+  (annotate (row 0) (column X01) (label 0))
+  (annotate (row 1) (column X01) (label 1)))
+
+ (transform
+  (from (S01*))
+  (to (S12))
+  (prob noStart))
+
+ (transform
+  (from (S01*))
+  (to (ATG012))
+  (prob start))
+
+
+ (transform
+  (from (S12))
+  (to (X12 S12*))
+  (annotate (row 1) (column X12) (label 1))
+  (annotate (row 2) (column X12) (label 2)))
+
+ (transform
+  (from (S12*))
+  (to (S20))
+  (prob noStop))
+
+ (transform
+  (from (S12*))
+  (to (TAG12))
+  (prob stop))
+
+
+ (transform
+  (from (S20))
+  (to (X20 S20*))
+  (annotate (row 2) (column X20) (label 2))
+  (annotate (row 0) (column X20) (label 0)))
+
+ (transform
+  (from (S20*))
+  (to (S01))
+  (prob noStop))
+
+ (transform
+  (from (S20*))
+  (to (TAG20))
+  (prob stop))
+
+
+ (transform
+  (from (TAG12))
+  (to (STOP0 STOP1 STOP2 TAG12*))
+  (annotate (row 0) (column STOP0) (label !))
+  (annotate (row 1) (column STOP1) (label !))
+  (annotate (row 2) (column STOP2) (label !))
+  (annotate (row 2) (column STOP0) (label 2))
+  (annotate (row 0) (column STOP1) (label 0))
+  (annotate (row 1) (column STOP2) (label 1)))
+
+ (transform
+  (from (TAG12*))
+  (to (S2)))
+
+
+ (transform
+  (from (TAG20))
+  (to (STOP0 STOP1 STOP2 TAG20*))
+  (annotate (row 0) (column STOP0) (label !))
+  (annotate (row 1) (column STOP1) (label !))
+  (annotate (row 2) (column STOP2) (label !))
+  (annotate (row 1) (column STOP0) (label 1))
+  (annotate (row 2) (column STOP1) (label 2))
+  (annotate (row 0) (column STOP2) (label 0)))
+
+ (transform
+  (from (TAG20*))
+  (to (S1)))
+
+ (transform
+  (from (ATG012))
+  (to (START0 START1 START2 ATG012*))
+  (annotate (row 0) (column START0) (label A))
+  (annotate (row 1) (column START1) (label T))
+  (annotate (row 2) (column START2) (label G))
+  (annotate (row 1) (column START0) (label 1))
+  (annotate (row 2) (column START1) (label 2))
+  (annotate (row 0) (column START2) (label 0))
+  (annotate (row 2) (column START0) (label 2))
+  (annotate (row 0) (column START1) (label 0))
+  (annotate (row 1) (column START2) (label 1)))
+
+ (transform
+  (from (ATG012*))
+  (to (S012)))
+
+
+ (transform
+  (from (S012))
+  (to (X012 S012*))
+  (annotate (row 0) (column X012) (label 0))
+  (annotate (row 1) (column X012) (label 1))
+  (annotate (row 2) (column X012) (label 2)))
+
+ (transform
+  (from (S012*))
+  (to (S012))
+  (prob noStop))
+
+ (transform
+  (from (S012*))
+  (to (TAG012))
+  (prob stop))
+
+
+ (transform
+  (from (TAG012))
+  (to (STOP0 STOP1 STOP2 TAG012*))
+  (annotate (row 0) (column STOP0) (label !))
+  (annotate (row 1) (column STOP1) (label !))
+  (annotate (row 2) (column STOP2) (label !))
+  (annotate (row 1) (column STOP0) (label 1))
+  (annotate (row 2) (column STOP1) (label 2))
+  (annotate (row 0) (column STOP2) (label 0))
+  (annotate (row 2) (column STOP0) (label 2))
+  (annotate (row 0) (column STOP1) (label 0))
+  (annotate (row 1) (column STOP2) (label 1)))
+
+ (transform
+  (from (TAG012*))
+  (to (S01)))
+
+
+
+
+ ;; Chains
+
+ (chain
+  (terminal (X0))
+  (update-policy parametric)
+
+  (initial (state (a)) (prob pA))
+  (initial (state (c)) (prob pC))
+  (initial (state (g)) (prob pG))
+  (initial (state (t)) (prob pT))
+
+  (mutate (from (a)) (to (c)) (rate pC * v0))
+  (mutate (from (a)) (to (g)) (rate pG * i0))
+  (mutate (from (a)) (to (t)) (rate pT * v0))
+  (mutate (from (c)) (to (a)) (rate pA * v0))
+  (mutate (from (c)) (to (g)) (rate pG * v0))
+  (mutate (from (c)) (to (t)) (rate pT * i0))
+  (mutate (from (g)) (to (a)) (rate pA * i0))
+  (mutate (from (g)) (to (c)) (rate pC * v0))
+  (mutate (from (g)) (to (t)) (rate pT * v0))
+  (mutate (from (t)) (to (a)) (rate pA * v0))
+  (mutate (from (t)) (to (c)) (rate pC * i0))
+  (mutate (from (t)) (to (g)) (rate pG * v0))
+
+  (mutate (from (a)) (to (a)) (rate (pA + pG) * (const v0) + (pA + pC + pT) * (const i0)))
+  (mutate (from (c)) (to (c)) (rate (pC + pT) * (const v0) + (pA + pC + pG) * (const i0)))
+  (mutate (from (g)) (to (g)) (rate (pA + pG) * (const v0) + (pC + pG + pT) * (const i0)))
+  (mutate (from (t)) (to (t)) (rate (pC + pT) * (const v0) + (pA + pG + pT) * (const i0))))
+
+
+
+ (chain
+  (terminal (X1))
+  (update-policy parametric)
+
+  (initial (state (a)) (prob pA))
+  (initial (state (c)) (prob pC))
+  (initial (state (g)) (prob pG))
+  (initial (state (t)) (prob pT))
+
+  (mutate (from (a)) (to (c)) (rate pC * v1))
+  (mutate (from (a)) (to (g)) (rate pG * i1))
+  (mutate (from (a)) (to (t)) (rate pT * v1))
+  (mutate (from (c)) (to (a)) (rate pA * v1))
+  (mutate (from (c)) (to (g)) (rate pG * v1))
+  (mutate (from (c)) (to (t)) (rate pT * i1))
+  (mutate (from (g)) (to (a)) (rate pA * i1))
+  (mutate (from (g)) (to (c)) (rate pC * v1))
+  (mutate (from (g)) (to (t)) (rate pT * v1))
+  (mutate (from (t)) (to (a)) (rate pA * v1))
+  (mutate (from (t)) (to (c)) (rate pC * i1))
+  (mutate (from (t)) (to (g)) (rate pG * v1))
+
+  (mutate (from (a)) (to (a)) (rate (pA + pG) * (const v1) + (pA + pC + pT) * (const i1)))
+  (mutate (from (c)) (to (c)) (rate (pC + pT) * (const v1) + (pA + pC + pG) * (const i1)))
+  (mutate (from (g)) (to (g)) (rate (pA + pG) * (const v1) + (pC + pG + pT) * (const i1)))
+  (mutate (from (t)) (to (t)) (rate (pC + pT) * (const v1) + (pA + pG + pT) * (const i1))))
+
+
+ (chain
+  (terminal (X2))
+  (update-policy parametric)
+
+  (initial (state (a)) (prob pA))
+  (initial (state (c)) (prob pC))
+  (initial (state (g)) (prob pG))
+  (initial (state (t)) (prob pT))
+
+  (mutate (from (a)) (to (c)) (rate pC * v2))
+  (mutate (from (a)) (to (g)) (rate pG * i2))
+  (mutate (from (a)) (to (t)) (rate pT * v2))
+  (mutate (from (c)) (to (a)) (rate pA * v2))
+  (mutate (from (c)) (to (g)) (rate pG * v2))
+  (mutate (from (c)) (to (t)) (rate pT * i2))
+  (mutate (from (g)) (to (a)) (rate pA * i2))
+  (mutate (from (g)) (to (c)) (rate pC * v2))
+  (mutate (from (g)) (to (t)) (rate pT * v2))
+  (mutate (from (t)) (to (a)) (rate pA * v2))
+  (mutate (from (t)) (to (c)) (rate pC * i2))
+  (mutate (from (t)) (to (g)) (rate pG * v2))
+
+  (mutate (from (a)) (to (a)) (rate (pA + pG) * (const v2) + (pA + pC + pT) * (const i2)))
+  (mutate (from (c)) (to (c)) (rate (pC + pT) * (const v2) + (pA + pC + pG) * (const i2)))
+  (mutate (from (g)) (to (g)) (rate (pA + pG) * (const v2) + (pC + pG + pT) * (const i2)))
+  (mutate (from (t)) (to (t)) (rate (pC + pT) * (const v2) + (pA + pG + pT) * (const i2))))
+
+
+
+ (chain
+  (terminal (X01))
+  (update-policy parametric)
+
+  (initial (state (a)) (prob pA))
+  (initial (state (c)) (prob pC))
+  (initial (state (g)) (prob pG))
+  (initial (state (t)) (prob pT))
+
+  (mutate (from (a)) (to (c)) (rate pC * v01))
+  (mutate (from (a)) (to (g)) (rate pG * i01))
+  (mutate (from (a)) (to (t)) (rate pT * v01))
+  (mutate (from (c)) (to (a)) (rate pA * v01))
+  (mutate (from (c)) (to (g)) (rate pG * v01))
+  (mutate (from (c)) (to (t)) (rate pT * i01))
+  (mutate (from (g)) (to (a)) (rate pA * i01))
+  (mutate (from (g)) (to (c)) (rate pC * v01))
+  (mutate (from (g)) (to (t)) (rate pT * v01))
+  (mutate (from (t)) (to (a)) (rate pA * v01))
+  (mutate (from (t)) (to (c)) (rate pC * i01))
+  (mutate (from (t)) (to (g)) (rate pG * v01))
+
+  (mutate (from (a)) (to (a)) (rate (pA + pG) * (const v01) + (pA + pC + pT) * (const i01)))
+  (mutate (from (c)) (to (c)) (rate (pC + pT) * (const v01) + (pA + pC + pG) * (const i01)))
+  (mutate (from (g)) (to (g)) (rate (pA + pG) * (const v01) + (pC + pG + pT) * (const i01)))
+  (mutate (from (t)) (to (t)) (rate (pC + pT) * (const v01) + (pA + pG + pT) * (const i01))))
+
+
+
+ (chain
+  (terminal (X12))
+  (update-policy parametric)
+
+  (initial (state (a)) (prob pA))
+  (initial (state (c)) (prob pC))
+  (initial (state (g)) (prob pG))
+  (initial (state (t)) (prob pT))
+
+  (mutate (from (a)) (to (c)) (rate pC * v12))
+  (mutate (from (a)) (to (g)) (rate pG * i12))
+  (mutate (from (a)) (to (t)) (rate pT * v12))
+  (mutate (from (c)) (to (a)) (rate pA * v12))
+  (mutate (from (c)) (to (g)) (rate pG * v12))
+  (mutate (from (c)) (to (t)) (rate pT * i12))
+  (mutate (from (g)) (to (a)) (rate pA * i12))
+  (mutate (from (g)) (to (c)) (rate pC * v12))
+  (mutate (from (g)) (to (t)) (rate pT * v12))
+  (mutate (from (t)) (to (a)) (rate pA * v12))
+  (mutate (from (t)) (to (c)) (rate pC * i12))
+  (mutate (from (t)) (to (g)) (rate pG * v12))
+
+  (mutate (from (a)) (to (a)) (rate (pA + pG) * (const v12) + (pA + pC + pT) * (const i12)))
+  (mutate (from (c)) (to (c)) (rate (pC + pT) * (const v12) + (pA + pC + pG) * (const i12)))
+  (mutate (from (g)) (to (g)) (rate (pA + pG) * (const v12) + (pC + pG + pT) * (const i12)))
+  (mutate (from (t)) (to (t)) (rate (pC + pT) * (const v12) + (pA + pG + pT) * (const i12))))
+
+
+
+ (chain
+  (terminal (X20))
+  (update-policy parametric)
+
+  (initial (state (a)) (prob pA))
+  (initial (state (c)) (prob pC))
+  (initial (state (g)) (prob pG))
+  (initial (state (t)) (prob pT))
+
+  (mutate (from (a)) (to (c)) (rate pC * v20))
+  (mutate (from (a)) (to (g)) (rate pG * i20))
+  (mutate (from (a)) (to (t)) (rate pT * v20))
+  (mutate (from (c)) (to (a)) (rate pA * v20))
+  (mutate (from (c)) (to (g)) (rate pG * v20))
+  (mutate (from (c)) (to (t)) (rate pT * i20))
+  (mutate (from (g)) (to (a)) (rate pA * i20))
+  (mutate (from (g)) (to (c)) (rate pC * v20))
+  (mutate (from (g)) (to (t)) (rate pT * v20))
+  (mutate (from (t)) (to (a)) (rate pA * v20))
+  (mutate (from (t)) (to (c)) (rate pC * i20))
+  (mutate (from (t)) (to (g)) (rate pG * v20))
+
+  (mutate (from (a)) (to (a)) (rate (pA + pG) * (const v20) + (pA + pC + pT) * (const i20)))
+  (mutate (from (c)) (to (c)) (rate (pC + pT) * (const v20) + (pA + pC + pG) * (const i20)))
+  (mutate (from (g)) (to (g)) (rate (pA + pG) * (const v20) + (pC + pG + pT) * (const i20)))
+  (mutate (from (t)) (to (t)) (rate (pC + pT) * (const v20) + (pA + pG + pT) * (const i20))))
+
+
+
+ (chain
+  (terminal (X012))
+  (update-policy parametric)
+
+  (initial (state (a)) (prob pA))
+  (initial (state (c)) (prob pC))
+  (initial (state (g)) (prob pG))
+  (initial (state (t)) (prob pT))
+
+  (mutate (from (a)) (to (c)) (rate pC * v012))
+  (mutate (from (a)) (to (g)) (rate pG * i012))
+  (mutate (from (a)) (to (t)) (rate pT * v012))
+  (mutate (from (c)) (to (a)) (rate pA * v012))
+  (mutate (from (c)) (to (g)) (rate pG * v012))
+  (mutate (from (c)) (to (t)) (rate pT * i012))
+  (mutate (from (g)) (to (a)) (rate pA * i012))
+  (mutate (from (g)) (to (c)) (rate pC * v012))
+  (mutate (from (g)) (to (t)) (rate pT * v012))
+  (mutate (from (t)) (to (a)) (rate pA * v012))
+  (mutate (from (t)) (to (c)) (rate pC * i012))
+  (mutate (from (t)) (to (g)) (rate pG * v012))
+
+  (mutate (from (a)) (to (a)) (rate (pA + pG) * (const v012) + (pA + pC + pT) * (const i012)))
+  (mutate (from (c)) (to (c)) (rate (pC + pT) * (const v012) + (pA + pC + pG) * (const i012)))
+  (mutate (from (g)) (to (g)) (rate (pA + pG) * (const v012) + (pC + pG + pT) * (const i012)))
+  (mutate (from (t)) (to (t)) (rate (pC + pT) * (const v012) + (pA + pG + pT) * (const i012))))
+
+
+ (chain
+  (terminal (XNC))
+  (update-policy parametric)
+
+  (initial (state (a)) (prob pA))
+  (initial (state (c)) (prob pC))
+  (initial (state (g)) (prob pG))
+  (initial (state (t)) (prob pT))
+
+  (mutate (from (a)) (to (c)) (rate pC * vNC))
+  (mutate (from (a)) (to (g)) (rate pG * iNC))
+  (mutate (from (a)) (to (t)) (rate pT * vNC))
+  (mutate (from (c)) (to (a)) (rate pA * vNC))
+  (mutate (from (c)) (to (g)) (rate pG * vNC))
+  (mutate (from (c)) (to (t)) (rate pT * iNC))
+  (mutate (from (g)) (to (a)) (rate pA * iNC))
+  (mutate (from (g)) (to (c)) (rate pC * vNC))
+  (mutate (from (g)) (to (t)) (rate pT * vNC))
+  (mutate (from (t)) (to (a)) (rate pA * vNC))
+  (mutate (from (t)) (to (c)) (rate pC * iNC))
+  (mutate (from (t)) (to (g)) (rate pG * vNC))
+
+  (mutate (from (a)) (to (a)) (rate (pA + pG) * (const vNC) + (pA + pC + pT) * (const iNC)))
+  (mutate (from (c)) (to (c)) (rate (pC + pT) * (const vNC) + (pA + pC + pG) * (const iNC)))
+  (mutate (from (g)) (to (g)) (rate (pA + pG) * (const vNC) + (pC + pG + pT) * (const iNC)))
+  (mutate (from (t)) (to (t)) (rate (pC + pT) * (const vNC) + (pA + pG + pT) * (const iNC))))
+
+
+
+ (chain
+  (update-policy rev)
+  (terminal (START0 START1 START2))
+  (initial (state (a t g)) (prob 1)))
+
+
+ (chain
+  (update-policy parametric)
+  (terminal (STOP0 STOP1 STOP2))
+  (initial (state (t a g)) (prob (&div 1 3)))
+  (initial (state (t g a)) (prob (&div 1 3)))
+  (initial (state (t a a)) (prob (&div 1 3)))
+  (mutate (from (t a a)) (to (t a g)) (rate stopMutate))
+  (mutate (from (t a a)) (to (t g a)) (rate stopMutate))
+  (mutate (from (t g a)) (to (t a g)) (rate stopMutate))
+  (mutate (from (t g a)) (to (t a a)) (rate stopMutate))
+  (mutate (from (t a g)) (to (t a a)) (rate stopMutate))
+  (mutate (from (t a g)) (to (t g a)) (rate stopMutate)))
+
+ )  ;; end grammar
+
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *))
+
