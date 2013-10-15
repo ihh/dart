@@ -1,0 +1,120 @@
+;; Clone of PHASTCONS-style phylo-HMM, to illustrate xrate macro functionality
+;; To see how the macros expand, type the following:
+
+;;  echo | xrate -g dart/grammars/conservation_phylohmm.eg -t expanded.eg
+;;  more expanded.eg
+
+(&scheme
+ (load-from-path "xrate-stdlib.scm")
+ xrate-dna-alphabet)
+
+
+;; Begin by defining the number of rate classes and the gamma shape parameter (scale parameter is fixed at 1)
+(&define CLASSES 4)
+(&define SHAPE 0.5)
+
+;; Scheme stuff
+(&scheme-discard
+ ;; Import Scheme list library
+ (use-modules (srfi srfi-1))
+ ;; Define rate classes
+ ;; Uses the DART-provided Scheme function (discrete-gamma-medians alpha beta K)
+ (define RATES (discrete-gamma-medians SHAPE SHAPE CLASSES)))
+
+;; Now comes the grammar
+(grammar
+ (name NielsenYangPhyloHMM)
+ (parametric)
+
+ ;; Probability parameters
+ (pgroup
+  ;; Probability of staying in the same rate class, or leaving
+  ((stayProb .9) (leaveProb .1)))
+
+ ;; Codon probability parameters
+ (&scheme (xrate-NY-prob-params 'pi_))
+
+ ;; Rate parameters
+ (rate
+  (kappa 1))  ;; transition/transversion ratio
+
+ ;; Main loop over classes
+ (&foreach-integer
+  CLASS
+  (1 CLASSES)
+
+  ;; Omega value for this class
+  (const-rate ((&. omega_ CLASS) (&scheme (list-ref RATES (&- CLASS 1)))))
+
+  ;; Markov chain for codon substitution
+  (&scheme
+   (xrate-NY-codon-chain '((&. NY1_ CLASS) (&. NY2_ CLASS) (&. NY3_ CLASS)) 'pi_ 'kappa 1 (quote (&. omega_ CLASS)) 1))
+
+  ;; transformation rules for state S{CLASS}
+
+  (transform
+   (from (START))
+   (to ((&. S CLASS)))
+   (prob (&/ 1 CLASSES)))
+
+  (transform
+   (from ((&. S CLASS)))
+   (to ((&. NY1_ CLASS) (&. NY2_ CLASS) (&. NY3_ CLASS) (&. S CLASS *)))
+
+   ;; OMEGA_BIN row is annotated '0' (fastest), '1', '2' ...
+   (annotate
+    (row OMEGA_BIN)
+    (column (&. NY1_ CLASS))
+    (label (&chr (&+ (&- CLASSES CLASS) (&ord 0)))))
+
+   (annotate
+    (row OMEGA_BIN)
+    (column (&. NY2_ CLASS))
+    (label (&chr (&+ (&- CLASSES CLASS) (&ord 0)))))
+
+   (annotate
+    (row OMEGA_BIN)
+    (column (&. NY3_ CLASS))
+    (label (&chr (&+ (&- CLASSES CLASS) (&ord 0)))))
+
+   ;; FRAME row is annotated '1', '2', '3'
+   (annotate
+    (row FRAME)
+    (column (&. NY1_ CLASS))
+    (label 1))
+
+   (annotate
+    (row FRAME)
+    (column (&. NY2_ CLASS))
+    (label 2))
+
+   (annotate
+    (row FRAME)
+    (column (&. NY3_ CLASS))
+    (label 3)))
+
+  (transform
+   (from ((&. S CLASS *)))
+   (to ()) (prob 1))
+
+  ;; transitions
+  (&foreach-integer
+   DEST_CLASS
+   (1 CLASSES)
+   (transform
+    (from ((&. S CLASS *)))
+    (to ((&. S DEST_CLASS)))
+    (prob (&?
+	   (&= CLASS DEST_CLASS)
+	   (stayProb)
+	   (leaveProb / (&- CLASSES 1))))))
+
+  ) ;; end main loop over classes
+
+ ;; Add a START->END transition, so empty alignments don't have zero likelihood
+ (transform
+  (from (START))
+  (to ()))
+
+ )  ;; end grammar
+
