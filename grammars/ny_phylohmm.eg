@@ -9,9 +9,10 @@
  xrate-dna-alphabet)
 
 
-;; Begin by defining the number of rate classes and the gamma shape parameter (scale parameter is fixed at 1)
-(&define CLASSES 4)
-(&define SHAPE 0.5)
+;; Begin by defining the number of rate classes and the gamma hyperparameters
+(&define CLASSES 10)
+(&define ALPHA 1)
+(&define BETA 1)
 
 ;; Scheme stuff
 (&scheme-discard
@@ -19,7 +20,7 @@
  (use-modules (srfi srfi-1))
  ;; Define rate classes
  ;; Uses the DART-provided Scheme function (discrete-gamma-medians alpha beta K)
- (define RATES (discrete-gamma-medians SHAPE SHAPE CLASSES)))
+ (define RATES (discrete-gamma-medians ALPHA BETA CLASSES)))
 
 ;; Now comes the grammar
 (grammar
@@ -27,28 +28,43 @@
  (parametric)
 
  ;; Probability parameters
- (pgroup
-  ;; Probability of staying in the same rate class, or leaving
-  ((stayProb .9) (leaveProb .1)))
+ ;; Probability of staying in the same rate class, or leaving
+ ;; By default, this fits each column separately (no autocorrelation)
+ (const-pgroup
+  ((stayProb (&/ 1 CLASSES)) (leaveProb (&- 1 (&/ 1 CLASSES)))))
+ ;; Uncomment to introduce some autocorrelation
+ ;; (pgroup
+ ;;  ((stayProb .5) (leaveProb .5)))
 
  ;; Codon probability parameters
  (&scheme (xrate-NY-prob-params 'pi_))
 
  ;; Rate parameters
- (rate
+ (const-rate
+  (omega_global 1)  ;; global synonymous/nonsynonymous ratio
   (kappa 1))  ;; transition/transversion ratio
+
+ (rate
+  (R_global (&/ 1 3)))  ;; global rate scaling.... hacked to compensate (CRUDELY) for branch lengths fitted using a point-sub model... left mutable (non-const) to scale a bit better
 
  ;; Main loop over classes
  (&foreach-integer
   CLASS
   (1 CLASSES)
 
-  ;; Omega value for this class
+  ;; Rate multiplier for this class
+  ;; Uncomment to have the phylo-HMM states be scaled by global rate
+  ;; (const-rate ((&. R_ CLASS) (&scheme (list-ref RATES (&- CLASS 1)))))
+  (const-rate ((&. R_ CLASS) 1))
+
+  ;; Omega multiplier for this class
+  ;; Uncomment to fix the ka/ks for all phylo-HMM states
+  ;; (const-rate ((&. omega_ CLASS) 1))
   (const-rate ((&. omega_ CLASS) (&scheme (list-ref RATES (&- CLASS 1)))))
 
   ;; Markov chain for codon substitution
   (&scheme
-   (xrate-NY-codon-chain '((&. NY1_ CLASS) (&. NY2_ CLASS) (&. NY3_ CLASS)) 'pi_ 'kappa 1 (quote (&. omega_ CLASS)) 1))
+   (xrate-NY-codon-chain '((&. NY1_ CLASS) (&. NY2_ CLASS) (&. NY3_ CLASS)) 'pi_ 'kappa 1 (quote ((&. R_ CLASS) (&. omega_ CLASS) omega_global R_global)) (quote ((&. R_ CLASS) R_global))))
 
   ;; transformation rules for state S{CLASS}
 
@@ -61,21 +77,21 @@
    (from ((&. S CLASS)))
    (to ((&. NY1_ CLASS) (&. NY2_ CLASS) (&. NY3_ CLASS) (&. S CLASS *)))
 
-   ;; OMEGA_BIN row is annotated '0' (fastest), '1', '2' ...
+   ;; OMEGA_BIN row is annotated '1' (lowest omega), '2', '3' ...
    (annotate
     (row OMEGA_BIN)
     (column (&. NY1_ CLASS))
-    (label (&chr (&+ (&- CLASSES CLASS) (&ord 0)))))
+    (label (&chr (&+ CLASS (&ord 0) -1))))
 
    (annotate
     (row OMEGA_BIN)
     (column (&. NY2_ CLASS))
-    (label (&chr (&+ (&- CLASSES CLASS) (&ord 0)))))
+    (label (&chr (&+ CLASS (&ord 0) -1))))
 
    (annotate
     (row OMEGA_BIN)
     (column (&. NY3_ CLASS))
-    (label (&chr (&+ (&- CLASSES CLASS) (&ord 0)))))
+    (label (&chr (&+ CLASS (&ord 0) -1))))
 
    ;; FRAME row is annotated '1', '2', '3'
    (annotate
