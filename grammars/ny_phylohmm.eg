@@ -45,7 +45,7 @@
   (kappa 1))  ;; transition/transversion ratio
 
  (rate
-  (R_global (&/ 1 3)))  ;; global rate scaling.... hacked to compensate (CRUDELY) for branch lengths fitted using a point-sub model... left mutable (non-const) to scale a bit better
+  (R_global 1))  ;; global rate scaling.... non-const, so can find best scale via training
 
  ;; Main loop over classes
  (&foreach-integer
