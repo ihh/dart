@@ -29,12 +29,11 @@
 
  ;; Probability parameters
  ;; Probability of staying in the same rate class, or leaving
- ;; By default, this fits each column separately (no autocorrelation)
  (const-pgroup
-  ((stayProb (&/ 1 CLASSES)) (leaveProb (&- 1 (&/ 1 CLASSES)))))
- ;; Uncomment to introduce some autocorrelation
- ;; (pgroup
- ;;  ((stayProb .5) (leaveProb .5)))
+  ;; Uncomment to fit each column separately (no autocorrelation)
+  ;; ((stayProb (&/ 1 CLASSES)) (leaveProb (&- 1 (&/ 1 CLASSES)))))
+  ;; Uncomment to introduce some autocorrelation
+  ((stayProb .5) (leaveProb .5)))
 
  ;; Codon probability parameters
  (&scheme (xrate-NY-prob-params 'pi_))
