@@ -69,7 +69,7 @@
    (from ((&. S CLASS)))
    (to ((&. NY1_ CLASS) (&. NY2_ CLASS) (&. NY3_ CLASS) (&. S CLASS *)))
 
-   ;; OMEGA_BIN row is annotated '1' (lowest omega), '2', '3' ...
+   ;; OMEGA_BIN row is annotated '0', '1', '2' ...
    (annotate
     (row OMEGA_BIN)
     (column (&. NY1_ CLASS))
