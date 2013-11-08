@@ -1,9 +1,3 @@
-;; Clone of PHASTCONS-style phylo-HMM, to illustrate xrate macro functionality
-;; To see how the macros expand, type the following:
-
-;;  echo | xrate -g dart/grammars/conservation_phylohmm.eg -t expanded.eg
-;;  more expanded.eg
-
 (&scheme
  (load-from-path "xrate-stdlib.scm"))
 

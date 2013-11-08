@@ -199,6 +199,7 @@ void Stockholm::write_Stockholm (ostream& out) const
 {
   write_Stockholm_header (out);
   write_Stockholm_body (out);
+  write_Stockholm_separator (out);
 }
 
 void Stockholm::write_Stockholm_body (ostream& out) const
