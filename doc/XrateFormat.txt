@@ -1,0 +1,989 @@
+%META:TOPICINFO{author="IanHolmes" date="1272505578" format="1.0" version="1.190"}%
+%META:TOPICPARENT{name="DART"}%
+---+ xrate file format
+
+%BLOC%
+
+---++ Introduction
+
+<blockquote><small>
+The Participle, with an Article before it, and the Preposition _of_ after it, becomes a Substantive, expressing the action itself which the Verb signifies: as, *"These are the Rules of Grammar, by the observing of which you may avoid mistakes."*
+
+-- Bishop [[http://en.wikipedia.org/wiki/Robert_Lowth][Robert Lowth]], A Short Introduction to English Grammar, 1775.
+</small></blockquote>
+
+
+This document describes the grammar file format for the [[XrateSoftware][xrate]] phylo-grammar alignment analysis package.
+
+Please see the [[xrate software]] page for more info on the program itself
+(and e.g. [[PhyloGrammars][here]] for more info on phylo-grammars).
+
+%INCLUDE{"Main.XrateGrammars"}%
+
+---+ Overall structure of grammar files
+
+The XrateFormat for specifying evolutionary context-free grammars uses Main.LispSExpressions and consists of several parts:
+
+	1 a terminal _alphabet_;
+	1 a _grammar_. This contains
+		1 (optionally) a list of probability and rate parameters, and their values;
+		1 descriptions of one or more _Markov chains_ defined over words in this alphabet (each chain defines a set of co-evolving _pseudoterminals_);
+		1 a series of _production rules_ for nonterminals (_states_) in the grammar. Nonterminals (and their associated production rules) fall into one of several classes
+			* _emit_ nonterminals;
+			* _null_ nonterminals; and
+			* _bifurcation_ nonterminals;
+		1 (optionally) meta-information describing how to update the other properties of the grammar.
+
+These parts are described in more detail below.
+
+---++ Grammar file syntax
+
+The complete syntax of xrate's S-expression-based format (as checked by xrate's built-in syntax validator) can be printed by specifying the command-line option ==-log SEXPR_SYNTAX== when xrate is run.
+(This output is, of course, the grammar of the grammar...)
+
+---+ Alphabets
+
+Alphabet declarations must contain
+
+	1 a name;
+	1 a list of tokens;
+	1 (optionally) a mapping from tokens to their complementary tokens;
+	1 (optionally) a list of degeneracies.
+
+---++ Example: DNA
+
+<blockquote><pre>
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a)))
+</pre></blockquote>
+
+---++ Example: proteins
+
+<blockquote><pre>
+(alphabet
+ (name Protein)
+ (token (a r n d c q e g h i l k m f p s t w y v)))
+</pre></blockquote>
+
+---++ Example: DNA with IUPAC degeneracies
+
+<blockquote><pre>
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (wildcard *))
+</pre></blockquote>
+
+#GapCharacters
+---++ Gap characters
+
+If the alphabet includes characters that would normally be interpreted as gaps (i.e. =-=, =.= or =_=)
+then the =--gapchar= command-line option should be used to direct xrate _not_ to interpret those characters as gaps,
+but to use an alternative symbol (or symbols).
+
+This is useful if gaps are being modeled as a "fifth nucleotide", "twenty-first amino acid" etc.
+
+
+---+ Grammars																										 
+
+---++ Name
+
+<blockquote><pre>
+(grammar
+ (name Kimura2)
+ ;; rest of grammar goes here
+)
+</pre></blockquote>
+
+The ==name== tag is used to specify a name for the grammar.
+The name must be a single S-expression atom (i.e. a string containing no whitespace or parentheses).
+
+---++ Meta-information
+
+<blockquote><pre>
+(grammar
+ (meta
+  (brief-description This is the Kimura two-parameter model (Kimura, 1980) .)
+  (graphviz-layout-style neato)
+  (readme-url http://biowiki.org/XrateFormat)
+  ;; other meta information goes here
+ )
+ ;; rest of grammar goes here
+)
+</pre></blockquote>
+
+The ==meta== tag is used to pass information about the grammar to xrate helper applications, such as [[XreiProgram][xREI]].
+All information inside a ==meta== tag is preserved, but otherwise ignored, by xrate.
+
+It's up to helper applications to define their own keywords for structuring information inside ==meta== blocks
+(e.g. the example above uses ==brief-description==, but this is not a keyword that is recognized by xrate itself; only xREI).
+
+---++ Parametric grammars
+
+A very common tag is ==parametric==.
+This is present at the start of parametric grammars; i.e., grammars whose substitution rates and rule probabilities can be expressed as algebraically structured functions of a parameter set.
+
+	* ==(parametric)==, if present, indicates that rule probabilities are algebraic functions of the grammar parameters.
+
+---+++ Update directives
+
+If a grammar is *not* designated "parametric", it follows that its _de facto_ parametric structure is just that specified by the structure of the xrate-format file:
+namely, sets of rule probabilities and rate parameters for the various substitution models.
+This is syntactically simpler, but less expressive.
+
+In this simpler case, grammars can include several tags indicating how the grammar should be "trained".
+
+	* ==(update-rules X)==, where X is 0 or 1, determines whether rule probabilities will be updated during EM
+	* ==(update-rates X)==, where X is 0 or 1, determines whether chain rates and probabilities will be updated during EM
+
+This sort of control over the EM training algorithm is effectively provided for parametric models
+via designation of some parameters as ==const-pgroup== or ==const-rate==.
+
+---++ Parameters
+
+An xrate grammar file specifies many rates (for substitution events) and probabilities (for Markov chain equilibria, length distributions & transformation rules).
+These rates and probabilities can be declared "parametric".
+Instead of being treated as free variables, specified as numerical constants,
+that are independently updated during EM updates (as is the default behavior),
+"parametric" rates (or probabilities) are specified as algebraic functions
+on a set of parameters associated with the grammar.
+This allows model designers to richly constrain the parameter space of models,
+so as to avoid overtraining and similar sparse data problems.
+
+There are two kinds of parameters: _rate parameters_, and _probability parameters_.
+They can be enclosed in a block named ==params==, in which case they will be updated during EM, or a block named ==const==, in which case they will *not* be updated (i.e. they will be treated as constants).
+
+The ==params== and ==const== blocks can be used to specify either rate or probability parameters.
+The parameter type is automatically inferred by looking at the sub-block containing the parameter name-value assignments.
+If there's only a single parameter in this group, then it's assumed to be a rate parameter; otherwise, it's a probability.
+
+This is somewhat sloppy, and a more rigorous parameter typing can be enforced
+by using the ==pgroup== or ==const-pgroup== keywords (for co-normalized groups of probability parameters)
+or the ==rate== or ==const-rate== keywords (for rate parameters).
+Parameters declared in ==pgroup== or ==rate== blocks will be updated during EM,
+whereas parameters declared in ==const-pgroup== or ==const-rate== blocks will be held constant.
+
+Note that it is YOUR responsibility to ensure that the parameters in ==pgroup== or ==const-pgroup== blocks
+are properly co-normalized.  While xrate will normalize parameters in a ==pgroup== or ==const-pgroup==
+after each round of EM, it will NOT check that they are normalized on input.
+So, if you supply un-normalized parameters and don't do any EM, your final "likelihood" score may not, in fact, be probabilistically kosher.
+Conversely, if you supply super-normalized parameters and you _do_ try some EM, the "likelihood" may decrease (since the parameters will go from being super-normalized to being normalized), which may stop EM prematurely.
+Despite these issues, tolerance of un-normalized parameters _is_ a feature, not a bug:
+it allows you to use e.g. odds-ratios (instead of probabilities) as parameters in a ==pgroup==, if you're sufficiently fluent in probabilistic _voudun_ to brave such an attempt.
+Bottom line: Be Careful.
+
+There are almost no restrictions on parameter names.
+A parameter name cannot contain characters that are reserved for the S-expression format (i.e. whitespace, parentheses or semicolons),
+nor can it be exactly the same as an arithmetic function or macro (==+==, ==*==, ==/==, ==.==, ==?==, ==&foreach==, ==&int==, etc).
+It's suggested that you avoid names beginning with an ampersand ==&==, as these may be used for new macros in future.
+Other than this, you pretty much have a free hand:
+you can call a parameter by a name like ==$#*+/-1^-!!~&%== if you wish,
+though it's probably not advisable.
+
+---+++ Rate parameters
+
+Rate parameters are considered free to vary independently of all other parameters
+(they must remain nonnegative, but that's the only constraint).
+They appear as a name-value pair, enclosed by single or double brackets
+(both are valid).
+
+---++++ Example: Kimura's two parameters
+
+<blockquote><pre>
+ ;; The parameters for Kimura's transition-transversion model.
+ (rate
+  ((alpha 4))  ;; transition rate
+  ((beta 1)))  ;; transversion rate
+</pre></blockquote>
+
+This could also be valid written with single brackets around each rate parameter:
+
+<blockquote><pre>
+ (rate
+  (alpha 4)  ;; transition rate
+  (beta 1))  ;; transversion rate
+</pre></blockquote>
+
+The ==params== keyword could be used in place of the ==rate== keyword (but it's more cryptic, so avoid it).
+
+---+++ Probability parameters
+
+Probability parameters satisfy the following constraints:
+(i) they are nonnegative;
+(ii) all probability parameters in a mutually exclusive set must sum to 1.
+
+The syntax for declaring and assigning values to probability parameters
+is similar to that for rate parameters:
+each parameter-value is a pair enclosed by parentheses.
+Sets of mutually exclusive parameters are declared together as a list,
+enclosed by parentheses.
+
+---++++ Example: HKY85's six parameters
+
+This example includes both probability parameters (the base frequencies)
+and rate parameters (the transition and transversion rates).
+The base frequencies are a mutually exclusive set.
+
+<blockquote><pre>
+ ;; Parameters for the HKY85 model
+ (pgroup
+  ((piA .25) (piC .25) (piG .25) (piT .25)))  ;; base frequencies
+ (rate
+  ((alpha 1))  ;; transition rate
+  ((beta 1)))  ;; transversion rate
+</pre></blockquote>
+
+This could be written (more cryptically) as a single ==params== block:
+
+<blockquote><pre>
+ ;; Parameters for the HKY85 model
+ (params
+  ((piA .25) (piC .25) (piG .25) (piT .25))  ;; base frequencies
+  ((alpha 1))  ;; transition rate
+  ((beta 1)))  ;; transversion rate
+</pre></blockquote>
+
+Note that, in a ==params== block, parameter lists containing only one parameter are treated as *rates*, not probabilities.  So, for example, in a construct such as this:
+
+<blockquote><pre>
+ (params
+  ((alpha 1)))  ;; transition rate
+</pre></blockquote>
+
+==alpha== is a rate parameter, not a probability parameter. Although it
+is enclosed in double parentheses, which would otherwise technically
+make it a list containing one probability parameter, that interpretation
+is not particularly useful: for a single parameter to "sum to one", it would always have to equal one.
+Instead, ==alpha== is parsed as a rate.
+
+This confusion between rates and probabilities in ==params== blocks is easy to avoid: just use the ==rate== and ==pgroup== keywords instead.
+
+---+++ Functions and dimensional constraints
+
+Functions are composed of probability parameters and the binary operators
+for multiplication, division and addition (==*==, ==/== and ==+==).
+The operators and operands must be separated by whitespace.
+
+The caret operator (==^==) denotes exponentiation and can be used to raise a function to a constant power.
+Both the function being exponentiated, and the entire expression (function and exponent), must be enclosed by parentheses,
+like so: ==((a / b) ^ 0.5)==
+
+To guarantee convergence of the EM algorithm,
+functions are also required to satisfy dimensional constraints that depend on whether they occur in a rate or probability context,
+as follows.
+Probability parameters should be considered dimensionless,
+and rate parameters have dimensions of %$t^{-1}$% (i.e. "per unit time").
+[[Wikipedia:Dimensional_analysis][Dimensional analysis]] should be used to ensure
+that rate functions and probability functions composed of such parameters
+have the according dimensionality.
+(Numerical constants can be interpreted "sloppily", i.e. their dimensions can be changed to fit.)
+
+For example, if p and q are probabilities and R is a rate,
+then ==R==, ==p * R==, ==q * R== and ==(p + q) * R / 3== are all valid rate functions (but not probability functions);
+==p==, ==p * q== and ==p * (q + p)== are all valid probability functions (but not rate functions);
+and ==0.5== is both a valid rate function _and_ a valid probability function.
+
+Dimensional constraints are not strictly enforced by xrate,
+but the EM algorithm may not converge if dimensionally incorrect functions are used.
+Furthermore, the EM algorithm is not guaranteed to converge if the exponentiation operator is used.
+
+---++++ Probability parameters and unobserved mutations
+
+It's important to note that probability parameters are not just dimensionless multipliers in xrate;
+they must really correspond to probabilities of events.
+Any rate expression that uses
+probability parameters must do so in such a way that the probabilities
+correspond to legitimate, actual divisions of the event space.
+
+Furthermore, every mutually-exclusive event must be specified.
+Sometimes this means including "unobserved" mutations in order to complete the mutually exclusive set.
+
+A good way to think about events whose rate is given by expressions that combine rate and probability parameters is that an event occurs with a certain rate (specified using the rate parameter);
+there is then a probabilistic decision about what the type of event is (determined by the probability parameters).
+Some of the outcomes of this decision may be such that the event is unobserved (or "rejected").
+In order to correctly count such occurrences, it's necessary to tell xrate that they exist, even though the unobserved events do not result in changes.
+
+The Felsenstein 1981 model may be a useful illustrative example here.
+In one formulation of this model, "replacement" events occur at a constant rate %$\lambda$%.
+In a replacement event, a nucleotide X is replaced by another nucleotide Y, which is chosen with probability %$P_Y$%.
+In other words, once a replacement event is determined to have occurred at a nucleotide (X), there is a probabilistic decision as to which nucleotide (Y) will replace it.
+There is, consequently, a probability of %$P_X$% that X and Y are the same nucleotide, in which case the replacement is unobserved.
+Thus, the *effective* substitution rate from X is %$(1-P_X)\lambda$%,
+while the rate of *unobserved* replacements is %$P_X \lambda$%.
+
+In order for xrate to accurately estimate probability parameters that are used in rate expressions,
+it seems to be necessary to include the unobserved substitutions.
+This can be done by specifying them as mutations-to-self.
+In the above example, the three _observed_ mutations from state ==a== are
+
+<blockquote><pre>
+  (mutate (from (a)) (to (c)) (rate piC * R))
+  (mutate (from (a)) (to (g)) (rate piG * R))
+  (mutate (from (a)) (to (t)) (rate piT * R))
+</pre></blockquote>
+
+while the fourth _unobserved_ mutation from state ==a== is
+
+<blockquote><pre>
+  (mutate (from (a)) (to (a)) (rate piA * R))
+</pre></blockquote>
+
+This fourth mutation, even though it does not affect the likelihood, *does* affect the EM counts that are computed for ==piA==,
+and therefore seems to be needed for EM training to work correctly
+(particularly in the limit of sparse training data).
+
+Examples of this sort of thing can be found in the
+[[DartGrammar:jukescantor-parametric.eg][parametric Jukes-Cantor]],
+[[DartGrammar:hky85.eg][HKY85]]
+and
+[[DartGrammar:fels81.eg][Fels81]]
+grammars distributed with xrate.
+
+---++++ The const operator: flagging a parameter as temporarily constant
+
+When a parameter name is preceded by the ==const== operator in an expression, then that particular instance of the parameter
+is considered to be a constant for the purposes of estimating expected summary statistics and subsequent EM training.
+Evaluation of the function proceeds as normal, but the derivative of this expression (with respect to this parameter only) is regarded to be zero.
+
+For example, consider the following two functions.
+The first function evaluates to x+3, and its derivative w.r.t. x is 1:
+
+<blockquote><pre>
+(x + 3)
+</pre></blockquote>
+
+The second function still evaluates to x+3, but xrate thinks its derivative w.r.t. x is zero:
+
+<blockquote><pre>
+((const x) + 3)
+</pre></blockquote>
+
+Pray (to your preferred deities, patron saints, Unix daemons or cyberspace [[http://en.wikipedia.org/wiki/Loa][loa]]) that you never need to use this construct.
+Using it correctly requires a pretty good knowledge of the way that the EM algorithm functions.
+This (clearly) is rather dark magic and is not recommended for the casual practicioner.
+Examples can be found in DartGrammar:sn.eg, where the ==~k== parameter is never observed directly, but is confounded with parameters that are.
+
+---+++ Expected counts
+
+After training, the grammar file contains an ==expected-counts== block.
+The counts in this block indicate the expected counts for each probability and rate parameter,
+and the expected wait times for each rate parameter.
+
+For example, training the HKY85 model on a short alignment (Rfam:RF00155) yields the following counts:
+
+<blockquote><pre>
+ (expected-counts
+  (piA 36.0195)
+  (piC 29.0076)
+  (piG 37.0184)
+  (piT 35.0149)
+  (alpha 1.01919 1.67501)
+  (beta 2.03806 3.3364))  ;; end observed-counts
+</pre></blockquote>
+
+The interpretation of this block is that the event whose probability is given by ==piA== occurred an expected 36.0195 times
+(and ==piC== an expected 29.0076 times, etc.)
+while the event whose rate is given by ==alpha== occurred an expected 1.01919 times in an expected total available time of 1.67501.
+
+---+++ Pseudocounts
+
+Parameter-specific pseudocounts for training can be specified in the file.
+These have the same format as the ==observed-counts== block, but the tag is ==pseudocounts==.
+
+These counts are added to the expected counts obtained at the E-step of EM, and the totals are used in the M-step.
+This is equivalent to specifying a [[Wikipedia:Dirichlet_distribution][Dirichlet]] prior for probability parameters,
+or a [[Wikipedia:Gamma_distribution][gamma]] prior for rate parameters.
+
+An example, for HKY85:
+
+<blockquote><pre>
+ (pseudocounts
+  (piA 36.0195)
+  (piC 29.0076)
+  (piG 37.0184)
+  (piT 35.0149)
+  (alpha 1.01919 1.67501)
+  (beta 2.03806 3.3364))
+</pre></blockquote>
+
+---++ Markov chains
+
+A ==chain== block declares a Markov chain with rate matrix %$R_{ij}$%
+and initial probability distribution %$\pi_i$%
+where the states %$i,j$% are %$N$%-mer words over the grammar's terminal alphabet
+(plus an optional hidden "label").
+The declaration contains several parts:
+
+	1 an _update policy_. This can be
+		* ==irrev== indicating an irreversible chain
+		* ==rev== indicating a general reversible chain
+		* ==rind== indicating a reversible chain with the constraint %$R_{ij} \propto \pi_j$%, as in Bill Bruno's "RIND" paper (%PMIDC{8952081}%).
+		* ==parametric== indicating a general irreversible chain, the rates and initial probabilities of which are not free variables, but rather algebraic functions of the separately-declared grammar parameters. During EM, the parameters will be updated, but the form of the functions will remain unchanged.
+	1 a list of _pseudoterminals_. The length of this list is %$N$%, the "word length".
+		* For example, for codons %$N=3$%; for RNA basepairs %$N=2$%; and for individual nucleotides, %$N=1$%. Note that the eigenvector transformation of the matrix in the EM algorithm currently has complexity %${\cal O}((A^N C)^6)$%, where %$A$% is the alphabet size and %$C$% is the number of hidden classes (see below), making %$N$% something of a rate-limiting constant.
+		* Optionally, the chain declaration can also include a list of _hidden classes_. The complete description of the state of the Markov chain includes the state of all pseudoterminals *and* the hidden class. This allows, for example, the rate of evolution at the site to itself change over time. See for example %PMIDC{11955022}%
+	1 a list of _initial probabilities_, %$\pi_i$%;
+	1 a list of _mutations_, %$R_{ij}$%.	Note that zero rates may be omitted from the grammar file. If you want to prevent this behavior, one way is to use a parametric model instead. 
+
+#UniCycler
+---+++ Example: uni-cycler
+
+This first example is the irreversible "unidirectional cycler":
+
+<blockquote><pre>
+ (chain											; declare a Markov chain
+  (update-policy irrev)					  ; EM update policy
+  (terminal (RX))							  ; abstract state label
+  (initial (state (a)) (prob 1))		  ; initial distribution
+  (mutate (from (a)) (to (c)) (rate 1))
+  (mutate (from (c)) (to (g)) (rate 1))
+  (mutate (from (g)) (to (t)) (rate 1))
+  (mutate (from (t)) (to (a)) (rate 1)))
+</pre></blockquote>
+
+See [[UniCycler][here]] for an illustration of this chain's topology.
+
+#RevBinaryHiddenClass
+---+++ Example: REV + binary hidden class
+
+This example is a reversible RNA chain with a hidden class variable that can take two states, labeled ==1== and ==2==.
+
+<blockquote><pre>
+ (chain
+  (update-policy rev)
+  (terminal (NUC))
+  (hidden-class
+	(row CLASS)
+	(label (1 2)))
+
+  ;; initial probability distribution
+  (initial (state (a 1)) (prob 0.0238705))
+  (initial (state (c 1)) (prob 0.136706))
+  (initial (state (g 1)) (prob 0.0136832))
+  (initial (state (u 1)) (prob 0.204652))
+  (initial (state (a 2)) (prob 0.305866))
+  (initial (state (c 2)) (prob 0.0413438))
+  (initial (state (g 2)) (prob 0.170151))
+  (initial (state (u 2)) (prob 0.103727))
+
+  ;; mutation rates
+  (mutate (from (a 1)) (to (c 1)) (rate 0.157809))
+  (mutate (from (a 1)) (to (g 1)) (rate 0.310445))
+  (mutate (from (a 1)) (to (u 1)) (rate 0.542682))
+  (mutate (from (a 1)) (to (a 2)) (rate 0.0196586))
+  (mutate (from (c 1)) (to (a 1)) (rate 0.0275553))
+  (mutate (from (c 1)) (to (g 1)) (rate 0.0153761))
+  (mutate (from (c 1)) (to (u 1)) (rate 0.107003))
+  (mutate (from (c 1)) (to (c 2)) (rate 0.000126849))
+  (mutate (from (g 1)) (to (a 1)) (rate 0.541573))
+  (mutate (from (g 1)) (to (c 1)) (rate 0.153619))
+  (mutate (from (g 1)) (to (u 1)) (rate 0.803682))
+  (mutate (from (g 1)) (to (g 2)) (rate 0.0200437))
+  (mutate (from (u 1)) (to (a 1)) (rate 0.063298))
+  (mutate (from (u 1)) (to (c 1)) (rate 0.0714773))
+  (mutate (from (u 1)) (to (g 1)) (rate 0.0537349))
+  (mutate (from (u 1)) (to (u 2)) (rate 0.0036554))
+  (mutate (from (a 2)) (to (a 1)) (rate 0.0015342))
+  (mutate (from (a 2)) (to (c 2)) (rate 0.0411113))
+  (mutate (from (a 2)) (to (g 2)) (rate 0.0812237))
+  (mutate (from (a 2)) (to (u 2)) (rate 0.165302))
+  (mutate (from (c 2)) (to (c 1)) (rate 0.000419434))
+  (mutate (from (c 2)) (to (a 2)) (rate 0.304146))
+  (mutate (from (c 2)) (to (g 2)) (rate 0.141506))
+  (mutate (from (c 2)) (to (u 2)) (rate 0.969275))
+  (mutate (from (g 2)) (to (g 1)) (rate 0.00161188))
+  (mutate (from (g 2)) (to (a 2)) (rate 0.146009))
+  (mutate (from (g 2)) (to (c 2)) (rate 0.0343834))
+  (mutate (from (g 2)) (to (u 2)) (rate 0.0920692))
+  (mutate (from (u 2)) (to (u 1)) (rate 0.00721206))
+  (mutate (from (u 2)) (to (a 2)) (rate 0.487438))
+  (mutate (from (u 2)) (to (c 2)) (rate 0.386336))
+  (mutate (from (u 2)) (to (g 2)) (rate 0.151028)))  ;; end chain NUC
+
+</pre></blockquote>
+
+See [[RevBinaryHiddenClass][here]] for an illustration of this chain's topology.
+
+---++ Hybrid chains
+
+A ==hybrid-chain== block describes a mutation process that varies across the phylogenetic tree.
+Any one of several _component chains_ may be used on each branch of the tree.
+The "#=GS" tag in the [[Stockholm format]] alignment, which is used to specify by-sequence annotation,
+selects the component chain that will be used on a particular branch.
+
+Each component chain must have the same number of pseudoterminals as the hybrid chain.
+These pseudoterminals must appear in the same order that they do in the original declaration of the component chain.
+The same is true of hidden classes (if there are any):
+component chains must have the same number of hidden classes, and the same hidden class labels, in the same order,
+as the hybrid chain.
+(If the hybrid chain has no hidden classes, then the component chains are not allowed to either.)
+These rules are just a long-winded way of saying that the state space for the component chains
+must _exactly_ match the state space for the hybrid chain.
+
+A further requirement is that each component chain must have the "parametric" update policy.
+
+The component-chain selection works as follows.
+Every hybrid chain has a ==row== tag and every component chain has a ==label== tag.
+Suppose that the row tag for the hybrid-chain is R and the label tag for a particular component-chain (C) is L.
+If the alignment includes the line "#=GS S R L", then the branch from S's parent to S will use chain C.
+The component chain that appears first in the hybrid-chain block is assumed to be the default for unlabeled branches.
+
+Note that this syntax can also be used to select the component chain for internal branches of the tree.
+Internal nodes can be named (in NewickFormat) and given "#=GS" labels
+even though they may not have sequence data in the alignment.
+If the alignment includes the line "#=GS N R L", then the branch from N's parent to N will use chain C.
+
+Calculation of column likelihoods requires not just a mutation rate matrix but also a set of initial probabilities.
+Suppose node N is the root node.
+If the alignment includes the line "#=GS N R L", then the initial probability distribution will be taken from chain C.
+(A similiar rule applies if N is not the root node, but its parent node is specified as being gapped.
+This is however a rather unusual situation, since alignment rows for internal nodes are not usually specified.)
+
+---+++ Implicit annotations for hybrid chains
+
+Hybrid chains are sufficiently flexible to allow any lineage-specific parameterization.
+Typically, however, only a few parameterizations are of interest.
+
+Several ==#=GS== tags are implicitly defined to facilitate working with such common parameterizations.
+These implicit tags can be useful in conjunction with [[#Iterations][iteration macros]].
+
+---++++ Using a different chain for just one branch
+
+For every pair of tree nodes, one of the following two lines is implicitly defined:
+
+<pre>
+#=GS NODE1 =NODE2 1		 (if NODE1 and NODE2 are identical)
+#=GS NODE1 =NODE2 0		 (if NODE1 and NODE2 are not identical)
+</pre>
+
+Here NODE1 and NODE2 are named tree nodes, as defined in the ==#=GF NH== field of the Stockholm alignment.
+
+---++++ Using a different chain for a subtree rooted at a particular node
+
+For every pair of tree nodes, one of the following two lines is implicitly defined:
+
+<pre>
+#=GS NODE1 :NODE2 1		 (if NODE1 is descended from NODE2)
+#=GS NODE1 :NODE2 0		 (if NODE1 is not descended from NODE2)
+</pre>
+
+Here NODE1 and NODE2 are named tree nodes, as defined in the ==#=GF NH== field of the Stockholm alignment.
+
+---++++ Using a different chain for every branch
+
+For every tree node, the following line is implicitly defined:
+
+<pre>
+#=GS NODE ? NODE
+</pre>
+
+Here NODE is a named tree node, as defined in the ==#=GF NH== field of the Stockholm alignment.
+
+---+++ Example: hybrid gene/pseudogene model
+
+Suppose that ==(COD1 COD2 COD3)== is defined elsewhere as a codon substitution model
+(i.e. three nucleotides evolving together as a single codon unit)
+and ==(NULL1 NULL2 NULL3)== is a triplet null model
+(three nucleotides evolving independently).
+The following hybrid chain block describes a model that switches between these two component models
+according to ==#=GS ... HLABEL ...== lines in the input alignment:
+
+<blockquote><pre>
+(hybrid-chain
+ (terminal (HYB1 HYB2 HYB3))
+ (row HLABEL)
+ (components
+  ;; submodel COD1... selected by "#=GS SeqName HLABEL GENE"
+  ;; this first model is also assumed to be the default for unlabeled nodes
+	((label GENE) (terminal (COD1 COD2 COD3)))
+  ;; submodel NULL1... selected by "#=GS SeqName HLABEL PSEUDOGENE"
+	((label PSEUDOGENE) (terminal (NULL1 NULL2 NULL3)))))
+</pre></blockquote>
+
+
+
+---++ Production rules
+
+Grammar nonterminal symbols in xrate are classified into certain classes, or _state types_.
+These include _emit_, _null_ and _bifurcation_ nonterminals.
+The type of a given nonterminal depends on the form of the production rules that
+can be applied to that nonterminal.
+
+The *start nonterminal* can be any of these three state types, and is chosen as follows.
+If there are any ==nonterminal== blocks in the grammar, then the start nonterminal is the first nonterminal that is declared in such a block.
+Otherwise, the start nonterminal is the first nonterminal that appears on the left-hand side of a production rule.
+
+Production rules contain the following elements:
+
+	1 a _left-hand side_ (or _LHS_), consisting of a _source nonterminal identifier_ (and, optionally for emit nonterminals, zero or more _context pseudoterminals_);
+	1 a _right-hand-side_ (or _RHS_), consisting of one (or, for bifurcation nonterminals, two) _destination states_ and (for emit nonterminals) one or more _emitted pseudoterminals_;
+	1 a _rule probability_ (if omitted, this is taken to be 1. It must always be 1 for emission and bifurcation rules);
+	1 (optionally, emit nonterminals only) an _annotation label_ (or a probability distribution over annotation labels).
+
+Schematically, the above describes the production rule: %$\mbox{LHS}	\to \mbox{RHS}$%.
+
+Example:
+
+<blockquote><pre>
+ (transform (from (F DY)) (to (F* DX DY)) (prob 1)
+				(annotate (column DX) (row EMIT_ANNOT) (label D)))
+</pre></blockquote>
+	* F is an emit nonterminal.  F* is the corresponding null nonterminal on the RHS.
+	* DX is the emitted pseudoterminal.
+	* Since the pseudoterminal DY appears on both the LHS and RHS, it is not emitted but instead provides context.
+	* The annotation for DX is placed in a row labelled "#=GC EMIT_ANNOT".  The columns are annotated with "D".
+																										  
+
+If the grammar was declared as parametric, i.e. it has a ==(parametric)== tag,
+then the ==prob== expressions of production rules will be interpreted as functions of
+the grammar parameters, rather than independent variables.
+
+
+---+++ Emit nonterminals
+
+Emit nonterminals, with their associated emit rules, describe the way in which columns of alphabet symbols
+(co-evolving according to an underlying phylogenetic tree)
+are generated by the grammar.
+
+An emit nonterminal ==X== is always paired with a corresponding null nonterminal
+whose identifier is formed by appending an asterisk to the name of the emit nonterminal,
+i.e. ==X*==.
+There can be only one production rule having ==X== on the left-hand side.
+This rule must have a single nonterminal, ==X*==, on the right-hand side,
+together with one or more emitted pseudoterminals.
+The list of pseudoterminals on the RHS must exactly match the pseudoterminal list of
+a declared Markov chain (though the order of the pseudoterminals can be permuted).
+
+A convenient shorthand allows pseudoterminals to be complemented, so that chains can be re-used for both forward and reverse strands.
+If a pseudoterminal is prefixed by the tilde symbol (==~==),
+and the alphabet has the ==complement== property (i.e. DNA or RNA; see above description of alphabets),
+then the emitted alphabet symbol is the complement of the pseudoterminal's actual state.
+
+As mentioned above, the RHS pseudoterminal list must exactly match the pseudoterminal list of a chain.
+Additionally, some of these pseudoterminals may also appear on the left-hand side
+(in the same order and complementarity that they appear on the RHS).
+If a pseudoterminal appears on both the LHS and RHS, this indicates that it is
+not emitted, but rather _contextual_.
+This is used to approximate a context-dependent substitution model
+following the approach of Siepel and Haussler (%PMIDC{14660683}%).
+See the !CpG dinucleotide aversion example below for an illustration of this syntax.
+
+The rule probability for an emit rule is always taken to be 1.
+
+#AlignmentAnnotation
+---++++ Alignment annotations
+
+An emit rule can be accompanied by zero or more _annotations_.
+Loosely, each annotation corresponds to a "hidden label" for one or more of the columns.
+An unannotated alignment can be annotated by running ==xrate== in "annotate" mode
+(either using the Viterbi algorithm, for HMMs, or Cocke-Younger-Kasami for SCFGs).
+Each annotation also has a _row label_, corresponding to the label of the ==#=GC== line
+in the annotated Main.StockholmFormat alignment.
+By default, any "unannotated" columns will be annotated with a period.
+
+The annotation can also be used for supervised training of the grammar,
+by pre-annotating a Main.StockholmFormat alignment (or database of alignments)
+and running ==xrate== on this file in "training" mode
+(using Forward-Backward for HMMs, or Inside-Outside for SCFGs).
+In this case, periods will be treated as wildcards (i.e. missing data).
+
+---++++ Gaps
+
+Various tags can be used to control the gap behavior of emit rules.
+
+	* ==gaps-ok== is the default tag, specifying that gaps will be treated as wildcards;
+	* ==no-gaps== means that gaps are not allowed at all;
+	* ==strict-gaps== means that gaps are allowed (and are treated as wildcards), but they must be all-or-nothing. Either every position contains a gap or none of them do.
+
+See also the comments on [[#GapCharacters][alternative gap characters]].
+
+#LengthModifiers
+---++++ Minimum & maximum subsequence length
+
+The ==minlen== and ==maxlen== keywords can be used within emit rules to constrain the minimum/maximum length of subsequences that can be generated by this particular nonterminal.
+
+These keywords can alternately be placed in [[#NonterminalModifiers][nonterminal modifier blocks]].
+
+---++++ Prefix, suffix, infix
+
+The ==infix== keyword is used within emit rules to indicate that the ==maxlen== for a particular nonterminal should automatically be set to the maximum infix-subsequence length specified at the command line.
+
+The ==prefix== and ==suffix== keywords can be used within emit rules to indicate to xrate that a particular nonterminal is used to generate prefix or suffix strings (e.g. flanking regions).
+The *only* effect of these keywords is to suppress warnings that usually occur if the ==maxlen== or ==minlen== properties are set to larger than the maximum infix-subsequence length.
+(These warnings do not apply to prefix or suffix sequences, which are not subject to the maximum infix-subseq-length constraint.)
+
+These keywords can alternately be placed in [[#NonterminalModifiers][nonterminal modifier blocks]].
+
+---++++ Example: codon emit nonterminal, forward strand
+
+Emit three nucleotides (=C1 C2 C3=), using a 64-state Markov chain over trinucleotides,
+from nonterminal ==CODON==
+
+<blockquote><pre>
+ (transform (from (CODON)) (to (C1 C2 C3 CODON*)))
+</pre></blockquote>
+
+---++++ Example: codon emit nonterminal, reverse strand
+
+A similar codon emission to the previous example, but reverse-complemented
+
+<blockquote><pre>
+ (transform (from (REVCOMP)) (to (~C3 ~C2 ~C1 REVCOMP*)))
+</pre></blockquote>
+
+---++++ Example: RNA basepair
+
+An RNA basepair, emitted from nonterminal ==BASEPAIR==, using a Markov chain with pseudoterminals ==LEFT_BASE== and ==RIGHT_BASE==, which are respectively annotated "<" and ">" on the "#=GC SS ..." line in the output alignment. The ==(minlen 5)== clause ensures that the two paired bases must be separated by at least 3 nucleotides.
+
+<blockquote><pre>
+ (transform (from (BASEPAIR)) (to (LEFT_BASE BASEPAIR* RIGHT_BASE))
+	 (annotate (column LEFT_BASE) (row SS) (label <))
+	 (annotate (column RIGHT_BASE) (row SS) (label >))
+	 (minlen 5))
+</pre></blockquote>
+
+---++++ Example: RNA basepair with probabilistic annotation
+
+An RNA basepair, emitted from nonterminal ==BASEPAIR==, using a Markov chain with pseudoterminals ==LEFT_BASE== and ==RIGHT_BASE==, which are respectively annotated on the "#=GC SS ..." line in the output alignment as "<" and ">" (with probability .9) or "_" (with probability .1). Such probabilistic annotation allows for cases where the basepair has been omitted in a training alignment. It also allows additional types of information (e.g. transcriptomics data) to be supplied to the model.
+
+<blockquote><pre>
+ (transform (from (BASEPAIR)) (to (LEFT_BASE BASEPAIR* RIGHT_BASE))
+	 (annotate (row SS)
+	  (emit (label (< >)) (prob .9))
+	  (emit (label (_ _)) (prob .1))))
+</pre></blockquote>
+
+
+---++++ Example: !CpG dinucleotide aversion
+
+Emit a single nucleotide (=DY=), given a previous nucleotide of "context" (=DX=),
+using a 16-state Markov chain over dinucleotides (pseudoterminal labels =DX= and =DY=),
+annotating the emitted column (=DY=) with character "D" in the row labeled ==EMIT_ANNOT== (NB in a Main.StockholmFormat alignment, this annotation row will be labeled ==#=GC EMIT_ANNOT==):
+
+<blockquote><pre>
+ (transform (from (DX F)) (to (DX DY F*))
+				(annotate (column DY) (row EMIT_ANNOT) (label D)))
+</pre></blockquote>
+
+---+++ Null nonterminals
+
+Production rules describing transformations from null nonterminals have a single nonterminal on the LHS,
+and either a single nonterminal or an empty list on the RHS.
+(An empty list is equivalent to a transition to the "end" nonterminal.)
+Null rules have no pseudoterminals or annotations.
+
+---++++ Example: null-to-end transition
+
+Transition from ==S== to end nonterminal, probability 0.5
+
+<blockquote><pre>
+ (transform (from (S)) (to ()) (prob 0.5))
+</pre></blockquote>
+
+---++++ Example: emit-to-null transition
+
+Transition from nonterminal ==REVCOMP*==
+(presumed to be a null nonterminal paired to a corresponding emit nonterminal ==REVCOMP==)
+to nonterminal ==S==, probability 1
+
+<blockquote><pre>
+ (transform (from (REVCOMP*)) (to (S)))
+</pre></blockquote>
+
+---+++ Bifurcation nonterminals
+
+Production rules describing transformations from bifurcation nonterminals
+have a single nonterminal on the LHS,
+and two nonterminals on the RHS.
+Bifurcation rules have no pseudoterminals or annotations.
+
+Only one bifurcation rule is allowed for each bifurcation nonterminal.
+The rule probability for a bifurcation rule is thus always taken to be 1.
+
+---++++ Example: bifurcation
+
+Bifurcating transformation from nonterminal ==S== into nonterminals ==S== and ==T==
+
+<blockquote><pre>
+ (transform (from (S)) (to (S T)))
+</pre></blockquote>
+
+#NonterminalModifiers
+---++ Nonterminal modifiers and properties
+
+---+++ Nonterminal declarations
+
+<blockquote><pre>
+ (nonterminal (name START))
+ (nonterminal (name INTERGENIC) (minlen 1) (sum-from))
+ (nonterminal (name FWD_PFOLD_S) (infix))
+ (nonterminal (name FWD_PFOLD_F) (minlen 2))
+...
+</pre></blockquote>
+
+The ==minlen==, ==maxlen==, ==prefix==, ==suffix==, ==infix==, ==sum-from== and ==gff== keywords can be collected together in a ==nonterminal== block that declares the nonterminal symbol along with any modifiers.
+(This is the preferred way to use these modifiers, and currently the only way of specifying ==minlen== or ==maxlen== constraints on nonterminals that do not have associated emissions.)
+
+The indel model declaration can also be located in this block, if desired.
+
+Note that the first ==nonterminal== block, if any such blocks are present, is used to decide the start nonterminal for the grammar.
+(If no such blocks are present, the start nonterminal is the nonterminal appearing on the left-hand side of the first transformation rule in the grammar.)
+
+See [[#LengthModifiers][above]] for a description of  ==minlen==, ==maxlen==, ==prefix==, ==suffix== & ==infix==.
+
+---+++ sum-from
+
+The ==sum-from== modifier is used to denote "sum nonterminals" (aka "sum states").
+These are nonterminals for which, during the CYK matrix fill algorithm, all outgoing transition probabilities are summed rather than maxed.
+This is crucial for certain constructs (like using several identical states to approximate an arbitrary length distribution over some feature).
+
+It's also useful for annotation, e.g. genefinding.
+As a general principle, you want your model to be as detailed and accurate as possible,
+so you might want to model the fine structure of a feature (e.g. secondary structure of a noncoding RNA gene).
+However, you don't care about the details of this submodel when calling the annotation;
+in fact, you want to sum those details out, and simply report an overall probability for this region being "an ncRNA"
+(as opposed to "an ncRNA with this particular structure").
+The ==sum-from== modifier allows you to do this.
+
+The following example tells the CYK algorithm to sum, rather than max, over all outgoing transitions from nonterminal ==S==:
+
+<blockquote><pre>
+(sum-from S)
+</pre></blockquote>
+
+Note that the ==sum-from== modifier can also appear inside a ==nonterminal== declaration block, in which case the name of the nonterminal is implicit.
+
+#GffOutput
+---+++ gff
+
+The ==gff== modifier is used to signal that a particular [[GFF format]] annotation should be output whenever a given nonterminal is used in the maximum-likelihood (CYK) parse tree.
+This provides a way to generate GFF directly from xrate.
+
+For example:
+
+<blockquote><pre>
+(gff
+ (nonterminal FWD_RNA_GENE)
+ (strand +)
+ (type ncRNA))
+
+(gff
+ (nonterminal REV_RNA_GENE)
+ (strand -)
+ (type ncRNA))
+</pre></blockquote>
+
+The nonterminals in this example refer to the [[DartGrammar:ncRnaDualStrand.eg][ncRnaDualStrand]] grammar.
+
+The only mandatory argument is ==nonterminal== which specifies the nonterminal that generates this GFF annotation.
+The GFF fields ==source==, ==type==, ==strand== & ==frame== can also (optionally) be specified.
+
+In the output, the GFF ==score== field contains the base2-log of either
+the posterior probability that the parse tree contained the given GFF feature (if the Inside-Outside algorithm was executed),
+or the CYK traceback probability for the feature (if Inside-Outside was not executed).
+The GFF ==type== field defaults to the name of the nonterminal, but may be overridden (as in the above example).
+The GFF ==source== field defaults to the grammar name, but may be overridden.
+
+If the Stockholm alignment input to xrate contains a ==#=GF ID &lt;foo&gt;== line, then the reference sequence (column 1) in xrate's GFF annotation will be ==&lt;foo&gt;==.
+Otherwise, the reference sequence will be the number of the alignment in the input set (i.e. ==Alignment1==, ==Alignment2==, ...).
+
+Posterior probabilities, indicating confidence levels for the annotation, are added to the GFF ==group== field
+if the [[XrateSoftware#Options][appropriate command-line option]] was specified.
+
+The GFF =group= field is as specified in the =gff= block, with two exceptions.
+As per the [[http://www.sequenceontology.org/gff3.shtml][GFF3 specification]],
+a unique =ID= is assigned to every feature.
+If the =group= field of the =gff= block contains =ID= or =Parent= tags,
+then these are substituted for the corresponding autogenerated IDs in the GFF output.
+
+For convenience, you can use S-expression nesting to specify tag-value pairs and multiple-value tuples in the group field,
+as an optional alternative to the usual GFF3 convention of using equals signs, semicolons and commas (i.e. ==tag1=value1;tag2=value2,value3;tag3=value4,value5,value6==).
+For example, this....
+<blockquote><pre>
+ (nonterminal (name S)
+			(gff (group ID=this Parent=this))
+			(gff (type blah2) (group (ID that1) (Parent that2)))
+			(gff (source blah3) (group (ID this3) (Parent (this3 this that1)))))
+</pre></blockquote>
+...is exactly equivalent to this...
+<blockquote><pre>
+ (nonterminal (name S)
+			(gff (group "ID=this;Parent=this"))
+			(gff (type blah2) (group "ID=that1;Parent=that2"))
+			(gff (source blah3) (group "ID=this3;Parent=this3,this,that1")))
+</pre></blockquote>
+
+
+---++ Annotation
+
+Various forms of annotation can be produced using several grammar directives.
+
+---+++ Stockholm #=GC lines
+
+See [[#AlignmentAnnotation][alignment annotation]].
+
+Stockholm =#=GC= lines are the only form of annotation that can also be used to constrain the training algorithms (i.e. to do partially or completely supervised training).
+
+---+++ GFF output
+
+See the [[#GffOutput][gff]] tag.
+
+---+++ Wiggle tracks
+
+<blockquote><pre>
+(wiggle (name Track1) (nonterminal S))
+(wiggle (name Track2) (terminal X))
+(wiggle (name Track3) (nonterminal CODON) (terminal POS1))
+(wiggle (name Track4)
+ (component (nonterminal S) (weight 1))
+ (component (terminal X) (weight 2))
+ (component (nonterminal CODON) (terminal POS1) (weight 3)))
+</pre></blockquote>
+
+The ==wiggle== field directs =xrate= to generate a [[wiggle format]] track with one data point per alignment column,
+using a weighted sum of posterior probabilities that the given alignment column was generated using a particular nonterminal/terminal combination.
+
+The above construct would generate four wiggle tracks:
+	* =Track1= for the posterior probability that a column was generated on a transition from nonterminal =S= (by any terminal);
+	* =Track2= for the posterior probability that a column was generated by terminal =X= (on a transition from any nonterminal);
+	* =Track3= for the posterior probability that a column was generated by terminal =POS1= on a transition from nonterminal CODON;
+	* =Track4= for the weighted combination =Track1+2*Track2+3*Track3=.
+
+If the Stockholm alignment input to xrate contains a ==#=GF ID &lt;foo&gt;== line, then the =name= field of the wiggle track will be ==&lt;foo&gt;==.
+Otherwise, the =name= field will be the number of the alignment in the input set (i.e. ==Alignment1==, ==Alignment2==, ...).
+
+---++ Other grammar fields
+
+---+++ fold-string-tag
+
+<blockquote><pre>
+(fold-string-tag SS_cons)
+</pre></blockquote>
+
+In some circumstances, it is desirable to constrain the set of subsequence coordinates that are visited during dynamic programming.
+For example, when using a secondary structure grammar (such as [[DartGrammar:pfold.eg][pfold.eg]])
+for the purpose of ancestral reconstruction on a large alignment, one typically does not want the algorithm to iterate over (or allocate memory for) all L^2 subsequences.
+
+The ==fold-string-tag== can be used to direct xrate to interpret a particular ==#=GC== line as a secondary structure,
+and restrict the dynamic programming matrix (and iteration) to subsequences consistent with that structure.
+
+#XrateMacros
+%INCLUDE{XrateMacros}%
+
+%META:TOPICMOVED{by="IanHolmes" date="1134903307" from="Main.XRateFormat" to="Main.XrateFormat"}%
