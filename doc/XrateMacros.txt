@@ -1,0 +1,407 @@
+%META:TOPICINFO{author="IanHolmes" date="1327623663" format="1.0" version="1.36"}%
+%META:TOPICPARENT{name="XrateFormat"}%
+Documentation of the macro language that forms part of the xrate format.
+
+For the longer & complete description of the format, including the grammar description as well as these macros, please see the [[xrate format]] page.
+
+<blockquote>
+%TOC%
+</blockquote>
+
+%STARTINCLUDE%
+---+ The xrate macro preprocessor
+
+Several kinds of macro are automatically expanded by xrate before any training or alignment annotation takes place.
+Macro expansion is a one-off, irreversible event:
+if the grammar file is saved after macro substitution has taken place,
+the original macros will not be recoverable.
+
+Preprocessing and parsing take place in the following order:
+
+	1 Parsing of the Stockholm alignment file;
+	1 Processing of ==&amp;include== directives (everything from here onwards refers to the grammar file);
+	1 Parsing of the ==alphabet== declaration;
+	1 Expansion of ==&amp;define==, ==&amp;foreach== and ==&amp;warn== directives (a preorder tree traversal, with some lookahead);
+	1 Reduction of list, logic, arithmetic & other functions (a postorder tree traversal);
+	1 Evaluation of any ==&scheme== or ==&scheme-discard== expressions (if compiled with Guile Scheme support);
+	1 Parsing of the (generated) phylo-grammar.
+
+---++ Including files
+
+<blockquote><pre>
+(&amp;include ~/dart/grammars/hky85.eg)
+</pre></blockquote>
+
+The ==&amp;include== directive includes another file (just like ==#include== in C).
+Shell globbing is performed on the filename, so you can use shorthands like tildes and wildcards, as in the above example.
+
+---++ Printing warnings
+
+<blockquote><pre>
+(&amp;warn Generating column COLUMN ...)
+</pre></blockquote>
+
+Prints the atoms following ==&amp;warn== to standard error.
+Useful to monitor progress during generation of large grammars, e.g. this column-specific model (from whence the example is taken):
+DartGrammar:site_specific.eg
+
+---++ Simple substitutions
+
+The ==&amp;define== macro is used to indicate that one expression should be substituted for another.
+
+For example,
+
+<blockquote><pre>
+(&amp;define X yellow)
+curious X
+(mellow X)
+</pre></blockquote>
+
+evaluates to
+
+<blockquote><pre>
+curious yellow
+(mellow yellow)
+</pre></blockquote>
+
+Currently, only atomic expressions may be substituted in; so, for example, ==(&amp;define X (bright yellow))== is not a legal usage,
+since ==(bright yellow)==, unlike ==yellow==, is a list rather than an atom.
+
+Note also that the binding is static. You cannot use ==&amp;define== to create a dynamic function that evaluates to different values at different times.
+If this is the sort of thing you need to do, you will be better off using Scheme (perhaps with the experimental Scheme language extensions to xrate).
+
+
+---++ List operations
+
+The following operators fold a list into a single element during macro preprocessing.
+
+---+++ Concatenation
+
+The ==&amp;cat== function (or the shorthand ==.==) concatenates a list of atoms into a single atom.
+For example,
+
+<blockquote><pre>
+(&amp;. X Y Z)
+(&amp;cat X Y Z)
+</pre></blockquote>
+
+both evaluate to
+
+<blockquote><pre>
+XYZ
+</pre></blockquote>
+
+---+++ Summation
+
+The ==&amp;sum== function (or the shorthand ==+==) takes the sum of a list of integer values.
+For example,
+
+<blockquote><pre>
+(&amp;+ 1 10 -5)
+(&amp;sum 1 10 -5)
+</pre></blockquote>
+
+both evaluate to
+
+<blockquote><pre>
+6
+</pre></blockquote>
+
+---+++ Multiplication
+
+The ==&amp;mul== function (or the shorthand ==*==) takes the product of a list of floating-point values.
+For example,
+
+<blockquote><pre>
+(&amp;* 2 3 5)
+(&amp;mul 2 3 5)
+</pre></blockquote>
+
+both evaluate to
+
+<blockquote><pre>
+30
+</pre></blockquote>
+
+---++ Binary operations
+
+---+++ Division
+
+<blockquote><pre>
+(&amp;/ X Y)
+(&amp;div X Y)
+</pre></blockquote>
+
+Both evaluate to the floating-point division ==X / Y==.
+
+---+++ Modulus
+
+<blockquote><pre>
+(&amp;% A B)
+(&amp;mod A B)
+</pre></blockquote>
+
+Both evaluate to the integer modulus operation ==X mod Y==.
+
+---+++ Subtraction
+
+<blockquote><pre>
+(&amp;- X Y)
+(&amp;sub X Y)
+</pre></blockquote>
+
+Both evaluate to the integer subtraction ==X - Y==.
+
+---++ Iterations
+
+The following macros generate a list of elements from a template during preprocessing.
+
+---+++ foreach
+
+<blockquote><pre>
+(&amp;foreach VAR (LIST) EXPR)
+</pre></blockquote>
+
+Inserts one copy of EXPR for every element of LIST.
+Any occurrences of VAR within EXPR will be replaced by the corresponding element of LIST.
+For example,
+
+<blockquote><pre>
+(&amp;foreach VAR (1 2 3) (VAR + 1))
+</pre></blockquote>
+
+evaluates to
+
+<blockquote><pre>
+(1 + 1) (1 + 2) (1 + 3)
+</pre></blockquote>
+
+==EXPR== can include more than one item, e.g.
+
+<blockquote><pre>
+(&amp;foreach VAR (1 2 3) VAR *)
+</pre></blockquote>
+
+evaluates to
+
+<blockquote><pre>
+1 * 2 * 3 *
+</pre></blockquote>
+
+---+++ foreach-integer
+
+As ==foreach==, but the list is specified as an integer range.
+This can be useful for specifying arrays of states, c.f. [[http://hmmer.janelia.org/][Profile HMMs]].
+
+<blockquote><pre>
+(&amp;foreach VAR (MINVAL MAXVAL) EXPR)
+</pre></blockquote>
+
+For example,
+
+<blockquote><pre>
+(&amp;foreach-integer VAR (1 3) VAR *)
+</pre></blockquote>
+
+evaluates to
+
+<blockquote><pre>
+1 * 2 * 3 *
+</pre></blockquote>
+
+---+++ foreach-token
+
+As ==foreach==, but the list is taken to be the set of alphabet tokens.
+
+<blockquote><pre>
+(&amp;foreach-token VAR EXPR)
+</pre></blockquote>
+
+---+++ foreach-node, foreach-branch, foreach-leaf, foreach-ancestor
+
+As ==foreach==, but the list is taken to be [some subset of] the node names in the tree.
+(NB this macro is data-dependent, and it only works if the input alignment database contains exactly one alignment;
+"the tree" refers to the tree specified in the ==#=GF NH== field of this alignment.)
+
+<blockquote><pre>
+(&amp;foreach-node VAR EXPR)
+</pre></blockquote>
+
+The various forms allow iteration over
+ all named nodes (&amp;==&amp;foreach-node==),
+ all named nodes except the root (&amp;==&amp;foreach-branch==),
+ all named leaf nodes (&amp;==&amp;foreach-leaf==)
+ or
+ all named internal nodes (&amp;==&amp;foreach-ancestor==).
+
+---++ Logic operations
+
+You can do some basic logic in the macro language.
+For more elaborate computations, use the built-in [[#SchemeInterpreter][scheme interpreter]].
+
+---+++ Equality
+
+<blockquote><pre>
+(&amp;= SEXPR1 SEXPR2)
+(&amp;eq SEXPR1 SEXPR2)
+
+(&amp;!= SEXPR1 SEXPR2)
+(&amp;neq SEXPR1 SEXPR2)
+</pre></blockquote>
+
+If the two S-expressions, ==SEXPR1== and ==SEXPR2==, are equal/inequal, evaluate to ==1==; otherwise, evaluate to ==0==.
+
+---+++ Arithmetic comparisons
+
+<blockquote><pre>
+(&amp;> EXPR1 EXPR2)
+(&amp;gt EXPR1 EXPR2)
+
+(&amp;< EXPR1 EXPR2)
+(&amp;lt EXPR1 EXPR2)
+
+(&amp;>= EXPR1 EXPR2)
+(&amp;geq EXPR1 EXPR2)
+
+(&amp;<= EXPR1 EXPR2)
+(&amp;leq EXPR1 EXPR2)
+</pre></blockquote>
+
+Arithmetic comparisons between numerical expressions, returning ==1== for true and ==0== for false.
+
+---+++ Conditional operator
+
+<blockquote><pre>
+(&amp;? TEST_EXPR TRUE_EXPR FALSE_EXPR)
+(&amp;if TEST_EXPR TRUE_EXPR FALSE_EXPR)
+</pre></blockquote>
+
+If the integer value of ==TEST_EXPR== is nonzero, evaluates to ==TRUE_EXPR==; otherwise, evaluates to ==FALSE_EXPR==.
+
+---+++ Boolean operations
+
+<blockquote><verbatim><code>
+(&amp;and X Y)
+(&amp;or X Y)
+(&amp;not X)
+</code></verbatim></blockquote>
+
+These do what you'd expect.
+
+==&amp;and== and ==&amp;or== don't just have to be binary; they can be list operators too, e.g.
+
+<blockquote><verbatim><code>
+(&amp;and X Y Z)
+(&amp;or A B C D E)
+</code></verbatim></blockquote>
+
+---++ Miscellaneous functions
+
+---+++ ASCII character manipulation
+
+<blockquote><pre>
+(&amp;chr INT)
+(&amp;ord CHAR)
+</pre></blockquote>
+
+==&amp;ord== evaluates to the ASCII value of character ==CHAR==.
+
+==&amp;chr== evaluates to the character whose ASCII value is given by ==INT==.
+
+---+++ Numerical functions
+
+<blockquote><verbatim><code>
+(&amp;int EXPR)
+</code></verbatim></blockquote>
+
+==&amp;int== evaluates to the integer value of ==EXPR==.
+
+---++ Special constants
+
+Some special constants are auto-substituted during macro expansion.
+
+---+++ &TOKENS
+
+Evaluates to the number of tokens in the terminal alphabet.
+
+---+++ &NODES, &BRANCHES, &LEAVES, &ANCESTORS
+
+Each of these evaluates to the number of tree nodes of a particular class.
+The respective classes are
+	* all nodes: ==&amp;NODES==
+	* all nodes except the root: ==&amp;BRANCHES==
+	* all leaf nodes: ==&amp;LEAVES==
+	* all internal nodes: ==&amp;ANCESTORS==
+
+As with ==foreach-node==, etc.,
+these macros only work if the input alignment database contains exactly one alignment.
+
+---+++ &COLUMNS
+
+Evaluates to the number of columns in the alignment.
+
+This macro only works if the input alignment database contains exactly one alignment.
+
+#SchemeInterpreter
+---++ Arbitrary Scheme expressions
+
+At some point, the xrate macros may become too limiting for you, at which point you may decide you need to write an actual program to generate your grammar (hey, it happens).
+If you compiled xrate on a system with the [[http://www.gnu.org/software/guile/guile.html][Guile]] library present, you can evaluate arbitrary [[http://en.wikipedia.org/wiki/Scheme_(programming_language)][Scheme]] expressions inside a grammar file.
+
+---+++ &scheme
+
+The ==&scheme== macro evaluates a Scheme expression and interpolates the result.
+It is approximately equivalent to the [[http://www.r6rs.org/final/html/r6rs/r6rs-Z-H-14.html#node_sec_11.17][ ==unquote-splicing== ]] expression in a Scheme ==quasiquote== environment.
+
+For example, the following code will be transformed to ==(blakes 7)== by the Scheme evaluation phase of the macro preprocessor, before your grammar is parsed by the xrate phylogrammar interpreter:
+<blockquote><pre>
+(blakes
+ (&amp;scheme
+  (define x 3)
+  (define
+	(y a)
+	(+ a 5)))
+ (&amp;scheme (y 2)))
+</pre></blockquote>
+
+Evaluation of Scheme expressions is performed *after* expansion of all other macros.
+The order of evaluation is a depth-first recursive traversal of the S-expression tree.
+
+If you want to evaluate a Scheme expression and discard the return value (i.e. to change the Scheme environment without adding anything to the grammar),
+you can use ==&scheme-discard== in place of ==&scheme==.
+This is rarely necessary, as the most common way to change the Scheme  environment is with a ==define== (as in the above example),
+which returns an unspecified return value that is automatically discarded anyway.
+
+Within the Scheme expression, the input alignment is bound to the Scheme symbol ==alignment==, and the Scheme primitives provided by xrate are all available.
+
+These keywords and their behavior are currently documented here:
+DartSchemeFunctions
+
+For example, the following code is equivalent to the ==&COLUMNS== macro:
+<blockquote><pre>
+(&scheme (stockholm-column-count alignment))
+</pre></blockquote>
+
+
+---++ Macro debugging
+
+To dump the macro-expanded, grammar to a file after post-processing, use the ==-x== option to xrate.
+(Note: this will not include any constructs that were not parsed correctly. See below for more on this.)
+
+In combination with the ==--noannotate== option, which disables annotation (and hence prevents any dynamic programming from taking place),
+this can be useful to test correct usage of macros.
+For example:
+
+<blockquote><pre>
+cd dart
+xrate src/handel/t/short.stk
+		-g grammars/ancestral_gc.eg
+		-x expanded.eg
+		--noannotate > /dev/null
+cat expanded.eg
+</pre></blockquote>
+
+Note that the ==-x== option dumps the grammar *after* parsing it.
+If your macros generated any invalid syntax (i.e. text that was not recognized by xrate's grammar parser), this will *not* appear in the grammar file dumped by the ==-x== option.
+If you want to debug all macro expansions (including any invalid syntax), use the logging option  ==-log ECFG_MACROS== to dump out the grammar file after macro expansion, but prior to parsing.
+

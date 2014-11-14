@@ -1,0 +1,89 @@
+%META:TOPICINFO{author="IanHolmes" date="1327543365" format="1.0" version="1.9"}%
+%META:TOPICPARENT{name="XrateFormat"}%
+---+ XRate grammar files
+
+This page describes the repository of XRATE grammar files included in the DART software package.
+
+See [[xrate format]] for a description of the file format.
+
+%STARTINCLUDE%
+
+---++ Example xrate grammar files
+
+The ==[[DartRepositoryDir:grammars][dart/grammars]]== subdirectory includes many example grammars for DNA, protein and RNA sequences.
+
+Here are a few examples of working xrate grammar files.
+The techniques illustrated here can be mixed and matched.
+Some of the grammars use [[xrate macros]], which is like a tiny lisp-like dialect for specifying repetitively-structured grammars.
+
+---+++ Point substitution models
+
+Grammars that implement point substitution models have two (almost trivial) rules:
+==S -> X S== where ==S== is a nonterminal and ==X== is an alignment column,
+and ==S -> End==.
+The emitted alignment column is generated on some phylogeny (which can be specified in the input [[Stockholm format]] alignment file, or will otherwise be estimated from that alignment)
+using some substitution rate matrix (which is specified as part of the grammar).
+The symbol ==X== is called a _pseudoterminal_ in xrate format jargon.
+
+These grammar files, then, effectively just illustrate the file format for the substitution rate matrix
+& the notational principle of tying rate matrices to grammars using pseudoterminals:
+
+	* Classic low-dimensional models of point substitution
+		* [[DartGrammar:jukescantor.eg][jukescantor.eg]] -- Jukes and Cantor's 1969 model (uniform base frequencies, single substitution rate)
+		* [[DartGrammar:kimura2.eg][kimura2.eg]] -- Kimura's 1980 two-parameter model (transition/transversion bias)
+		* [[DartGrammar:fels81.eg][fels81.eg]] -- Felsenstein's 1981 model (non-uniform base frequencies)
+		* [[DartGrammar:hky85.eg][hky85.eg]] -- The HKY85 model (transition/transversion bias *and* non-uniform base frequencies)
+		* [[DartGrammar:rev.eg][rev.eg]] -- General reversible model (DNA bases)
+		* [[DartGrammar:irrev.eg][irrev.eg]] -- General irreversible model (DNA bases)
+		* [[DartGrammar:nullprot.eg][nullprot.eg]] -- General reversible model (amino acids)
+		* [[DartGrammar:sn.eg][sn.eg]] -- Rough approximation to <nop>CodeML's f4x3 model (codon model with site-specific nucleotide frequencies, transition/transversion ratio and synonymous/nonsynonymous rates)
+			* See also [[tips for codon matrices]]
+
+The above xrate files illustrate the idea of a basic point substitution model.
+The following xrate files combine several such models, using a grammar to describe
+how different substitution models are used for different alignment columns.
+
+---+++ Feature predictors
+
+	* Protein grammars
+		* [[DartGrammar:nullprot.eg][nullprot.eg]] -- the general reversible model for amino acids
+		* [[DartGrammar:prot3.eg][prot3.eg]] -- 3-state protein phylo-HMM _a la_ Thorne, Goldman & Jones
+
+	* RNA folding grammars (following Hein, Knudsen _et al_)
+		* [[DartGrammar:pfold.eg][pfold.eg]] -- RNA folding (see also Main.KnudsenHein)
+		* [[DartGrammar:codon.eg][codon.eg]] -- empirical codon model
+		* [[DartGrammar:dinuc.eg][dinuc.eg]] -- context-dependent substitution process, e.g. !CpG avoidance
+
+	* RNA gene prediction grammars (following Jakob Skou Pedersen, Irmtraud Meyer _et al_)
+		* [[DartGrammar:ncRnaDualStrand.eg][ncRnaDualStrand.eg]] -- dual-strand gene-predicting ncRNA grammar similar to EvoFold
+		* [[DartGrammar:rnadecoder.eg][rnadecoder.eg]] -- overlapping structure/ORF grammar based on RNA-decoder. Heavy use of macros
+			* [[DartGrammar:XDecoder.eg][XDecoder.eg]] -- an improved version of the overlapping structure/ORF grammar, by OscarWestesson
+
+---+++ Lineage-specific evolutionary grammars
+
+	* Lineage-specific phylo-grammars, following AdamSiepel, David Haussler _et al_
+		* [[DartGrammar:conservation_phylohmm.eg][conservation_phylohmm.eg]] -- phylo-HMM for detecting regions of high conservation. Makes use of iteration macros. Inspired by PhastCons
+		* [[DartGrammar:rescaled_branch_phylohmm.eg][rescaled_branch_phylohmm.eg]] -- phylo-HMM for detecting regions where one branch of the tree has been rescaled; uses tree iterations. Inspired by DLESS
+		* [[DartGrammar:ancestral_gc.eg][ancestral_gc.eg]] -- model for measuring lineage-specific GC content using tree iterations
+
+---+++ Site-specific models
+
+	* Column-by-column substitution models, following e.g. Bruno & Halpern, Eisen & Moses, etc.
+		* [[DartGrammar:site_specific_protein.eg][site_specific_protein.eg]] -- site-specific frequencies for protein substitution models using the iteration macros. Inspired by RIND
+		* [[DartGrammar:site_specific.eg][site_specific.eg]] -- site-specific frequencies for DNA substitution models (only difference is the alphabet)
+
+---+++ Grammars that use the Scheme interpreter
+
+	* Site-to-site variation models
+		* [[DartGrammar:autodiscgamma.eg][autodiscgamma.eg]] -- autocorrelated discretized-gamma distribution over rates
+			* %PMIDC{7713447}%
+
+	* Codon models
+		* [[DartGrammar:nielsen-yang.eg][nielsen-yang.eg]] -- Nielsen-Yang synonymous/nonsynonymous transition/transversion codon model
+		* Uses the Dart Scheme [[DartRepository:scheme/xrate-stdlib.scm][standard library]]
+			* %PMIDC{9539414}%
+
+%STOPINCLUDE%
+
+-- Main.IanHolmes - 18 Mar 2009
+
