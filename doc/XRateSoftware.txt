@@ -1,3 +1,337 @@
-%META:TOPICINFO{author="IanHolmes" date="1149628141" format="1.0" version="1.2"}%
-%REDIRECT{"Main.XrateSoftware"}%
+%META:TOPICINFO{author="IanHolmes" date="1301411739" format="1.0" version="1.122"}%
+---+ XRATE
+
+A page about *xrate*, an open-source package for phylogenetic comparative genomics.
+
+%BLOC%
+
+---++ Introduction
+
+*xrate* is an open-source package for phylogenetic comparative genomics.
+Its capabilities include maximum likelihood phylogeny, ancestral sequence reconstruction, alignment annotation and model estimation.
+
+Technically, xrate is an interpreter for [[PhyloGrammars][phylo-grammars]], offering
+	* fast EM-based parameterisation of evolutionary grammars for annotation of multiple sequence alignments.
+	* maximum-likelihood analysis of multiple alignments and phylogenies using phylo-grammars.
+	* maximum _a posteriori_ reconstruction of ancestral sequences, using point substitution models or phylo-grammars.
+	* estimation of expected transition counts and dwell times for continuous-time Markov chains on trees.
+	* utilities for working with & displaying annotated alignments & trees.
+
+The programs and related utilities are distributed in the Main.DART package.
+See below for details.
+
+xrate's design was inspired by several other tools:
+the generic dynamic programming engine [[http://www.ebi.ac.uk/Dynamite/][Dynamite]],
+the phylogenetic hypothesis testing package [[http://www.hyphy.org/][HyPhy]]
+and various specialized stochastic grammars including
+[[http://www.daimi.au.dk/~compbio/rnafold/][PFold]],
+[[http://hmmer.wustl.edu/][HMMer]],
+[[http://genome.ucsc.edu/cgi-bin/hgTrackUi?g=exoniphy&db=hg16][ExoniPhy]],
+[[http://compgen.bscb.cornell.edu/~acs/research.html][PhastCons]],
+& RNA-Decoder.
+
+A reasonably self-contained description of most of the theory behind phylo-grammars
+can be found in Ian Holmes' [[GraduateClass][graduate class]] lecture notes
+(see e.g. [[%YAMURLPATH%/bioe290b/fasc3.pdf][chapter 3]], section entitled "Evolutionary Hidden Markov models").
+A working definition can be found on the [[phylo grammars]] page.
+
+Briefly, *xrate* brings together in one package a lot of the capabilities of several other
+software tools for molecular evolutionary analysis,
+such as the "phylo-HMMs" and "[[Main.PhyloGrammars][phylo-grammars]]" of Siepel, Pedersen, Haussler _et al_,
+the RNA folding grammars of [[Main.KnudsenHein][Knudsen and Hein]],
+the protein secondary structure HMMs of Goldman, Thorne and Jones,
+the 3-state %PMIDL{pmid="8583911" name="Churchill-Felsenstein phylo-HMM"}%
+and the various models of [[http://www.hyphy.org/][HyPhy]] or [[http://abacus.gene.ucl.ac.uk/software/paml.html][PAML]].
+
+*xrate* allows a wide family of such grammars to be specified using Main.XrateFormat, a simple format
+based on LispSExpressions.
+A grammar can be "trained" on a database of multiple alignments for measurement of evolutionary rates.
+Alternatively (or additionally), the grammar can be used to annotate alignments with predicted features (genes, conserved elements etc.)
+The program features an easy-to-use Unix command-line interface, and a detailed logging system.
+
+Training (or, more precisely, maximum likelihood parameter estimation)
+uses the ExpectationMaximization algorithm for phylogenetic grammars.
+For speed, the implementation uses some tricks, such as eigenvector decomposition of the rate matrices.
+
+Of course, ML (in general) and EM (in particular) are not perfect, and the training algorithm can get stuck at suboptimal solutions.
+With some care, such problems can often be avoided by careful choice of initial seed parameters and pseudocounts.
+See [[known issues with DART]] for more info on this and other issues.
+
+---++ Getting xrate
+
+xrate is distributed as part of the DART package.
+To install it, do the following:
+
+	1 Download the <nop>DART package (see [[downloading dart]] for instructions on how to do this)
+	1 Type ==cd dart; ./configure; make xrate== (see [[building dart]] for more info)
+	1 The ==xrate== executable is created in the ==dart/bin== subdirectory.
+	1 The example grammars are in the ==dart/grammars== subdirectory.
+
+---+ Using xrate
+
+---++ General tips
+
+xrate can auto-estimate trees if they're missing from the dataset. It is recommended to split the training into two steps for purposes of reproducibility/debugging:
+
+	1 estimate trees for the training alignments and save to an intermediate file;
+	1 do the actual training.
+
+Step 1 requires a grammar containing a rate matrix over individual residues (e.g. DartGrammar:nullprot.eg for amino acids,  DartGrammar:jukescantor.eg or DartGrammar:hky85.eg for nucleotides).
+
+The [[Known Issues with DART]] page has lots of useful heuristic tips and guidelines.
+
+One frequently asked question is "[[How much training data do I need]]?" Follow the link for a back-of-envelope calculation.
+
+---++ AJAX web application
+
+XREI is a (no-longer maintained) web interface to xrate.
+It uses AJAX technology (=Asynchronous Javascript And XML),
+and offers visualization of xrate models using BubblePlots and GraphViz state diagrams.
+
+---++ Command-line usage
+
+The general usage is:
+
+<blockquote><pre>
+ xrate	[ options ]	ALIGNMENT_FILE
+</pre></blockquote>
+
+The alignment, which should be in [[Stockholm format]], is annotated and printed to standard output.
+
+The program can also be used as a [[http://www.bellevuelinux.org/filters.html][filter]]:
+
+<blockquote><pre>
+ cat ALIGNMENT_FILE  |  xrate  [ options ]
+</pre></blockquote>
+
+---+++ Options
+
+Some of the most commonly-used command-line options are:
+
+| *Option* | *Meaning* |
+| ==-h== | print long help message including all command-line options |
+| ==-g FILE== | load [[xrate format]] grammar from specified file |
+| ==-t FILE== | train grammar (i.e. estimate parameters from data) and output to file |
+| ==-e FILE== | optimize tree using null model from specified grammar file |
+| ==-a== | annotate the alignment using the most likely parse tree (actually, this is turned on by default) |
+| ==-noa== | turn off the annotation step (saves a small amount of time if annotation is not required, e.g. when training the model) |
+| ==-c== | report confidence levels (i.e. posterior probabilities) for the maximum-likelihood annotation |
+| ==-ar== | ancestral reconstruction: estimate most probable sequences at missing nodes |
+| ==-log N== | print diagnostic log messages down to numeric level N (e.g. ==-log 5==). Lower log levels are more verbose; 9 is the default (almost silent). See DartLogging |
+| ==-log TAG== | print log messages with tag TAG (e.g. ==-log RATE_EM==). This option may significantly slow things down, since it pulls in a lot of regexp code. See DartLogging |
+
+Note that many of these options have longer (possibly easier-to-remember) synonyms.
+For example, ==--grammar== instead of ==-g==, or ==--train== instead of ==-t==.
+
+For a complete list of options & their synonyms, type:
+
+<blockquote><pre>
+xrate -h
+</pre></blockquote>
+
+---++++ Useful logging directives
+
+The following log tags are quite useful to monitor miscellaneous aspects of program execution,
+such as long-running jobs, memory-intensive jobs or grammar preprocessing:
+
+| *Option* | *What it does* |
+| ==-log ALLOC== | Prints a log message before trying to allocate memory for dynamic programming matrices |
+| ==-log ECFGDP== | Displays progress during a dynamic programming matrix fill |
+| ==-log ECFG_EM== | Displays progress during EM training |
+| ==-log SEXPR_INCLUDE== | Prints a log message whenever a file is included by the preprocessor |
+| ==-log SEXPR_EXPAND== | Prints a log message for every element visited by the preprocessor in an iteration macro |
+
+Most log tags are undocumented... try grepping the source code for ==CTAG== or ==CLOG== if you're keen :-)
+
+---++ Sequence of operations
+
+The order of operations that occurs when the program runs is as follows:
+
+	1 The alignment database is loaded into memory
+	1 If a separate tree-estimation grammar was specified, it is used to fit phylogenetic trees:
+		1 First, missing trees are estimated by neighbor joining
+		1 Next, branch lengths of all trees are optimized using the EM algorithm
+	1 Any [[XrateFormat##XrateMacros][macros]] in the grammar file are expanded
+	1 If the "training" option was specified then the Inside-Outside (or Forward-Backward) and EM algorithms are used to train the grammar, which is then saved to a file
+		* The expected counts calculated during the last round of EM are also saved to the trained grammar file
+	1 For each alignment, the following annotation steps are executed:
+		1 If the "annotation" option was specified then the CYK (or Viterbi) algorithm is used to find the maximum-likelihood parse for each alignment in the database
+			* The "annotation" option is actually the default; to turn off this behavior, you need the ==--noannotate== option (==-noa== for short)
+			* The ML parse for each alignment is used to annotate predicted features in the alignment
+			* If the "confidence" option was specified, then the posterior probabilities of the maximum-likelihood feature annotations are calculated using the Inside-Outside (or Forward-Backward) algorithm
+		1 If the  "posterior probability" option was specified, then the posterior probability of every possible feature annotation is calculated using the Inside-Outside (or Forward-Backward) algorithm
+		1 If the "sum score" option was specified, then the likelihood of each alignment (summed over parses) is calculated using the Inside (or Forward) algorithm
+		1 Finally, the alignment is printed to standard output, together with any scores, feature annotations or posterior probabilities that were calculated
+
+---++ Examples
+
+---+++ Simple annotation example
+
+<blockquote><pre>
+xrate -g grammar.eg align.stk
+</pre></blockquote>
+
+This does the following:
+
+	1 Load alignment from StockholmFormat file “align.stk”.
+		* This file is assumed to include a phylogenetic tree. If the tree is not present and needs to be estimated on-the-fly, a point substitution model should be specified using the ==-e== option (see example below).
+	1 Load grammar from XrateFormat file “grammar.eg”.
+	1 Estimate tree by neighbor-joining .
+	1 Do CYK algorithm (or Viterbi, depending on whether grammar is an HMM or SCFG) to find most likely parse.
+	1 Annotate output alignment using most likely parse.
+
+---+++ Simple training example
+
+<blockquote><pre>
+xrate -g grammar2.eg -e nullmodel.eg -t trained.eg -noa -log 5 align2.stk 
+</pre></blockquote>
+
+This does the following:
+
+	1 Load alignment from file “align2.stk”.
+	1 Load grammar from file “grammar2.eg”.
+	1 Estimate phylogenetic tree using substitution model in grammar file "nullmodel.eg", if there isn’t a tree annotated to the alignment already (first by neighbor-joining, then EM on the branch lengths).
+	1 Train the grammar by EM, using the Inside-Outside algorithm (if grammar is an SCFG) or Forward-Backward (if it's an HMM).
+	1 Save trained grammar to file “trained.eg”.
+
+The ==-log 5== option implies that log messages of level 5 and higher will be displayed.
+
+---+++ Estimating an amino acid matrix
+
+The above examples are rather abstract. Here's something a bit more concrete: how to estimate an amino acid matrix.
+
+You first need to get your alignment data into a [[Stockholm format]] file, e.g. ==my_protein_alignment.stock== (see [[Stockholm tools]] for file format conversion utilities).
+
+Then do something like this:
+
+<blockquote>
+<verbatim>
+% cd dart
+% xrate my_protein_alignment.stock -e grammars/nullprot.eg -g grammars/nullprot.eg -t my_amino_acid_matrix.eg -log 6
+</verbatim>
+</blockquote>
+
+---+++ Complex ncRNA gene prediction example
+
+See XratePipeline (documentation is pretty rough right now).
+
+---++ Interfaces to scripting languages
+
+---+++ Perl modules
+
+A set of (barely documented) Perl modules for interfacing to dart programs exists in the ==dart/python== directory.
+
+The [[PhyloGram perl module]] can be used to construct complex grammars.
+(Of course, what's really needed are some Lisp constructs to do this...! The XrateMacros are a start.)
+
+---+++ Python modules
+
+AndreasHeger has written a set of python modules in the ==dart/python== directory.
+
+---+ Further documentation
+
+---++ File format specifications
+
+---+++ xrate grammar files
+
+	* Grammar file format reference: [[xrate format]]
+		* Grammar file macros: [[xrate macros]]
+		* Example grammar files: [[xrate grammars]]
+
+---+++ Alignments, phylogenies & annotations
+
+	* Alignment files: [[Stockholm format]]
+		* Trees: [[Newick format]] (embedded in alignment files)
+		* Annotations: [[GFF format]] (embedded in alignment files by default; may be output separately)
+
+---++ Background info on phylo-grammars
+
+	* Teaching.BioE241 notes (UC Berkeley Bioengineering graduate class)
+	* Biowiki page on [[phylo grammars]]
+	* Siepel & Haussler [[http://compgen.bscb.cornell.edu/~acs/phylohmm.pdf][paper]] on phylo-HMMs %PDF%
+
+---++ Presentations
+
+	* [[%YAMURLPATH%/movies/UCSC-June7-2006.mov][UCSC-June7-2006.mov]]: presentation given at UCSC's [[http://www.cbse.ucsc.edu/][CBSE]], 6/7/2006 (19 MB Quicktime movie)
+	* [[%ATTACHURL%/xgram.ppt][xgram.ppt]]: xgram presentation from [[lab meeting]] on 3/10/2006 (3 MB powerpoint presentation)
+
+
+---++ Animations
+
+Several animations of phylo-grammars can be found on the [[Main.PhyloFilm#PhyloGrammars][<nop>PhyloFilm]] page.
+
+
+---++ References
+
+The *xrate* program itself is described in the following paper:
+
+	* %PMIDC{17018148}%
+		* [[%YAMURLPATH%/Papers/KlostermanHolmes2005-IrreversibleEM.pdf][Supplementary material]]. Includes description of EM algorithm for irreversible substitution models
+
+Other relevant papers:
+
+	* %PMIDC{11955022}%
+
+---++ Related tools
+
+---+++ simgram
+
+The ==simgram== program generates sample alignments given an [[xrate format]] phylo-grammar file
+and a [[Newick format]] phylogenetic tree.
+
+To build ==simgram== [[DownloadingDart][download]] <nop>DART and then type ==cd dart; make simgram==
+or just ==cd dart; make all==.
+The compiled binary lands in ==dart/bin==.
+
+For a list of command-line options type ==simgram --help==.
+
+Not quite all phylo-grammars that can be described by an xrate-format file can be simulated by ==simgram==.
+In particular, macro expansion is limited (alignment- and tree-dependent macros are not expanded)
+and there are no indels, nor hidden classes in substitution models.
+
+---+++ visualizeRates.pl
+
+The [[DartPerl:visualizeRates.pl][visualizeRates.pl]] script renders Main.BubblePlots from xrate format grammar files.
+
+---+++ dartlog.pl
+
+The [[DartPerl:dartlog.pl][dartlog.pl]] script uses ANSI terminal color to visualize the information in dart logfiles.
+
+---+++ colorstock.pl
+
+The [[DartPerl:colorstock.pl][colorstock.pl]] script uses ANSI terminal color to visualize basepairing patterns
+in Stockholm alignments of RNA (or DNA) sequences that have been annotated with secondary structures.
+
+---+++ copyparams.pl
+
+[[DartPerl:copyparams.pl][copyparams.pl]] is a short script that copies selected parameter values from one xrate model file to another.
+It is useful for modularized training of complex models.
+
+---+++ Other Perl scripts
+
+See the following pages for more utilities relating to xrate and its various file formats:
+
+	* [[Dart Perl scripts]]
+	* [[Stockholm tools]]
+	* [[GffTools][GFF tools]]
+
+---+ Contact
+
+---++ Bug reports and feature requests
+
+Feature requests belong in the [[xgram wish list]].
+
+Unless, that is, they relate solely to the file format, in which case they belong in the [[xgram format wish list]].
+
+Bug reports are welcomed!
+The following links may be helpful:
+
+	* [[Known issues with DART]]  --  contains some useful tips & tricks
+	* [[DART bug reporting]]  --  _please_ read this before submitting a bug report!
+
+---++ Contribute!
+
+This is an evolving description.
+Please feel free to add questions/comments (or email them to IanHolmes),
+or to create your own tutorials as separate pages on this wiki.
 
