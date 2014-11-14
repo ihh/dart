@@ -1,0 +1,31 @@
+%META:TOPICINFO{author="IanHolmes" date="1324906838" format="1.0" version="1.49"}%
+%META:TOPICPARENT{name="DART"}%
+---+ Downloading DART
+
+The latest version of *dart* can be downloaded as a tarball or zipfile from http://github.com/ihh/dart/archives/master
+
+Download the tarball (this will be named something like ==ihh-dart-abc0123.tar.gz==), then extract it and (if you are so inclined) rename or symlink the top-level directory from ==ihh-dart-abc0123== to ==dart==.
+
+You can also browse the source code at http://github.com/ihh/dart/tree/master
+
+If you have the [[http://git-scm.com/][git]] source code revision management tool installed, you can =git clone= the repository and stay up-to-date with the latest version, like this:
+
+<blockquote>
+=git clone git://github.com/ihh/dart.git=
+</blockquote>
+
+This is the preferred way to get dart.
+
+If github is down or unreachable, use the following mirror repository:
+
+<blockquote>
+=git clone git://cvs.biowiki.org/usr/local/git/dart.git=
+</blockquote>
+
+If you have never heard of git, or are unsure whether you have it installed, try one of the following links:
+	* Wikipedia:Git_software
+	* http://git-scm.com/ (git home page)
+
+
+%INCLUDE{BuildingDart}%
+

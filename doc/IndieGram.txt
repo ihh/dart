@@ -1,0 +1,229 @@
+%META:TOPICINFO{author="IanHolmes" date="1265838966" format="1.0" version="1.33"}%
+---+ IndieGram
+
+[[TreeTransducers]], finite-state machines which can mutate parse trees,
+provide a framework for modeling the evolution of structured RNAs along a phylogenetic tree.
+
+Our software Indiegram implements a tree-transducer-based model of the evolution
+of three structured RNAs.  The [[TKF Structure Tree]] model is provided with the software,
+but users can create their own models using the provided Perl code-generation
+scripts.  Given a model, the program Indiegram, distributed as part of the [[DART]] 
+software package, perform Maximum-Likelihood inference.
+
+The Perl scripts found in the src/indiegram/perl directory implement our 
+model-construction algorithm for evolutionary models of structured RNAs:
+Given a singlet transducer and a branch transducer, they generate the
+corresponding evolutionary model representing three sequences related
+to an unknown common ancestor
+by a star phylogeny.
+
+For examples of Indiegram run on real RNA, see here: IndiegramExamples
+
+%BLOC%
+
+---++ Model construction
+
+The Perl script [[DartSrc:indiegram/perl/fourWay.pl][fourWay.pl]] is a driver script for the packages implementing
+the transducer-composition algorithms on a three-branch tree.
+It can be run from the =dart/src/indiegram= directory as
+<verbatim>
+	./perl/fourWay.pl --graph tt/simpleTest.singlet.tt tt/simpleTest.branch.tt
+</verbatim>
+where the --graph option tells it to generate the transition/bifurcation graph of the composite model.
+A full list of options is available via the --help option.
+
+The program Indiegram uses code generated using the related driver script [[DartSrc:indiegram/perl/tripletSCFG.pl][tripletSCFG.pl]]
+<verbatim>
+	./perl/tripletSCFG.pl --write tt/tkfst.singlet.tt tt/tkfst.branch.tt
+</verbatim>
+where the --write command tells it to generate C++ code for constructing the model using the dart API.
+(See files DartSrc:indiegram/tkfst.h & DartSrc:indiegram/tkfst.cc for example usage in indiegram.)
+
+The following section describes the .tt file format used to specify singlet and branch transducers.
+
+---++ Transducer file formats
+
+Here is a detailed description of file formats understood by the Perl code-generation packages
+run by tripletSCFG.pl.
+
+Several example files are provided:
+	1 [[DartSrc:indiegram/tt/simpleTest.singlet.tt][simpleTest.singlet.tt]] and [[DartSrc:indiegram/tt/simpleTest.branch.tt][simpleTest.branch.tt]]: Left-emitting HMM-like structure; bifurcations initiated from the root.
+	1 [[DartSrc:indiegram/tt/bifurcTest.singlet.tt][bifurcTest.singlet.tt]] and [[DartSrc:indiegram/tt/bifurcTest.branch.tt][bifurcTest.branch.tt]]: Left-emitting HMM-like structure; bifurcations initiated from either the root or leaves.
+	1 [[DartSrc:indiegram/tt/tkfst.singlet.tt][tkfst.singlet.tt]] and [[DartSrc:indiegram/tt/tkfst.branch.tt][tkfst.branch.tt]]: The full [[TKF Structure Tree]] model.
+
+We give excerpts from the simpleTest model below.
+
+---+++ State typing
+
+States are typed as follows:
+| *State type* |	  *symbol* |
+| Start |	  s |
+| Insert |	  i |
+| Insert (Bifurcation) |	  bi |
+| Match |	  m |
+| Match (Bifurcation) |	  bm |
+| End |	  e |
+
+[[DartSrc:indiegram/tt/simpleTest.singlet.tt][simpleTest.singlet.tt]]:
+<verbatim>
+	>singlet-stateTyping
+	s = s
+	il = i
+	Bi[s s] = bi
+	e = e
+</verbatim>
+
+[[DartSrc:indiegram/tt/simpleTest.branch.tt][simpleTest.branch.tt]]:
+<verbatim>
+	>branch-stateTyping
+	s = s
+	il = i
+	ml = m
+	dl = m
+	w = w
+	Bm[s s] = bm
+	e = e
+</verbatim>
+
+
+---+++ State absorptions
+
+Match states (only allowed for branch transducers)
+can absorb as well as emit symbols.
+
+
+State absorptions can be:
+| *Absorption profile* |	  *symbol* |
+| Left terminal |	  l |
+| Right terminal |	  r |
+| Left and right terminals |	  lr |
+| Nonterminal |	  _nonterminal name_ |
+Bifurcations correspond to emission of nonterminals in our model-construction algorithm.
+In the above example the state Bm[s s] absorbs a nonterminal named Bi[s s]
+(which is emitted by the singlet transducer).
+
+[[DartSrc:indiegram/tt/simpleTest.branch.tt][simpleTest.branch.tt]]:
+<verbatim>
+	>branch-absorbProfiling
+	ml = l
+	dl = l
+	Bm[s s] = Bi[s s]
+</verbatim>
+
+
+---+++ State emissions
+
+States can have emission profiles:
+| *Emission profile* |	  *symbol* |
+| Left terminal |	  l |
+| Right terminal |	  r |
+| Left and right terminals |	  lr |
+| Nonterminal |	  _nonterminal name_ |
+Bifurcations correspond to emission of nonterminals in our model-construction algorithm.
+In the above example the state Bi[s s] emits a nonterminal named Bi[s s].
+
+[[DartSrc:indiegram/tt/simpleTest.singlet.tt][simpleTest.singlet.tt]]:
+<verbatim>
+	>singlet-emitProfiling
+	il = l
+	Bi[s s] = Bi[s s]
+</verbatim>
+
+
+[[DartSrc:indiegram/tt/simpleTest.branch.tt][simpleTest.branch.tt]]:
+<verbatim>
+	>branch-emitProfiling
+	il = l
+	ml = l
+	dl = 
+	Bm[s s] = Bm[s s]
+</verbatim>
+Note that the "Delete" state dl absorbs symbols but has an empty emission.
+
+The probability distributions of emissions can be specified as well.
+
+[[DartSrc:indiegram/tt/simpleTest.singlet.tt][simpleTest.singlet.tt]]:
+<verbatim>
+	>singlet-emitDist
+	il = p
+</verbatim>
+State il emits with probability p.  It is assumed that the
+emission probability is a function p of the emitted character(s).
+
+[[DartSrc:indiegram/tt/simpleTest.branch.tt][simpleTest.branch.tt]]:
+<verbatim>
+	>branch-emitDist
+	il = p
+	ml = m_t
+</verbatim>
+The distribution m_t is interpreted to mean that the function m
+depends on a (time) parameter t, ie m(t).
+
+
+---+++ State transitions
+
+The transition matrix and bifurcations are specified
+separately.
+
+[[DartSrc:indiegram/tt/simpleTest.singlet.tt][simpleTest.singlet.tt]]:
+<verbatim>
+	>singlet-tm
+	s -> il = 1-ep(), e = ep()
+	il -> il = ilp(), Bi[s s] = blp(), e = 1-ilp()-blp()
+	e ->
+</verbatim>
+
+[[DartSrc:indiegram/tt/simpleTest.branch.tt][simpleTest.branch.tt]]:
+<verbatim>
+	>branch-tm
+	s -> il = ilp(t), w = 1-ilp(t)
+	il -> il = ilp(t), w = 1-ilp(t)
+	ml -> il = ilp(t), w = 1-ilp(t)
+	dl -> il = ilp(t), w = 1-ilp(t)
+	w -> ml = mlp(t), dl = 1-mlp(t), Bm[s s] = 1, e = 1
+	e -> 
+</verbatim>
+
+The children of bifurcations are specified as (left, center, right):
+
+[[DartSrc:indiegram/tt/simpleTest.singlet.tt][simpleTest.singlet.tt]]:
+<verbatim>
+	>singlet-bifurc
+	Bi[s s] -> (s, s, e)
+</verbatim>
+
+[[DartSrc:indiegram/tt/simpleTest.branch.tt][simpleTest.branch.tt]]:
+<verbatim>
+	>branch-bifurc
+	Bm[s s] -> (s, s, e)
+</verbatim>
+
+---+++ Pretty display
+
+The user can specify the order in which to sort states.
+This is very useful for looking at the output of the composition algorithm.
+
+[[DartSrc:indiegram/tt/simpleTest.singlet.tt][simpleTest.singlet.tt]]:
+<verbatim>
+	>singlet-stateSorting
+	s = 0
+	il = 1
+	Bi[s s] = 5
+	e = 10
+</verbatim>
+
+[[DartSrc:indiegram/tt/simpleTest.branch.tt][simpleTest.branch.tt]]:
+<verbatim>
+	>branch-stateSorting
+	s = 0
+	il = 1
+	ml = 2
+	dl = 2.5
+	w = 3
+	Bm[s s] = 5
+	e = 10
+</verbatim>
+
+-- Main.RobertBradley - 07 Aug 2008
+
+%META:TOPICMOVED{by="IanHolmes" date="1239125292" from="Main.EvolStar" to="Main.IndieGram"}%

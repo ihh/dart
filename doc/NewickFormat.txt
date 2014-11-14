@@ -1,0 +1,80 @@
+%META:TOPICINFO{author="IanHolmes" date="1196709162" format="1.0" version="1.16"}%
+%META:TOPICPARENT{name="DART"}%
+---++ NewickFormat
+
+"Newick" or "New Hampshire" format is a string representation of a phylogenetic tree using nested parentheses.
+It's exported by all major phylogenetic software including PHYLIP, PAML, DART and many more.
+
+The format is described, with some napkin-science [[http://www.newicks.com/][history]], on the [[http://evolution.genetics.washington.edu/phylip/newicktree.html][<nop>PHYLIP section of Joe Felsenstein's washington.edu]] site.
+
+Here is the grammar for Newick format (from [[http://evolution.genetics.washington.edu/phylip/newick_doc.html][Gary Olsen]]):
+
+
+<pre>
+Conventions:
+	Items in { } may appear zero or more times.
+	Items in [ ] are optional, they may appear once or not at all.
+	All other punctuation marks (colon, semicolon, parentheses, comma and
+			single quote) are required parts of the format.
+
+
+				  tree ==> descendant_list [ root_label ] [ : branch_length ] ;
+
+	descendant_list ==> ( subtree { , subtree } )
+
+			  subtree ==> descendant_list [internal_node_label] [: branch_length]
+						 ==> leaf_label [: branch_length]
+
+				root_label ==> label
+	internal_node_label ==> label
+				leaf_label ==> label
+
+					  label ==> unquoted_label
+							  ==> quoted_label
+
+		  unquoted_label ==> string_of_printing_characters
+			 quoted_label ==> ' string_of_printing_characters '
+
+			branch_length ==> signed_number
+							  ==> unsigned_number
+
+
+Notes:
+	Unquoted labels may not contain blanks, parentheses, square brackets,
+		  single_quotes, colons, semicolons, or commas.
+	Underscore characters in unquoted labels are converted to blanks.
+	Single quote characters in a quoted label are represented by two single
+		  quotes.
+	Blanks or tabs may appear anywhere except within unquoted labels or
+		  branch_lengths.
+	Newlines may appear anywhere except within labels or branch_lengths.
+	Comments are enclosed in square brackets and may appear anywhere
+		  newlines are permitted.
+
+
+Other notes:
+	PAUP (David Swofford) allows nesting of comments.
+	TreeAlign (Jotun Hein) writes a root node branch length (with a value of
+		  0.0).
+	PHYLIP (Joseph Felsenstein) requires that an unrooted tree begin with a
+		  trifurcation; it will not "uproot" a rooted tree.
+
+
+Example:
+
+	(((One:0.2,Two:0.3):0.3,(Three:0.5,Four:0.3):0.2):0.3,Five:0.7):0.0;
+
+			  +-+ One
+		  +--+
+		  |  +--+ Two
+	  +--+
+	  |  | +----+ Three
+	  |  +-+
+	  |	 +--+ Four
+	  +
+	  +------+ Five
+
+</pre>
+
+-- Biowiki page created by AlexCoventry - 28 Feb 2005
+

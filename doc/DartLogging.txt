@@ -1,0 +1,38 @@
+%META:TOPICINFO{author="IanHolmes" date="1324907890" format="1.0" version="1.5"}%
+%META:TOPICPARENT{name="XrateSoftware"}%
+---++ Dart logging
+
+The C++ programs in the DART package include a detailed logfile system that can be used to obtain extra information or diagnose problems.
+
+These logging options are accessible via command-line options which can be listed using the ==--help== option
+(they're right at the top of the list of options, so you may have to scroll back to read them).
+
+Coarse-grained control over which log messages are shown can be achieved by specifying a numeric logging level,
+e.g. ==-log 6==.
+Lower logging-levels are more verbose.
+Level 5 is the default, offering an intermediate level of verbose chattiness.
+Level 9 prints almost nothing; level 6 prints some messages; level 3 prints lots of stuff;
+and level 0 prints way more than you need.
+
+Fine-grained control over logging messages can be achieved using the "log-tag" syntax.
+A description of this syntax can be found via the ==-loghelp== option.
+
+Here are all the logging-related options:
+
+| *Option* | *Meaning* |
+| ==-loghelp== | print description of log-tag syntax |
+| ==-logfile <FILE>== | send log messages to a file, instead of to standard error |
+| ==-logcopy <FILE>== | send log messages to a file AND to standard error |
+| ==-logtime==| add pseudo-XML timestamps to each log message (NB file-directed logging output is automatically timestamped) |
+| ==-nologxml==| use plain-text timestamps, instead of XML |
+| ==-log LEVEL== | print log messages down to numeric level LEVEL (e.g. ==-log 3==). Lower log levels are more verbose; 5 is the default, 9 is almost silent. |
+| ==-q==, ==--quiet== | Equivalent to ==-log 9==. Turns off most logging, except errors and major warnings. |
+| ==-log TAG== | print log messages in pieces of code tagged with string TAG (e.g. ==-log RATE_EM==). Using this form may significantly slow things down, since it pulls in a lot of regexp code |
+| ==-logtags== | print a terse list of all valid logging tags (caution: may be out of date...) |
+| ==-logtaginfo== | print a detailed index of all logging tags (caution: may be out of date...) |
+
+Logfiles can be examined, filtered and rendered in ANSI terminal color using the fabulous [[DartPerl:dartlog.pl][dartlog.pl]] script,
+which can be found in ==dart/perl==.
+
+-- Main.IanHolmes - 18 Jul 2008
+

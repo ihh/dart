@@ -1,0 +1,12 @@
+%META:TOPICINFO{author="IanHolmes" date="1228860479" format="1.0" version="1.7"}%
+---+ EvolDoer (formerly 'tkfstalign')
+
+EvolDoer is a program for pairwise RNA structural-[[phylo alignment]] operations based on the [[TKF Structure Tree]] model.
+
+It is part of the EvolDeeds package, which itself is distributed as part of the DART package.
+
+EvolDoer's pair grammars can be viewed as TreeTransducers: combinable machines for analysis of RNA structural alignments.
+
+Reference:
+	* %PMIDC{15507142}%
+

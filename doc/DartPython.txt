@@ -1,0 +1,17 @@
+%META:TOPICINFO{author="IanHolmes" date="1197396720" format="1.0" version="1.8"}%
+%META:TOPICPARENT{name="RATON"}%
+AndreasHeger wrote some (somewhat undocumented, as of yet) python modules for use with [[XRateSoftware][xrate]].
+They  are here: DartRepositoryDir:python/XGram
+
+---+++ Installation on Mac OS X
+	* Install [[http://www.macports.org][MacPorts]]
+	* ==sudo port -v install py-biopython==
+	* ==sudo port install py-ply==
+
+---+++ Installation on Debian
+	* ==aptitude install python-biopython==
+	* ==aptitude install python-ply==
+
+
+-- Main.IanHolmes - 21 Feb 2007
+

@@ -1,0 +1,46 @@
+%META:TOPICINFO{author="IanHolmes" date="1313474369" format="1.0" version="1.37"}%
+%META:TOPICPARENT{name="DART"}%
+---++ StockholmFormat
+
+StockholmFormat is a flatfile format for databases of annotated multiple sequence alignments.
+
+It is the format used e.g. by
+the [[http://www.sanger.ac.uk/Software/Pfam/][Pfam]]
+and [[http://www.sanger.ac.uk/Software/Rfam/][Rfam]]
+databases, containing alignments of protein and RNA families,
+respectively.
+
+[[http://www.cgb.ki.se/cgb/groups/sonnhammer/Stockholm.html][Erik Sonnhammer's group's page]] has the format spec
+(AlexCoventry - 28 Feb 2005).
+
+Here is [[%YAMURLPATH%/Stockholm.html][our mirror]] of that page (IanHolmes).
+
+Stockholm shows by-column alignment annotations, such as RNA secondary structure, in a compact
+and (if appropriately indented) human-readable way.
+For example (pairwise alignment of purine riboswitches):
+
+<pre>
+# STOCKHOLM 1.0
+#=GC SS_cons		 .................<<<<<<<<...<<<<<<<........>>>>>>>..
+AP001509.1			UUAAUCGAGCUCAACACUCUUCGUAUAUCCUC-UCAAUAUGG-GAUGAGGGU
+#=GR AP001509.1 SS -----------------<<<<<<<<---..<<-<<-------->>->>..--
+AE007476.1			AAAAUUGAAUAUCGUUUUACUUGUUUAU-GUCGUGAAU-UGG-CACGA-CGU
+#=GR AE007476.1 SS -----------------<<<<<<<<-----<<.<<-------->>.>>----
+
+#=GC SS_cons		 ......<<<<<<<.......>>>>>>>..>>>>>>>>...............
+AP001509.1			CUCUAC-AGGUA-CCGUAAA-UACCUAGCUACGAAAAGAAUGCAGUUAAUGU
+#=GR AP001509.1 SS -------<<<<<--------->>>>>--->>>>>>>>---------------
+AE007476.1			UUCUACAAGGUG-CCGG-AA-CACCUAACAAUAAGUAAGUCAGCAGUGAGAU
+#=GR AE007476.1 SS ------.<<<<<--------->>>>>.-->>>>>>>>---------------
+//
+</pre>
+
+Stockholm allows sequences to be split over multiple lines (as in the above example),
+though this is "discouraged" in the spec.
+
+---++ StockholmTools
+
+See StockholmTools for a list of tools for working with StockholmFormat.
+
+Also see the [[http://doc.bioperl.org/releases/bioperl-1.4/Bio/AlignIO/stockholm.html][Bioperl Stockholm class]].
+

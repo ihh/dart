@@ -1,0 +1,201 @@
+%META:TOPICINFO{author="IanHolmes" date="1325097943" format="1.0" version="1.40"}%
+---+ <nop>HandAlign
+
+%BLOC%
+
+---++ Overview
+
+<nop>HandAlign is a tool for Markov Chain Monte Carlo (MCMC) co-sampling of
+multiple alignment, phylogenetic tree, ancestral sequences, and evolutionary parameters.
+
+The underlying model of evolution allows for indel events and any model of point substitution events.
+It can be represented using a time-dependent FiniteStateTransducer:
+a state machine that transforms an _input_ sequence into an _output_ sequence.
+The actual model is shown on this page: [[HandAlign transducer]].
+It may be viewed as a short-branch approximation to the LongIndelModel.
+
+Several of the MCMC moves sample directly from the model
+(via Gibbs sampling and related MCMC techniques)
+using dynamic programming algorithms that follow from StringTransducers.
+
+---++ Installation
+
+<nop>HandAlign is distributed as part of the DART package of bioinformatics sequence analysis tools.
+Together with companion utility programs (including PhyloComposer and several other tools),
+<nop>HandAlign is a part of the HandelPackage, which is a subset of DART.
+Instructions on how to download and build the DART package can be found on the pages
+[[Downloading DART]] and [[Building DART]], respectively.
+
+A few caveats are worth noting if you are specifically interested in using the <nop>HandAlign program:
+	* You will almost certainly want to install Gerton Lunter's [[HMMoC][hmmoc]] package before building DART. This package significantly accelerates the dynamic programming steps that align sequences to hidden Markov models. Without it you may find the program rather slow
+	* [[GNU Guile]] is currently not used by handalign, although it may be at some point in the future
+
+---+++ Optional dependencies
+
+Both these prereqs are optional, but the first in particular will make handalign go a lot faster:
+
+[[HMMoC][hmmoc]] is a parser-generator that compiles finite-state automata (hidden Markov models)
+into C++ code for the corresponding inference algorithms.
+Its use with handalign is highly recommended.
+
+[[GNU Guile]] is a library for building Scheme-based extension languages.
+It is used to extend several C++ applications in DART.
+It is highly recommended if you are building any of DART.
+
+---++ File formats
+
+---+++ Inputs
+
+The program accepts [[FASTA format]] (for unaligned input sequences),
+[[Stockholm format]] (to supply an initial guess for the alignment) or
+[[Stockholm Newick format]], i.e. Stockholm format with an embedded phylogenetic tree in [[Newick format]] (to supply an initial guess both for the alignment and for the tree).
+
+---+++ Outputs
+
+The program outputs a single alignment (by default this is the highest-scoring alignment found, but the ==--nousebest== option directs the program to report the final alignment sampled).
+Additionally, the program can record the entire MCMC sampling trace (a series of alignments) to a file.
+
+In all cases, output alignments are in [[Stockholm Newick format]], i.e. [[Stockholm format]] with an embedded phylogenetic tree in [[Newick format]].
+
+---+++ Parameters
+
+The substitution model may be specified using a subset of [[xrate format]],
+specifically the ==(alphabet...)== and ==(chain...)== constructions for specifying (respectively)
+the residue alphabet and the continuous-time Markov chain substitution model.
+
+Examples of valid substitution model files:
+	* DartData:handalign/prot.hsm --- the default empirical protein substitution model
+	* DartData:handalign/jc.hsm --- the Jukes-Cantor model for nucleotides
+
+---++ Command-line options
+
+A full list of options with brief descriptions is available via ==--help==, i.e. type ==handalign --help==.
+
+The following are some of the most commonly-used options.
+
+%TABLE{ columnwidths="20%,80%" }%
+| *Option* | *Meaning* |
+| ==--help== | List available options with brief descriptions |
+| ==--quiet== | Suppress log messages |
+| ==--rndseed== | Seed random number generator. See HandAlign#Randomization |
+| ==--rndtime== | Salt random number generator using PID and clock time. See HandAlign#Randomization |
+| ==--seq-len== | Specifies the average length %$L$% of the root sequence. See HandAlignTransducer#Root_model |
+| ==--delete-rate== | Specifies the deletion rate %$\mu$%. See [[HandAlign transducer]] |
+| ==--gap-len== | Specifies the average length %$\ell$% of a gap. See HandAlignTransducer#Mean_gap_length |
+| ==--subst-model== | Specifies the substitution model using a subset of [[xrate format]]; see [[HandAlign#Parameters][Parameters]] |
+| ==--prot-model== | Uses an empirical protein substitution model found in DartData:handalign/prot.hsm |
+| ==--jukes-cantor-model== | Uses a Jukes-Cantor nucleotide substitution model found in DartData:handalign/jc.hsm |
+| ==--samples== | Specify number of samples (per tree node) to run the MCMC sampler for |
+| ==--refine== | Requests that every ==refine-period== sampling steps, a locally optimal alignment be sought |
+| ==--refine-period== | Specifies the number of MCMC sampling steps between each ==--refine== step |
+| ==--align-file== | Dumps each alignment to a file in [[Stockholm format]] |
+| ==--branch-freq== | Specifies the relative frequency of branch-sampling MCMC moves. See HandAlign#MCMC_moves |
+| ==--node-freq== | Specifies the relative frequency of node-sampling MCMC moves. See HandAlign#MCMC_moves |
+| ==--flip-freq== | Specifies the relative frequency of node-flipping MCMC moves. See HandAlign#MCMC_moves |
+| ==--slide-freq== | Specifies the relative frequency of node-sliding MCMC moves. See HandAlign#MCMC_moves |
+| ==--length-freq== | Specifies the relative frequency of branch length-sampling MCMC moves. See HandAlign#MCMC_moves |
+| ==--indel-param-freq== | Specifies the relative frequency of indel parameter-sampling MCMC moves. See HandAlign#MCMC_moves |
+| ==--subst-param-freq== | Specifies the relative frequency of substitution parameter-sampling MCMC moves. See HandAlign#MCMC_moves |
+| ==--first-node== | Unshift a node onto the front of the MCMC sampling queue. Useful to target a particular branch for resampling |
+| ==--noredsuch== | Turn off the RedelingsSuchardKernel. This increases the complexity of individual sampling steps, though it may result in better mixing per step. It is generally not advised, although the Redelings-Suchard kernel is incompatible with some other performance optimizations in handalign, so this option is sometimes necessary (a warning or error message will be printed in such situations) |
+| ==--exec-like== | Specify a separate executable for calculating phylo-alignment likelihoods for the purposes of importance sampling |
+| ==--exec-like-help== | Gives more help on the ==-exec-like== option |
+| ==--factor-indels== | Multiply the likelihood of the ==--exec-like== program by an indel likelihood, i.e. treat the ==-exec-like== as a likelihood for substitutions only, conditioned on a particular indel path |
+| ==--hmmoc-root== | Manually specify the location of [[HMMoC][hmmoc]] |
+
+---+++ Logging
+
+Dart offers a number of progress and logging messages that can be suppressed or activated from the command line.
+By default, the logging level is set to 5 (intermediate); use the ==--quiet== option to suppress all log messages.
+See DartLogging for further details.
+
+---+++ Randomization
+
+By default, the programs in the DART package operate in
+deterministic mode: the random number generator is seeded with the same initial value each run,
+for reproducibility. This facilitates testing and debugging.
+
+For the MCMC programs within DART, such as [[HandAlign][handalign]],
+especially if you are not testing/debugging the software,
+it is likely that you will want it to follow less predictable, more random behavior.
+For example, a common practice in MCMC is to run a chain several times from
+the same starting point with different random seeds each time.
+
+The ==--rndseed== option allows you to change the initial random seed.
+The ==--rndtime== option sets the seed to a random value generated from
+a combination of the current process ID and the current clock time in microseconds.
+
+---+++ Initialization
+
+A single %$\mathcal{O}(L^2 |S|^2)$% sequence annealing step (c.f. AMAP),
+followed by a %$\mathcal{O}(|S|^3)$% [[neighbor joining]] step (where %$S$% is the number of sequences and %$L$% is the sequence length), 
+is required to estimate an initial alignment and phylogeny (respectively) for given input sequences
+unless initial estimates of the alignment (and optionally the phylogeny) are provided in StockholmFormat (or StockholmNewickFormat).
+
+---+++ MCMC moves
+
+The relative proportions of the various sampling moves can be set on the command line.  
+All are variants of Gibbs-sampling moves (in that they all hold constant all but one or two variables,
+and resample those conditional on the fixed variables).
+Some are full Gibbs moves (perfectly mixing the sampled variables at every step);
+others utilize Metropolis-within-Gibbs or other variants on Gibbs sampling
+such as "Importance-within-Gibbs" where the current point is included in the weighted list of points to be sampled.
+The moves vary in the dependence of their complexities on the input sequence length, %$L$%:
+
+	* Branch Alignment: A pairwise ancestor-descendant alignment is sampled using DP (dynamic programming) and stochastic traceback.  Complexity is %$\mathcal{O}(L^2)$%.  
+	* Branch Length: The length of an ancestor-descendant branch is sampled by Importance-within-Gibbs, changing the total tree length but maintaining tree topology. Complexity is %$\mathcal{O}(L)$%.
+	* Node Alignment: A 4-way alignment (3 nodes related by a common central node) is sampled by DP. Complexity is %$\mathcal{O}(L^3)$% for the full Gibbs step, %$\mathcal{O}(L^2)$% for Metropolis-within-Gibbs (using the RedelingsSuchardKernel).
+	* Node Flip: The tree is sampled by exchanging a node with its niece, locally altering the tree topology. The original and flipped topologies are sampled at random (using DP to sum over alignments), and the alignment is then resampled conditional on the topology. Complexity is %$\mathcal{O}(L^4)$% for full Gibbs step, %$\mathcal{O}(L^2)$% for Metropolis-within-Gibbs (using the RedelingsSuchardKernel).
+	* Node Slide: A node is ``slid'' along a branch, preserving the tree's topology and total branch length, and sampling the new node attachment point via Importance-within-Gibbs. Complexity is %$\mathcal{O}(L)$%.
+	* Indel Parameters: Insertion/deletion parameters are sampled via an Metropolis-within-Gibbs move. Complexity is %$\mathcal{O}(L)$%.
+	* Substitution Parameters: Free parameters declared in the subsitution model are sampled using the same Metropolis-within-Gibbs method as indel parameters. Complexity is %$\mathcal{O}(L)$%.
+
+---+++ Redelings-Suchard kernel
+
+In the "Node Alignment" move, which involves aligning three siblings (x,y,z) on a tree and estimating their common ancestor w,
+the optional two-stage [[Redelings Suchard kernel]] uses a Metropolis-within-Gibbs approach 
+to sample the common ancestor w and alignment wxyz
+in time %$\mathcal{O}(L^2)$%, rather than the %$\mathcal{O}(L^3)$% required by the full Gibbs step.
+The kernel consists of two pairwise alignment-sampling stages:
+first a proposed ancestor w and alignment wxy are sampled conditional on x and y (ignoring z),
+then the alignment wz is sampled conditional on w and z.
+The final ancestor w and alignment wxyz are then accepted or rejected
+using a Hastings ratio.
+A similar strategy (using three stages rather than two) is used to propose four-way alignments in the "Node Flip" move.
+
+See the RedelingsSuchardKernel page for a citation describing this technique.
+
+---++ Analysis of MCMC sampling traces
+
+The DART scripts and modules described in this section may be found in ==dart/perl==.
+
+---+++ Summarization of MCMC traces
+
+DartPerl:constock.pl finds a consensus alignment that summarizes an MCMC run.
+
+DartPerl:stocktree.pl can be used to extract the NewickFormat trees from the StockholmNewickFormat MCMC trace.
+
+CONSENSE is not a part of DART, but rather is found in the PHYLIP package.
+It finds a consensus tree that summarizes the trees visited during an MCMC run.
+
+---+++ Visualization of MCMC traces
+
+DartPerl:stockfilm.pl uses ANSI terminal color to render an animated impression of an MCMC sampling run.
+
+DartPerl:constock.pl uses ANSI terminal color to highlight alignment columns by posterior probability.
+
+---+++ Further analysis of MCMC traces
+
+The DartPerl:Newick.pm, DartPerl:Stockholm.pm and DartPerl:Stockholm/Database.pm Perl modules in ==dart/perl==
+allow further extraction of individually sampled trees, alignments or model parameters,
+so as to perform additional tests or analysis on the MCMC trace.
+
+These modules are self-documented using [[POD format]], which may be read with ==perldoc==.
+
+A longer list of tools for working with Stockholm format is available on the StockholmTools page.
+
+---++ Tutorials
+
+A brief tutorial is available on this wiki:
+	* [[HandAlign tutorial]]
+

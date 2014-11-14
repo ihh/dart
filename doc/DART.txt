@@ -1,0 +1,163 @@
+%META:TOPICINFO{author="IanHolmes" date="1326221635" format="1.0" version="1.269"}%
+---+ The Dart Library: XRate, Handel, Stemloc, <nop>EvolDeeds <small>& more...</small>
+
+<blockquote>
+<big>
+For instructions on how to get dart, go to this page: [[Downloading dart]].
+
+For installation, go here: [[Building dart]].
+</big>
+</blockquote>
+
+%TOC%
+
+---++ What is DART?
+
+The DART library includes a number of bioinformatics programs, including: [[StemLoc][stemloc]] for RNA alignment; [[XgramSoftware][xrate]] for phylo-grammars; [[PhyloComposer][phylocomposer]], [[HandAlign][handalign]] and other [[statistical alignment]] programs in the [[Handel package]]; and more.
+
+The programs use statistical algorithms (MCMC, EM, etc.)
+to impute multiple alignments, annotations and other unseen evolutionary parameters from sequence data.
+All are based on stochastic grammars or state-machine models of sequence mutation and natural selection.
+
+Dart can be [[DownloadingDart][downloaded]] as a directory tree containing source files for the above programs, along with supporting code, tests, scripts and utilities.
+
+---++ What platforms does <nop>DART run on?
+
+DART works for sure on Linux and Mac OS X. It can probably be coaxed to build on anything with [[GNU make]] and [[http://gcc.gnu.org/][gcc]].
+
+MicrosoftWindows? Possibly, e.g. with CygWin. Untested.
+
+AndrewUzilov adds (Dec. 17, 2007): just compiled DART on [[CygWin][cygwin]] (gcc 3.4.4, cygming special, gdc 0.12, using dmd 0.125) on Microsoft Windows XP Home Edition (SP2) on a Dell Inspiron 1000 (w/Intel Celeron) with no problems!  Only tried [[XrateSoftware][xrate]], but it runs as intended.  The bundled Perl (e.g. [[WindowLicker][windowlicker]]) works fine also. 
+
+---++ What do the individual programs do?
+
+The various programs do a lot of different things including PhylogeneticAlignment; RNA structure prediction & [[multiple RNA alignment]]; stochastic grammars; evolutionary  models, phylo-HMMs and [[phylo grammars]]; reconstruction of ancestral sequences; and phylogenomics.
+
+Specific sub-packages address the following tasks...
+
+---+++ Handel: evolutionary alignment & reconstruction with string transducers
+
+The HandelPackage allows MCMC sampling of multiple alignments, phylogenetic trees, evolutionary parameters & reconstructed indel/substitution histories.
+
+---++++ handalign
+
+	* *handalign* ([[HandAlign][link]]) - program for PhylogeneticAlignment
+		* samples multiple alignments and phylogenies from the posterior probability distribution implied by the [[Thorne Kishino Felsenstein]] model or (a close approximation to) the [[Long Indel model]]
+
+---++++ phylocomposer
+
+	* *phylocomposer* ([[PhyloComposer][link]]) - tests phylogenetic transducer composition and inference
+
+---+++ XRate: alignment annotation & ancestral reconstruction with phylo-SCFGs
+
+Annotating conserved features; measuring rates; reconstructing substitution histories.
+
+---++++ xrate
+
+	* *xrate* ([[XrateSoftware][link]]) - estimate maximum likelihood substitution rate matrices by EM
+		* *xgram*, *xfold* and *xprot* - analyze and annotate multiple alignments, phylogenetically, using evolutionary context-free grammars and EM
+
+---+++ Stemloc: RNA multiple alignment with pair-SCFGs
+
+Secondary structure-aware RNA multiple alignment; reconstruction of indels and changes in structure.
+
+---++++ stemloc
+
+	* *stemloc* ([[StemLoc][link]]) - simultaneously
+		1 align RNA sequences,
+		1 predict secondary structure and
+		1 infer evolutionary history
+
+---+++ EvolDeeds: phylogenetic RNA alignment & reconstruction with tree transducers
+
+---++++ evoldoer
+
+	* *evoldoer* ([[EvolDoer][link]]) - experimental pairwise RNA alignment using the [[TKF structure tree]]
+
+---++++ indiegram
+
+	* *indiegram* ([[IndieGram][link]]) - three-way RNA alignment and reconstruction using [[tree transducers]] and the TKF structure tree
+
+---++++ evolsayer
+
+	* *evolsayer* ([[EvolSayer][link]]) - simulation of RNA multiple alignments using the [[TKF structure tree]]
+
+
+---+++ Scripts and modules
+
+	* DartPerlScripts: Perl programs in ==dart/perl/==
+	* DartPython: AndreasHeger's Python modules
+
+---++ What file formats does <nop>DART understand?
+
+Standard file formats include
+	* FastaFormat for sequences
+	* NewickFormat for trees
+	* StockholmFormat for alignments
+
+Dart-specific file formats include
+	* [[XrateFormat][XRate input format]] for [[phylo grammars]]
+	* [[PhyloComposer][Phylocomposer input format]] for [[string transducers]]
+
+Dart also has a detailed [[DartLogging][logfile]] system.
+
+---++ How can I download it?
+
+See [[Downloading Dart]] and [[Building Dart]] for information on how to download and install the programs.
+
+---++ Who (else) uses it?
+
+	* [[DART access statistics]] at Sourceforge
+	* [[DART paper archive]] (incomplete)
+
+Average: 30 anonymous downloads per month in 2007.
+
+---++ Why doesn't X, Y or Z work?
+
+Check the [[known issues with DART]] page for bug reports, anecdotal usage info, etc.
+Browse other pages on this wiki for documentation.
+If feeling bold, turn on [[DartLogging][logging]] which may give some insight into your problem.
+
+If none of that helps, mail to [[Ian Holmes]], preferably after checking the [[DART bug reporting]] guidelines.
+(And there is an extra incentive to do this: see BoozeForBugs.)
+
+---++ What are the licensing terms?
+
+[[http://www.gnu.org/copyleft/gpl.html][GPL.]]
+
+---++ Why is it called "dart"?
+
+Originally named after a '66 Dodge Dart,
+now a [[Wikipedia:Backronym][backronym]] for _DNA, Amino and RNA Tests_.
+
+<a href="http://twitter.com/#!/search?q=%23HipsterScience">
+	 <img src="%ATTACHURLPATH%/1965-1966-dodge-dart-gt-273-1.jpg" alt="1965-66 Dodge Dart"  width="400" height="266"  />
+</a>
+
+---++ Whose fault is all this?
+
+The code and most of the documentation pages are maintained by IanHolmes.
+
+Contributors of code to date include SeanEddy, GraemeMitchison, RobertDavies, BillBruno, IanHolmes, [[David MacKay]], GertonLunter, OscarWestesson, PeteKlosterman, ArielSchwartz, RobertBradley, AndrewUzilov, YuriBendana, SharonChao, KennyDuong, AvinashVaradarajan, LarsBarquist, AndreasHeger, GabrielWu and contributors to Main.RandLib and [[http://www.netlib.org/lapack/][LAPACK]].
+
+Testers include the contributors listed above, as well as RahulSatija, BenedictPaten, CarolinKosiol, NickGoldman, AlexBateman, SamGriffithsJones, RyanRitterson, KarstenTemme, ChristopherVanBelle and others.
+
+Contributors to the design include RichardDurbin, EwanBirney, GuySlater, DavidHaussler, JotunHein, KevinKarplus, GaryStormo, ChrisMungall, BenedictPaten and many others in the evolutionary bioinformatics community.
+
+---++ How do I get help/information/etc?
+
+	* DartMailingLists (dart-announce, dart-help)
+	* DartReleaseNotes
+	* [[Known issues with DART]]
+	* DartBugReporting
+
+---++ How do I reference dart?
+
+For papers describing the software and algorithms, see the PaperArchive.
+
+<!--
+	* Set ALLOWTOPICCHANGE = TWikiAdminGroup
+-->
+
+%META:FILEATTACHMENT{name="dart1.jpg" attr="h" comment="" date="1201810777" path="dart1.jpg" size="32506" user="IanHolmes" version="1.1"}%
+%META:FILEATTACHMENT{name="1965-1966-dodge-dart-gt-273-1.jpg" attr="h" comment="1965-66 Dodge Dart" date="1298791067" path="1965-1966-dodge-dart-gt-273-1.jpg" size="29329" user="IanHolmes" version="1.1"}%

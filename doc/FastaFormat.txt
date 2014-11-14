@@ -1,0 +1,13 @@
+%META:TOPICINFO{author="IanHolmes" date="1265410609" format="1.0" version="1.6"}%
+%META:TOPICPARENT{name="DART"}%
+---+ FASTA
+
+FASTA is a bare-bones flat-file format for DNA, RNA and protein sequence data.
+It's the most widely used & understood format for unannotated sequence, probably due in large part to its simplicity.
+
+It can also be used to represent multiple alignments (see [[gapped FASTA format]]).
+
+For details see e.g. 
+	* Wikipedia:Fasta_format
+	* http://www.ebi.ac.uk/help/formats_frame.html
+

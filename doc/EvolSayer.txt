@@ -1,0 +1,19 @@
+%META:TOPICINFO{author="IanHolmes" date="1239125292" format="1.0" version="1.10"}%
+---+ EvolSayer
+
+A simulator for RNA structure evolution using the [[TKF Structure Tree]] model.
+Part of the EvolDeeds package.
+
+	* How to get it: DownloadingDart
+	* Browse CVS: DartPerl:evolsayer.pl
+	* Example tree files in DartSrcDir:evoldoer/t
+
+Misc notes:
+	* Output looks better piped through Main.ColorStock
+	* <nop>EvolSayer also works as a plugin to Main.SimGenome
+
+See also
+	* TreeTransducers, EvolDoer, EvolDeeds, IndieGram
+
+-- Main.IanHolmes - 09 Dec 2008
+

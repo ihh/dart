@@ -1,0 +1,73 @@
+%META:TOPICINFO{author="IanHolmes" date="1324907489" format="1.0" version="1.51"}%
+%META:TOPICPARENT{name="StemLoc"}%
+---+ Building DART
+
+---++ Brief version
+
+	1 [[DownloadingDart][Download]] (or clone / checkout) the source distribution.
+	1 Install GNU build tools.
+	1 (Optional) Install [[HMMoC][hmmoc]].
+	1 (Optional) Install [[GNU Guile]].
+	1 (Optional) Install other undocumented/unsupported extensions (yeah, you probably don't want to do this).
+	1 Run =configure= and then =make=.
+	1 (Optional) Run the test suite.
+	1 Set up environment variables.
+
+---++ Longer version
+
+	1 It is assumed that you have already downloaded (or checked out) the source distribution; see DownloadingDart for details on how to do this.
+	1 You will need GNU tools including =[[http://gcc.gnu.org/][gcc]]= (v4.0 or later), =[[GNU make][make]]=, =binutils= and =coreutils=
+		* See the [[DartRepository:INSTALL][INSTALL]] file in the top-level directory for more info (or type =more dart/INSTALL=)
+		* These tools come with many linux distributions, but =gcc= in particular, though stable in the last couple of years, has evolved by leaps & bounds in the past and may be out of date if you have an old distro
+		* Mac users may need to install [[xcode tools]]
+		* Dart will probably build under Windows, but it isn't supported. You may need CygWin
+	1 (Optional) If you want to run HandAlign, you will probably want to first install Gerton Lunter's [[HMMoC][hmmoc]] package to compile fast dynamic programming algorithms.
+		* Follow the [[HMMoC][link]] to download and install this software.
+		* If you install it in ==/usr/local/hmmoc== or ==/usr/local/src/hmmoc==, then the =configure= script will find it automatically; otherwise, you will need to use the ==--with-hmmoc== option to specify in which directory ==hmmoc== can be found (since it does not export this via ==pkg-config==).
+		* Note that the ==hmmoc== package requires Java to run.
+	1 (Optional) If you want to use Scheme from within dart programs (specifically xrate, whose [[XrateMacros][macro language]] can include Scheme evaluation) then you will need to install [[http://www.gnu.org/software/guile/guile.html][Guile]] before building xrate.
+		* As of version 1.8.7, guile requires [[http://gmplib.org/][GMP]] to be installed.
+		* You should then download & install the latest stable release of Guile from [[http://www.gnu.org/software/guile/guile.html][here]].
+		* If this all seems like too much hassle, you can probably just skip this step: most xrate grammars (as of April 2010) do not include Scheme expressions, and dart can be built without guile support.
+	1 (Optional) Install any unsupported/experimental optional dependencies. For example, if you want to use the BeagleLibrary to run phylogenetic computations on CUDA devices, you will need to install that first, along with its dependencies. Currently, we have not seen much (any) speedup in dart from using this library, which may well mean that we are not using it correctly. In any case, Beagle is not supported, and it is advisable to leave out this part.
+	1 Type the following:
+		* =cd dart; ./configure; make=
+		* The autoconf scripts should detect the optional dependencies (hmmoc, guile, beagle) if they are installed; if not, you can specify paths to these using ==--with-hmmoc==, ==--with-guile== and/or ==--with-beagle==. Type ==./configure --help== for a full list of configuration options
+		* Note that not all aspects of the autotools are currently functional; for example, there is currently no support for compilation outside of the project source directory.
+	1 (Optional) To run the built-in tests, type:
+		* =make test=
+	1 Set up your environment variables (required for WindowLicker and some other programs):
+		* You may want to set the environment variable ==DARTDIR== to point to the root ==dart== directory. Some of the programs require this (or, at least, they work better that way).
+		* To use the dart perl modules, or run many of the DartPerlScripts, you will need to add ==dart/perl== to your ==PERL5LIB== environment variable.
+
+---++ Dart binaries and Perl modules
+
+Add the following lines to your ==.cshrc== if you want to have the dart binaries in your path and use the dart perl modules in Perl scripts:
+
+<pre>
+setenv DARTDIR $HOME/dart
+setenv PATH $DARTDIR/bin:$PATH
+setenv PERL5LIB $DARTDIR/perl:$PERL5LIB
+</pre>
+
+Obviously the first line should point to wherever your dart tree is at.
+I also had to add a dummy ==setenv PERL5LIB== line before this, to initialise the ==PERL5LIB== variable.
+
+If you're a bash user, you'll need to put the following in ==.bashrc== instead:
+
+<pre>
+export DARTDIR=$HOME/dart
+export PATH=$DARTDIR/bin:$PATH
+export PERL5LIB=$DARTDIR/perl
+</pre>
+
+---+++ DARTDIR
+
+Some programs in dart expect the environment variable ==$DARTDIR== to point to the root of the dart source tree.
+If ==$DARTDIR== is not defined, the default value is the path to the ==configure== script.
+If this is not the correct value (for example, if dart was compiled on an NFS server but is intended to be used by client machines on that NFS),
+you can override it at configure-time like so: ==./configure --srcdir=/nfs/path/to/dart==.
+(This is something of an abuse of the ==--srcdir== option; the true GNU way would be to use ==--prefix==.)
+
+-- IanHolmes
+

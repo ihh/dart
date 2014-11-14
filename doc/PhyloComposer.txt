@@ -1,0 +1,2102 @@
+%META:TOPICINFO{author="IanHolmes" date="1224630284" format="1.0" version="1.143"}%
+<!--
+	* Set TKFMOVIE = %YAMURLPATH%/fruitfly/TKFmovie
+	* Set PHYCOMP = ==phylocomposer==
+	* Set PHYDIR = ==phylodirector==
+
+	* Set ALLOWTOPICCHANGE = IanHolmes
+	* Set ALLOWTOPICRENAME = IanHolmes
+-->
+
+A users' guide for the %PHYCOMP% program in the DART package.
+
+<blockquote>
+%TOC%
+</blockquote>
+
+---+ Introduction
+
+This page describes the %PHYCOMP% program
+for implementing transducer composition & inference.
+
+---++ How to obtain phylocomposer
+
+	1 Download the DART package (see DownloadingDart)
+	1 Do one of the following (see BuildingDart for a more detailed walkthrough):
+		1 Compile the Handel package (type ==cd dart; make handel==); or
+		1 Compile the entire DART library (type ==cd dart; make all==).
+	1 The %PHYCOMP% binary is installed in the ==dart/bin== subdirectory.
+	1 The example files are in the ==dart/data/phylocomposer== subdirectory.
+
+---++ How to read this document
+
+If you're entirely new to transducers, a tutorial route through this page is to
+first read through the [[#TheoreticalConcepts][Theoretical Concepts]] section,
+then browse through the description of the [[#InputFormat][Input Format]]
+and proceed to try some of the [[#ExampleFiles][example input files]]
+using various combinations of [[#CommandLineUsage][command-line options]].
+
+The impatient/adventurous reader could dive straight into the [[#ExampleFiles][example files]].
+The theoretically inclined, or transducer cognoscenti,
+might want to skim-read the [[#FormalGrammar][formal grammar]]
+for the %PHYCOMP% input language,
+to get a feel for what the program is about.
+
+If you just want some eye-candy, head for the [[PhyloDirector#ExampleMovies][Example Movies]] on the %PHYDIR% page.
+
+#CommandLineUsage
+---++ Command-line usage
+
+The general usage is
+
+<blockquote><pre>
+phylocomposer [options] InputFile >OutputFile
+</pre></blockquote>
+
+The program can also be used as a Unix filter:
+
+<blockquote><pre>
+cat InputFile | phylocomposer [options] >OutputFile
+</pre></blockquote>
+
+For a full list of options, type ==phylocomposer --help==.
+Some of the more commonly used options include:
+
+| Option | Effect |
+| ==-q== | Suppress Unix filter operation (do not echo input configuration) |
+| ==-d== | Save composite transducer as GraphViz dot file |
+| ==-a== | Display the acyclic transducer resulting from null state elimination |
+| ==-ml== | Perform maximum likelihood alignment of sequences to composite transducer using Viterbi algorithm |
+| ==-f== | Report sum-over-alignments likelihood using the Forward algorithm |
+| ==-nf== | Sample some number of alignment paths from the posterior distribution, using the Forward algorithm and stochastic traceback |
+| ==-e== | Report the posterior-expected label usage, computed using Forward-Backward and peeling algorithms |
+| ==-o== | Report the alignment with the maximum expected sum-of-pairs score, using the Optimal Accuracy algorithm |
+
+See below for more precise definitions of the terms used in this table.
+
+The table shows the short forms of the command-line options.
+Generally speaking, every option has at least one longer & easier-to-remember synonym.
+For example, ==--quiet== is equivalent to ==-q==.
+Type ==phylocomposer --help== for a complete list.
+
+#ExampleFiles
+---++ Example input files
+
+The following example input files may be found in the ==dart/data/phylocomposer== subdirectory
+of the DART distribution.
+
+The text in this section may make more sense if you read the "[[#Theoretical_concepts][Theoretical concepts]]" section first.
+
+---+++ Trivial single-branch example
+
+	* DartData:phylocomposer/tkf91.sxpr  -- a straightforward single-branch TKF91 model (see [[#References][References]])
+
+The tree in this example is as follows:
+
+<dot>
+digraph G {
+"$0" -> "$1" [label="TKF91_BRANCH"];
+}
+</dot>
+
+The tree has one branch and one transducer (named "TKF91_BRANCH").
+
+The architecture of the TKF91_BRANCH transducer is as follows (a bit messy thanks to graphviz):
+
+<dot>
+digraph G {
+
+	 S [shape=doublecircle, color=red];
+	 E [shape=doublecircle, color=red];
+
+	 W [shape=doubleoctagon, color=red];
+
+	 I [shape=house, color=red];
+	 M [shape=rect, color=red];
+	 D [shape=invhouse, color=red];
+
+S->I [label=beta];
+S->W [label="~beta"];
+
+I->I [label=beta];
+I->W [label="~beta"];
+
+M->I [label=beta];
+M->W [label="~beta"];
+
+D->I [label=gamma];
+D->W [label="~gamma"];
+
+W->E [label=1];
+W->M [label=alpha];
+W->D [label="~alpha"];
+
+	 label="TKF91_BRANCH: Branch transducer for the TKF91 model";
+}
+</dot>
+
+(See TransducerLegend for an explanation of the symbols used for the various state types.)
+
+In the TKF91 model, "alpha", "beta" and "gamma" are defined as functions of the insertion & deletion rates and the branch lengths,
+but these details are omitted here.
+
+Here's an example pairwise alignment annotated with the corresponding state path through the above transducer
+(the residues are shown as FelsensteinWildcard asterisks "*", while the gaps are hyphens "-"):
+
+<blockquote><pre>
+ Input:  -- * * * * * *- *
+Output:  ** * * - - - -* *
+ State: SIIWMWMWDWDWDWDIWME
+</pre></blockquote>
+
+
+---+++ A three-branch, four-node tree
+
+	* DartData:phylocomposer/tkf91_node.sxpr  -- sampling the neighborhood of a node using a TKF91-like model
+
+The tree in this example is as follows:
+
+<dot>
+digraph G {
+"$0" -> "$1" [label="TKF91_BRANCH"];
+"$1" -> "$2" [label="TKF91_BRANCH"];
+"$1" -> "$3" [label="TKF91_BRANCH"];
+}
+</dot>
+
+---+++ A two-branch tree: serial composition of two transducers
+
+	* DartData:phylocomposer/tkf91_serial.sxpr  -- serial composition of two TKF91-like transducers
+
+The tree in this example is as follows:
+
+<dot>
+digraph G {
+"$0" -> "$1" [label="TKF91_BRANCH"];
+"$1" -> "$2" [label="TKF91_BRANCH"];
+}
+</dot>
+
+---+++ A simple example of dynamic programming inference
+
+	* DartData:phylocomposer/seq.sxpr  -- an example of inference where sequences are specified
+
+Try running this example with the ==-ml==, ==-s== or ==-o== options to produce an alignment.
+
+The tree in this example is as follows:
+
+<dot>
+digraph G {
+"$0" -> "$1" [label="TKF91_ROOT"];
+"$1" -> "$2" [label="TKF91_BRANCH"];
+"$1" -> "$3" [label="TKF91_BRANCH"];
+}
+</dot>
+
+This example uses two transducers: "TKF91_ROOT" (a singleton) and "TKF91_BRANCH".
+Sequence constraints for nodes $1, $2 and $3 are specified.
+
+The "TKF91_ROOT" singleton transducer has the following architecture:
+
+<dot>
+digraph G {
+
+	 S [shape=doublecircle, color=red];
+	 E [shape=doublecircle, color=red];
+
+	 W [shape=doubleoctagon, color=red];
+
+	 I [shape=house, color=red];
+
+S->I [label=kappa];
+S->W [label="~kappa"];
+
+I->I [label=kappa];
+I->W [label="~kappa"];
+
+W->E [label=1];
+
+	 label="TKF91_ROOT: Singleton transducer for the TKF91 model";
+}
+</dot>
+
+Again, TKF91 gives a definition for "kappa" (it's the ratio of the insertion rate to the deletion rate),
+but this detail is omitted here.
+
+---+++ Another simple inference example with peeling of constrained branches
+
+	* DartData:phylocomposer/postprof.sxpr  -- an example of inference with peeling, where sequences and state paths are specified
+
+Try running this example with the ==-ml==, ==-s== or ==-o== options to produce an alignment.
+
+The tree in this example is as follows:
+
+<dot>
+digraph G {
+"$NULL" -> "$ROOT" [label="TKF91_ROOT", color=red];
+"$ROOT" -> "$L" [label="TKF91_BRANCH", color=red];
+"$ROOT" -> "$R" [label="TKF91_BRANCH"];
+"$L" -> "$L1" [label="TKF91_BRANCH", color=red];
+"$L" -> "$L2" [label="TKF91_BRANCH", color=red];
+"$R" -> "$R1" [label="TKF91_BRANCH", color=red];
+"$R" -> "$R2" [label="TKF91_BRANCH", color=red];
+}
+</dot>
+
+The transducers on the red-colored branches have their state paths constrained.
+The only unconstrained branch is from $ROOT to $R.
+
+Note in the %PHYCOMP% output how the constrained branches are peeled away,
+yielding conditional probabilistic profiles for the sequences at $ROOT and $R.
+
+---+++ More inference: estimating label counts
+
+	* DartData:phylocomposer/counts.sxpr -- identical sequences to test expected usage count functionality
+
+Try running this example with the ==-e== option to compute expected counts using a Forward-Backward peeling algorithm.
+
+It will find the expectation (taken w.r.t. the posterior distribution over state paths) of the number of times each label was used.
+
+This example is derived closely from [[DartData:phylocomposer/seq.sxpr][seq.sxpr]] and uses the same transducers and tree topology.
+
+---++ <nop>HMMoC adapter
+
+The native implementation of dynamic programming algorithms in %PHYCOMP% is rather slow and impractical for large sequences.
+Fortunately, an alternative is available.
+%PHYCOMP% has a "hmmoc adapter" which can be used to dynamically generate, compile and run DP code
+using Gerton Lunter's Main.HMMoC program.
+(Note that your machine must have hmmoc, Java and a C++ compiler installed for this feature to work.)
+
+As of February 2008, only the Forward algorithm can be seamlessly delegated to hmmoc.
+An approximate adapter exists for the Viterbi algorithm (approximate in the sense that null paths are summed out in the hmmoc implementation, but not in the native implementation)
+and no adapter exists for the Backward or Optimal Accuracy algorithms (i.e. the native implementation is always used).
+
+#TheoreticalConcepts
+---+ Theoretical concepts
+
+The following sections outline the theoretical concepts underpinning %PHYCOMP%.
+Links to other pages (on biowiki.org and elsewhere on the web) are given where appropriate.
+
+All algorithms described in this section are implemented by %PHYCOMP%.
+
+---++ Transducers
+
+A transducer is a finite-state machine that can be considered
+to transform an input sequence into one or more output sequences.
+Most of the time, we will be interested in transducers that have only one output sequence.
+
+We will call the input sequence X and the output Y.
+In common jargon, the transducer _absorbs_ X and _emits_ Y.
+
+A transducer is similar, but subtly different, to a Pair Hidden Markov Model (or "Pair HMM"),
+which is typically viewed as emitting both of the sequences (X,Y).
+Formally, the Forward algorithm for a pair HMM yields the joint likelihood %$P(X,Y)$%,
+while the Forward algorithm for a transducer yields %$P(Y|X)$%.
+
+The word "transducer" comes from natural language processing (NLP) where these machines
+are frequently used to model transformations of and vagaries in human language.
+More background on transducers can be found on the biowiki.org StringTransducers page.
+
+---+++ Transducer state types
+
+The formalism used for transducers in %PHYCOMP% is that of MooreMachines,
+where absorption and emission of token symbols occurs in the states of the finite-state machine
+(as opposed to during the transitions between states, as is the case in MealyMachines).
+At most one symbol is absorbed and/or emitted in each state.
+We also introduce a "Wait" state that precedes any absorption event.
+This results in the following classification of states:
+
+| State type | Meaning |
+| Start | The machine starts in this state. No symbols are absorbed or emitted. |
+| End | The machine ends in this state. No symbols are absorbed or emitted. |
+| Wait | In this type of state, the transducer may be viewed as waiting for the next input symbol to absorb, or (alternatively) for the end of the input sequence. No symbols are absorbed or emitted. |
+| Insert | In this type of state, the transducer emits a symbol. No symbols are absorbed. |
+| Delete | In this type of state, the transducer absorbs a symbol. No symbols are emitted. |
+| Match | In this type of state, the transducer absorbs a symbol and emits a symbol. |
+
+Start, end and wait states are collectively referred to as "null states",
+since they do not absorb or emit any symbols.
+
+---+++ Allowed transitions
+
+Transitions between states are restricted according to the state type.
+The following table summarizes the allowable transitions.
+The row heading gives the source state type and
+the column heading gives the destination state type.
+
+|		  | Start | End | Wait | Insert | Delete | Match | 
+| Start  | %NO%  | %NO%| %Y%  | %Y%	 | %NO%	| %NO%  |
+| End	 | %NO%  | %NO%| %NO% | %NO%	| %NO%	| %NO%  |
+| Wait	| %NO%  | %Y% | %NO% | %NO%	| %Y%	 | %Y%	|
+| Insert | %NO%  | %NO%| %Y%  | %Y%	 | %NO%	| %NO%  |
+| Delete | %NO%  | %NO%| %Y%  | %Y%	 | %NO%	| %NO%  |
+| Match  | %NO%  | %NO%| %Y%  | %Y%	 | %NO%	| %NO%  |
+
+---+++ Transition probabilities
+
+Although it is possible (and quite common in NLP) to construct
+deterministic transducers that always generate the same output for a given input,
+in molecular evolution we are typically interested in transducers that behave stochastically,
+introducing random mutations into a sequence.
+
+Randomness is achieved by labeling the transitions with probabilities.
+Where a choice of outgoing transitions is available from a given state,
+the transition is selected from the probability distribution given by the outgoing transition labels.
+
+---+++ Alphabets
+
+In %PHYCOMP%, the "alphabets" of token symbols used by the input and output tapes are identical.
+This can be contrasted with some transducers used in NLP
+(e.g. you can imagine a simple transducer that would translate the Roman alphabet into the Greek alphabet).
+
+---+++ Singleton transducers
+
+If a transducer contains no absorbing (Delete or Match) states,
+then it is called a "singleton" transducer.
+Effectively, this kind of transducer is identical to a single-sequence HMM
+that emits an output Y.
+Such a transducer requires that the input sequence X has zero length.
+
+---++ Transducer composition
+
+The power of transducers comes from the existence of algorithms to combine (or "compose")
+them, in series or in parallel.
+The composition of multiple transducers is itself a transducer
+(albeit possibly with more than one output tape),
+whose state space is a subset of the Cartesian product of the state spaces of the
+individual transducers being combined.
+
+Series composition represents the compunded effect of two transducers on an input sequence,
+one after the other.
+Parallel composition represents the parallel divergence of two sequences from a single ancestor.
+
+Each transition in the composite transducer represents one or more transitions
+of the individual transducers.
+The individual transitions are synchronized.
+Briefly, this synchronization works as follows:
+if a transducer's parent goes into a symbol-emitting state (Match or Insert), then it MUST go into a symbol-absorbing state (Match or Delete).
+Otherwise, it's considered to change state if (a) it's not in a Wait state and (b) all "lower" transducers are in Wait states.
+("Lower" here refers to a preorder sort of the tree, where parents are "higher" than their children.)
+More details can be found in [[#TransducersOnTrees][Holmes, 2003]].
+
+---++ Multi-sequence HMMs
+
+We can extend the idea of pairwise transducer composition
+to compose multiple transducers in a (phylogenetic) tree structure,
+by simple iterated application of the pairwise composition algorithms.
+This is the task performed by %PHYCOMP%,
+and it yields a transducer with one input tape and multiple output tapes.
+
+If we place a singleton transducer at the root branch of the phylogenetic tree,
+then the input tape is constrained to be zero and can be effectively ignored.
+The multi-tape transducer is then a multiple-sequence HMM.
+
+---+++ Null state elimination
+
+In order to make multi-sequence HMMs practical for sequence alignment,
+it is useful to be able to eliminate "null cycles", i.e. closed transition paths
+that do not emit any symbols.
+This can be done using simple matrix inversion algorithms (see e.g. [[#TransducersOnTrees][Holmes, 2003]]).
+
+---++ HMM dynamic programming algorithms
+
+There exists a well-studied family of dynamic programming (DP) algorithms
+for performing inference with HMMs
+in the common situation where the sequences emitted by the HMMs are observed,
+but the exact state path through the HMM was not observed (i.e. it was hidden;
+hence, "hidden Markov model").
+Typically, the state path implies an alignment between the sequences.
+
+These algorithms proceed by filling a _dynamic programming matrix_.
+They include:
+
+	1 the *Viterbi algorithm*, which finds the likelihood of the most probable state path;
+		* *Viterbi traceback*, which extracts the most probable state path from the Viterbi DP matrix;
+	1 the *Forward algorithm*, which sums the likelihood over all state paths;
+		* *Forward traceback*, which samples a state path from the posterior distribution, using the Forward DP matrix;
+	1 the *Backward algorithm*, which can be used to compute various posterior probabilities related to state and transition usage;
+	1 the *Optimal Accuracy algorithm* (and relatives), which apply decision theory to find the alignment that maximize some functional of the posterior distribution.
+
+---++ Pruning and peeling algorithms
+
+Felsenstein (1981) gave dynamic programming recursions,
+commonly referred to as "pruning",
+for calculating the joint likelihood of an observed set of residues (e.g. bases or amino acids)
+related by a phylogenetic tree.
+These pruning recursions sum over all possible values for the unobserved
+ancestral residues using an efficient sum-product grouping,
+so that the time and memory complexity of the calculation scale linearly
+with the number of nodes in the tree
+(rather than exponentially, as is the case for the "naive" summation).
+
+A related algorithm, known as "Elston-Stewart peeling" after its discoverers
+(who used it in the context of pedigree analysis),
+can be used to find posterior probabilities for the unobserved residues associated
+with internal nodes of the phylogenetic tree.
+
+#InputFormat
+---+ Input format
+
+The following sections describe the elements of the %PHYCOMP% input format.
+
+Each subsection begins with one or more examples of the construct being described.
+
+---++ General structure
+
+<blockquote><pre>
+;; A very simple phylocomposer input file,
+;; illustrating the TKF91 model on a single-branch tree.
+
+;; No alphabet, state labels or constraints are specified.
+
+;; The tree
+(branch
+ (transducer TKF91_BRANCH)
+ )
+
+;; The transducer
+(transducer
+
+ (name TKF91_BRANCH)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name M) (type match))
+ (state (name D) (type delete))
+ (state (name I) (type insert))
+
+ (transition (from S) (to I) (label beta))
+ (transition (from S) (to W) (label ~beta))
+
+ (transition (from W) (to M) (label alpha))
+ (transition (from W) (to D) (label ~alpha))
+ (transition (from W) (to E))
+
+ (transition (from M) (to I) (label beta))
+ (transition (from M) (to W) (label ~beta))
+
+ (transition (from D) (to I) (label gamma))
+ (transition (from D) (to W) (label ~gamma))
+
+ (transition (from I) (to I) (label beta))
+ (transition (from I) (to W) (label ~beta))
+)
+</pre></blockquote>
+
+
+The general grammar of the input and output formats follows the model of [[Lisp S expressions]].
+
+Structure is delineated by whitespace and nested parentheses.
+Comments begin with semicolons and last until the end of the line.
+
+Single identifiers ("atoms") can include any characters except whitespace, parentheses or semicolons.
+
+---++ Token alphabet
+
+<blockquote><pre>
+(token (A C G T))
+</pre></blockquote>
+
+The ==token== field is optional unless %PHYCOMP% is being used to do inference,
+in which case it is mandatory.
+It prescribes the set of token symbols that may be seen on input and output tapes.
+The cardinality of this set determines the size of symbol-indexed vector- and matrix-valued state labels.
+
+The above example illustrates an alphabet of DNA bases.
+
+---++ Transducer declarations
+
+<blockquote><pre>
+(transducer
+
+ (name TKF91_ROOT)
+
+ (state (name S) (type start))
+ (state (name E) (type end))
+ (state (name W) (type wait))
+ (state (name I) (type insert))
+
+ (transition (from S) (to I) (label kappa))
+ (transition (from S) (to W) (label ~kappa))
+
+ (transition (from I) (to I) (label kappa))
+ (transition (from I) (to W) (label ~kappa))
+
+ (transition (from W) (to E))
+)
+</pre></blockquote>
+
+At least one transducer must be defined.
+The fields are described below.
+
+---+++ Name
+
+<blockquote><pre>
+ (name TKF91_ROOT)
+</pre></blockquote>
+
+The ==name== field is mandatory for transducers.
+No two transducers can have the same name.
+
+---+++ States
+
+<blockquote><pre>
+ (state (name S) (type start))
+ (state (name I) (type insert))
+ (state (name J) (type insert) (label pi))
+</pre></blockquote>
+
+A transducer must have at least three states
+including the start state, the end state & at least one wait state.
+Singleton transducers must also contain at least one insert state.
+Non-singleton transducers must contain absorbing (match or delete) states.
+
+---++++ State names
+
+<blockquote><pre>
+		  (name S)
+</pre></blockquote>
+
+The ==name== field is mandatory for states.
+No two states in a given transducer can have the same name.
+
+---++++ State types
+
+<blockquote><pre>
+					  (type start)
+</pre></blockquote>
+
+The ==type== field is mandatory for states.
+Allowable values are ==start==, ==end==, ==wait==, ==insert==, ==delete== and ==match==.
+
+---++++ State absorption/emission labels
+
+<blockquote><pre>
+ (state (name Ins)	(type insert) (label pi))
+ (state (name Match) (type match)  (label Q))
+ (state (name Del)	(type delete) (label del))
+</pre></blockquote>
+
+Insert, delete and match state declarations may optionally include absorption/emission labels.
+An absorption/emission label can be thought of as a vector- or matrix-valued variable,
+indexed by the absorbed and/or emitted symbol,
+containing the probabilistic weight costs for absorbing and/or emitting any given symbol.
+
+If the state is a match state, then the state label
+represents a matrix indexed
+by absorbed symbol ==x== and emitted symbol ==y==.
+In the above example, the ==Match== state label is ==Q== and the element
+corresponding to the absorption of an ==A== nucleotide and emission of a ==G== nucleotide
+would be written ==(Q A G)==.
+
+If the state is an insert state, then the state label
+represents a vector indexed
+by emitted symbol ==y==.
+In the above example, the ==Ins== state label is ==pi== and the element
+corresponding to the emission of a ==G== nucleotide
+would be written ==(pi G)==.
+
+If the state is a delete state, then the state label
+represents a vector indexed
+by absorbed symbol ==x==.
+In the above example, the ==Del== state label is ==del== and the element
+corresponding to the absorption of an ==A== nucleotide
+would be written ==(del A)==.
+
+State labels are always optional.
+If the state label is absent, then the probabilistic weight of absorbing or emitting any symbol
+is taken to be 1.
+
+---+++ Transitions
+
+<blockquote><pre>
+ (transition (from S) (to I) (label kappa))
+ (transition (from S) (to W) (label ~kappa))
+
+ (transition (from I) (to I) (label kappa))
+ (transition (from I) (to W) (label ~kappa))
+</pre></blockquote>
+
+Transition declarations specify the ways that the transducer can change state.
+The ==from== and ==to== fields are mandatory and must refer to the names of declared states
+in the transducer.
+
+Note that transitions are only allowed between certain types of states,
+as shown in the above [[#Allowed_transitions][table]].
+If prohibited transitions are included in the input, %PHYCOMP% will attempt to "fix" the transducer by adding "dummy" wait states to split the transition.
+For example, INSERT->MATCH (prohibited) becomes INSERT->WAIT->MATCH (allowed).
+
+---++++ Transition labels
+
+<blockquote><pre>
+									  (label kappa))
+</pre></blockquote>
+
+The transition label represents the probability associated with a transition;
+it can be thought of as a scalar variable.
+It can also be used to identify transitions in the composite transducer,
+each of which represents a simultaneous transition of one or more individual transducers
+represented by a product of the corresponding transition labels in the %PHYCOMP% output.
+
+Transition labels are optional; if absent, the transition probability is assumed to be 1
+for the purposes of inference.
+
+Note that, if ==x== is a transition probability label, there currently no mechanism for specifying
+the probability of the negated event, i.e. ==1-x==.
+Instead, you must invent an arbitrary extra parameter e.g. ==~x== as in the above examples,
+and ensure yourself that the normalization constraint ==x + ~x = 1== is satisfied.
+
+---++ Phylogenetic tree
+
+<blockquote><pre>
+(branch
+ (transducer TKF91_ROOT)
+ (branch (transducer TKF91_BRANCH))
+ (branch (transducer TKF91_BRANCH))
+ )
+</pre></blockquote>
+
+Apart from the transducer definitions,
+the central data structure in the %PHYCOMP% input file is the phylogenetic tree
+and the associated mapping from branches to transducers.
+
+The tree and the associated data are described as a set of nested branch declarations.
+
+---+++ Branches
+
+<blockquote><pre>
+(branch
+ (transducer TKF91_ROOT)
+)
+</pre></blockquote>
+
+
+---++++ Allowed topologies
+
+One restriction is placed on the tree topology:
+the root node must have degree one, i.e. there must be exactly one branch from the root node.
+This implies that there is exactly one ==(branch ...)== declaration
+at the top level of the %PHYCOMP% input S-expression.
+
+Often, a singleton transducer will be placed on this "root branch",
+so that the input sequence can be considered to have zero length and therefore ignored,
+with the consequence that the composite transducer is a jointly-normalized multi-sequence HMM.
+
+---++++ Branch names
+
+<blockquote><pre>
+(branch
+ (name RootBranch)
+ (transducer TKF91_ROOT)
+)
+</pre></blockquote>
+
+Any branch may optionally be named.
+The name is mainly useful for referring to data structures derived from the tree,
+such as the composite name format.
+If the ==name== field is omitted from the branch declaration,
+a name is generated automatically using the tape names (see below).
+
+---++++ Mapping from branches to transducers
+
+<blockquote><pre>
+			(transducer TKF91_BRANCH)
+</pre></blockquote>
+
+The ==transducer== field is mandatory for branch declarations.
+The value of this field must match the ==name== field of a transducer
+declared elsewhere in the input file.
+
+The branch-to-transducer mapping is many-to-one, i.e. several branches
+can use the same transducer.
+
+---++++ Tape symbol identifiers
+
+<blockquote><pre>
+(branch
+ (from $NULL)
+ (to $SUBROOT)
+ (name RootBranch)
+ (transducer TKF91_ROOT)
+ (branch (transducer TKF91_BRANCH) (to $L))
+ (branch (transducer TKF91_BRANCH) (from $SUBROOT) (to $R))
+)
+</pre></blockquote>
+
+Nodes of the tree are associated with sequences, or "tapes" in transducer parlance.
+The root node is associated with the input tape; all other nodes are associated with output tapes.
+
+As with branches, tapes may be given names.
+Actually, rather than naming the tape itself, one specifies a name for a variable
+representing any single token symbol on that tape.
+Conventionally, these tape symbol identifiers begin with dollar signs
+(as in the above example: ==$NULL==, ==$SUBROOT==, ==$L==, ==$R==)
+although any name may be used. 
+
+Tape symbol names are specified using the ==from== and ==to== fields in the branch declaration.
+It is possible to specify the symbol name in multiple places
+(i.e. in the ==to== field of the branch leading to a particular node
+and also the ==from== field of branches leading out from that node);
+if this is done then the names must agree or an error will be generated.
+
+If tape symbol names are omitted, then default names will be assigned
+(==$0== for the root node, ==$1== for the next node that appears, ==$2== for the node
+after that, etc.).
+
+Tape symbol names are used in the output of %PHYCOMP%
+to indicate the absorption/emission profiles of states
+in the composite transducer; to index absorption/emission labels;
+and to automatically generate branch names when none are specified.
+
+---++ Specifying constraints for inference
+
+<blockquote><pre>
+(branch (from $NULL) (to $ROOT)
+ (transducer TKF91_ROOT)
+ ;; note that start, wait & end states can be omitted from these paths
+ ;; (it's easy to sum them out, but in fact they can just be ignored)
+ (state (I I I I I I I))
+ (branch (transducer TKF91_BRANCH) (to $L)
+	 (state (S M M M M
+			W M W M  ;; wait states like this should be ignored
+			M E))  ;; so should end & start states
+	 (branch (transducer TKF91_BRANCH) (to $L1)
+		 (state (S M M M M M M M E))
+		 (sequence (A G G C C C A))
+		 )
+	 (branch (transducer TKF91_BRANCH) (to $L2)
+		 (state (M M M M M M M))
+		 (sequence (A G G T C C G))
+		 )
+	 )
+
+ (branch (transducer TKF91_BRANCH) (from $ROOT) (to $R)
+;; We leave this branch unconstrained, as we want to sample it.
+	 (branch (transducer TKF91_BRANCH) (to $R1)
+		 (state (M M M M M M M M))
+		 (sequence (A G G G C C C A))
+		 )
+	 (branch (transducer TKF91_BRANCH) (to $R2)
+		 (state (M M M D I M M M M))
+		 (sequence (A G G A T C C G))
+		 )
+	 )
+)
+</pre></blockquote>
+
+In order to perform inference with a composite transducer
+(as opposed to simply studying its algebraic structure),
+you need to supply some "observed" data.
+
+This can come in several forms:
+
+	* sequences (or probabilistic weight matrices) observed on the tapes associated with nodes of the tree;
+	* state paths through the transducers associated with branches of the tree;
+	* some combination of the above.
+
+---+++ Constraining the observed sequence at a node
+
+<blockquote><pre>
+(branch
+ (transducer TKF91_ROOT)
+ (branch
+  (transducer TKF91_BRANCH)
+  (sequence (A G G C C C A))
+ )
+ (branch
+  (transducer TKF91_BRANCH)
+  (branch
+	(transducer TKF91_BRANCH)
+	(profile (((A .5)(C .5)) ((G .1)) C C A))
+  )
+  (branch
+	(transducer TKF91_BRANCH)
+	(bit-profile (A G C ((C 1) (G 1)) A))
+  )
+ )
+)
+</pre></blockquote>
+
+Sequence constraints may be specified at leaf and/or internal nodes of the tree
+(although typically they are most useful at leaf nodes).
+There are three interconvertible ways to represent a sequence.
+
+---++++ Sequence
+
+<blockquote><pre>
+  (sequence (A G G C C C A))
+</pre></blockquote>
+
+The simplest way to represent a sequence is as a list of symbols.
+
+---++++ Profile
+
+<blockquote><pre>
+	(profile (((A .5)(C .5)) ((G .1)) C C A))
+</pre></blockquote>
+
+A sequence constraint may also be represented as a probabilistic weight matrix, or ==profile==.
+Each position ("column") of this weight matrix
+can either be a single token symbol (as in ==sequence== declarations)
+or a probability distribution over symbols, like so
+
+<blockquote><pre>
+				 ((A .5)(C .5))
+</pre></blockquote>
+
+This example represents a probability distribution over the two symbols ==A== and ==C==.
+Each has probability 0.5.
+
+---++++ Bit-profile
+
+<blockquote><pre>
+	(bit-profile (A G C ((C 1) (G 1)) A))
+</pre></blockquote>
+
+A representation that is entirely equivalent to the probabilistic weight matrix
+is the information matrix or ==bit-profile==.
+Instead of specifying probabilities
+(%$p$%),
+one specifies negative log-likelihoods in bits
+(%$-\log_2 p$%);
+that is, Shannon information.
+
+The above example of a probability distribution over the two symbols ==A== and ==C==,
+with probability 0.5 for each, is represented as follows in a ==bit-profile==:
+
+<blockquote><pre>
+				 ((A 1)(C 1))
+</pre></blockquote>
+
+Bit-profiles are the way that %PHYCOMP% represents sequence constraints internally,
+and should therefore provide the least "weirdness" in terms of things like precision and rounding errors.
+Bit values are stored to three decimal places.
+
+---+++ Constraining the observed state path on a branch
+
+<blockquote><pre>
+(branch
+ (transducer TKF91_ROOT)
+ (state (I I I I I I I))
+)
+</pre></blockquote>
+
+The optional ==state== field specifies the state path, and hence the pairwise alignment,
+for a transducer on a particular branch.
+It is not necessary to include null states (i.e. start, end, or wait states) in this path:
+if omitted, they will be imputed as necessary.
+
+---++++ At most one unconstrained subtree is allowed
+
+The specification of state paths on some branches partitions the tree
+into constrained and unconstrained subtrees.
+%PHYCOMP% requires that there be only one unconstrained subtree.
+(This allows the composition to be reduced to an entirely unconstrained
+problem by Elston-Stewart "peeling" of constrained branches; see [[#PeelingConstrainedBranches][below]].)
+
+#CompleteConstraints
+Note that you can constrain the state path on every branch on the tree, if you want.
+This is typically used to find the score for a particular composite state path.
+If you do this, it is recommended that you suppress construction of the composite transducer, as it will be very large
+(see [[#PeelingConstrainedBranches][note at end of "peeling" section]].)
+
+---++++ Reconstruction of ancestral sequences
+
+<blockquote><pre>
+(branch (transducer TKF91_ROOT) (to $ROOT)
+ (state (I I I I I I I))
+ (reconstruct)
+ (branch (transducer TKF91_BRANCH) (to $L)
+	 (state (M M M M M M M)
+	 (sequence (A G G C C C A))
+	 )
+ (branch (transducer TKF91_BRANCH) (to $R)
+	 (state (M M M M M M M))
+	 (sequence (A G G T C C G))
+	 )
+ )
+</pre></blockquote>
+
+As noted [[#CompleteConstraints][above]], you can constrain the state path on every branch of the tree.
+When all paths are so constrained, you can ask %PHYCOMP% to perform probabilistic reconstruction of ancestral nodes by placing a ==reconstruct== tag at that node of the tree
+(as in the node labeled ==$ROOT== in the above example).
+The reconstruction appears in the output in the form of a ==bit-profile==.
+
+---++ Assigning values to labels for inference
+
+<blockquote><pre>
+(bit-value (beta 1))
+(bit-value (~beta 1))
+
+(value ((Q A A) .75))
+(value ((Q A C) .05))
+(value ((Q A G) .15))
+(value ((Q A T) .05))
+...
+</pre></blockquote>
+
+To visualize the algebraic structure of a transducer,
+it is not necessary to specify numeric values for the abstract state or transition labels.
+However, numerical values are required for dynamic programming computations.
+(Labels lacking numerical value assignments are assigned a value of 1, but a warning is issued.)
+
+As with the specification of probabilistic weight matrices as sequence constraints,
+one can assign values in either of two equivalent ways:
+as probabilities, or as negative-log-likelihoods measured in bits.
+
+---+++ Value
+
+<blockquote><pre>
+(value (beta 0.5))
+(value ((pi G) .25))
+(value ((Q A G) .125))
+</pre></blockquote>
+
+Values can be assigned directly to any scalar;
+that is, to transition labels, or to individual elements of vector- matrix-valued state labels.
+
+In the above example, ==beta== is a transition label,
+==pi== is a vector-valued label (for an insert or delete state) and
+==Q== is a matrix-valued label (for a match state).
+
+Vectors and matrices must be indexed by symbols from the token alphabet.
+
+---+++ Bit-value
+
+<blockquote><pre>
+(bit-value (beta 1))
+(bit-value ((pi G) 2.03))
+(bit-value ((Q A G) 3))
+</pre></blockquote>
+
+Consider a label with value %$p$%.
+It is equivalent to say that the label has a bit-value of %$-\log_2 p$%.
+
+Bit-values are the way that %PHYCOMP% represents numeric values internally,
+and should therefore provide the least "weirdness" in terms of things like precision and rounding errors.
+Bit-values are stored to three decimal places.
+
+---+ Output format
+
+<blockquote><pre>
+% phylocomposer dart/data/phylocomposer/postprof.sxpr
+	--quiet --composite --acyclic --viterbi --nforward 5 --optacc
+
+(token (A C G T))
+
+(bit-value
+ ((pi A) 2)
+ ((pi C) 2)
+ ((pi G) 2)
+ ((pi T) 2)
+ (kappa 1)
+ (~kappa 1)
+ ((Q A A) 0.415)
+ ((Q C A) 4.321)
+ ((Q G A) 2.736)
+ ((Q T A) 4.321)
+ ((Q A C) 4.321)
+ ((Q C C) 0.415)
+ ((Q G C) 4.321)
+ ((Q T C) 2.736)
+ ((Q A G) 2.736)
+ ((Q C G) 4.321)
+ ((Q G G) 0.415)
+ ((Q T G) 4.321)
+ ((Q A T) 4.321)
+ ((Q C T) 2.736)
+ ((Q G T) 4.321)
+ ((Q T T) 0.415)
+ (beta 2)
+ (~beta 0.415)
+ (alpha 1)
+ (~alpha 1)
+ (gamma 1)
+ (~gamma 1)
+)
+
+(transducer
+ (name *SINGLETON)
+
+ (state (name *E) (type end))
+ (state (name *S) (type start))
+ (state (name *I) (type insert))
+ (state (name *W) (type wait))
+
+ (transition (from *S) (to *I))
+ (transition (from *S) (to *W))
+
+ (transition (from *I) (to *I))
+ (transition (from *I) (to *W))
+
+ (transition (from *W) (to *E))
+
+)
+
+(transducer
+ (name TKF91_BRANCH)
+
+ (state (name E) (type end))
+ (state (name S) (type start))
+ (state (name W) (type wait))
+ (state (name M) (type match) (label Q))
+ (state (name D) (type delete))
+ (state (name I) (type insert) (label pi))
+
+ (transition (from S) (to W) (bit-value 0.415) (label ~beta))
+ (transition (from S) (to I) (bit-value 2) (label beta))
+
+ (transition (from W) (to E))
+ (transition (from W) (to M) (bit-value 1) (label alpha))
+ (transition (from W) (to D) (bit-value 1) (label ~alpha))
+
+ (transition (from M) (to W) (bit-value 0.415) (label ~beta))
+ (transition (from M) (to I) (bit-value 2) (label beta))
+
+ (transition (from D) (to W) (bit-value 1) (label ~gamma))
+ (transition (from D) (to I) (bit-value 1) (label gamma))
+
+ (transition (from I) (to W) (bit-value 0.415) (label ~beta))
+ (transition (from I) (to I) (bit-value 2) (label beta))
+
+)
+
+(peeled-composition
+ (branch (from $0) (to $ROOT) (name $0:$ROOT) (transducer *SINGLETON)
+  (bit-profile (((A 0.471)(C 4.225)(G 2.538)(T 4.226))
+					 ((A 2.538)(C 4.225)(G 0.471)(T 4.225))
+					 ((A 2.538)(C 4.225)(G 0.471)(T 4.225))
+					 ((A 4.089)(C 1.179)(G 4.089)(T 1.179))
+					 ((A 4.226)(C 0.471)(G 4.226)(T 2.537))
+					 ((A 4.226)(C 0.471)(G 4.226)(T 2.537))
+					 ((A 1.179)(C 4.088)(G 1.179)(T 4.088))))
+  (branch (from $ROOT) (to $R) (name $ROOT:$R) (transducer TKF91_BRANCH)
+	(bit-profile (((A 0.068)(C 7.88)(G 4.71)(T 7.88))
+					  ((A 4.71)(C 7.88)(G 0.068)(T 7.88))
+					  ((A 4.71)(C 7.88)(G 0.068)(T 7.88))
+					  ((A 2.736)(C 4.321)(G 0.415)(T 4.321))
+					  ((A 6.522)(C 1.031)(G 6.522)(T 1.031))
+					  ((A 7.88)(C 0.068)(G 7.88)(T 4.71))
+					  ((A 7.88)(C 0.068)(G 7.88)(T 4.71))
+					  ((A 1.03)(C 6.521)(G 1.03)(T 6.521)))))
+ )
+ (peeled-bits 73.5)																				  
+)
+
+(composite-name-format ($0:$ROOT($ROOT:$R)))
+
+(composite-transducer
+ (name (*SINGLETON(TKF91_BRANCH)))
+
+ (state (name (*E(E))) (type end))
+ (state (name (*S(S))) (type start))
+ (state (name (*S(I))) (type ($R)) (label (sum $R (pi $R))))
+ (state (name (*W(W))) (type wait))
+ (state (name (*I(M))) (type ($ROOT $R)) (label (sum $ROOT (sum $R (Q $ROOT $R)))))
+ (state (name (*I(D))) (type ($ROOT)))
+ (state (name (*I(I))) (type ($R)) (label (sum $R (pi $R))))
+
+ (transition (from (*S(S))) (to (*S(I))) (bit-value 2) (label (beta)))
+ (transition (from (*S(S))) (to (*W(W))) (bit-value 0.415) (label (~beta)))
+ (transition (from (*S(S))) (to (*I(M))) (bit-value 1.415) (label (~beta * alpha)))
+ (transition (from (*S(S))) (to (*I(D))) (bit-value 1.415) (label (~beta * ~alpha)))
+
+ (transition (from (*S(I))) (to (*S(I))) (bit-value 2) (label (beta)))
+ (transition (from (*S(I))) (to (*W(W))) (bit-value 0.415) (label (~beta)))
+ (transition (from (*S(I))) (to (*I(M))) (bit-value 1.415) (label (~beta * alpha)))
+ (transition (from (*S(I))) (to (*I(D))) (bit-value 1.415) (label (~beta * ~alpha)))
+
+ (transition (from (*W(W))) (to (*E(E))))
+
+ (transition (from (*I(M))) (to (*W(W))) (bit-value 0.415) (label (~beta)))
+ (transition (from (*I(M))) (to (*I(M))) (bit-value 1.415) (label (~beta * alpha)))
+ (transition (from (*I(M))) (to (*I(D))) (bit-value 1.415) (label (~beta * ~alpha)))
+ (transition (from (*I(M))) (to (*I(I))) (bit-value 2) (label (beta)))
+
+ (transition (from (*I(D))) (to (*W(W))) (bit-value 1) (label (~gamma)))
+ (transition (from (*I(D))) (to (*I(M))) (bit-value 2) (label (~gamma * alpha)))
+ (transition (from (*I(D))) (to (*I(D))) (bit-value 2) (label (~gamma * ~alpha)))
+ (transition (from (*I(D))) (to (*I(I))) (bit-value 1) (label (gamma)))
+
+ (transition (from (*I(I))) (to (*W(W))) (bit-value 0.415) (label (~beta)))
+ (transition (from (*I(I))) (to (*I(M))) (bit-value 1.415) (label (~beta * alpha)))
+ (transition (from (*I(I))) (to (*I(D))) (bit-value 1.415) (label (~beta * ~alpha)))
+ (transition (from (*I(I))) (to (*I(I))) (bit-value 2) (label (beta)))
+
+)
+
+(acyclic-composite-transducer
+ (name (*SINGLETON(TKF91_BRANCH)))
+
+ (state (name (*E(E))) (type end))
+ (state (name (*S(S))) (type start))
+ (state (name (*S(I))) (type ($R)) (label (sum $R (pi $R))))
+ (state (name (*I(M))) (type ($ROOT $R)) (label (sum $ROOT (sum $R (Q $ROOT $R)))))
+ (state (name (*I(D))) (type ($ROOT)))
+ (state (name (*I(I))) (type ($R)) (label (sum $R (pi $R))))
+
+ (transition (from (*S(S))) (to (*E(E))) (bit-value 0.414))
+ (transition (from (*S(S))) (to (*S(I))) (bit-value 1.999))
+ (transition (from (*S(S))) (to (*I(M))) (bit-value 1.415))
+ (transition (from (*S(S))) (to (*I(D))) (bit-value 1.415))
+
+ (transition (from (*S(I))) (to (*E(E))) (bit-value 0.414))
+ (transition (from (*S(I))) (to (*S(I))) (bit-value 1.999))
+ (transition (from (*S(I))) (to (*I(M))) (bit-value 1.415))
+ (transition (from (*S(I))) (to (*I(D))) (bit-value 1.415))
+
+ (transition (from (*I(M))) (to (*E(E))) (bit-value 0.414))
+ (transition (from (*I(M))) (to (*I(M))) (bit-value 1.415))
+ (transition (from (*I(M))) (to (*I(D))) (bit-value 1.415))
+ (transition (from (*I(M))) (to (*I(I))) (bit-value 1.999))
+
+ (transition (from (*I(D))) (to (*E(E))) (bit-value 0.999))
+ (transition (from (*I(D))) (to (*I(M))) (bit-value 1.999))
+ (transition (from (*I(D))) (to (*I(D))) (bit-value 1.999))
+ (transition (from (*I(D))) (to (*I(I))) (bit-value 0.999))
+
+ (transition (from (*I(I))) (to (*E(E))) (bit-value 0.414))
+ (transition (from (*I(I))) (to (*I(M))) (bit-value 1.415))
+ (transition (from (*I(I))) (to (*I(D))) (bit-value 1.415))
+ (transition (from (*I(I))) (to (*I(I))) (bit-value 1.999))
+
+)
+
+(viterbi-bits 117)
+(viterbi-path (state ((S(S)) (I(M)) (I(M)) (I(M)) (I(I)) (I(M)) (I(M)) (I(M))
+ (I(M)) (W(W)) (E(E))))
+ (branch (name $0:$ROOT) (state (S I I I I I I I E))
+  (branch (name $ROOT:$R) (state (S M M M I M M M M E)))))
+
+(forward-bits 111)
+(forward-path (state ((S(S)) (I(D)) (I(I)) (I(I)) (I(M)) (I(M)) (I(M)) (I(M))
+ (I(M)) (I(D)) (I(I)) (W(W)) (E(E))))
+ (branch (name $0:$ROOT) (state (S I I I I I I I E))
+  (branch (name $ROOT:$R) (state (S D I I M M M M M D I E)))))
+(forward-path (state ((S(S)) (I(M)) (I(M)) (I(M)) (I(D)) (I(I)) (I(I)) (I(I))
+ (I(D)) (I(M)) (I(M)) (W(W)) (E(E))))
+ (branch (name $0:$ROOT) (state (S I I I I I I I E))
+  (branch (name $ROOT:$R) (state (S M M M D I I I D M M E)))))
+(forward-path (state ((S(S)) (S(I)) (I(M)) (I(M)) (I(M)) (I(D)) (I(I)) (I(M))
+ (I(M)) (I(M)) (W(W)) (E(E))))
+ (branch (name $0:$ROOT) (state (S I I I I I I I E))
+  (branch (name $ROOT:$R) (state (S I M M M D I M M M E)))))
+(forward-path (state ((S(S)) (I(M)) (I(M)) (I(M)) (I(D)) (I(I)) (I(D)) (I(I))
+ (I(I)) (I(M)) (I(M)) (W(W)) (E(E))))
+ (branch (name $0:$ROOT) (state (S I I I I I I I E))
+  (branch (name $ROOT:$R) (state (S M M M D I D I I M M E)))))
+(forward-path (state ((S(S)) (I(M)) (I(M)) (I(D)) (I(I)) (I(D)) (I(I)) (I(M))
+ (I(M)) (I(M)) (I(I)) (W(W)) (E(E))))
+ (branch (name $0:$ROOT) (state (S I I I I I I I E))
+  (branch (name $ROOT:$R) (state (S M M D I D I M M M I E)))))
+
+(optimal-accuracy-path (type (($ROOT $R) ($ROOT $R) ($R)
+ ($ROOT $R) ($ROOT $R) ($ROOT $R) ($ROOT $R) ($ROOT $R))))
+</pre></blockquote>
+
+---++ Unix filter operation
+
+By default, %PHYCOMP% operates as a Unix filter, echoing the input to the output
+and adding some extra information.
+This behavior can be suppressed using the ==--quiet== command-line option.
+
+Unless ==--quiet== is specified, running the program again on the same output should yield the exact same result.
+
+#PeelingConstrainedBranches
+---++ Peeling of constrained branches
+
+<blockquote><pre>
+(peeled-composition
+ (branch (from $0) (to $ROOT) (name $0:$ROOT) (transducer *SINGLETON)
+  (bit-profile (((A 0.471)(C 4.225)(G 2.538)(T 4.226))
+					 ((A 2.538)(C 4.225)(G 0.471)(T 4.225))
+					 ((A 2.538)(C 4.225)(G 0.471)(T 4.225))
+					 ((A 4.089)(C 1.179)(G 4.089)(T 1.179))
+					 ((A 4.226)(C 0.471)(G 4.226)(T 2.537))
+					 ((A 4.226)(C 0.471)(G 4.226)(T 2.537))
+					 ((A 1.179)(C 4.088)(G 1.179)(T 4.088))))
+  (branch (from $ROOT) (to $R) (name $ROOT:$R) (transducer TKF91_BRANCH)
+	(bit-profile (((A 0.068)(C 7.88)(G 4.71)(T 7.88))
+					  ((A 4.71)(C 7.88)(G 0.068)(T 7.88))
+					  ((A 4.71)(C 7.88)(G 0.068)(T 7.88))
+					  ((A 2.736)(C 4.321)(G 0.415)(T 4.321))
+					  ((A 6.522)(C 1.031)(G 6.522)(T 1.031))
+					  ((A 7.88)(C 0.068)(G 7.88)(T 4.71))
+					  ((A 7.88)(C 0.068)(G 7.88)(T 4.71))
+					  ((A 1.03)(C 6.521)(G 1.03)(T 6.521)))))
+ )
+ (peeled-bits 73.5)																				  
+)
+</pre></blockquote>
+
+If there is one or more ==constrained-subtree==
+on whose branches state paths were specified,
+then these branches can be "peeled" away using the Elston-Stewart peeling algorithm,
+yielding posterior probability profiles for the tip nodes of the ==unconstrained-subtree==.
+
+The partially-constrained inference problem is thereby reduced to the fully unconstrained problem
+(with constraints here referring only to state path constraints on branches,
+not sequence constraints at nodes).
+
+The ==peeled-bits== number is the negative log-likelihood, in bits, of the (constrained) sections that are peeled away.
+That is, if you take the log-likelihood of any state path through the "peeled" transducer,
+then the ==peeled-bits== score is the difference between the score of this path and the score of the corresponding path through the full transducer.
+
+---+++ Score of a given composite state path
+
+
+<blockquote><pre>
+% phylocomposer ~/dart/data/phylocomposer/fully_constrained.sxpr -qq
+
+(path-bits 117)
+...
+</pre></blockquote>
+
+If the input is fully constrained (i.e. there is a state path on every branch of the tree)
+then the ==path-bits== score corresponds to the score of this fully-specified path.
+Note that there is no alignment to be done in such a case (since everything is already fully specified).
+If you ask %PHYCOMP% to do Viterbi, Forward or Optimal Accuracy alignment when the alignment is fully specified, it will throw an error.
+
+Note also that if you specify the state path on every branch of the tree,
+and ask %PHYCOMP% to build the composite transducer,
+it will attempt to construct the composite transducer for the _entire_ tree.
+For all but very small trees, this composite transducer will have an enormous number of states
+(exponential in the number of branches) and so this will probably cause a memory allocation error
+and may cause your machine to seize up as well.
+*It is therefore recommended that you suppress construction of the composite transducer (using the ==--nocomposite== or ==-qq== options) if all you are interested in is the score of a fully-constrained alignment.*
+
+---+++ Replacement of constrained transducers at the root
+
+<blockquote><pre>
+(transducer
+ (name *SINGLETON)
+
+ (state (name *E) (type end))
+ (state (name *S) (type start))
+ (state (name *I) (type insert))
+ (state (name *W) (type wait))
+
+ (transition (from *S) (to *I))
+ (transition (from *S) (to *W))
+
+ (transition (from *I) (to *I))
+ (transition (from *I) (to *W))
+
+ (transition (from *W) (to *E))
+
+)
+
+...
+
+(peeled-composition
+ (branch (from $0) (to $ROOT) (name $0:$ROOT) (transducer *SINGLETON)
+
+ ...
+</pre></blockquote>
+
+When constrained branches between the root node and the unconstrained subtree are peeled away,
+they are replaced with a "dummy" singleton transducer called ==*SINGLETON== with states named ==*S==, ==*E==, ==*I== and ==*W==.
+This transducer has a "probability" of one for emitting any sequence, and so makes
+no contribution to the likelihood.
+
+
+---+++ Composite state paths: multiple alignments
+
+<blockquote><pre>
+% phylocomposer ~/dart/data/phylocomposer/fully_constrained.sxpr -noc -cp
+...
+(constrained-subtree
+ (branch ($NULL:$ROOT($ROOT:$L($L:$L1 $L:$L2) $ROOT:$R($R:$R1 $R:$R2))))
+ (alignment
+  (column (id 1)
+	(transition (branch $NULL:$ROOT) (to I))
+	(transition (branch $ROOT:$L) (to M))
+	(transition (branch $L:$L1) (to M))
+	(transition (branch $L:$L2) (to M))
+	(transition (branch $ROOT:$R) (to M))
+	(transition (branch $R:$R1) (to M))
+	(transition (branch $R:$R2) (to M))
+	(type ($ROOT $L $L1 $L2 $R $R1 $R2)))
+  (column (id 2)
+	(transition (branch $NULL:$ROOT) (to I))
+	(transition (branch $ROOT:$L) (to M))
+	(transition (branch $L:$L1) (to M))
+	(transition (branch $L:$L2) (to M))
+	(transition (branch $ROOT:$R) (to M))
+	(transition (branch $R:$R1) (to M))
+	(transition (branch $R:$R2) (to M))
+	(type ($ROOT $L $L1 $L2 $R $R1 $R2)))
+  (column (id 3)
+	(transition (branch $NULL:$ROOT) (to I))
+	(transition (branch $ROOT:$L) (to M))
+	(transition (branch $L:$L1) (to M))
+	(transition (branch $L:$L2) (to M))
+	(transition (branch $ROOT:$R) (to M))
+	(transition (branch $R:$R1) (to M))
+	(transition (branch $R:$R2) (to M))
+	(type ($ROOT $L $L1 $L2 $R $R1 $R2)))
+  (column (id 4)
+	(transition (branch $ROOT:$R) (to I))
+	(transition (branch $R:$R1) (to M))
+	(transition (branch $R:$R2) (to D))
+	(type ($R $R1 $R2)))
+  (column (id 5)
+	(transition (branch $R:$R2) (to I))
+	(type ($R2)))
+  (column (id 6)
+	(transition (branch $NULL:$ROOT) (to I))
+	(transition (branch $ROOT:$L) (to M))
+	(transition (branch $L:$L1) (to M))
+	(transition (branch $L:$L2) (to M))
+	(transition (branch $ROOT:$R) (to M))
+	(transition (branch $R:$R1) (to M))
+	(transition (branch $R:$R2) (to M))
+	(type ($ROOT $L $L1 $L2 $R $R1 $R2)))
+  (column (id 7)
+	(transition (branch $NULL:$ROOT) (to I))
+	(transition (branch $ROOT:$L) (to M))
+	(transition (branch $L:$L1) (to M))
+	(transition (branch $L:$L2) (to M))
+	(transition (branch $ROOT:$R) (to M))
+	(transition (branch $R:$R1) (to M))
+	(transition (branch $R:$R2) (to M))
+	(type ($ROOT $L $L1 $L2 $R $R1 $R2)))
+  (column (id 8)
+	(transition (branch $NULL:$ROOT) (to I))
+	(transition (branch $ROOT:$L) (to M))
+	(transition (branch $L:$L1) (to M))
+	(transition (branch $L:$L2) (to M))
+	(transition (branch $ROOT:$R) (to M))
+	(transition (branch $R:$R1) (to M))
+	(transition (branch $R:$R2) (to M))
+	(type ($ROOT $L $L1 $L2 $R $R1 $R2)))
+  (column (id 9)
+	(transition (branch $NULL:$ROOT) (to I))
+	(transition (branch $ROOT:$L) (to M))
+	(transition (branch $L:$L1) (to M))
+	(transition (branch $L:$L2) (to M))
+	(transition (branch $ROOT:$R) (to M))
+	(transition (branch $R:$R1) (to M))
+	(transition (branch $R:$R2) (to M))
+	(type ($ROOT $L $L1 $L2 $R $R1 $R2)))))
+</pre></blockquote>
+
+The ==--composite-path== or ==-cp== option causes %PHYCOMP% to display the composite state path for a constrained subtree.
+
+The composite state path corresponds to an ==alignment==.
+Only symbol-emitting steps are shown (start, wait and end states are omitted).
+Each such step corresponds to a ==column== of the alignment.
+The branch transitions for the column are shown, as is the emission type (i.e. the set of rows that are ungapped in this column).
+
+Effectively, the composite state path provides a mapping between the sequences, the state paths on the branches, and the multiple alignment as conventionally displayed.
+This can be used in designing MCMC algorithms using %PHYCOMP%.
+
+---++ The composite transducer
+
+<blockquote><pre>
+% phylocomposer dart/data/phylocomposer/seq.sxpr --quiet
+
+(composite-name-format (ROOT_BRANCH($1:$2 $1:$3)))
+
+(composite-transducer
+ (name (TKF91_ROOT(TKF91_BRANCH TKF91_BRANCH)))
+
+ (state (name (E(E E))) (type end))
+ (state (name (S(S S))) (type start))
+ (state (name (S(I W))) (type ($2)) (label (sum $2 (pi $2))))
+ (state (name (S(S I))) (type ($3)) (label (sum $3 (pi $3))))
+ (state (name (W(W W))) (type wait))
+ (state (name (I(I W))) (type ($2)) (label (sum $2 (pi $2))))
+ (state (name (I(M M))) (type ($1 $2 $3)) (label (sum $1 ((pi $1) * (sum $2 (Q $1 $2)) * (sum $3 (Q $1 $3))))))
+ (state (name (I(D M))) (type ($1 $3)) (label (sum $1 ((pi $1) * (del $1) * (sum $3 (Q $1 $3))))))
+ (state (name (I(M D))) (type ($1 $2)) (label (sum $1 ((pi $1) * (sum $2 (Q $1 $2)) * (del $1)))))
+ (state (name (I(D D))) (type ($1)) (label (sum $1 ((pi $1) * (del $1) * (del $1)))))
+ (state (name (I(M I))) (type ($3)) (label (sum $3 (pi $3))))
+ (state (name (I(D I))) (type ($3)) (label (sum $3 (pi $3))))
+
+ (transition (from (S(S S))) (to (S(I W))) (bit-value 4) (label (beta * ~beta)))
+ (transition (from (S(S S))) (to (S(S I))) (bit-value 1) (label (beta)))
+ (transition (from (S(S S))) (to (W(W W))) (bit-value 7) (label (~kappa * ~beta * ~beta)))
+ (transition (from (S(S S))) (to (I(M M))) (bit-value 9) (label (kappa * ~beta * alpha * ~beta * alpha)))
+ (transition (from (S(S S))) (to (I(D M))) (bit-value 9) (label (kappa * ~beta * ~alpha * ~beta * alpha)))
+ (transition (from (S(S S))) (to (I(M D))) (bit-value 9) (label (kappa * ~beta * alpha * ~beta * ~alpha)))
+ (transition (from (S(S S))) (to (I(D D))) (bit-value 9) (label (kappa * ~beta * ~alpha * ~beta * ~alpha)))
+
+ (transition (from (S(I W))) (to (S(I W))) (bit-value 1) (label (beta)))
+ (transition (from (S(I W))) (to (W(W W))) (bit-value 4) (label (~kappa * ~beta)))
+ (transition (from (S(I W))) (to (I(M M))) (bit-value 6) (label (kappa * ~beta * alpha * alpha)))
+ (transition (from (S(I W))) (to (I(D M))) (bit-value 6) (label (kappa * ~beta * ~alpha * alpha)))
+ (transition (from (S(I W))) (to (I(M D))) (bit-value 6) (label (kappa * ~beta * alpha * ~alpha)))
+ (transition (from (S(I W))) (to (I(D D))) (bit-value 6) (label (kappa * ~beta * ~alpha * ~alpha)))
+
+ (transition (from (S(S I))) (to (S(I W))) (bit-value 4) (label (beta * ~beta)))
+ (transition (from (S(S I))) (to (S(S I))) (bit-value 1) (label (beta)))
+ (transition (from (S(S I))) (to (W(W W))) (bit-value 7) (label (~kappa * ~beta * ~beta)))
+ (transition (from (S(S I))) (to (I(M M))) (bit-value 9) (label (kappa * ~beta * alpha * ~beta * alpha)))
+ (transition (from (S(S I))) (to (I(D M))) (bit-value 9) (label (kappa * ~beta * ~alpha * ~beta * alpha)))
+ (transition (from (S(S I))) (to (I(M D))) (bit-value 9) (label (kappa * ~beta * alpha * ~beta * ~alpha)))
+ (transition (from (S(S I))) (to (I(D D))) (bit-value 9) (label (kappa * ~beta * ~alpha * ~beta * ~alpha)))
+
+ (transition (from (W(W W))) (to (E(E E))))
+
+ ...
+)
+</pre></blockquote>
+
+The composite transducer has essentially a similar syntax to the individual branch transducers,
+but with different interpretations for state names, types & labels and transition labels.
+
+---+++ States in the composite transducer
+
+<blockquote><pre>
+ (state (name (I(D M))) (type ($1 $3)) (label (sum $1 ((pi $1) * (del $1) * (sum $3 (Q $1 $3))))))
+</pre></blockquote>
+
+The meanings of the ==name==, ==type== and ==label== fields are described below.
+
+---++++ State names
+
+<blockquote><pre>
+		  (name (I(D M)))
+</pre></blockquote>
+
+Each composite state corresponds uniquely to a particular combination of states
+of the individual transducers.
+The ==name== field encodes this information, using a format that is specified by
+the ==composite-name-format== field in the %PHYCOMP% output.
+
+---++++ State types
+
+<blockquote><pre>
+								(type ($1 $3))
+</pre></blockquote>
+
+The ==type== field indicates the list of tapes to which symbols are emitted
+(or from which symbols are absorbed, in the case of the input tape).
+
+---++++ State labels
+
+<blockquote><pre>
+													(label (sum $1 ((pi $1) * (del $1) * (sum $3 (Q $1 $3)))))
+</pre></blockquote>
+
+The expression in the ==label== field describes the calculation of absorption/emission probabilities
+in terms of the individual state labels, via Felsenstein's "pruning" algorithm.
+
+The terms in the expression include
+
+	* vector & matrix elements (where the vectors/matrices are state labels, subscripted by tape symbols);
+	* multiplications, denoted by the ==*== infix;
+	* summations over tape symbols, denoted by the ==(sum ...)== construct.
+
+The ==sum== constructs take the form
+
+<blockquote><pre>
+(sum $X (...function involving $X...))
+</pre></blockquote>
+
+If the tape corresponding to symbol ==$X== is unconstrained,
+this may be interpreted as a straightforward sum over all alphabet symbols.
+
+If the tape is constrained by an observed sequence (or profile),
+so that the constraint provides an implied probability distribution
+over symbol ==$X== at any position of the sequence,
+then the construct should be interpreted as a weighted sum over symbols,
+with the weighting determined by the probability distribution.
+
+---+++ Transitions in the composite transducer
+
+<blockquote><pre>
+ (transition (from (S(I W))) (to (W(W W))) (bit-value 4) (label (~kappa * ~beta)))
+</pre></blockquote>
+
+The meanings of the ==bit-value== and ==label== fields are described below.
+
+---++++ Transition labels
+
+<blockquote><pre>
+																			(label (~kappa * ~beta))
+</pre></blockquote>
+
+Each transition in the composite transducer corresponds to one or more synchronized transitions
+in the individual branch transducers.
+The ==label== field is calculated by taking the product of all such transitions.
+
+Certain null states are automatically eliminated from the composite transducer
+(see [[#TransducersOnTrees][Holmes, 2003]]).
+Consequently, a composite transition sometimes
+involves a branch transducer making two consecutive transitions via an intermediate wait state
+(e.g. from a match state, to a wait state, to a delete state).
+If there is more than one path between the two endpoint states,
+the transition label expression may include a summation over valid path labels,
+as in the following example:
+
+<blockquote><pre>
+ (transition (from (S(S I))) (to (I(M M))) (bit-value 4)
+	(label (kappa * (delta * alpha + epsilon * tau) * ~beta * alpha)))
+</pre></blockquote>
+
+---++++ Bit-values for transition labels
+
+<blockquote><pre>
+														 (bit-value 4)
+</pre></blockquote>
+
+If numeric values are specified for the transition labels in the input,
+then the numeric values of the transition label expressions for the composite transducer
+will be calculated and displayed (as bit-values) in the output.
+
+---+++ Composite name format
+
+<blockquote><pre>
+(composite-name-format (ROOT_BRANCH(LEFT_BRANCH RIGHT_BRANCH)))
+</pre></blockquote>
+
+The ==composite-name-format== field shows the relationship of state names in the
+composite transducer to the corresponding states of the component transducers
+on individual named branches.
+
+The parenthetical grouping of the individual state names corresponds to the phylogenetic tree.
+
+---++ Null state elimination: the acyclic transducer
+
+<blockquote><pre>
+(acyclic-composite-transducer
+ (name (*SINGLETON(TKF91_BRANCH)))
+
+ ...
+
+ (transition (from (*S(S))) (to (*E(E))) (bit-value 0.414))
+ (transition (from (*S(S))) (to (*S(I))) (bit-value 1.999))
+ (transition (from (*S(S))) (to (*I(M))) (bit-value 1.415))
+ (transition (from (*S(S))) (to (*I(D))) (bit-value 1.415))
+
+ (transition (from (*S(I))) (to (*E(E))) (bit-value 0.414))
+ (transition (from (*S(I))) (to (*S(I))) (bit-value 1.999))
+ (transition (from (*S(I))) (to (*I(M))) (bit-value 1.415))
+ (transition (from (*S(I))) (to (*I(D))) (bit-value 1.415))
+
+ ...
+)
+</pre></blockquote>
+
+Eliminating null states from the composite transducer affects the transition weights and topology of the state machine.
+The ==acylic-composite-transducer== construct shows the effects of this elimination.
+
+Null state elimination involves a numerical matrix inversion.
+The subsequent transition probabilities are reported as numerical values only,
+ and not algebraic functions.
+(The algebraic structure of the acyclic transition matrix is rather complex,
+ and would be difficult to calculate explicitly.)
+
+---++ Viterbi algorithm
+
+<blockquote><pre>
+(viterbi-bits 84.641)
+(viterbi-path (state ((S(S S)) (S(S I)) (I(M D)) (I(D D)) (I(M M)) (I(D D))
+							 (I(D M)) (I(M M)) (I(I W)) (I(M M)) (W(W W)) (E(E E)))))
+</pre></blockquote>
+
+---+++ Viterbi log-likelihood
+
+<blockquote><pre>
+(viterbi-bits 84.641)
+</pre></blockquote>
+
+The Viterbi score is reported in bits, i.e. as a negative log-likelihood.
+
+The reported score corresponds to the path through the full composite transducer,
+not just the "peeled" transducer corresponding to the unconstrained subtree.
+If you want the score for the unconstrained subtree, then you need to subtract off the ==peeled-bits== score (see [[#PeelingConstrainedBranches][above]]).
+
+---+++ Viterbi path
+
+<blockquote><pre>
+(viterbi-path (state ((S(S S)) (S(S I)) (I(M D)) (I(D D)) (I(M M)) (I(D D))
+ (I(D M)) (I(M M)) (I(I W)) (I(M M)) (W(W W)) (E(E E))))
+ (branch (name ROOT_BRANCH) (state (I I I I I I I))
+  (branch (name $1:$2) (state (M D M D D M I M)))
+  (branch (name $1:$3) (state (I D D M D M M M))))) 
+</pre></blockquote>
+
+The Viterbi path is reported both as a state path through the composite transducer (the ==state== field)
+and as a series of state paths through the individual branch transducers (the ==branch== fields).
+
+Note that start, end or wait states are not included in the branch paths.
+
+---++ Forward algorithm
+
+<blockquote><pre>
+(forward-bits 69.536)
+(forward-path (state ((S(S S)) (S(I W)) (I(M M)) (I(M I)) (I(D D)) (I(D D))
+ (I(D D)) (I(M M)) (I(I W)) (I(D M)) (I(I W)) (I(D D)) (I(D I)) (W(W W)) (E(E E))))
+ (branch (name ROOT_BRANCH) (state (I I I I I I I))
+  (branch (name $1:$2) (state (I M D D D M I D I D)))
+  (branch (name $1:$3) (state (M I D D D M M D I)))))
+(forward-path (state ((S(S S)) (I(M M)) (I(M D)) (I(I W)) (I(D M)) (I(M D))
+ (I(D D)) (I(D M)) (I(M D)) (I(M I)) (I(M I)) (W(W W)) (E(E E))))
+ (branch (name ROOT_BRANCH) (state (I I I I I I I))
+  (branch (name $1:$2) (state (M M I D M D D M)))
+  (branch (name $1:$3) (state (M D M D D M D I I)))))
+...
+</pre></blockquote>
+
+---+++ Forward log-likelihood
+
+<blockquote><pre>
+(forward-bits 69.536)
+</pre></blockquote>
+
+The Forward score is reported in bits, i.e. as a negative log-likelihood.
+(Note that it will generally be _lower_ than the Viterbi score: a less negative log-likelihood means a higher likelihood.)
+
+The reported score corresponds to the path through the full composite transducer,
+not just the "peeled" transducer corresponding to the unconstrained subtree.
+If you want the score for the unconstrained subtree, then you need to subtract off the ==peeled-bits== score (see [[#PeelingConstrainedBranches][above]]).
+
+---+++ Forward paths
+
+<blockquote><pre>
+(forward-path (state ((S(S S)) (S(I W)) (I(M M)) (I(M I)) (I(D D)) (I(D D))
+ (I(D D)) (I(M M)) (I(I W)) (I(D M)) (I(I W)) (I(D D)) (I(D I)) (W(W W)) (E(E E))))
+ (branch (name ROOT_BRANCH) (state (I I I I I I I))
+  (branch (name $1:$2) (state (I M D D D M I D I D)))
+  (branch (name $1:$3) (state (M I D D D M M D I)))))
+...
+</pre></blockquote>
+
+As with the Viterbi path, each Forward path is reported both as a state path through the composite transducer (the ==state== field)
+and as a series of state paths through the individual branch transducers (the ==branch== fields).
+
+Note that start, end or wait states are not included in the branch paths.
+
+---++ Optimal accuracy algorithm
+
+<blockquote><pre>
+(optimal-accuracy-path (type (($1 $2 $3) ($1) ($1 $2 $3) ($1 $2 $3) ($1) ($1 $2 $3) ($1 $2 $3))))
+</pre></blockquote>
+
+The "optimal accuracy" algorithm maximizes the expectation of some alignment accuracy metric with respect to the posterior distribution over alignments ([[#References][Holmes & Durbin, 1998]]).
+Here, the accuracy metric is the SumOfPairsScore.
+
+The alignment is reported as a list of alignment columns, each of which is a list of tape symbols.
+Only those nodes for which a sequence constraint was specified are reported.
+These are also the only nodes that contribute to the alignment accuracy metric.
+
+In the above example, sequence constraints were specified for tapes ==$1==, ==$2== and ==$3==.
+A column of the form ==($1 $2 $3)== represents a three-way emission to all these tapes,
+while a column of the form ==($1)== represents an insertion to tape ==$1==
+(with gaps in tapes ==$2== and ==$3==).
+
+The alignment implied by this optimal accuracy path is, therefore,
+
+<pre>
+$1: *******
+$2: *-**-**
+$3: *-**-**
+</pre>
+
+---++ Expected counts
+
+<blockquote><pre>
+% phylocomposer ~/dart/data/phylocomposer/counts.sxpr --hush --expect
+
+ (expected-count
+  ((pi A) 2.02467)
+  ((pi C) 1.01212)
+  ((pi G) 2.02463)
+  ((pi T) 2.02356)
+  (kappa 7.00807)
+  (~kappa 1.0008)
+  ((Q A A) 3.97733)
+  ((Q A C) 2.26368e-07)
+  ((Q A G) 0.000280909)
+  ((Q A T) 0.000212808)
+  ((Q C A) 2.2636e-07)
+  ((Q C C) 1.98761)
+  ((Q C G) 0.000125985)
+  ((Q C T) 0.000301518)
+  ((Q G A) 0.000280553)
+  ((Q G C) 0.000126113)
+  ((Q G G) 3.97732)
+  ((Q G T) 9.27017e-05)
+  ((Q T A) 0.000212658)
+  ((Q T C) 0.000301098)
+  ((Q T G) 9.27745e-05)
+  ((Q T T) 3.97477)
+  ((del A) 0.0238358)
+  ((del C) 0.0120623)
+  ((del G) 0.0238233)
+  ((del T) 0.0239072)
+  (beta 0.0110269)
+  (~beta 16.0067)
+  (alpha 13.9324)
+  (~alpha 0.0837075)
+  (gamma 0.0726597)
+  (~gamma 0.0110284)
+  )  ;; end expected-count
+</pre></blockquote>
+
+The "expected usage count" for a label is the expectation of the number of times it was used,
+taken over the posterior probability distribution of the missing state path through the composite transducer.
+Specifically, consider a multi-tape transducer
+%$M$%
+with parameterization
+%$\Theta = \{ \theta \}$%,
+input sequence %$X$%
+and output sequences
+%$Y_1 \ldots Y_N$%.
+Then, for a given label
+%$\theta \in \Theta$%,
+the expected usage count is:
+
+%$\displaystyle \frac{\partial \left( \log P(Y_1 \ldots Y_N|X,M,\Theta) \right)}{\partial \left( \log \theta \right)}$%
+
+where %$P(Y_1 \ldots Y_N|X,M,\Theta)$% is the Forward likelihood.
+
+The expected counts are computed by the sum-product algorithm on the underlying graphical model
+in a combination of Forward-Backward dynamic programming and peeling.
+A correction for null state elimination is applied.
+
+A typical use for these counts is to find a better estimate for the parameters %$\Theta$%.
+This can be done using an iterative Expectation Maximization algorithm such as the Wikipedia:Baum-Welch_algorithm.
+Since the counts are related to the first partial derivatives of the likelihood function,
+they may also be used by other nonlinear optimization codes, such as the Wikipedia:BFGS_method.
+
+Of course, the counts may occasionally be of direct scientific interest, as estimates of the number of times a given evolutionary event occurred.
+
+*Note that at present, %PHYCOMP% only reports expected counts for the [[#PeelingConstrainedBranches][ ==peeled-composition== ]]; that is, for the unconstrained subtree. Parameter counts for the constrained branches are not included.*
+
+
+---+ References
+
+#TransducersOnTrees
+Transducers:
+	* %PMIDC{17804439}% [[%YAMURLPATH%/Papers/Holmes2007-Phylocomposer.pdf][%PDF% (pdf)]]
+	* %PMIDC{17804440}% [[%YAMURLPATH%/Papers/BradleyHolmes2007-Transducers.pdf][%PDF% (pdf)]]
+	* %PMIDC{12855451}% [[%YAMURLPATH%/Papers/Holmes2003-TransducersOnTrees.pdf][%PDF% (pdf)]] ([[TransducerCompositionErrata][errata]])
+
+The "optimal accuracy" alignment algorithm:
+	* %PMIDC{9773345}% [[%YAMURLPATH%/Papers/HolmesDurbin1998-AlignmentAccuracy.pdf][%PDF% (pdf)]]
+	* Durbin, Eddy, Krogh and Mitchison. Biological Sequence Analysis. ISBN:0521629713
+
+Statistical alignment:
+	* Felsenstein. Inferring Phylogenies. ISBN:0878931775
+	* The "TKF91" paper: %PMIDC{1920447}%
+	* [[Phylogenetic alignment reader]]
+	
+
+---+ Appendices
+
+#FormalGrammar
+---++ Formal Grammar, Phylocomposer Input Format
+
+Here is the formal grammar for a %PHYCOMP% input file.
+
+<blockquote>
+__input-file__
+:
+__statement-list__
+
+__statement__
+:
+__transducer__
+|
+__tree__
+|
+__alphabet__
+|
+__value-assignment__
+
+---
+
+The following list rule is valid for any type of list item __xyz__
+
+__xyz-list__
+:
+__xyz__
+__xyz-list__
+|
+__empty-string__
+
+---
+
+__alphabet__
+:
+==(token==
+__token-identifier-list__
+==)==
+
+---
+
+__transducer__
+:
+==(transducer==
+__transducer-property-list__
+==)==
+
+__transducer-property__
+:
+==(name==
+__identifier__
+==)==
+|
+==(state==
+__state-property-list__
+==)==
+|
+==(transition==
+__transition-property-list__
+==)==
+
+__state-property__
+:
+==(name==
+__identifier__
+==)==
+|
+==(type==
+__state-type__
+==)==
+|
+==(label==
+__array-identifier__
+==)==
+
+__state-type__
+:
+==start==
+|
+==end==
+|
+==wait==
+|
+==insert==
+|
+==match==
+|
+==delete==
+
+__array-identifier__
+:
+__vector-identifier__
+|
+__matrix-identifier__
+
+__transition-property__
+:
+==(from==
+__state-identifier__
+==)==
+|
+==(to==
+__state-identifier__
+==)==
+|
+==(label==
+__scalar-identifier__
+==)==
+
+---
+
+__tree__
+:
+__outgoing-branch__
+
+__outgoing-branch__
+:
+==(branch==
+__branch-property-list__
+==)==
+
+__branch-property__
+:
+__outgoing-branch__
+|
+==(transducer==
+__transducer-identifier__
+==)==
+|
+==(name==
+__branch-identifier__
+==)==
+|
+==(from==
+__tape-symbol-identifier__
+==)==
+|
+==(to==
+__tape-symbol-identifier__
+==)==
+|
+==(label==
+__scalar-identifier__
+==)==
+|
+==(reconstruct)==
+|
+__transducer-path-constraint__
+|
+__transducer-output-constraint__
+
+---
+
+__value-assignment__
+:
+==(value==
+__probability-assignment-list__
+==)==
+|
+==(bit-value==
+__information-assignment-list__
+==)==
+
+__probability-assignment__
+:
+==(==
+__parameter-identifier__
+__probability-value__
+==)==
+
+__information-assignment__
+:
+==(==
+__parameter-identifier__
+__log-probability-value__
+==)==
+
+__parameter-identifier__
+:
+__scalar-identifier__
+|
+==(==
+__vector-identifier__
+__token-identifier__
+==)==
+|
+==(==
+__matrix-identifier__
+__token-identifier__
+__token-identifier__
+==)==
+
+---
+
+__transducer-path-constraint__
+:
+==(state (==
+__state-identifier-list__
+==))==
+
+__transducer-output-constraint__
+:
+==(sequence (==
+__token-identifier-list__
+==))==
+|
+==(profile (==
+__probability-distribution-list__
+==))==
+|
+==(bit-profile (==
+__information-distribution-list__
+==))==
+
+__probability-distribution__
+:
+==(==
+__token-probability-list__
+==)==
+|
+__token-identifer__
+
+__token-probability__
+:
+==(==
+__token-identifier__
+__probability-value__
+==)==
+
+__information-distribution__
+:
+==(==
+__token-information-list__
+==)==
+|
+__token-identifer__
+
+__token-information__
+:
+==(==
+__token-identifier__
+__log-probability-value__
+==)==
+
+---
+
+__token-identifier__
+:
+__identifier__
+
+__scalar-identifier__
+:
+__identifier__
+
+__vector-identifier__
+:
+__identifier__
+
+__matrix-identifier__
+:
+__identifier__
+
+__transducer-identifier__
+:
+__identifier__
+
+__state-identifier__
+:
+__identifier__
+
+__tape-symbol-identifier__
+:
+__identifier__
+
+__branch-identifier__
+:
+__identifier__
+
+---
+
+__probability-value__
+:
+__floating-point-constant__
+
+__log-probability-value__
+:
+__floating-point-constant__
+</blockquote>
+
+---++ Related programs
+
+Here are some related software tools from our lab.
+
+---+++ Handel
+
+[[HandelPackage][Handel]], which formally includes %PHYCOMP%,
+is a software package for doing [[statistical alignment]] by Markov Chain Monte Carlo.
+Each MCMC move can be represented as a single %PHYCOMP% transducer composition with forward sampling.
+
+---+++ Phylodirector
+
+PhyloDirector is a Perl script for visualizing the state path through the composite transducer
+for a given multiple alignment.
+The input is a [[Stockholm format]] alignment including a tree;
+the output is an [[MPEG format]] movie.
+
+---+++ Evoldoer
+
+Main.EvolDoer is a program for alignment and secondary structure prediction of RNA
+that uses [[tree transducers]], close relatives of the [[string transducers]] used by %PHYCOMP%.
+

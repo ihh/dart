@@ -1,0 +1,62 @@
+%META:TOPICINFO{author="RobertBradley" date="1199750699" format="1.0" version="1.8"}%
+---+ Perl scripts in the [[DART][DART library]]
+
+Located in: ==dart/perl/==
+
+*TODO:* include Perl modules as well?
+
+---+++ colorstock.pl
+---+++ constock.pl
+---+++ copy2stderr.pl
+---+++ dartlog.pl
+---+++drop-gappy-columns.pl
+
+*Author:* AndrewUzilov
+
+Tool for dropping columns above a user-specified gap threshold from a Stockholm alignment.  Also can:
+
+	* only replace the per-column annotation for the gappy columns with a user-specified symbol, but not drop them;
+	* drop columns containing user-specified annotation;
+	* run in RNA mode - for every gappy column dropped/changed, also drop/change the column to which it is base-paired (works on pseudoknotted secondary structures, as long as they are annotated by the Rfam convention).
+
+---+++ fancyeisen.pl
+---+++ fasta2stockholm.pl
+---+++ foldplot.pl
+NB: Requires GD (the CPAN module as well as libgd).
+---+++ hsm2xgram.pl
+---+++ hsmplot.pl
+---+++ iteridem.pl
+---+++ ka_ks.pl
+---+++ majorcons.pl
+---+++ old_xrate.pl
+---+++ pandit2stockholm.pl
+---+++ percentid.pl
+---+++ phylogramTool.pl
+---+++ phylohmmgenerator.pl (in progress)
+
+*Authors:* IanHolmes, GabrielWu
+
+Generates an xgram grammar file for measuring relative rates of residue evolution in proteins.
+
+---+++ sanebp.pl
+---+++ seqdotplot.pl
+NB: Requires GD (the CPAN module as well as libgd).
+---+++ splitstock.pl
+---+++ sscolorMult.pl
+---+++ sscolor.pl
+---+++ stkCompareAnnot.pl
+---+++ stockholm2ct.pl
+---+++ stockholm2fasta.pl
+---+++ testharness.pl
+---+++ trapper.pl
+---+++ trimstock.pl
+---+++ windowlicker.pl
+
+See: WindowLicker
+
+---+++ xgram2hsm.pl
+
+---
+
+-- Created by: Main.AndrewUzilov on 22 Aug 2006
+

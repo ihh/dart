@@ -1,0 +1,53 @@
+%META:TOPICINFO{author="IanHolmes" date="1228935391" format="1.0" version="1.57"}%
+---+ [[stem loc]]
+
+%BLOC%
+
+[[stem loc][stemloc]] is a program for [[multiple alignment of RNA]] using StochasticContextFreeGrammars.
+
+Stemloc uses "alignment envelopes" and "fold envelopes" to simultaneously constrain both the alignment and the secondary structures of the sequences being compared,
+rendering the RNA comparison problem tractable on commodity hardware.
+
+---++ Related programs
+
+	* Main.EvolDeeds for our software for [[statistical alignment]] and reconstruction of ancient structured RNA.
+	* [[Main.StemLocAMA][Stemloc-AMA]] --- stemloc's new [[sequence annealing]] mode. The best RNA alignment tool of 2008!
+
+---++ Multiple alignment modes
+
+The first step performed by [[StemLoc][stemloc]] is always an "all _vs_ all" pairwise alignment.
+This uses a constrained version of Sankoff's algorithm for pair SCFGs.
+
+The next step depends on the mode:
+
+	* <big><b> [[Sequence annealing]], implemented as [[StemLoc AMA]], is the primary mode </b></big>
+
+	* Main.ProgressiveMode is an alternative, single-linkage clustering mode for multiple alignment. Unlike sequence annealing mode, progressive mode tries to give a good consensus alignment _and_ structure, but the resultant alignment is consequently not as good. Progressive mode has the following sub-modes...
+		* Main.GlobalMode (aligns entire sequences) _vs_ Main.LocalMode (aligns highest-scoring subsequences)
+		* Main.ConservativeMode (does not extend initial pairwise seed) _vs_ Main.LiberalMode (attempts to extend pairwise seed where possible)
+
+
+---++ Tutorials
+
+[[Main.StemlocTutorial][<img src="%PUBURL%/Main/StemlocTutorial/small-rd0260-rd0500-na200.png"/>]]
+
+	* [[stemloc tutorial]]
+
+---++ Download
+
+StemLoc may be built from source by downloading and compiling DART.
+See Main.DownloadingDart and BuildingDart.
+
+---++ References
+
+Stemloc:
+	* %PMIDC{18796475}%
+	* %PMIDC{15790387}%
+
+Alignment envelopes:
+	* Holmes, I. <nop>PhD thesis. Dept of Genetics, University of Cambridge; Wellcome Trust Sanger Institute. 1998. [[%YAMURLPATH%/Papers/Holmes1998-PhDthesis.pdf][%PDF% (pdf)]] [[%YAMURLPATH%/Papers/Holmes1998-PhDthesis.ps.gz][%ZIP% (ps.gz)]]
+
+Fold envelopes:
+	* %PMIDC{11928472}% [[%YAMURLPATH%/Papers/HolmesRubin2002-PairwiseRNAStructureComparison.pdf][%PDF% (pdf)]]
+
+%META:TOPICMOVED{by="IanHolmes" date="1155270423" from="Main.StemlocProgram" to="Trash.StemlocProgram"}%
