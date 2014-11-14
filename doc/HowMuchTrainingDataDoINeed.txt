@@ -1,0 +1,33 @@
+%META:TOPICINFO{author="IanHolmes" date="1165171908" format="1.0" version="1.13"}%
+---++ "How much training data do I need?"
+
+The above question comes up quite a lot when using xrate.
+Here's a back-of-envelope calculation to guide such decisions.
+
+The amount of data you need is determined by the "slowest event rate", i.e. rate at which the slowest event occurs _per site_ at equilibrium.
+The rate of mutation %$i \to j$% at equilibrium is %$\pi_i R_{ij} = Q_{ij}$%, so the slowest event rate is %$K = \min\{ Q_{ij}: Q_{ij} > 0 \}$%.
+
+Suppose that %$B$% is the total branch length in the tree, i.e. the total elapsed time per site.
+
+Let %$N$% be the number of times you want to observe the slowest event, and let %$S$% be the number of sites you'd have to train on to observe the slowest event %$N$% times.
+Then the total amount of evolutionary time represented by your training data is %$T = BS$% and you want %$KT \geq N$%
+so the number of training sites you need is %$S \simeq N / KB$%.
+
+(Note that the definition of a "site" depends on your chain: a site could be a single alignment column for a neutral DNA model, three columns for a codon model, or two for an RNA basepair model.)
+
+How big should %$N$% be? Assuming an uninformative prior: if you observe %$N$% Poisson-distributed events in time %$T$%, then the posterior distribution for the underlying event rate is a gamma distribution with mean %$N/T$% and variance %$N/T^2$%.
+Thus the fractional error, i.e. the ratio of the standard deviation to the mean, is %$\epsilon = 1/\sqrt{N}$%.
+For a desired fractional error of %$\epsilon$% or less,
+you should therefore train on %$S \simeq 1 / KB\epsilon^2$% sites.
+
+Of course the above is a circular argument: it assumes you know %$K$% ahead of time.
+In practice, while you may have some idea of what the slowest event rate will be (based on previous experience and data),
+any estimate you might have for %$K$% is of order-of-magnitude accuracy at best.
+
+We can extend the above line of reasoning to parametric models (see [[xgram format]] page for info). When evaluating the slowest event rate %$K$%,
+we should allow for parametric chains where multiple mutations %$i \to j$% share the same rate parameter %$r$%.
+If an event rate %$k$% is some function of a rate parameter %$r$%, then %$r\frac{\delta k}{\delta r}$% gives the effective contribution of %$r$% to %$k$%.
+A better definition of %$K$% is therefore %$K = \min_r \left( \sum_{i,j} r \frac{\delta}{\delta r} Q_{ij} \right)$%.
+
+-- Main.IanHolmes - 29 Sep 2006
+
