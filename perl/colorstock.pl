@@ -25,6 +25,7 @@ my %strongly_bonded = map (($_ => 1), qw(AU GC CG UA GU UG));
 my $screenColumns = (`tput cols` + 0) || 80;
 my $covOnly = 0;
 my $canOnly = 0;
+my $raw = 0;
 my $diffName;
 my $refName;
 
@@ -53,6 +54,7 @@ $usage .=   " [-diff <SEQ>] invert background/foreground for mutations relative 
 $usage .=   "  [-ref <SEQ>] use alternate color scheme, with SEQ as reference (see perldoc)\n";
 $usage .=   "       [-summ] don't print alignment, just print covariance summary\n";
 $usage .=   "                ('covariance' here means 'having compensatory mutations')\n";
+$usage .=   "        [-raw] don't print $CS or $BP annotation lines\n";
 $usage .=   "       [-html] print results in HTML\n";
 $usage .=   "\n";
 $usage .=   "For more help, type the following:\n";
@@ -85,6 +87,8 @@ while (@ARGV) {
 	defined ($refName = shift) or die $usage;
     } elsif ($arg eq "-summ") {
 	$summOnly = 1;
+    } elsif ($arg eq "-raw") {
+	$raw = 1;
     } elsif ($arg eq "-html") {
 	$html = 1;
     } else {
@@ -364,8 +368,8 @@ while (1) {
 
 		}
 
-		printRow ($white, $gc_cs_hdr, $covChars, @printRowArgs, \@covColAnsi);
-		printRow ($white, $gc_bp_hdr, $bpChars, @printRowArgs, \@covColAnsi);
+		printRow ($white, $gc_cs_hdr, $covChars, @printRowArgs, \@covColAnsi) unless $raw;
+		printRow ($white, $gc_bp_hdr, $bpChars, @printRowArgs, \@covColAnsi) unless $raw;
 		for (my $i = 0; $i < @seqname; ++$i) {
 
 		    my $name = $seqname[$i];
@@ -419,7 +423,7 @@ while (1) {
 		print LESS "\n";
 	    }
 	    printRowBase ($white, $sc_hdr, $score, $w) if defined $score;
-	    printRowBase ($white, $cs_hdr, $summary, $w);
+	    printRowBase ($white, $cs_hdr, $summary, $w) unless $raw;
 	    print LESS "//\n";
 	}
     }
