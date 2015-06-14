@@ -8,7 +8,7 @@ using namespace std;
 
 struct Stream_saver
 {
-  typedef _Ios_Fmtflags FlagType;
+  typedef iostream::fmtflags FlagType;
 
   static stack<FlagType> old_stream_flags;
 

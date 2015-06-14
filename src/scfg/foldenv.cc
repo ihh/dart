@@ -230,7 +230,7 @@ void Local_fold_string::add (const Local_fold_string& local_fold_string)
 	}
     }
   // update
-  fold.swap (new_fold);
+  ((basic_string&)fold).swap (new_fold);
   start = new_start;
 }
 
