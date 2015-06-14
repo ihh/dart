@@ -218,8 +218,8 @@ sstring SExpr::get_context (Ptr& ptr, Ptr& begin)
 
 void SExpr::swap (SExpr& sexpr)
 {
-  atom.swap (sexpr.atom);
-  child.swap (sexpr.child);
+  ((char_string::basic_string&)atom).swap (sexpr.atom);
+  ((char_string::basic_string&)child).swap (sexpr.child);
 }
 
 sstring SExpr::to_string() const

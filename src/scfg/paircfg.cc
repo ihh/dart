@@ -789,8 +789,8 @@ Pair_CFG_alignment Pair_CFG_branch::alignment (const vector<Pair_CFG_branch>& pa
   ylfold << yrfold;
   Pair_CFG_alignment align (npx, npy);
   align.parse.swap (parse);
-  align.xfold.swap (xlfold);
-  align.yfold.swap (ylfold);
+  ((char_string::basic_string&)align.xfold).swap (xlfold);
+  ((char_string::basic_string&)align.yfold).swap (ylfold);
   align.xstart = xl;
   align.ystart = yl;
   return align;
