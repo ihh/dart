@@ -12,9 +12,9 @@
 using namespace std;
 
 // #include's for C++ stream wrappers for C files
-#include <ext/stdio_filebuf.h>   /* GNU C++ extension! */
+#include <ext/stdio_filebuf.h>
 using namespace __gnu_cxx;
-typedef stdio_filebuf<char> Stdio_filebuf;
+typedef __gnu_cxx::stdio_filebuf<char> Stdio_filebuf;
 #define PIPE_BUF_SIZE 100   /* number of bytes for pipe buffer */
 
 // Piper class handles interprocess pipes between parent & forked children
