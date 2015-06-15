@@ -1,7 +1,7 @@
 #ifndef ECFG_FOLD_ENVELOPE_INCLUDED
 #define ECFG_FOLD_ENVELOPE_INCLUDED
 
-#include <ext/hash_map>
+#include <unordered_map>
 #include "scfg/foldenv.h"
 
 using namespace __gnu_cxx;  // for hash_map
