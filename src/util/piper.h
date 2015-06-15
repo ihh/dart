@@ -12,9 +12,18 @@
 using namespace std;
 
 // #include's for C++ stream wrappers for C files
-#include <ext/stdio_filebuf.h>
-using namespace __gnu_cxx;
-typedef __gnu_cxx::stdio_filebuf<char> Stdio_filebuf;
+#if defined(__GNUC__) && !defined(__clang__)
+ #include <ext/stdio_filebuf.h>
+ typedef __gnu_cxx::stdio_filebuf<char> Stdio_filebuf;
+ using namespace __gnu_cxx;
+#else
+ // clang doesn't have stdio_filebuf, so create a dummy object and throw runtime exceptions if this functionality is used (EWW: DISGUSTING HACK)
+ struct Stdio_filebuf : basic_streambuf<char> {
+   Stdio_filebuf (int __fd, std::ios_base::openmode __mode) { }
+   Stdio_filebuf (int __fd, std::ios_base::openmode __mode, size_t __size) { }
+   void close() { }
+ };
+#endif
 #define PIPE_BUF_SIZE 100   /* number of bytes for pipe buffer */
 
 // Piper class handles interprocess pipes between parent & forked children

@@ -15,7 +15,11 @@ istream_cfile::istream_cfile (int fd) :
   filebuf (fd, ios_base::in, false, PIPE_BUF_SIZE),
 #endif
   in (&filebuf)
-{ }
+{ 
+#if defined(__clang__)
+  THROWEXPR("Can't use stdio_filebuf under clang");
+#endif
+}
 
 ostream_cfile::ostream_cfile (int fd) :
 #ifdef FILEBUF_TAKES_3_ARGS
@@ -24,7 +28,11 @@ ostream_cfile::ostream_cfile (int fd) :
   filebuf (fd, ios_base::out, false, PIPE_BUF_SIZE),
 #endif
   out (&filebuf)
-{ }
+{
+#if defined(__clang__)
+  THROWEXPR("Can't use stdio_filebuf under clang");
+#endif
+}
 
 void ostream_cfile::close()
 {
