@@ -1,7 +1,6 @@
 #ifndef ECFG_FOLD_ENVELOPE_INCLUDED
 #define ECFG_FOLD_ENVELOPE_INCLUDED
 
-#include <unordered_map>
 #include "scfg/foldenv.h"
 
 // Fold envelopes for ECFG's are, by default, less flexible than for Pair_CFG's
