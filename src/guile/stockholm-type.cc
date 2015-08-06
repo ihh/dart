@@ -174,11 +174,11 @@ void init_stockholm_type (void)
   scm_set_smob_print (stockholm_tag, print_stockholm);
 
   // read/write primitives
-  scm_c_define_gsubr (GUILE_STOCKHOLM_FROM_STRING, 1, 0, 0, (SCM (*)()) stockholm_from_string);
-  scm_c_define_gsubr (GUILE_STOCKHOLM_FROM_FILE, 1, 0, 0, (SCM (*)()) stockholm_from_file);
-  scm_c_define_gsubr (GUILE_STOCKHOLM_TO_FILE, 2, 0, 0, (SCM (*)()) stockholm_to_file);
+  scm_c_define_gsubr (GUILE_STOCKHOLM_FROM_STRING, 1, 0, 0, (scm_t_subr) stockholm_from_string);
+  scm_c_define_gsubr (GUILE_STOCKHOLM_FROM_FILE, 1, 0, 0, (scm_t_subr) stockholm_from_file);
+  scm_c_define_gsubr (GUILE_STOCKHOLM_TO_FILE, 2, 0, 0, (scm_t_subr) stockholm_to_file);
   // primitives to ease migration from xrate macro format
-  scm_c_define_gsubr (GUILE_STOCKHOLM_COLUMN_COUNT, 1, 0, 0, (SCM (*)()) stockholm_column_count);  // returns the number of columns as an integer
+  scm_c_define_gsubr (GUILE_STOCKHOLM_COLUMN_COUNT, 1, 0, 0, (scm_t_subr) stockholm_column_count);  // returns the number of columns as an integer
 
   // convert a Stockholm alignment into a Scheme data structure with the following grammar
   //    TOP => (GF GC BODY)
@@ -188,9 +188,9 @@ void init_stockholm_type (void)
   //     GC => (TAGVAL)
   //     GS => (TAGVAL)
   //     GR => (TAGVAL)
-  scm_c_define_gsubr (GUILE_STOCKHOLM_UNPACK, 1, 0, 0, (SCM (*)()) stockholm_unpack);  // returns a Scheme data structure very similar to the Stockholm file format: (GF GC (seq GS row GR) (seq GS row GR) ...)
+  scm_c_define_gsubr (GUILE_STOCKHOLM_UNPACK, 1, 0, 0, (scm_t_subr) stockholm_unpack);  // returns a Scheme data structure very similar to the Stockholm file format: (GF GC (seq GS row GR) (seq GS row GR) ...)
 
   // newick smob method
-  scm_c_define_gsubr (GUILE_NEWICK_FROM_STOCKHOLM, 1, 0, 0, (SCM (*)()) newick_from_stockholm);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
+  scm_c_define_gsubr (GUILE_NEWICK_FROM_STOCKHOLM, 1, 0, 0, (scm_t_subr) newick_from_stockholm);  // returns a newick-type smob constructed from the "#=GF NH" tag of the Stockholm alignment, or FALSE if no tree present
 
 }

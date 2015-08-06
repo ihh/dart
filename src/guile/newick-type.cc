@@ -188,13 +188,13 @@ void init_newick_type (void)
   scm_set_smob_print (newick_tag, print_newick);
 
   // read/write primitives
-  scm_c_define_gsubr (GUILE_NEWICK_FROM_STRING, 1, 0, 0, (SCM (*)()) newick_from_string);
-  scm_c_define_gsubr (GUILE_NEWICK_FROM_FILE, 1, 0, 0, (SCM (*)()) newick_from_file);
-  scm_c_define_gsubr (GUILE_NEWICK_TO_FILE, 2, 0, 0, (SCM (*)()) newick_to_file);
+  scm_c_define_gsubr (GUILE_NEWICK_FROM_STRING, 1, 0, 0, (scm_t_subr) newick_from_string);
+  scm_c_define_gsubr (GUILE_NEWICK_FROM_FILE, 1, 0, 0, (scm_t_subr) newick_from_file);
+  scm_c_define_gsubr (GUILE_NEWICK_TO_FILE, 2, 0, 0, (scm_t_subr) newick_to_file);
   // primitives to ease migration from xrate macro format
-  scm_c_define_gsubr (GUILE_NEWICK_ANCESTOR_LIST, 1, 0, 0, (SCM (*)()) newick_ancestor_list);  // returns list of internal node names (including the root, even if it is a tip node)
-  scm_c_define_gsubr (GUILE_NEWICK_LEAF_LIST, 1, 0, 0, (SCM (*)()) newick_leaf_list);  // returns list of leaf node names (excluding the root)
-  scm_c_define_gsubr (GUILE_NEWICK_BRANCH_LIST, 1, 0, 0, (SCM (*)()) newick_branch_list);  // returns list of (parent,child,length) tuples representing branches, sorted in preorder
+  scm_c_define_gsubr (GUILE_NEWICK_ANCESTOR_LIST, 1, 0, 0, (scm_t_subr) newick_ancestor_list);  // returns list of internal node names (including the root, even if it is a tip node)
+  scm_c_define_gsubr (GUILE_NEWICK_LEAF_LIST, 1, 0, 0, (scm_t_subr) newick_leaf_list);  // returns list of leaf node names (excluding the root)
+  scm_c_define_gsubr (GUILE_NEWICK_BRANCH_LIST, 1, 0, 0, (scm_t_subr) newick_branch_list);  // returns list of (parent,child,length) tuples representing branches, sorted in preorder
   // convert a Newick tree into a Scheme data structure
-  scm_c_define_gsubr (GUILE_NEWICK_UNPACK, 1, 0, 0, (SCM (*)()) newick_unpack);  // returns a tree structure very similar to the Newick file format: ((A:1,B:2)C:3,D:4)E;  --> ((("A" 1.0) ("B" 2.0) "C" 3.0) ("D" 4.0) "E" #f)
+  scm_c_define_gsubr (GUILE_NEWICK_UNPACK, 1, 0, 0, (scm_t_subr) newick_unpack);  // returns a tree structure very similar to the Newick file format: ((A:1,B:2)C:3,D:4)E;  --> ((("A" 1.0) ("B" 2.0) "C" 3.0) ("D" 4.0) "E" #f)
 }
