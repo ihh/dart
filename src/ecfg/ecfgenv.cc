@@ -20,7 +20,7 @@ void ECFG_envelope::init_from_fold_string (const sstring& fold_string, int max_s
   seqlen = foldenv.seqlen();
 
   // initialize subseq_lookup
-  subseq_lookup = vector<hash_map<int,int> > (seqlen + 1);
+  subseq_lookup = vector<map<int,int> > (seqlen + 1);
   for (int start = 0; start <= seqlen; ++start)
     {
       const vector<int>& by_start = foldenv.by_start[start];
