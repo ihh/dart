@@ -1347,7 +1347,7 @@ Stockholm Stemloc::build_motif_alignment (const Pair_CFG_alignment& seed)
   CTAG(5,STEMLOC PROFALIGN) << "Aligning sequences to covariance model\n";
   const int cons_row = seq_db.index.size();
   const Pair_CFG_scores& profile_cfg = cov.single_model.eval_cfg_scores (cov.pscores);
-  const Named_profile dummy_npy;
+  const Named_profile dummy_npy = Named_profile();
   const Fold_envelope dummy_envy (0);
   Fold_envelope envx;
 
