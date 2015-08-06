@@ -174,15 +174,15 @@ SCM scm_gamma_density (SCM x_scm, SCM alpha_scm, SCM beta_scm)
 
 void init_dart_primitives (void)
 {
-  scm_c_define_gsubr (GUILE_LOG_DIRECTIVE, 1, 0, 0, (SCM (*)()) scm_log_directive);
+  scm_c_define_gsubr (GUILE_LOG_DIRECTIVE, 1, 0, 0, (scm_t_subr) scm_log_directive);
 
-  scm_c_define_gsubr (GUILE_DISCRETE_GAMMA_MEDIANS, 3, 0, 0, (SCM (*)()) scm_discrete_gamma_medians);
-  scm_c_define_gsubr (GUILE_DISCRETE_GAMMA_MEANS, 3, 0, 0, (SCM (*)()) scm_discrete_gamma_means);
+  scm_c_define_gsubr (GUILE_DISCRETE_GAMMA_MEDIANS, 3, 0, 0, (scm_t_subr) scm_discrete_gamma_medians);
+  scm_c_define_gsubr (GUILE_DISCRETE_GAMMA_MEANS, 3, 0, 0, (scm_t_subr) scm_discrete_gamma_means);
 
-  scm_c_define_gsubr (GUILE_LOG_GAMMA, 1, 0, 0, (SCM (*)()) scm_ln_gamma);
-  scm_c_define_gsubr (GUILE_GAMMA_DENSITY, 3, 0, 0, (SCM (*)()) scm_gamma_density);
-  scm_c_define_gsubr (GUILE_INCOMPLETE_GAMMA, 3, 0, 0, (SCM (*)()) scm_incomplete_gamma);
-  scm_c_define_gsubr (GUILE_INCOMPLETE_GAMMA_INVERSE, 3, 0, 0, (SCM (*)()) scm_incomplete_gamma_inverse);
+  scm_c_define_gsubr (GUILE_LOG_GAMMA, 1, 0, 0, (scm_t_subr) scm_ln_gamma);
+  scm_c_define_gsubr (GUILE_GAMMA_DENSITY, 3, 0, 0, (scm_t_subr) scm_gamma_density);
+  scm_c_define_gsubr (GUILE_INCOMPLETE_GAMMA, 3, 0, 0, (scm_t_subr) scm_incomplete_gamma);
+  scm_c_define_gsubr (GUILE_INCOMPLETE_GAMMA_INVERSE, 3, 0, 0, (scm_t_subr) scm_incomplete_gamma_inverse);
 }
 
 #endif /* GUILE_INCLUDED */
