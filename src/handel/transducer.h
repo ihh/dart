@@ -272,7 +272,7 @@ struct Transducer
   void resize (int states, T t)
   {
     Transition_matrix<T> transmat (states, t);
-    assign_transition_matrix (transmat);
+    ((Transition_matrix<T>*) this)->assign_transition_matrix (transmat);
 
     state_type = vector<State_type> (states, 0);
     state_name = vector<sstring> (states);
@@ -369,7 +369,7 @@ struct Transducer
   }
 
   virtual void get_emit_label_sexpr (int state, sstring& ls) const { }
-  virtual sstring transition_label_sexpr (const T& t, const PScores* ps) const { return score_label_string (t, ps); }
+  virtual sstring transition_label_sexpr (const T& t, const PScores* ps) const { return ((Transducer_score_manipulator<T>*) this)->score_label_string (t, ps); }
   virtual bool has_emit_labels() const { return false; }
 
   // show_sexpr method
@@ -410,15 +410,15 @@ struct Transducer
 	  if (dest != Grammar_state_enum::Start)
 	    {
 	      T& t = Transition_matrix<T>::transition (src, dest);
-	      if (is_nonzero (t))
+	      if (((Transducer_score_manipulator<T>*) this)->is_nonzero (t))
 		{
 		  src_visible = true;
 		  out << " (" << TSEXPR_TRANSITION
 		      << " (" << TSEXPR_FROM << ' ' << sexpr_state_name(src) << ')'
 		      << " (" << TSEXPR_TO << ' ' << sexpr_state_name(dest) << ')';
-		  if (pscores != 0 && !is_one(t))
+		  if (pscores != 0 && !((Transducer_score_manipulator<T>*) this)->is_one(t))
 		    {
-		      const sstring bvs = score_bitvalue_string (t, pscores, eval_sc);
+		      const sstring bvs = ((Transducer_score_manipulator<T>*) this)->score_bitvalue_string (t, pscores, eval_sc);
 		      if (bvs.size())
 			out << " (" << TSEXPR_BITVALUE << ' ' << bvs << ')';
 		      const sstring tls = transition_label_sexpr (t, pscores);
@@ -1238,7 +1238,7 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 
     // now we have a list of all states, so resize
     entry_type zero_entry;
-    set_to_zero (zero_entry);
+    ((Transducer_score_manipulator<T>*) this)->set_to_zero (zero_entry);
     transducer_type::resize (branch_trans_states.size(), zero_entry);
 
     // make state types, names, dotfile labels
@@ -1321,7 +1321,7 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 
 		// initialise trans_prob
 		entry_type trans_prob;
-		set_to_one (trans_prob);
+		((Transducer_score_manipulator<T>*) this)->set_to_one (trans_prob);
 
 		// The amazing tree-winding loop!
 		// Loop over nodes, multiplying branch probabilities to get transition probabilities.
@@ -1339,7 +1339,7 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 
 		    // initialize branch_prob
 		    entry_type branch_prob;
-		    set_to_one (branch_prob);
+		    ((Transducer_score_manipulator<T>*) this)->set_to_one (branch_prob);
 
 		    // what kind of transition path is this?
 		    switch (tpath.tstate.size())
@@ -1349,13 +1349,13 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 			if (path_start == path_end)
 			  CL << "(no change in state, so no contribution to branch prob)\n";
 			else
-			  set_to_zero (branch_prob);
+			  ((Transducer_score_manipulator<T>*) this)->set_to_zero (branch_prob);
 			break;
 
 		      case 2:
 			// direct transition
 			branch_prob = branch_transducer[n].transition (path_start, path_end);
-			CL << "Branch prob is " << pval_string(branch_prob) << " (direct)\n";
+			CL << "Branch prob is " << ((Transducer_score_manipulator<T>*) this)->pval_string(branch_prob) << " (direct)\n";
 			break;
 
 		      case 3:
@@ -1366,7 +1366,7 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 			    THROWEXPR ("In EHMM: two-step transition via non-wait state");
 
 			  // clear branch_prob
-			  set_to_zero (branch_prob);
+			  ((Transducer_score_manipulator<T>*) this)->set_to_zero (branch_prob);
 
 			  // loop over intermediate states, summing branch_prob
 			  for_const_contents (vector<int>, wait_states[n], path_mid)
@@ -1374,17 +1374,17 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 			    const entry_type& start_to_mid = branch_transducer[n].transition (path_start, *path_mid);
 			    const entry_type& mid_to_end = branch_transducer[n].transition (*path_mid, path_end);
 
-			    if (is_non_null (start_to_mid) && is_non_null (mid_to_end))
+			    if (((Transition_matrix<T>*) this)->is_non_null (start_to_mid) && ((Transition_matrix<T>*) this)->is_non_null (mid_to_end))
 			      {
 				entry_type via_prob (start_to_mid);
-				pmul_acc (via_prob, mid_to_end);
-				psum_acc (branch_prob, via_prob);
+				((Transducer_score_manipulator<T>*) this)->pmul_acc (via_prob, mid_to_end);
+				((Transducer_score_manipulator<T>*) this)->psum_acc (branch_prob, via_prob);
 
-				CL << "Added " << pval_string(via_prob) << " to branch prob (transition via wait state " << *path_mid << ")\n";
+				CL << "Added " << ((Transducer_score_manipulator<T>*) this)->pval_string(via_prob) << " to branch prob (transition via wait state " << *path_mid << ")\n";
 			      }
 			  }
 			  
-			  CL << "Branch prob is " << pval_string(branch_prob) << " (via wait states)\n";
+			  CL << "Branch prob is " << ((Transducer_score_manipulator<T>*) this)->pval_string(branch_prob) << " (via wait states)\n";
 			  break;
 			}
 
@@ -1395,15 +1395,15 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 		      }
 
 		    // multiply transition prob by prob for branch
-		    pmul_acc (trans_prob, branch_prob);
+		    ((Transducer_score_manipulator<T>*) this)->pmul_acc (trans_prob, branch_prob);
 		  }
 
 		// store composite transducer transition probability
-		if (is_nonzero (trans_prob))
+		if (((Transducer_score_manipulator<T>*) this)->is_nonzero (trans_prob))
 		  transducer_type::transition (*src, *dest) = trans_prob;
 
 		if (CTAGGING(-2,TRANSDUCER))
-		  CL << "Transition from " << transducer_type::get_state_name(*src) << " to " << transducer_type::get_state_name(*dest) << " has prob " << pval_string(trans_prob) << "\n";
+		  CL << "Transition from " << transducer_type::get_state_name(*src) << " to " << transducer_type::get_state_name(*dest) << " has prob " << ((Transducer_score_manipulator<T>*) this)->pval_string(trans_prob) << "\n";
 	      }
 	  }
       }
@@ -1431,7 +1431,7 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 	  {
 	    visited.insert (src);
 	    for (int dest = 0; dest < Transducer<T>::states(); ++dest)
-	      if (is_nonzero (Transducer<T>::transition(src,dest)))
+	      if (((Transducer_score_manipulator<T>*) this)->is_nonzero (Transducer<T>::transition(src,dest)))
 		{
 		  start_accessible[dest] = 1;
 		  src_states.push (dest);
@@ -1453,7 +1453,7 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 	  {
 	    visited.insert (dest);
 	    for (int src = 0; src < Transducer<T>::states(); ++src)
-	      if (is_nonzero (Transducer<T>::transition(src,dest)))
+	      if (((Transducer_score_manipulator<T>*) this)->is_nonzero (Transducer<T>::transition(src,dest)))
 		{
 		  end_accessible[src] = 1;
 		  dest_states.push (src);
@@ -1695,7 +1695,7 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
   sstring transition_label_sexpr (const T& t, const PScores* ps) const
   {
     sstring ls;
-    sstring sls = score_label_string (t, ps);
+    sstring sls = ((Transducer_score_manipulator<T>*) this)->score_label_string (t, ps);
     if (sls.size())
       ls << '(' << sls << ')';
     return ls;
@@ -1761,7 +1761,7 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 		<< (need_paren ? ")" : "")
 		<< ')';
 	else
-	  label.swap (suffix);
+	  ((basic_string<char>&)label).swap (suffix);
       }
     return label;
   }
@@ -1867,7 +1867,7 @@ struct EHMM_transducer : TSpaceEnum, Transducer<T>
 		  if (btn.state_type[s] == Transducer_state_type_enum::TransducerWaitType)
 		    {
 		      wait_states.push_back (s);
-		      if (is_nonzero (btn.transition (last_state, s)) && is_nonzero (btn.transition (s, next_state)))
+		      if (((Transducer_score_manipulator<T>*) this)->is_nonzero (btn.transition (last_state, s)) && ((Transducer_score_manipulator<T>*) this)->is_nonzero (btn.transition (s, next_state)))
 			allowed_wait_states.push_back (s);
 		    }
 		if (allowed_wait_states.size())

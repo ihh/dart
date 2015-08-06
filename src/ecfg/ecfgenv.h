@@ -4,8 +4,6 @@
 #include <unordered_map>
 #include "scfg/foldenv.h"
 
-using namespace __gnu_cxx;  // for hash_map
-
 // Fold envelopes for ECFG's are, by default, less flexible than for Pair_CFG's
 // For parameters (seqlen=S, max_subseq_len=L) the following (start,len) Subseq_coords are allowed:
 //   (s,l)   where 0 <= s <= S-l and 0 <= l <= L
@@ -20,7 +18,7 @@ struct ECFG_envelope
   // data for optional Fold_envelope
   bool use_foldenv;
   Fold_envelope foldenv;
-  vector<hash_map<int,int> > subseq_lookup;  // subseq_lookup[start][len] = index of subseq (start,len)
+  vector<map<int,int> > subseq_lookup;  // subseq_lookup[start][len] = index of subseq (start,len)
 
   // constructor
   ECFG_envelope (int seqlen = 0, int max_subseq_len = 0);
@@ -42,8 +40,8 @@ struct ECFG_envelope
 	  {
 	    // Commented out the delegation to Fold_envelope::find_subseq_idx, replaced with subseq_lookup[start][len] for performance reasons
 	    //	idx = foldenv.find_subseq_idx (start, len);
-	    const hash_map<int,int>& lookup = subseq_lookup[start];
-	    const hash_map<int,int>::const_iterator lookup_iter = lookup.find (len);
+	    const map<int,int>& lookup = subseq_lookup[start];
+	    const map<int,int>::const_iterator lookup_iter = lookup.find (len);
 	    if (lookup_iter != lookup.end())
 	      idx = lookup_iter->second;
 	  }

@@ -291,11 +291,12 @@ void TEmission::summarize (const ETree& etree,
       const ENode p = etree.parent[n];
       const TTerm ttn = tterm[n];
       const TTerm ttp = p >= 0 ? tterm[p] : TTermNull;
-      if (ttp != TTermNull)
+      if (ttp != TTermNull) {
 	if (ttn == TTermNull)
 	  deleters.push_back (n);
 	else
 	  matchers.push_back (n);
+      }
     }
 }
 
@@ -456,7 +457,7 @@ basic_string<char> EState::estate2string (const TAlphabet& alphabet) const
   basic_string<char> s;
   const TTerm rootterm = tspace.xterm (tstate[0]);
   const ENode e = emitter();
-  if (terminals > 1)
+  if (terminals > 1) {
     if (rootterm == TTermNull)
       s.push_back ('_');
     else
@@ -464,17 +465,19 @@ basic_string<char> EState::estate2string (const TAlphabet& alphabet) const
 	s.push_back (tolower (alphabet[rootterm]));
       else
 	s.push_back (toupper (alphabet[rootterm]));
+  }
   for (ENode n = 0; n < e; ++n)
     {
       const TState ts = tstate[n];
       const TState tt = type (tstate[n]);
       const TState ty = tspace.yterm (ts);
       s.push_back (tolower (tstate2char (tt)));
-      if (terminals > 1)
+      if (terminals > 1) {
 	if (tt == TransMatch || tt == TransInsert)
 	  s.push_back (tolower (alphabet[ty]));
 	else
 	  s.push_back ('_');
+      }
     }
   for (ENode n = e; n < nodes(); ++n)
     {

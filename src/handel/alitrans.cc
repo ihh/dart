@@ -754,9 +754,10 @@ sstring Transducer_alignment::safe_tape_name (const PHYLIP_tree& tree, int node)
     {
       name.clear();
       if (tree.node_name[n].size())
-	for_const_contents (sstring, tree.node_name[n], c)
+	for_const_contents (sstring, tree.node_name[n], c) {
 	  if (*c != '(' && *c != ')' && *c != ';' && !isspace(*c))
 	    name << *c;
+	}
       else
 	name = Transducer_SExpr_file::auto_tape_name (n);
       while (names.find (name) != names.end())

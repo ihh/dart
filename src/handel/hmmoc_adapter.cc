@@ -876,12 +876,13 @@ bool HMMoC_adapter::exec_program (const char* main_code, vector<sstring>& result
 Compiled_executable_cache::~Compiled_executable_cache()
 {
   // save index to, or remove, all the compiled binaries
-  if (size())
+  if (size()) {
     if (HMMoC_adapter::cache_filename.size())
       save_cache();
     else if (!HMMoC_adapter::leave_debris)
       for_const_contents (Compiled_executable_cache, *this, iter)
 	unlink (iter->second.c_str());
+  }
 }
 
 void Compiled_executable_cache::save_cache() const

@@ -193,11 +193,11 @@ SCM ecfg_to_scm (const ECFG_scores& ecfg, const ECFG_counts* counts)
 // main guile initialization routine
 void init_xrate_primitives (void)
 {
-  scm_c_define_gsubr (GUILE_XRATE_VALIDATE_GRAMMAR, 1, 0, 0, (SCM (*)()) xrate_validate_grammar);
-  scm_c_define_gsubr (GUILE_XRATE_VALIDATE_GRAMMAR_WITH_ALIGNMENT, 2, 0, 0, (SCM (*)()) xrate_validate_grammar_with_alignment);
-  scm_c_define_gsubr (GUILE_XRATE_ESTIMATE_TREE, 2, 0, 0, (SCM (*)()) xrate_estimate_tree);
-  scm_c_define_gsubr (GUILE_XRATE_ANNOTATE_ALIGNMENT, 2, 0, 0, (SCM (*)()) xrate_annotate_alignment);
-  scm_c_define_gsubr (GUILE_XRATE_TRAIN_GRAMMAR, 2, 0, 0, (SCM (*)()) xrate_train_grammar);
+  scm_c_define_gsubr (GUILE_XRATE_VALIDATE_GRAMMAR, 1, 0, 0, (scm_t_subr) xrate_validate_grammar);
+  scm_c_define_gsubr (GUILE_XRATE_VALIDATE_GRAMMAR_WITH_ALIGNMENT, 2, 0, 0, (scm_t_subr) xrate_validate_grammar_with_alignment);
+  scm_c_define_gsubr (GUILE_XRATE_ESTIMATE_TREE, 2, 0, 0, (scm_t_subr) xrate_estimate_tree);
+  scm_c_define_gsubr (GUILE_XRATE_ANNOTATE_ALIGNMENT, 2, 0, 0, (scm_t_subr) xrate_annotate_alignment);
+  scm_c_define_gsubr (GUILE_XRATE_TRAIN_GRAMMAR, 2, 0, 0, (scm_t_subr) xrate_train_grammar);
 }
 #endif /* GUILE_INCLUDED */
 
