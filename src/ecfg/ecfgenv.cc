@@ -24,7 +24,6 @@ void ECFG_envelope::init_from_fold_string (const sstring& fold_string, int max_s
   for (int start = 0; start <= seqlen; ++start)
     {
       const vector<int>& by_start = foldenv.by_start[start];
-      subseq_lookup[start].resize (by_start.size());
       for_const_contents (vector<int>, by_start, subseq_idx)
 	{
 	  const int len = foldenv.subseq[*subseq_idx].len;
