@@ -33,6 +33,23 @@ Quick_align::Quick_align (PScores& ps, const Alphabet_group& ne)
   pscore->group_suffix[is_global.group_idx][0] = STEMLOC_LOCAL;
   pscore->group_suffix[is_global.group_idx][1] = STEMLOC_GLOBAL;
 
+  // set other PVar names
+  pscore->group_suffix[mat_pg.group_idx].push_back ("match2match");
+  pscore->group_suffix[mat_pg.group_idx].push_back ("match2ins");
+  pscore->group_suffix[mat_pg.group_idx].push_back ("match2gap");
+
+  pscore->group_suffix[ins_pg.group_idx].push_back ("insx2match");
+  pscore->group_suffix[ins_pg.group_idx].push_back ("insx2insx");
+  pscore->group_suffix[ins_pg.group_idx].push_back ("insx2insy");
+  pscore->group_suffix[ins_pg.group_idx].push_back ("insx2end");
+
+  pscore->group_suffix[gap_pg.group_idx].push_back ("gap2gap");
+  pscore->group_suffix[gap_pg.group_idx].push_back ("gap2gapx");
+  pscore->group_suffix[gap_pg.group_idx].push_back ("gap2match");
+
+  pscore->group_suffix[gapx_pg.group_idx].push_back ("gapx2gapx");
+  pscore->group_suffix[gapx_pg.group_idx].push_back ("gapx2match");
+
   // make global by default
   PVar local = is_global[0], global = is_global[1];
   ps[local] = -InfinityScore;
@@ -51,6 +68,10 @@ Quick_align::Quick_align (PScores& ps, const Alphabet_group& ne)
       sstring name;
       name << "qsub" << null_emit->index2word(i);
       pair_nuc[i] = pscore->new_alphabet_group (*alphabet, 1, name.c_str());
+      for (int j = 0; j < A; ++j) {
+	pscore->group_suffix[pair_nuc[i].group_idx][j].clear();
+	pscore->group_suffix[pair_nuc[i].group_idx][j] << name << null_emit->index2word(j);
+      }
       mutable_pgroups.insert (pair_nuc[i].group_idx);
     }
 

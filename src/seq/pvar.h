@@ -223,8 +223,8 @@ protected:
   int _new_group_index (unsigned int size, T default_val, const char* name = 0, const char* suffix = "")
   {
     vector<sstring> suffix_vec;
-    if (suffix)
-      for (int i = 0; i < (int) strlen(suffix); ++i)
+    if (suffix && strlen(suffix) == size)
+      for (int i = 0; i < (int) size; ++i)
 	{
 	  suffix_vec.push_back (sstring());
 	  suffix_vec.back().push_back ((char) suffix[i]);

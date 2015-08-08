@@ -12,7 +12,7 @@ int main (int argc, char** argv) {
 
     opts.newline();
     opts.print_title ("General options");
-
+    
     sstring model_filename, trained_model_filename;
     bool do_alignment;
 
@@ -36,8 +36,9 @@ int main (int argc, char** argv) {
 
     if (model_filename.size()) {
       SExpr_file model_file (model_filename.c_str());
-      hmm = PCFG_builder::init_hmm (model_file.sexpr, pscores, null_emit, pad_states, mutable_pgroups, false);
+      hmm = PCFG_builder::init_hmm (model_file.sexpr[0], pscores, null_emit, pad_states, mutable_pgroups, false);
     } else {
+      null_emit = pscores.new_alphabet_group (alphabet, "null");
       quick_align = new Quick_align (pscores, null_emit);
       mutable_pgroups = quick_align->mutable_pgroups;
       set<int> non_pad = quick_align->non_pad_states();

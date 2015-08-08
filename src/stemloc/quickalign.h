@@ -27,7 +27,7 @@ public:
 
   // indel parameters
   PGroup mat_pg;  // Match -> Match | Ins | Gap
-  PGroup ins_pg;  // InsX -> Match | InsX | InsY
+  PGroup ins_pg;  // InsX -> Match | InsX | InsY | End
   PGroup gap_pg;  // Gap -> Gap | GapX | Match
   PGroup gapx_pg;  // GapX -> GapX | Match
 
