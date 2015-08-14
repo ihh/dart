@@ -120,6 +120,7 @@ struct Transition_matrix : Grammar_state_enum, Stream_saver
   virtual const char* element_descriptor() const { return "element"; }
   virtual int         element_width() const { return 1; }
   virtual void        show_element (const T& element, ostream& o) const { o << '?'; }
+  void transmat_show_element (const T& element, ostream& o) const { show_element (element, o); }
 
   // methods to render the transition matrix as a graphviz dot-format file
   virtual void print_dotfile (ostream& out) const;

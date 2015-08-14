@@ -344,7 +344,7 @@ void Pair_HMM<T>::show (ostream& o) const
 	{
 	  o << "(";
 	  for (int x = 0; x < (int) single_emit[i].size(); x++)
-	    { o.width(w); Pair_HMM<T>::show_element(single_emit[i][x],o); if (x < (int) single_emit[i].size()-1) o << " "; }
+	    { o.width(w); Pair_HMM<T>::transmat_show_element(single_emit[i][x],o); if (x < (int) single_emit[i].size()-1) o << " "; }
 	  o << ")\n";
 	}
       else if (state_type[i] == EmitXY)
@@ -353,7 +353,7 @@ void Pair_HMM<T>::show (ostream& o) const
 	    {
 	      if (y > 0) o << "                  ";
 	      o << "(";
-	      for (int x = 0; x < pair_emit[i].xsize(); x++) { o.width(w); Pair_HMM<T>::show_element(pair_emit[i](x,y),o); if (x < pair_emit[i].xsize()-1) o << " "; }
+	      for (int x = 0; x < pair_emit[i].xsize(); x++) { o.width(w); Pair_HMM<T>::transmat_show_element(pair_emit[i](x,y),o); if (x < pair_emit[i].xsize()-1) o << " "; }
 	      o << ")";
 	      if (alphabet) o << " " << alphabet->int2char(y);
 	      o << "\n";

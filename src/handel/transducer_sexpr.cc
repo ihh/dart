@@ -536,8 +536,10 @@ void Transducer_SExpr_file::init()
     sym2tok[alphabet[tok]] = tok;
 
   for (int g = 0; g < pscores.groups(); ++g)
-    for (int v = 0; v < pscores.group_size (g); ++v)
+    for (int v = 0; v < pscores.group_size (g); ++v) {
       defined_pvars.insert (PVar (g, v));
+      CTAG(3,DEFINED_PVARS) << "Defined: " << pscores.group_suffix[g][v] << endl;
+    }
 
   setup_cliques();
   autoname_tree();
