@@ -1,17 +1,15 @@
 
 =head1 NAME
 
-Newick.pm
+    Newick.pm
 
-=head1 SYNOPSIS
+    =head1 SYNOPSIS
 
-Lightweight Perl module encapsulating a rooted phylogenetic tree in Newick format.
+    Lightweight Perl module encapsulating a rooted phylogenetic tree in Newick format.
 
-For more detail on Newick format itself, see the following URL:
+    Nodes are sorted in preorder (parents before children).
 
-http://biowiki.org/NewickFormat
-
-=head1 METHODS
+    =head1 METHODS
 
 =cut
 
@@ -34,7 +32,7 @@ sub new {
 	parent => [],
 	node_name => [],
 	branch_length => [],
-	};
+    };
     bless $self, $class;
     return $self;
 }
@@ -43,20 +41,22 @@ sub new {
 
     my $indexOfParent = $tree->parent->[$indexOfNode]
 
-Returns a reference to an array giving the indices of each node\'s parent.
+    Returns a reference to an array giving the indices of each node's parent.
 
-=head2 node_name
+    The root node always has index 0, and its (dummy) parent index is -1.
+
+    =head2 node_name
 
     my $nodeName = $tree->node_name->[$indexOfNode]
 
-Returns a reference to an array of node names.
+    Returns a reference to an array of node names.
 
-=head2 branch_length
+    =head2 branch_length
 
     my $branchLength = $tree->branch_length->[$indexOfNode]
 
-Returns a reference to an array of branch lengths.
-The N'th entry in this array is the branch length from the N'th node to its parent.
+    Returns a reference to an array of branch lengths.
+    The N'th entry in this array is the branch length from the N'th node to its parent.
 
 =cut
 
@@ -68,7 +68,7 @@ sub branch_length { my ($self) = @_; return $self->{'branch_length'} }
 
     my $nodes = $tree->nodes
 
-Returns the number of nodes in the tree.
+    Returns the number of nodes in the tree.
 
 =cut
 
@@ -81,22 +81,36 @@ sub nodes {
 
     my @kids = $tree->children ($indexOfNode)
 
-Returns the list of children of a given node.
+    Returns the list of children of a given node.
 
 =cut
 
 sub children {
     my ($self, $node) = @_;
-    return grep ($self->parent->[$_] == $node, 0..$self->nodes-1);
+    return grep ($self->parent->[$_] == $node, $node+1..$self->nodes-1);
+}
+
+=head2 siblings
+
+    my @sibs = $tree->siblings ($indexOfNode)
+
+    Returns the list of siblings of a given node.
+
+=cut
+
+sub siblings {
+    my ($self, $node) = @_;
+    my $parent = $self->parent->[$node];
+    return grep ($self->parent->[$_] == $parent && $_ != $node, $parent..$self->nodes-1);
 }
 
 =head2 add_node
 
     my $indexOfNewNode = $tree->add_node ($indexOfParent, $newNodeName, $branchLengthToParent)
 
-Appends a new node & returns the index.
+    Appends a new node & returns the index.
 
-$indexOfParent should be -1 for the root node.
+    $indexOfParent should be -1 for the root node.
 
 =cut
 
@@ -104,6 +118,10 @@ $indexOfParent should be -1 for the root node.
 sub add_node {
     my ($self, $parent, $node_name, $branch_length) = @_;
     my $node = $self->nodes;
+    $parent = -1 unless defined $parent;
+    if ($parent >= $node) {
+	die "Nodes must be added in preorder (parents before children)";
+    }
     push @{$self->parent}, $parent;
     push @{$self->node_name}, $node_name;
     push @{$self->branch_length}, $branch_length;
@@ -114,13 +132,16 @@ sub add_node {
 
     $tree->insert_node ($indexOfNewNode, $indexOfParent, $newNodeName, $branchLengthToParent)
 
-Adds a new node with a given index.
+    Adds a new node with a given index.
 
 =cut
 
 # insert_node adds a new node before $node & updates the parent array
 sub insert_node {
     my ($self, $node, $parent, $node_name, $branch_length) = @_;
+    if ($parent >= $node) {
+	die "Nodes must be added in preorder (parents before children)";
+    }
     my @map_parent = map ($_ + ($_ >= $node ? 1 : 0), @{$self->parent});
     @{$self->parent} = (@map_parent[0..$node-1],
 			$parent,
@@ -132,39 +153,44 @@ sub insert_node {
 =head2 delete_node
 
     $tree->delete_node ($indexOfNode);
-    $tree->tidy;
+$tree->tidy;
 
-    $tree->delete_node (@listOfNodeIndices);
-    $tree->tidy;
+$tree->delete_node (@listOfNodeIndices);
+$tree->tidy;
 
 Deletes a node with a given index (or a list of nodes).
 
-Deleting nodes can leave the tree containing redundant nodes (i.e. internal nodes with two neighbors) or unnamed leaf nodes.
-Call $tree->tidy() after $tree->delete_node in order to "clean up" such trees.
+    Deleting nodes can leave the tree containing redundant nodes (i.e. internal nodes with two neighbors) or unnamed leaf nodes.
+    Call $tree->tidy() after $tree->delete_node in order to "clean up" such trees.
 
 =cut
 
-# delete_node deletes node $node & updates the parent array
+# delete_node deletes leaf node $node & updates the parent array
 sub delete_node {
-    my ($self, @nodes_to_delete) = @_;
-    my %del = map (($_ => 1), @nodes_to_delete);
-    my @nodes_to_keep = grep (!exists($del{$_}), 0..$self->nodes-1);
+    my ($self, @del) = @_;
+    my %is_leaf = map (($_ => 1), $self->leaves);
+    if (grep !$is_leaf{$_}, @del) {
+	die "Attempt to delete internal node";
+    }
+    my %del = map (($_ => 1), @del);
+    my @nodes_to_keep = grep (!$del{$_}, 0..$self->nodes-1);
     my %new_index = (-1 => -1,
 		     map (($nodes_to_keep[$_] => $_), 0..@nodes_to_keep-1));
+    for my $node (@nodes_to_keep) { my $parent = $self->parent->[$node]; if (!exists ($new_index{$parent})) { die "Node $node has parent $parent which is unmapped (while deleting nodes: @del)" } }
     @{$self->parent} = map ($new_index{$self->parent->[$_]}, @nodes_to_keep);
     @{$self->node_name} = @{$self->node_name} [@nodes_to_keep]; 
-    @{$self->branch_length} = @{$self->branch_length} [@nodes_to_keep]; 
+    @{$self->branch_length} = @{$self->branch_length} [@nodes_to_keep];
 }
 
 =head2 insert_node_above
 
     my $indexOfNewNode = $tree->insert_node_above ($indexOfNode, $newNodeName, $branchLengthToParent)
 
-Adds a new node by splitting the branch between a node and its parent.
+    Adds a new node by splitting the branch between a node and its parent.
 
-Returns the index of the new node (actually, this is redundant:
-the new node is inserted immediately before the existing one,
-so $indexOfNewNode = $indexOfNode).
+    Returns the index of the new node (actually, this is redundant:
+    the new node is inserted immediately before the existing one,
+    so $indexOfNewNode = $indexOfNode).
 
 =cut
 
@@ -180,9 +206,9 @@ sub insert_node_above {
 
     my $deleted = $tree->remove_redundant_nodes
 
-Eliminates all internal nodes of degree 2 (excluding the root).
+    Eliminates all internal nodes of degree 2 (excluding the root).
 
-Returns true if any nodes were deleted.
+    Returns true if any nodes were deleted.
 
 =cut
 
@@ -201,13 +227,38 @@ sub remove_redundant_nodes {
     return @nodes_to_delete > 0;
 }
 
+
+=head2 remove_redundant_branches
+
+    my $deleted = $tree->remove_redundant_branches
+
+    Eliminates all branches of length zero.
+
+    Returns true if any branches were deleted.
+
+=cut
+
+sub remove_redundant_branches {
+    my ($self) = @_;
+    my @nodes_to_delete;
+    for (my $node = 1; $node < $self->nodes; ++$node) {
+	if (!defined($self->branch_length->[$node]) || $self->branch_length->[$node] == 0) {
+	    my @kids = $self->children ($node);
+	    for my $child (@kids) { $self->parent->[$child] = $self->parent->[$node] }
+	    push @nodes_to_delete, $node;
+	}
+    }
+    $self->delete_node (@nodes_to_delete);
+    return @nodes_to_delete > 0;
+}
+
 =head2 delete_unnamed_leaf_nodes
 
     $tree->delete_unnamed_leaf_nodes
 
-Deletes all unnamed leaf nodes.
+    Deletes all unnamed leaf nodes.
 
-Returns true if any nodes were deleted.
+    Returns true if any nodes were deleted.
 
 =cut
 
@@ -225,16 +276,17 @@ sub delete_unnamed_leaf_nodes {
 
     $tree->tidy
 
-Repeatedly calls remove_redundant_nodes and delete_unnamed_leaf_nodes until there are no more nodes to remove.
+    Repeatedly calls remove_redundant_nodes, remove_redundant_branches and delete_unnamed_leaf_nodes until there are no more nodes to remove.
 
 =cut
 
 sub tidy {
     my ($self) = @_;
     while (1) {
+	my $rbn = $self->remove_redundant_branches;
 	my $rrn = $self->remove_redundant_nodes;
 	my $duln = $self->delete_unnamed_leaf_nodes;
-	last unless $rrn || $duln;
+	last unless $rbn || $rrn || $duln;
     }
 }
 
@@ -242,7 +294,7 @@ sub tidy {
 
     my $subtree = $tree->subtree ($node)
 
-Returns (as a Newick tree object) the subtree rooted at a particular node.
+    Returns (as a Newick tree object) the subtree rooted at a particular node.
 
 =cut
 
@@ -276,8 +328,8 @@ sub subtree {
 
     my $ancestors = $tree->ancestors ($node)
 
-Returns the ancestors of a node in the tree,
-sorted in postorder (children before parents).
+    Returns the ancestors of a node in the tree,
+    sorted in postorder (children before parents).
 
 =cut
 
@@ -285,15 +337,15 @@ sub ancestors {
     my ($self, $node) = @_;
     my @anc;
     while ($node != -1) {
-      push @anc, $node;
-      $node = $self->parent->[$node];
+	push @anc, $node;
+	$node = $self->parent->[$node];
     }
     return @anc;
 }
 
 =head2 lca
 
-	my $ancestor = lca(@nodes);
+    my $ancestor = lca(@nodes);
 
 Returns the lowest common ancestor of a set of nodes.
 
@@ -329,15 +381,15 @@ sub lca{
 	}
 	@matches=();
     }	
-		
-		    
+    
+    
 }
 
 =head2 leaves
 
     my @leaves = $tree->leaves
 
-Returns the set of leaf nodes in the tree.
+    Returns the set of leaf nodes in the tree.
 
 =cut
 
@@ -345,7 +397,7 @@ sub leaves {
     my ($self) = @_;
     my %is_leaf = map (($_ => 1), 0..$self->nodes - 1);
     for my $parent (@{$self->parent}) {
-      delete $is_leaf{$parent} if exists $is_leaf{$parent};
+	delete $is_leaf{$parent} if exists $is_leaf{$parent};
     }
     return sort {$a <=> $b} keys %is_leaf;
 }
@@ -354,7 +406,7 @@ sub leaves {
 
     my $distance = $tree->distance ($node1, $node2)
 
-Returns the distance (total branch length) between two nodes in the tree.
+    Returns the distance (total branch length) between two nodes in the tree.
 
 =cut
 
@@ -379,21 +431,21 @@ sub distance {
 
     my @nodes = $tree->find_nodes ($name)
 
-Returns the list of nodes with the given name.
+    Returns the list of nodes with the given name.
 
 =cut
 
 sub find_nodes {
     my ($self, $name) = @_;
     return grep ($self->node_name->[$_] eq $name, 0..$self->nodes - 1);
-  }
+}
 
 =head2 find_node
 
     my $node = $tree->find_node ($name)
 
-Returns the unique node with the given name,
-throwing an error if there are zero or more than two such nodes.
+    Returns the unique node with the given name,
+    throwing an error if there are zero or more than two such nodes.
 
 =cut
 
@@ -403,48 +455,53 @@ sub find_node {
     die "No nodes named $name" if @nodes == 0;
     die @nodes+0, " nodes named $name" if @nodes > 1;
     return $nodes[0];
-  }
+}
 
 =head2 parse
 
     my $tree = Newick->parse ($newickFormatString)
     my $tree = Newick->from_string ($newickFormatString)
 
-Creates a new Newick object and initializes it from a Newick-format string.
+    Creates a new Newick object and initializes it from a Newick-format string.
 
-from_string is a synonym for parse.
+    from_string is a synonym for parse.
 
 =cut
 
 sub from_string { return parse (@_) }
 
 # parser ripped out of BioPerl by IH on 4/4/2007
+# modified to ignore NHX extensions & deal with multiple trees on 6/22/2015
 sub parse {
     my ( $class, $string ) = @_;
-    my $tree = $class->new;
-    my $remainder = $string;
-    my $token;
-    my @tokens;
-    while ( ( $token, $remainder ) = $tree->_next_token( $remainder ) ) {
-        last if ( ! defined $token || ! defined $remainder );
-#        $logger->info("fetched token '$token'");
-        push @tokens, $token;
+    my @s = $class->_split ($string);
+    my @trees;
+    for my $s (@s) {
+	my $tree = $class->new;
+	my $remainder = $s;
+	my $token;
+	my @tokens;
+	while ( ( $token, $remainder ) = $tree->_next_token( $remainder ) ) {
+	    last if ( ! defined $token || ! defined $remainder );
+	    push @tokens, $token;
+	}
+	my $i;
+	for ( $i = $#tokens; $i >= 0; $i-- ) {
+	    last if $tokens[$i] eq ';';
+	}
+	my $root = $tree->add_node(-1);
+	$tree->_parse_node_data( $root, @tokens[ 0 .. ( $i - 1 ) ] );
+	$tree->_parse_clade( $tree, $root, @tokens[ 0 .. ( $i - 1 ) ] );
+	push @trees, $tree;
     }
-    my $i;
-    for ( $i = $#tokens; $i >= 0; $i-- ) {
-        last if $tokens[$i] eq ';';
-    }
-    my $root = $tree->add_node(-1);
-    $tree->_parse_node_data( $root, @tokens[ 0 .. ( $i - 1 ) ] );
-    $tree->_parse_clade( $tree, $root, @tokens[ 0 .. ( $i - 1 ) ] );
-    return $tree;
+    return wantarray() ? @trees : shift(@trees);
 }
 
 =head2 from_file
 
     my $tree = Newick->from_file ($filename)
 
-Creates a new Newick object and initializes it from a Newick-format file.
+    Creates a new Newick object and initializes it from a Newick-format file.
 
 =cut
 
@@ -462,7 +519,7 @@ sub from_file {
 
     print $tree->to_string()
 
-Renders a Newick tree object as a (Newick-format) string.
+    Renders a Newick tree object as a (Newick-format) string.
 
 =cut
 
@@ -481,7 +538,7 @@ sub to_string {
     $node_text .= $nn if defined $nn;
 
     my $bl = $self->branch_length->[$node];
-    $node_text .= ":$bl" if defined $bl;
+    $node_text .= ":$bl" if defined($bl) && ($node > 0 || $bl > 0);
 
     $node_text .= ';' if $node == 0;
 
@@ -506,79 +563,76 @@ sub _split {
     my ( $QUOTED, $COMMENTED ) = ( 0, 0 );
     my $decommented = '';
     my @trees;
-    TOKEN: for my $i ( 0 .. length( $string ) ) {
-        if ( ! $QUOTED && ! $COMMENTED && substr($string,$i,1) eq "'" ) {
-            $QUOTED++;
-        }
-        elsif ( ! $QUOTED && ! $COMMENTED && substr($string,$i,1) eq "[" ) {
-            $COMMENTED++;
-            next TOKEN;
-        }
-        elsif ( ! $QUOTED && $COMMENTED && substr($string,$i,1) eq "]" ) {
-            $COMMENTED--;
-            next TOKEN;
-        }
-        elsif ( $QUOTED && ! $COMMENTED && substr($string,$i,1) eq "'" && substr($string,$i,2) ne "''" ) {
-            $QUOTED--;
-        }
-        $decommented .= substr($string,$i,1) unless $COMMENTED;
-        if ( ! $QUOTED && ! $COMMENTED && substr($string,$i,1) eq ';' ) {
-            push @trees, $decommented;
-            $decommented = '';
-        }
-    }
-#    $logger->debug("removed comments, split on tree descriptions");
+  TOKEN: for my $i ( 0 .. length( $string ) ) {
+      if ( ! $QUOTED && ! $COMMENTED && substr($string,$i,1) eq "'" ) {
+	  $QUOTED++;
+      }
+      elsif ( ! $QUOTED && ! $COMMENTED && substr($string,$i,1) eq "[" ) {
+	  $COMMENTED++;
+	  next TOKEN;
+      }
+      elsif ( ! $QUOTED && $COMMENTED && substr($string,$i,1) eq "]" ) {
+	  $COMMENTED--;
+	  next TOKEN;
+      }
+      elsif ( $QUOTED && ! $COMMENTED && substr($string,$i,1) eq "'" && substr($string,$i,2) ne "''" ) {
+	  $QUOTED--;
+      }
+      $decommented .= substr($string,$i,1) unless $COMMENTED;
+      if ( ! $QUOTED && ! $COMMENTED && substr($string,$i,1) eq ';' ) {
+	  push @trees, $decommented;
+	  $decommented = '';
+      }
+  }
     return @trees;
 }
 
 sub _parse_clade {
     my ( $self, $tree, $root, @tokens ) = @_;
-#    $logger->info("recursively parsing clade '@tokens'");
     my ( @clade, $depth, @remainder );
-    TOKEN: for my $i ( 0 .. $#tokens ) {
-        if ( $tokens[$i] eq '(' ) {
-            if ( not defined $depth ) {
-                $depth = 1;
-                next TOKEN;
-            }
-            else {
-                $depth++;
-            }
-        }
-        elsif ( $tokens[$i] eq ',' && $depth == 1 ) {
-            my $node = $tree->add_node ($root);
-            $self->_parse_node_data( $node, @clade );
-            $self->_parse_clade( $tree, $node, @clade );
-            @clade = ();
-            next TOKEN;
-        }
-        elsif ( $tokens[$i] eq ')' ) {
-            $depth--;
-            if ( $depth == 0 ) {
-                @remainder = @tokens[ ( $i + 1 ) .. $#tokens ];
-		my $node = $tree->add_node ($root);
-                $self->_parse_node_data( $node, @clade );
-                $self->_parse_clade( $tree, $node, @clade );
-                last TOKEN;
-            }
-        }
-        push @clade, $tokens[$i];
-    }
+  TOKEN: for my $i ( 0 .. $#tokens ) {
+      if ( $tokens[$i] eq '(' ) {
+	  if ( not defined $depth ) {
+	      $depth = 1;
+	      next TOKEN;
+	  }
+	  else {
+	      $depth++;
+	  }
+      }
+      elsif ( $tokens[$i] eq ',' && $depth == 1 ) {
+	  my $node = $tree->add_node ($root);
+	  $self->_parse_node_data( $node, @clade );
+	  $self->_parse_clade( $tree, $node, @clade );
+	  @clade = ();
+	  next TOKEN;
+      }
+      elsif ( $tokens[$i] eq ')' ) {
+	  $depth--;
+	  if ( $depth == 0 ) {
+	      @remainder = @tokens[ ( $i + 1 ) .. $#tokens ];
+	      my $node = $tree->add_node ($root);
+	      $self->_parse_node_data( $node, @clade );
+	      $self->_parse_clade( $tree, $node, @clade );
+	      last TOKEN;
+	  }
+      }
+      push @clade, $tokens[$i];
+  }
 }
 
 sub _parse_node_data {
     my ( $self, $node, @clade ) = @_;
-#    $logger->info("parsing name and branch length for node");
     my @tail;
-    PARSE_TAIL: for ( my $i = $#clade; $i >= 0; $i-- ) {
-        if ( $clade[$i] eq ')' ) {
-            @tail = @clade[ ( $i + 1 ) .. $#clade ];
-            last PARSE_TAIL;
-        }
-        elsif ( $i == 0 ) {
-            @tail = @clade;
-        }
-    }
+  PARSE_TAIL: for ( my $i = $#clade; $i >= 0; $i-- ) {
+      if ( $clade[$i] eq ')' ) {
+	  @tail = @clade[ ( $i + 1 ) .. $#clade ];
+	  last PARSE_TAIL;
+      }
+      elsif ( $i == 0 ) {
+	  @tail = @clade;
+      }
+  }
     # name only
     if ( scalar @tail == 1 ) {
         $self->node_name->[$node] = $tail[0];
@@ -594,32 +648,28 @@ sub _parse_node_data {
 
 sub _next_token {
     my ( $self, $string ) = @_;
-#    $logger->info("tokenizing string '$string'");
     my $QUOTED = 0;
     my $token = '';
     my $TOKEN_DELIMITER = qr/[():,;]/;
-    TOKEN: for my $i ( 0 .. length( $string ) ) {
-	next TOKEN if substr($string,$i,1) =~ /\s/;
-        $token .= substr($string,$i,1);
-#        $logger->info("growing token: '$token'");
-        if ( ! $QUOTED && $token =~ $TOKEN_DELIMITER ) {
-            my $length = length( $token );
-            if ( $length == 1 ) {
-#                $logger->info("single char token: '$token'");
-                return $token, substr($string,($i+1));
-            }
-            else {
-#                $logger->info(sprintf("range token: %s", substr($token,0,$length-1)));
-                return substr($token,0,$length-1),substr($token,$length-1,1).substr($string,($i+1));
-            }
-        }
-        if ( ! $QUOTED && substr($string,$i,1) eq "'" ) {
-            $QUOTED++;
-        }
-        elsif ( $QUOTED && substr($string,$i,1) eq "'" && substr($string,$i,2) ne "''" ) {
-            $QUOTED--;
-        }        
-    }
+  TOKEN: for my $i ( 0 .. length( $string ) ) {
+      next TOKEN if substr($string,$i,1) =~ /\s/;
+      $token .= substr($string,$i,1);
+      if ( ! $QUOTED && $token =~ $TOKEN_DELIMITER ) {
+	  my $length = length( $token );
+	  if ( $length == 1 ) {
+	      return $token, substr($string,($i+1));
+	  }
+	  else {
+	      return substr($token,0,$length-1),substr($token,$length-1,1).substr($string,($i+1));
+	  }
+      }
+      if ( ! $QUOTED && substr($string,$i,1) eq "'" ) {
+	  $QUOTED++;
+      }
+      elsif ( $QUOTED && substr($string,$i,1) eq "'" && substr($string,$i,2) ne "''" ) {
+	  $QUOTED--;
+      }        
+  }
 }
 
 1;
