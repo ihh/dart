@@ -400,7 +400,7 @@ void PlacementLimiter::parse_JSON(const char* JSON_file)
     {
       if (! re.Match(nIter->c_str()))
 	THROWEXPR("This node does not appear to have a pplacer-style branch index label like this:\n nodeName:branchLength[branchIndex]\nrendering the JSON data unusable. The string was:\n" + *nIter);
-      if (index( ":", *nIter) != -1)
+      if (ProtpalUtils::index( ":", *nIter) != -1)
 	{
 	  // if there is no node name this cannot continue
 	    splitName  = nIter->split(":"); 
@@ -470,7 +470,7 @@ bool PlacementLimiter::is_allowed(string readName,  string nodeName)
 	  return true; 
 	}
       else
-	return bool(index(nodes2branches[nodeName], read_node_map[readName]) != -1);
+	return bool(ProtpalUtils::index(nodes2branches[nodeName], read_node_map[readName]) != -1);
     }
   else 
     return is_within_distance(nodeName, distance_cutoff, read_node_map[readName]);

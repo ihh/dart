@@ -3,7 +3,7 @@
 #include<iostream>
 #include<set>
 #include<map>
-#include<ext/hash_map>
+#include<unordered_map>
 #include<vector>
 #include<queue>
 #include<list>
@@ -49,19 +49,8 @@ struct eqM_id{
 // forward declarations
 class Profile; 
 typedef vector<M_id> state_path; 
-//hash_map<const char*, int, hash<const char*>, eqstr> months;
-/* namespace __gnu_cxx { */
-/*   template<> struct hash<M_id>{ */
-/*     size_t operator()(const M_id& m) const { */
-/*       return size_t(m.q_state*1 + m.left_state*10 + m.left_type*100 + m.right_state*1000 + m.right_type*10000);  */
-/*     } */
-/*   }; */
-/* }  // namespace __gnu_cxx */
 
-
-namespace __gnu_cxx {
-
-  template<> struct hash<M_id>{
+template<class M_id> struct protpal_state_hash {
     size_t operator()(const M_id& m) const {
       string s; 
       stringstream inter; 
@@ -80,10 +69,9 @@ namespace __gnu_cxx {
       return size_t(hash);
     }
   };
-}  // namespace __gnu_cxx
 
 
-typedef __gnu_cxx::hash_map<M_id,bfloat, hash<M_id>, eqM_id> DP_hash;
+typedef unordered_map<M_id,bfloat, protpal_state_hash<M_id>, eqM_id> DP_hash;
 
 
 

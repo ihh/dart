@@ -67,7 +67,7 @@ int maxIndex(vector<bfloat> &weights)
 int sample(vector<float> &weights)
 {
   vector<float> probs;
-  double s = sum(weights);
+  double s = ProtpalUtils::sum(weights);
   unsigned int i;
   float previous = 0 ;
   for (i=0; i<weights.size(); i++)	
@@ -88,7 +88,7 @@ int sample(vector<float> &weights)
 int sample(vector<double> &weights)
 {
   vector<double> probs;
-  double s = sum(weights);
+  double s = ProtpalUtils::sum(weights);
   unsigned int i;
   float previous = 0 ;
   for (i=0; i<weights.size(); i++)	
@@ -110,7 +110,7 @@ int sample(vector<double> &weights)
 int sample(vector<bfloat> &weights)
 {
   vector<bfloat> probs; //not really necessary, but good to be careful
-  bfloat s = sum(weights);
+  bfloat s = ProtpalUtils::sum(weights);
   unsigned int i;
   bfloat previous = 0 ;
   for (i=0; i<weights.size(); i++)	
@@ -152,21 +152,21 @@ pair<int, int> merge(pair<int, int> coords1, pair<int, int> coords2)
   return joinedCoords; 
 }
 
-double sum(vector<double> in)
+double ProtpalUtils::sum(vector<float> in)
 {
   double out = 0;
   for (unsigned int i=0; i<in.size(); i++) out += in[i];
   return out;
 }
 
-double sum(vector<float> in)
+double ProtpalUtils::sum(vector<double> in)
 {
   double out = 0;
   for (unsigned int i=0; i<in.size(); i++) out += in[i];
   return out;
 }
 
-bfloat sum(vector<bfloat> in)
+bfloat ProtpalUtils::sum(vector<bfloat> in)
 {
   bfloat out = 0;
   for (unsigned int i=0; i<in.size(); i++) out += in[i];
@@ -174,7 +174,7 @@ bfloat sum(vector<bfloat> in)
 }
 
 
-double sum(vector<int> in)
+double ProtpalUtils::sum(vector<int> in)
 {
   double out = 0;
   for (unsigned int i=0; i<in.size(); i++) out += in[i];
@@ -194,7 +194,7 @@ string stringAt(string in, int index)
   return output;
 }
 
-int index(string query, string in )
+int ProtpalUtils::index(string query, string in )
 {
   string subStr;
   for (unsigned int i=0; i<in.size(); i++)
@@ -206,7 +206,7 @@ int index(string query, string in )
 }
 
 
-int index(string query, vector<string> in )
+int ProtpalUtils::index(string query, vector<string> in )
 {
   string subStr;
   for (unsigned int i=0; i<in.size(); i++)
@@ -217,7 +217,7 @@ int index(string query, vector<string> in )
   return(-1);
 }
 
-int index(sstring query, vector<sstring> in )
+int ProtpalUtils::index(sstring query, vector<sstring> in )
 {
   sstring subStr;
   for (unsigned int i=0; i<in.size(); i++)
@@ -230,7 +230,7 @@ int index(sstring query, vector<sstring> in )
 
 
 
-int index(int query, vector<int> in )
+int ProtpalUtils::index(int query, vector<int> in )
 {
   for (unsigned int i=0; i<in.size(); i++)
 	{
@@ -239,7 +239,7 @@ int index(int query, vector<int> in )
   return(-1);
 }
 
-int index(float query, vector<float> in )
+int ProtpalUtils::index(float query, vector<float> in )
 {
   for (unsigned int i=0; i<in.size(); i++)
 	{
@@ -248,7 +248,7 @@ int index(float query, vector<float> in )
   return(-1);
 }
 
-int index(bfloat query, vector<bfloat> in )
+int ProtpalUtils::index(bfloat query, vector<bfloat> in )
 {
   for (unsigned int i=0; i<in.size(); i++)
 	{
@@ -259,21 +259,21 @@ int index(bfloat query, vector<bfloat> in )
 
 
 
-bool in(string query, string in )
+bool ProtpalUtils::in(string query, string in )
 {
-  if (index(query,in) == -1) return false;
+  if (ProtpalUtils::index(query,in) == -1) return false;
   else return true;
 }
 
-bool in(int query, vector<int> in )
+bool ProtpalUtils::in(int query, vector<int> in )
 {
-  if (index(query,in) == -1) return false;
+  if (ProtpalUtils::index(query,in) == -1) return false;
   else return true;
 }
 
-bool in(float query, vector<float> in )
+bool ProtpalUtils::in(float query, vector<float> in )
 {
-  if (index(query,in) == -1) return false;
+  if (ProtpalUtils::index(query,in) == -1) return false;
   else return true;
 }
 

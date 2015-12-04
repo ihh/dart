@@ -37,12 +37,15 @@ void Alignment_path::make_flush()
 
 void Alignment_path::insert_columns (int col, int n)
 {
-  for (int i = 0; i < rows(); i++) row(i).insert (row(i).begin() + col, n, (bool) 0);
+  for (int i = 0; i < rows(); i++) row(i).insert (row(i).begin() + (size_t) col, (size_t) n, (bool) 0);
 }
 
 void Alignment_path::insert_columns (int col, const vector<bool>& col_data, int n)
 {
-  for (int i = 0; i < rows(); i++) row(i).insert (row(i).begin() + col, n, col_data[i]);
+  for (int i = 0; i < rows(); i++) {
+    const bool b = col_data[i];
+    row(i).insert (row(i).begin() + (size_t) col, (size_t) n, b);
+  }
 }
 
 void Alignment_path::erase_columns (int col, int n)
