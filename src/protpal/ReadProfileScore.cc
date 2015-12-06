@@ -67,7 +67,7 @@ bfloat ReadProfileScore::get_score(const Read& read, bool viterbi, bool logging)
 		     logging); // display logging messages
       value = get_forward_value(); 
     }
-  if (isinf(log(value)) || bfloat_is_nan(value) ||   !bfloat_is_nonzero(value))
+  if (std::isinf(log(value)) || bfloat_is_nan(value) ||   !bfloat_is_nonzero(value))
     {
       cerr << "Bad read-profile score between profile: " << name << " , read: " << read.identifier << " score: " << value <<endl;
       clear_DP_matrix(); 
