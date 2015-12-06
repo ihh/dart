@@ -118,3 +118,9 @@ utils:
 # Bill Bruno's weighbor (distributed with DART for historical reasons)
 Weighbor weighbor:
 	cd $(SRCDIR)/Weighbor; $(MAKE) -k weighbor
+
+# Bob Edgar's muscle
+MUSCLE = muscle_src_3.8.1551.tar.gz
+muscle bin/muscle:
+	mkdir muscle; cd muscle; curl -O http://www.drive5.com/muscle/$(MUSCLE); tar xvzf $(MUSCLE); perl -i.bak -pe 's/-static//g' Makefile; make
+	mv muscle/muscle bin/muscle
