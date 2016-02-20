@@ -153,14 +153,14 @@ static SCM newick_unpack (SCM tree_smob)
 
 static size_t free_newick (SCM tree_smob)
 {
-  struct PHYLIP_tree *tree = (struct PHYLIP_tree *) SCM_SMOB_DATA (tree_smob);
+  class PHYLIP_tree *tree = (class PHYLIP_tree *) SCM_SMOB_DATA (tree_smob);
   delete tree;
   return 0;
 }
 
 static int print_newick (SCM tree_smob, SCM port, scm_print_state *pstate)
 {
-  struct PHYLIP_tree *tree = (struct PHYLIP_tree *) SCM_SMOB_DATA (tree_smob);
+  class PHYLIP_tree *tree = (class PHYLIP_tree *) SCM_SMOB_DATA (tree_smob);
 
   SExpr_atom tree_string;
   tree->write(tree_string,0);
@@ -183,7 +183,7 @@ PHYLIP_tree* newick_cast_from_scm (SCM tree_smob)
 // main guile initialization routine
 void init_newick_type (void)
 {
-  newick_tag = scm_make_smob_type ("newick", sizeof (struct PHYLIP_tree));
+  newick_tag = scm_make_smob_type ("newick", sizeof (class PHYLIP_tree));
   scm_set_smob_free (newick_tag, free_newick);
   scm_set_smob_print (newick_tag, print_newick);
 

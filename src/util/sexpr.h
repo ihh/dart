@@ -19,8 +19,8 @@ struct SExpr_atom : sstring
   SExpr_atom(const sstring& s) : sstring(s), is_quoted(false) { }
   SExpr_atom(const char* s) : sstring(s), is_quoted(false) { }
   SExpr_atom(const SExpr_atom& s) : sstring(s), is_quoted(s.is_quoted) { }
-  SExpr_atom& operator= (const sstring& s) { return *this = s; }
-  SExpr_atom& operator= (const char* s) { return *this = s; }
+  SExpr_atom& operator= (const sstring& s) { ((sstring&)*this) = s; return *this; }
+  SExpr_atom& operator= (const char* s) { ((sstring&)*this) = s; return *this; }
   // vector of strings
   static vector<SExpr_atom> from_vector (const vector<sstring>& s);
   // quoted output

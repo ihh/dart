@@ -12,7 +12,7 @@ Rate_matrix::Rate_matrix (const Alphabet& a, const vector<double>& freq, const M
   : a (a.name.c_str(), a.nondegenerate_chars()),
     frequency(freq),
     sqrt_freq(freq.size()),
-    D(U.Ncols()),
+    D(evec_cols.Ncols()),
     U(evec_cols)
 {
   for (int i = 0; i < (int) eval.size(); ++i) D(i+1,i+1) = eval[i];
