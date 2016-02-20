@@ -1,5 +1,11 @@
 #!/usr/bin/perl
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 use Getopt::Long;
 use File::Basename;
 

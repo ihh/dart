@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 use Stockholm;
 
 my $amino = 0;
@@ -88,15 +94,17 @@ sub print_stock {
 		if ($field eq 'DLN') { $dln = $data }
 	    }
 
-	} else {
+	} elsif ($line =~ /\S/) {
 	    warn "Ignoring line $line\n";
 	}
     }
 
-    my $lcols = $stock->lcols;
-    my $maxcols = 80;
-    while (($maxcols - 1 - $lcols) % 3 != 0) { --$maxcols }
-    print $stock->to_string ($maxcols);
+    if ($stock->sequences) {
+	my $lcols = $stock->lcols;
+	my $maxcols = 80;
+	while (($maxcols - 1 - $lcols) % 3 != 0) { --$maxcols }
+	print $stock->to_string ($maxcols);
+    }
 }
 
 

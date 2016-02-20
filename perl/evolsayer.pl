@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 # evolsayer: simulator for TKF Structure Tree
 # Ian Holmes, 2008-12-08
 
