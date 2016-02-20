@@ -5,7 +5,6 @@
 
 (grammar
  (name EmpiricalCodonModel)
- (alphabet DNA)
 
  ;; Transformation rules for grammar symbols
 
