@@ -212,7 +212,7 @@ TKF_node_DP::TKF_node_DP (const TKF_align& tkf, Phylogeny::Node test_node, doubl
       while (align_to_subpath_map(1,align_col) == 0) tkf.align.path.inc_seq_coords (seq_coords, align_col++);      // find corresponding column in original alignment
 
       for (int row = 0; row < path.rows(); row++)
-	column_label[col] += path(row,col) << row+1;
+	column_label[col] += path(row,col) << (row+1);
       
       bool tmp = tkf.align.path(test_row,align_col);
 

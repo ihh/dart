@@ -202,6 +202,7 @@ public:
     reference operator*() { return (*this)[0]; }
     const_reference operator*() const { return (*this)[0]; }
     bool operator== (const Row_iterator& i) const { return _same_row(i) && _col_offset==i._col_offset; }
+    bool operator!= (const Row_iterator& i) const { return !(*this == i); }
     Row_iterator& operator++() { ++_col_offset; return *this; }
     Row_iterator operator++ (int) { Row_iterator tmp = *this; ++_col_offset; return tmp; }
     Row_iterator& operator--() { --_col_offset; return *this; }
@@ -240,6 +241,7 @@ public:
     reference operator*() { return (*this)[0]; }
     const_reference operator*() const { return (*this)[0]; }
     bool operator== (const Column_iterator& i) const { return _same_col(i) && _row_offset==i._row_offset; }
+    bool operator!= (const Column_iterator& i) const { return !(*this == i); }
     Column_iterator& operator++() { ++_row_offset; return *this; }
     Column_iterator operator++ (int) { Column_iterator tmp = *this; ++_row_offset; return tmp; }
     Column_iterator& operator--() { --_row_offset; return *this; }

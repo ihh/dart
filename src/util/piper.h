@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <vector>
 #include <iostream>
+#include "logfile.h"
 
 using namespace std;
 
@@ -18,11 +19,13 @@ using namespace std;
  using namespace __gnu_cxx;
 #else
  // clang doesn't have stdio_filebuf, so create a dummy object and throw runtime exceptions if this functionality is used (EWW: DISGUSTING HACK)
- struct Stdio_filebuf : basic_streambuf<char> {
-   Stdio_filebuf (int __fd, std::ios_base::openmode __mode) { }
-   Stdio_filebuf (int __fd, std::ios_base::openmode __mode, size_t __size) { }
-   void close() { }
- };
+struct Stdio_filebuf : basic_streambuf<char> {
+  Stdio_filebuf (int __fd, std::ios_base::openmode __mode) { THROW("No Stdio_filebuf"); }
+  Stdio_filebuf (int __fd, std::ios_base::openmode __mode, size_t __size) { THROW("No Stdio_filebuf"); }
+  Stdio_filebuf (FILE* file, std::ios_base::openmode __mode) { THROW("No Stdio_filebuf"); }
+  Stdio_filebuf (FILE* file, std::ios_base::openmode __mode, size_t __size) { THROW("No Stdio_filebuf"); }
+  void close() { }
+};
 #endif
 #define PIPE_BUF_SIZE 100   /* number of bytes for pipe buffer */
 

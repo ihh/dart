@@ -8,8 +8,6 @@ TKF_coeff::TKF_coeff (double dt, double T) : dt(dt), T(T)
   N = 1 + (int) (T / dt);
   if (dt * (double) (N-1) < T) ++N;
 
-  dt = dt;
-  N = N;
   T = dt * (double) (N-1);
 
   alpha = vector<double> (N);
