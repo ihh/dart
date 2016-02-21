@@ -1,3 +1,7 @@
+;; This is an xrate grammar for the ECMrest.dat matrix of:
+;;  Kosiol, Goldman & Holmes (2007)
+;;  An empirical codon model for protein sequence evolution.
+;; This matrix allows only single-nucleotide changes.
 (alphabet
  (name DNA)
  (token (a c g t))
