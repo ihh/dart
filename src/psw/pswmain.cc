@@ -133,9 +133,10 @@ void PSW_aligner::run()
 void PSW_aligner::write_alignment (const Alignment& align, const Alphabet& alphabet, double score, const char* score_units)
 {
   // TO DO: trim off the gaps at the end, to reflect the fact that alignment is local
+  cout << Stockholm_header;
   align.write_MUL (cout, alphabet);
-  cout << "#=SC " << score << " " << score_units << "\n";
-  cout << Stockholm_alignment_separator << "\n";
+  cout << Stockholm_file_annotation << " " Stockholm_bit_score_tag << " " << score << " " << score_units << "\n";
+  cout << Stockholm_footer;
 }
 
 
