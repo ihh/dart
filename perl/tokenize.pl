@@ -122,7 +122,7 @@ my %aa3 = map (($_ => $aa_to_aa3{$aa{$_}}), keys %aa);
 # ASCII characters 33 through 126:
 # !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
 # Characters avoided in token set:
-# ( ) ; " ' (used by S-expression format)
+# ( ) ; " ' \ (used by S-expression format)
 # - * ? . (used for alignment/reconstruction/ambiguity)
 # > (used by FASTA format)
 %tok = ( 'ttt'=>'F',  'tct'=>'S',  'tat'=>'Y',  'tgt'=>'C',
