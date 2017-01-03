@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 # convert RNAfold output to Stockholm
 
 my $name = "AnonymousSequence";

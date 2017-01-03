@@ -20,7 +20,7 @@ class PS_doc
     _footer ("%%Trailer\n%%bad%% end\n%%EOF\n")
     {}
 
-  ~PS_doc() { delete _buf; }
+  ~PS_doc() { delete[] _buf; }
 
   friend ostream& operator<<(ostream& o, const PS_doc& doc) { o << doc._header << doc._text << doc._footer; return o; }
 

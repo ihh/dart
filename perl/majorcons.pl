@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 use Stockholm::Database;
 use Getopt::Long;
 

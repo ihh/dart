@@ -1,4 +1,10 @@
 #!/usr/bin/env perl -w
+
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
 #-------------------------------------------------------------------------------
 # Written and maintained by Andrew Uzilov, May-August 2006.
 #-------------------------------------------------------------------------------

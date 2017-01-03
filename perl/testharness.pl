@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 # Usage: $0 [...tests in dart/bin dir...] -fullpath [-cd 'testdir'] [...tests with fully qualified pathnames...]
 
 my $bindir = $0;

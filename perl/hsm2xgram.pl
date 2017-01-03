@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 # Convert old-school HSM files (input to tkfemit) into xgram-format files
 my $alphName = "ALPHABET";
 my $gramName = "GRAMMAR";

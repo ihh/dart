@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 my $usage = "\nUsage: $0 <number of mixture components> [file]\n\nUses EM to estimate ML fit of mixture-geometric to empirical nonzero-length distribution\nExpects one- or two-column input format: LENGTH [FREQUENCY]\n";
 
 die $usage if @ARGV < 1 || @ARGV > 2 || grep /^-/, @ARGV;

@@ -19,6 +19,7 @@ struct SExpr_atom : sstring
   SExpr_atom(const sstring& s) : sstring(s), is_quoted(false) { }
   SExpr_atom(const char* s) : sstring(s), is_quoted(false) { }
   SExpr_atom(const SExpr_atom& s) : sstring(s), is_quoted(s.is_quoted) { }
+  SExpr_atom& operator= (const SExpr_atom& s) { ((sstring&)*this) = s; return *this; }  // prevent "copy assignment operator implicitly deleted" errors
   SExpr_atom& operator= (const sstring& s) { ((sstring&)*this) = s; return *this; }
   SExpr_atom& operator= (const char* s) { ((sstring&)*this) = s; return *this; }
   // vector of strings

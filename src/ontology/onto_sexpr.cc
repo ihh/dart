@@ -320,7 +320,7 @@ SCM termx_learn (SCM max_steps_scm, SCM termx_scm)
 
 void init_termx_primitives (void)
 {
-  scm_c_define_gsubr (GUILE_TERMX_EVIDENCE, 1, 0, 0, (SCM (*)()) termx_evidence);
-  scm_c_define_gsubr (GUILE_TERMX_PREDICT, 1, 0, 0, (SCM (*)()) termx_prediction);
-  scm_c_define_gsubr (GUILE_TERMX_LEARN, 2, 0, 0, (SCM (*)()) termx_learn);
+  scm_c_define_gsubr (GUILE_TERMX_EVIDENCE, 1, 0, 0, (scm_t_subr) termx_evidence);
+  scm_c_define_gsubr (GUILE_TERMX_PREDICT, 1, 0, 0, (scm_t_subr) termx_prediction);
+  scm_c_define_gsubr (GUILE_TERMX_LEARN, 2, 0, 0, (scm_t_subr) termx_learn);
 }

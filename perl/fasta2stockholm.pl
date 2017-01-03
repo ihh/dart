@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 my $usage = "Usage: $0 <gapped FASTA alignment file(s)>\n";
 
 my @argv;

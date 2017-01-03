@@ -1,9 +1,25 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
+
+use warnings;
+use strict;
+
+use File::Basename;
+use File::Spec;
+
+use lib File::Spec->catdir(
+    File::Basename::dirname(File::Spec->rel2abs($0)),
+    '../../../perl');
 
 use PhyloGram;
 use Stockholm;
 
 die "Usage: $0 [<tree files>]\n" if grep (/^-/, @ARGV);
+
+my $dartdir = File::Spec->catdir(
+    File::Basename::dirname(File::Spec->rel2abs($0)),
+    '../../../');
+my $perldir = "$dartdir/perl";
+my $bindir = "$dartdir/bin";
 
 my $alignSuffix = ".stock";
 my $gramSuffix = ".eg";
@@ -14,9 +30,6 @@ my $seedSuffix = ".seed";
 my $metaSuffix = ".meta";
 my $countsSuffix = ".counts";
 my $trainedSuffix = ".trained";
-
-my $perldir = "../../../perl";
-my $bindir = "../../../bin";
 
 my $xrate = "$bindir/xrate";
 my $simgram = "$bindir/simgram";

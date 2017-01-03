@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 my $hsm2xgram = "hsm2xgram.pl";
 my $xgram2hsm = "xgram2hsm.pl";
 my $xrate = "xrate";

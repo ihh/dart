@@ -1,5 +1,11 @@
 #!/usr/bin/env perl -w
 
+BEGIN {
+    use FindBin;
+    use lib $FindBin::Bin;
+    push @INC, $FindBin::Bin;
+}
+
 my $usage = "Usage: $0 <minscore> <Stockholm alignments...>";
 my $s = shift;
 defined($s) or die $usage;
