@@ -36,7 +36,7 @@ my @chains = $gram->all_chains;
 die "More than one chain" if @chains > 1;
 
 my $chain = $chains[0];
-my @term = @{$chain->term->value};
+my @term = map ($_->value, $chain->find_all('term'), $chain->find_all('terminal'));
 die "More than one terminal" if @term > 1;
 
 my @class = $chain->find_all("hidden-class") ? @{$chain->hidden_class->label->value} : (1);
