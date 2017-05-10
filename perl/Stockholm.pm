@@ -127,7 +127,7 @@ Returns the object as a Stockholm-formatted string.
 ARGs can include...
         MAXCOLS    -- set this to an integer $maxcols to limit the maximum number of displayed screen columns to $maxcols. Alternatively, set this to the string "SCREEN" to use all available screen columns.
         NOSEQDATA  -- set this to 1 to suppress printing the actual sequence data in the alignment (for example if you are only interested in the annotation lines)
-        COLOR      -- set this to a subroutine reference that, when called with (residue,rowname,colnum), returns 2-elt list of (fg,bg) colors. Alternatively, set this to the string "AMINO" for amino acid coloring.
+        COLOR      -- set this to a subroutine reference that, when called with (residue,rowname,colnum), returns 2-elt list of (bg,fg) colors. Alternatively, set this to the string "AMINO" for amino acid coloring.
 
 =cut
 
