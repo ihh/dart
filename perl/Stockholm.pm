@@ -432,7 +432,6 @@ sub prettify {
     $legend = sprintf ("% ${lcols}s", $legend);
     $legend =~ s/^(\s+)(\#=\S\S)(\s+\S+)$/$2$1$3/;
     $legend =~ s/^(\s+)(\#=\S\S\s+\S+)(\s+\S+)$/$2$1$3/;
-    $legend =~ s/^(\s\s\s\s\s)(\s+)([^\#]\S+)/$1$3$2/;
     return map ("$legend $_", @data);
     # (pukes into cold coffee cup)
 }

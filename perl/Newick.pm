@@ -45,13 +45,13 @@ sub new {
 
     The root node always has index 0, and its (dummy) parent index is -1.
 
-    =head2 node_name
+=head2 node_name
 
     my $nodeName = $tree->node_name->[$indexOfNode]
 
     Returns a reference to an array of node names.
 
-    =head2 branch_length
+=head2 branch_length
 
     my $branchLength = $tree->branch_length->[$indexOfNode]
 
@@ -341,6 +341,27 @@ sub ancestors {
 	$node = $self->parent->[$node];
     }
     return @anc;
+}
+
+=head2 descendants
+
+    my $descendants = $tree->descendants ($node)
+
+    Returns the descendants of a node in the tree,
+    sorted in preorder (parents before children).
+
+=cut
+
+sub descendants {
+    my ($self, $node) = @_;
+    my @desc;
+    my @q = ($node);
+    while (@q) {
+	my @c = $self->children(shift @q);
+	push @desc, @c;
+	push @q, @c;
+    }
+    return @desc;
 }
 
 =head2 lca
