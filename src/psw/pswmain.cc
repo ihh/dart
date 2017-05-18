@@ -180,7 +180,7 @@ void PSW_trainer::run()
 	      align.read_MUL (align_file, seq_db);
 	      // check it's a pairwise alignment
 	      if (align.rows() != 2)
-		THROWEXPR ("Alignment '" << align_file << "' is not a pairwise alignment\n");
+		THROWEXPR ("Alignment '" << align_name << "' is not a pairwise alignment\n");
 	      // add the alignment to the list
 	      align_list.push_back (align);
 	      // flip parent-child rows & add to list (ensures model is reversible)
