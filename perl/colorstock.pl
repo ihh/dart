@@ -205,7 +205,7 @@ while (1) {
 	    while (my ($seqname, $seq) = each %seq) { $subByRow{$seqname} = [map (uc(substr($refSeq,$_,1)) eq uc(substr($seq,$_,1)) ? 0 : 1, 0..length($seq)-1)] }
 	}
 	if (defined $diffName) {
-	    if (!exists $seq{$refName}) {
+	    if (!exists $seq{$diffName}) {
 		warn "WARNING: reference sequence '$diffName' not found in alignment\n";
 		$seq{$diffName} = "N" x $seqlen;
 	    }
