@@ -1198,14 +1198,14 @@ void EM_matrix_base::randomise (double prior_dev, double intra_min, double intra
     for (int ai = 0; ai < A; ++ai)
       {
 	const int i = ca(ci,ai);
-	pi[i] = prior_min + Rnd::prob() * prior_dev;
+	pi[i] = prior_min + Rnd::rnd_double (prior_dev);
 	beta += pi[i];
 
 	double& X_ii = X[ci](ai,ai);
 	for (int aj = 0; aj < A; ++aj)
 	  if (aj != ai)
 	    {
-	      X[ci](ai,aj) = aj < ai ? X[ci](aj,ai) : (intra_min + Rnd::prob() * intra_dev);
+	      X[ci](ai,aj) = aj < ai ? X[ci](aj,ai) : (intra_min + Rnd::rnd_double (intra_dev));
 	      X_ii -= X[ci](ai,aj);
 	    }
 
@@ -1213,7 +1213,7 @@ void EM_matrix_base::randomise (double prior_dev, double intra_min, double intra
 	for (int cj = 0; cj < C; ++cj)
 	  if (cj != ci)
 	    {
-	      Y[ai](ci,cj) = cj < ci ? Y[ai](cj,ci) : (inter_min + Rnd::prob() * inter_dev);
+	      Y[ai](ci,cj) = cj < ci ? Y[ai](cj,ci) : (inter_min + Rnd::rnd_double (inter_dev));
 	      Y_ii -= Y[ai](ci,cj);
 	    }
       }
