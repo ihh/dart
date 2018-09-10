@@ -3,6 +3,7 @@
 #include <sys/time.h>
 
 #include "util/rnd.h"
+#include "util/math_fn.h"
 #include "randlib/randlib.h"
 
 #define DEFAULT_RND_SEED 1234567890
@@ -24,6 +25,17 @@ void Rnd::set_seed (int val)
 {
   seed_val = val;
   seeded = FALSE;
+}
+
+double Rnd::rnd_double (double scale_factor) {
+  // some initialization code calls a method which in turn calls rnd_double() with scale_factor == 0.
+  // this can cause the random number generator to complain during initialization, and can make it seem like the -rndseed isn't working.
+  // to guard against this, if the scale_factor is effectively zero, just return zero.
+  // this is, admittedly, something of a hack.
+  // IH 4/4/2018
+  if (abs(scale_factor) < TINY)
+    return 0.;
+  return Rnd::prob() * scale_factor;
 }
 
 void Rnd::add_opts (Opts_list& ol)

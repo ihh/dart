@@ -41,6 +41,7 @@ class Rnd
     }
 
   static int rnd_int (int n) { return min ((int) (prob() * ((double) n)), n-1); }      // returns integer in range 0 ... n-1
+  static double rnd_double (double scale_factor);
 
   static double sample_gamma (const double alpha, const double beta);
   static double sample_beta (const double p0_count, const double p1_count);   // returns sampled p0
