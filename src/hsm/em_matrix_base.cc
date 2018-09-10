@@ -309,12 +309,12 @@ void EM_matrix_base::Update_statistics::clear_DJU()
 
 Loge EM_matrix_base::Update_statistics::expected_log_likelihood (const EM_matrix_base& hsm) const {
   Loge ell = 0;
-  for (int i = 0; i < R.nrows(); ++i) {
+  for (int i = 0; i < hsm.R.nrows(); ++i) {
     ell += s[i] * hsm.log_pi[i];
-    ell += w[i] * R(i+1,i+1);
-    for (int j = 0; j < R.ncols(); ++j)
+    ell += w[i] * hsm.R(i+1,i+1);
+    for (int j = 0; j < hsm.R.ncols(); ++j)
       if (i != j && u(i,j))
-	ell += u(i,j) * Prob2Nats (R(i+1,j+1) / R(i+1,i+1));
+	ell += u(i,j) * Prob2Nats (hsm.R(i+1,j+1) / hsm.R(i+1,i+1));
   }
   return ell;
 }
