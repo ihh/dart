@@ -177,6 +177,7 @@ struct EM_matrix_base : Irrev_diagonalised_matrix_factory, EM_matrix_params, Pip
     // methods
 	// constructors
     Update_statistics (int states = 0);
+    Loge expected_log_likelihood (const EM_matrix_base&) const;
     void clear (double pseud_init = 0., double pseud_mutate = 0., double pseud_wait = 0.);  // resets all counts
     void clear_DJU();  // clears DJU only
     void transform (const EM_matrix_base& hsm, bool symmetrise);  // transforms from DJU-space into u-space

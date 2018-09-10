@@ -307,6 +307,18 @@ void EM_matrix_base::Update_statistics::clear_DJU()
   DJU_rev = array2d<Complex> (states, states, Complex(0.,0.));
 }
 
+Loge EM_matrix_base::Update_statistics::expected_log_likelihood (const EM_matrix_base& hsm) const {
+  Loge ell = 0;
+  for (int i = 0; i < R.nrows(); ++i) {
+    ell += s[i] * hsm.log_pi[i];
+    ell += w[i] * R(i+1,i+1);
+    for (int j = 0; j < R.ncols(); ++j)
+      if (i != j && u(i,j))
+	ell += u(i,j) * Prob2Nats (R(i+1,j+1) / R(i+1,i+1));
+  }
+  return ell;
+}
+
 void EM_matrix_base::Update_statistics::check_waits_transitions (const EM_matrix_base& hsm)
 {
   // get alphabet

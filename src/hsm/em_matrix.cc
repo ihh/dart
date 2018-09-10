@@ -525,6 +525,7 @@ Update_statistics EM_matrix::single_quick_EM (bool intra, bool inter, bool infer
 
 void EM_matrix::quick_M (const Update_statistics& stats, bool intra, bool inter)
 {
+  CTAG(5,RATE_EM_MSTEP) << "Expected log-likelihood before M-step: " << stats.expected_log_likelihood(*this) << "\n";
   // get X & Y
   for (int ci = 0; ci < C; ++ci)
     for (int ai = 0; ai < A; ++ai)
@@ -560,4 +561,5 @@ void EM_matrix::quick_M (const Update_statistics& stats, bool intra, bool inter)
   update_R();
   update_pi(stats);
   update();
+  CTAG(5,RATE_EM_MSTEP) << "Expected log-likelihood after M-step: " << stats.expected_log_likelihood(*this) << "\n";
 }
