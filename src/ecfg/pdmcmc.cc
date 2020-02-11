@@ -1,4 +1,4 @@
-#include "ecfg/ecfgmain.h"
+#include "ecfg/pdmcmc_main.h"
 #include "ecfg/pfold.h"
 #include "ecfg/protgrammar.h"
 
