@@ -61,6 +61,8 @@ struct PDMCMC_main
   bool use_beagle;
   bool use_fast_prune;
 
+  int mcmc_steps;
+  
   // alphabet & grammar data
   const Alphabet* alph;
   Empty_alphabet user_alphabet;
@@ -138,6 +140,8 @@ struct PDMCMC_main
   void annotate_alignments (ostream* align_stream = 0);  // can be skipped
   void copy_trees_to_stock_db();  // copies trees from align_db to stock_db, following tree estimation steps
 
+  void do_MCMC();
+  
   // helper to add a particular score annotation to an alignment
   void annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const;
 

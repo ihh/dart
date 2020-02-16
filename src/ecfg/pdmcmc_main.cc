@@ -188,6 +188,9 @@ void PDMCMC_main::init_opts (const char* desc)
   opts.add ("arpp -ancrec-postprob", ancrec_postprob = false, "report posterior probabilties of alternate reconstructions on CYK parse tree");
   opts.add ("marp -min-ancrec-prob", min_ancrec_postprob = .01, "minimum probability to report for --ancrec-postprob option");
 
+  opts.newline();
+  opts.print_title ("MCMC");
+  opts.add ("mcmc -mcmc-steps", mcmc_steps = 0, "do MCMC to get #=GS tags");
 }
 
 void PDMCMC_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
@@ -862,6 +865,9 @@ void PDMCMC_main::run_xrate (ostream& alignment_output_stream)
   read_grammars();
   convert_sequences();
 
+  if (mcmc_steps)
+    do_MCMC();
+  
   if (train.size() || training_log_filename.size())
     {
       train_grammars();
@@ -924,4 +930,115 @@ ECFG_scores* PDMCMC_main::run_macro_expansion (Stockholm& stock, SExpr& grammar_
   read_alignments (stock);
   read_grammars (&grammar_alphabet_sexpr);
   return grammar.size() > 0 ? grammar[0] : (ECFG_scores*) 0;
+}
+
+void PDMCMC_main::do_MCMC()
+{
+  if (missing_trees())
+    THROWEXPR("All alignments must be annotated with trees before MCMC can begin");
+
+  // get grammar
+  if (grammar.size() != 1)
+    THROWEXPR("MCMC requires exactly one grammar");
+
+  const int n_grammar = 0;
+
+  ECFG_scores& ecfg = *grammar[n_grammar];
+  const sstring& ecfg_name = ecfg.name;
+
+  sstring hybrid_gs_tag;
+  vector<sstring> gs_values;
+  for (const auto& chain: ecfg.matrix_set.chain)
+    if (chain.type == ECFG_enum::Hybrid) {
+      if (hybrid_gs_tag.size()) {
+	if (chain.gs_tag != hybrid_gs_tag)
+	  THROWEXPR ("Grammar has two hybrid chains with different tags: " << hybrid_gs_tag << " and  " << chain.gs_tag);
+	if (chain.gs_values.size() != gs_values.size())
+	  THROWEXPR ("Grammar has two hybrid chains with different value sets");
+	for (size_t n = 0; n < chain.gs_values.size(); ++n)
+	  if (chain.gs_values[n] != gs_values[n])
+	    THROWEXPR ("Grammar has two hybrid chains with different value sets");
+      }
+      hybrid_gs_tag = chain.gs_tag;
+      gs_values = chain.gs_values;
+    }
+  if (!hybrid_gs_tag)
+    THROWEXPR ("Grammar has no hybrid chain");
+  if (gs_values.size() != 2)
+    THROWEXPR ("Grammar's hybrid chain must have exactly two values, each of which can be assigned to only one child of every tree node");
+  
+  // get alignment
+  if (align_db.size() != 1)
+    THROWEXPR("MCMC requires exactly one alignment");
+
+  const int n_align = 0;
+  const Tree_alignment& tree_align = *align_db.tree_align[n_align];
+  const int seqlen = tree_align.align.columns();
+
+  const PHYLIP_tree& tree = tree_align.tree;
+  for_rooted_branches_pre (tree, node) {
+    const PHYLIP_tree::Node_vector kids = tree.children ((*node).second, (*node).first);
+    if (kids.size() > 2)
+      THROWEXPR ("Each node in tree must have at must 2 children");
+  }
+  
+  // get the original Stockholm alignment
+  Stockholm* stock = stock_db.align_index[n_align];
+
+  // get the alignment ID, if it has one
+  sstring align_id = stock->get_name();
+  if (!align_id.size())
+    align_id << "Alignment" << n_align+1;
+  
+  // print log message
+  CTAG(7,XRATE) << "Starting MCMC on alignment " << align_id
+		<< ": " << seqlen << " columns, "
+		<< mcmc_steps << " MCMC steps\n";
+  
+  // get the Aligned_score_profile
+  const Aligned_score_profile& asp = asp_vec[n_align];
+
+  // clear the #=GF annotation for the Stockholm alignment,
+  // then add the tree as a "#=GF NH" line
+  const sstring nh_tag (Stockholm_New_Hampshire_tag);
+  stock->clear_gf_annot (nh_tag);
+  ostringstream tree_stream;
+  tree_align.tree.write (tree_stream, 0);
+  sstring tree_string (tree_stream.str());
+  tree_string.chomp();
+  stock->add_gf_annot (nh_tag, tree_string);
+
+  // initialize #=GS annotation for the hybrid tag
+  Stockholm::Annotation& gs_annot = stock->gs_annot[hybrid_gs_tag];
+  if (gs_annot.empty())
+    for_rooted_branches_pre (tree, node) {
+      const PHYLIP_tree::Node_vector kids = tree.children ((*node).second, (*node).first);
+      if (kids.size()) {
+	vector<sstring> kid_gs (kids.size(), gs_values[0]);
+	if (Rnd::prob() < .5)
+	  kid_gs[0] = gs_values[1];
+	else if (kid_gs.size() == 2)
+	  kid_gs[1] = gs_values[1];
+	for (int n = 0; n < kids.size(); ++n) {
+	  const sstring nn = tree.node_name[kids[n]];
+	  gs_annot[nn] = kid_gs[n];
+	}
+      }
+    }
+
+  // create fold envelope
+  ECFG_auto_envelope env (*stock, ecfg, max_subseq_len);
+
+  // get initial log-likelihood
+  ECFG_inside_matrix inside_mx (ecfg, *stock, asp, env, true);
+  inside_mx.fill();
+  double current_loglike = inside_mx.final_loglike;
+  
+  // do MCMC
+  for (int step = 0; step <= mcmc_steps; ++step) {
+    CTAG(7,XRATE) << "MCMC step " << step << "\n";
+  }
+
+  // print out the annotated Stockholm alignment
+  stock->write_Stockholm (cout);
 }
