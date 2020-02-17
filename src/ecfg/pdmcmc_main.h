@@ -61,7 +61,7 @@ struct PDMCMC_main
   bool use_beagle;
   bool use_fast_prune;
 
-  int mcmc_steps;
+  int mcmc_steps, mcmc_period;
   
   // alphabet & grammar data
   const Alphabet* alph;

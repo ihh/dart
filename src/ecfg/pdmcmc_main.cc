@@ -191,6 +191,7 @@ void PDMCMC_main::init_opts (const char* desc)
   opts.newline();
   opts.print_title ("MCMC");
   opts.add ("mcmc -mcmc-steps", mcmc_steps = 0, "do MCMC to get #=GS tags");
+  opts.add ("-mcmc-period", mcmc_period = 10, "number of MCMC steps per node of tree between reporting state");
 }
 
 void PDMCMC_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
@@ -944,7 +945,6 @@ void PDMCMC_main::do_MCMC()
   const int n_grammar = 0;
 
   ECFG_scores& ecfg = *grammar[n_grammar];
-  const sstring& ecfg_name = ecfg.name;
 
   sstring hybrid_gs_tag;
   vector<sstring> gs_values;
@@ -966,6 +966,10 @@ void PDMCMC_main::do_MCMC()
     THROWEXPR ("Grammar has no hybrid chain");
   if (gs_values.size() != 2)
     THROWEXPR ("Grammar's hybrid chain must have exactly two values, each of which can be assigned to only one child of every tree node");
+
+  map<sstring,sstring> flipped_gs_value;
+  flipped_gs_value[gs_values[0]] = gs_values[1];
+  flipped_gs_value[gs_values[1]] = gs_values[0];
   
   // get alignment
   if (align_db.size() != 1)
@@ -979,7 +983,7 @@ void PDMCMC_main::do_MCMC()
   for_rooted_branches_pre (tree, node) {
     const PHYLIP_tree::Node_vector kids = tree.children ((*node).second, (*node).first);
     if (kids.size() > 2)
-      THROWEXPR ("Each node in tree must have at must 2 children");
+      THROWEXPR ("Each node in tree must have at most 2 children");
   }
   
   // get the original Stockholm alignment
@@ -1026,6 +1030,21 @@ void PDMCMC_main::do_MCMC()
       }
     }
 
+  // verify that no siblings are identically labeled 
+  vector<vector<sstring>> siblings;
+  for_rooted_branches_pre (tree, node) {
+    const PHYLIP_tree::Node_vector kids = tree.children ((*node).second, (*node).first);
+    vector<sstring> kid_names;
+    for (auto& k: kids)
+      kid_names.push_back (tree.node_name[k]);
+    if (kids.size() == 2) {
+      if (gs_annot[kid_names[0]] == gs_annot[kid_names[1]])
+	THROWEXPR ("Siblings " << kid_names[0] << " and " << kid_names[1] << " are both labeled '" << gs_annot[kid_names[1]] << "'");
+    }
+    if (kids.size())
+      siblings.push_back (kid_names);
+  }
+  
   // create fold envelope
   ECFG_auto_envelope env (*stock, ecfg, max_subseq_len);
 
@@ -1035,10 +1054,31 @@ void PDMCMC_main::do_MCMC()
   double current_loglike = inside_mx.final_loglike;
   
   // do MCMC
+  int eff_mcmc_period = mcmc_period * siblings.size();
   for (int step = 0; step <= mcmc_steps; ++step) {
-    CTAG(7,XRATE) << "MCMC step " << step << "\n";
+    // record the current state
+    const Stockholm::Annotation old_gs_annot = gs_annot;
+    // pick a random sibling pair (or individual node)
+    const int sib = Rnd::rnd_int (siblings.size());
+    CTAG(7,XRATE) << "MCMC step " << step << ": flipping nodes " << sstring::join(siblings[sib]) << "\n";
+    // flip it, and (if the sibling exists) flip its sibling
+    for (const auto& sn: siblings[sib])
+      gs_annot[sn] = flipped_gs_value[gs_annot[sn]];
+    // calculate new log-likelihood
+    ECFG_inside_matrix inside_mx (ecfg, *stock, asp, env, true);
+    inside_mx.fill();
+    const double new_loglike = inside_mx.final_loglike, delta_loglike = new_loglike - current_loglike;
+    // if it's better, or passes the Metropolis-Hastings accept test, update current_loglike; if not, restore the old state
+    bool accept = false;
+    if (delta_loglike > 0 || Rnd::prob() < exp (delta_loglike)) {
+      current_loglike = new_loglike;
+      accept = true;
+    } else {
+      gs_annot = old_gs_annot;
+    }
+    CTAG(6,XRATE) << "After flipping (" << sstring::join(siblings[sib]) << ") log-like step changed by " << Nats2Bits (delta_loglike) << ": move " << (accept ? "accepted" : "rejected") << "\n";
+    // print out the annotated Stockholm alignment
+    if (step % eff_mcmc_period == 0 || step == mcmc_steps - 1)
+      stock->write_Stockholm (cout);
   }
-
-  // print out the annotated Stockholm alignment
-  stock->write_Stockholm (cout);
 }
