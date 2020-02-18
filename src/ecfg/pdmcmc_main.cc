@@ -1014,6 +1014,8 @@ void PDMCMC_main::do_stochastic_EM()
 
   // initialize #=GS annotation for the hybrid tag
   for_rooted_nodes_pre (tree, node) {
+    if ((*node).first >= 0 && tree.node_name[(*node).second].size() == 0)
+      THROWEXPR ("Every tree node needs to be named, including internal nodes");
     const PHYLIP_tree::Node_vector kids = tree.children ((*node).second, (*node).first);
     if (kids.size()) {
       bool found_empty_kid = false;
