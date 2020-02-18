@@ -1013,11 +1013,14 @@ void PDMCMC_main::do_MCMC()
   stock->add_gf_annot (nh_tag, tree_string);
 
   // initialize #=GS annotation for the hybrid tag
-  Stockholm::Annotation& gs_annot = stock->gs_annot[hybrid_gs_tag];
-  if (gs_annot.empty())
-    for_rooted_branches_pre (tree, node) {
-      const PHYLIP_tree::Node_vector kids = tree.children ((*node).second, (*node).first);
-      if (kids.size()) {
+  for_rooted_nodes_pre (tree, node) {
+    const PHYLIP_tree::Node_vector kids = tree.children ((*node).second, (*node).first);
+    if (kids.size()) {
+      bool found_empty_kid = false;
+      for (const auto k: kids)
+	if (stock->get_gs_annot (tree.node_name[k], hybrid_gs_tag).size() == 0)
+	  found_empty_kid = true;
+      if (found_empty_kid) {
 	vector<sstring> kid_gs (kids.size(), gs_values[0]);
 	if (Rnd::prob() < .5)
 	  kid_gs[0] = gs_values[1];
@@ -1025,10 +1028,11 @@ void PDMCMC_main::do_MCMC()
 	  kid_gs[1] = gs_values[1];
 	for (int n = 0; n < kids.size(); ++n) {
 	  const sstring nn = tree.node_name[kids[n]];
-	  gs_annot[nn] = kid_gs[n];
+	  stock->set_gs_annot (nn, hybrid_gs_tag, kid_gs[n]);
 	}
       }
     }
+  }
 
   // verify that no siblings are identically labeled 
   vector<vector<sstring>> siblings;
@@ -1038,12 +1042,13 @@ void PDMCMC_main::do_MCMC()
     for (auto& k: kids)
       kid_names.push_back (tree.node_name[k]);
     if (kids.size() == 2) {
-      if (gs_annot[kid_names[0]] == gs_annot[kid_names[1]])
-	THROWEXPR ("Siblings " << kid_names[0] << " and " << kid_names[1] << " are both labeled '" << gs_annot[kid_names[1]] << "'");
+      if (stock->get_gs_annot (kid_names[0], hybrid_gs_tag) == stock->get_gs_annot (kid_names[1], hybrid_gs_tag))
+	THROWEXPR ("Siblings " << kid_names[0] << " and " << kid_names[1] << " are both labeled '" << stock->get_gs_annot (kid_names[0], hybrid_gs_tag) << "'");
     }
     if (kids.size())
       siblings.push_back (kid_names);
   }
+  stock->write_Stockholm (cout);
   
   // create fold envelope
   ECFG_auto_envelope env (*stock, ecfg, max_subseq_len);
@@ -1057,13 +1062,13 @@ void PDMCMC_main::do_MCMC()
   int eff_mcmc_period = mcmc_period * siblings.size();
   for (int step = 0; step <= mcmc_steps; ++step) {
     // record the current state
-    const Stockholm::Annotation old_gs_annot = gs_annot;
+    const Stockholm::Row_annotation old_gs_annot = stock->gs_annot;
     // pick a random sibling pair (or individual node)
     const int sib = Rnd::rnd_int (siblings.size());
     CTAG(7,XRATE) << "MCMC step " << step << ": flipping nodes " << sstring::join(siblings[sib]) << "\n";
     // flip it, and (if the sibling exists) flip its sibling
     for (const auto& sn: siblings[sib])
-      gs_annot[sn] = flipped_gs_value[gs_annot[sn]];
+      stock->set_gs_annot (sn, hybrid_gs_tag, flipped_gs_value[stock->get_gs_annot (sn, hybrid_gs_tag)]);
     // calculate new log-likelihood
     ECFG_inside_matrix inside_mx (ecfg, *stock, asp, env, true);
     inside_mx.fill();
@@ -1074,11 +1079,11 @@ void PDMCMC_main::do_MCMC()
       current_loglike = new_loglike;
       accept = true;
     } else {
-      gs_annot = old_gs_annot;
+      stock->gs_annot = old_gs_annot;
     }
-    CTAG(6,XRATE) << "After flipping (" << sstring::join(siblings[sib]) << ") log-like step changed by " << Nats2Bits (delta_loglike) << ": move " << (accept ? "accepted" : "rejected") << "\n";
+    CTAG(6,XRATE) << "After flipping (" << sstring::join(siblings[sib]) << ") log-like step changed by " << Nats2Bits (delta_loglike) << " bits: move " << (accept ? "accepted" : "rejected") << "\n";
     // print out the annotated Stockholm alignment
-    if (step % eff_mcmc_period == 0 || step == mcmc_steps - 1)
+    if (step > 0 && (step % eff_mcmc_period == 0 || step == mcmc_steps - 1))
       stock->write_Stockholm (cout);
   }
 }

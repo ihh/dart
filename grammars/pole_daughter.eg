@@ -5,61 +5,72 @@
  (hybrid-chain
   (terminal (X))
   (row TYPE)
-   (components
-    ((label P) (terminal (P)))
-    ((label D) (terminal (D)))))
+  (components
+   ((label POLE) (terminal (P)))
+   ((label DAUGHTER) (terminal (D)))))
 
  (transform (from (S)) (to (X S*)))
  (transform (from (S*)) (to ()) (prob 1))
  (transform (from (S*)) (to (S)) (prob 1))
 
+ (&foreach-token
+  SRC
+  (&foreach-token
+   DEST
+   (&if
+    (&eq SRC DEST)
+    ()
+    (rate
+     ((&cat pole_rate_ SRC DEST) .1)
+     ((&cat daughter_rate_ SRC DEST) .2)))))
+
+ (pgroup
+  ((&foreach-token
+    TOK
+    ((&cat pole_prob_ TOK)
+     (&div 1 &TOKENS))))
+  ((&foreach-token
+    TOK
+    ((&cat daughter_prob_ TOK)
+     (&div 1 &TOKENS)))))
+ 
  (chain
-  (update-policy irrev)
+  (update-policy parametric)
   (terminal (P))
 
   ;; initial probability distribution
-  (initial (state (a)) (prob 0.25))
-  (initial (state (c)) (prob 0.25))
-  (initial (state (g)) (prob 0.25))
-  (initial (state (u)) (prob 0.25))
+  (&foreach-token
+   TOK
+   (initial (state (TOK)) (prob (&cat pole_prob_ TOK))))
 
   ;; mutation rates
-  (mutate (from (a)) (to (c)) (rate 1))
-  (mutate (from (a)) (to (g)) (rate 1))
-  (mutate (from (a)) (to (u)) (rate 1))
-  (mutate (from (c)) (to (a)) (rate 1))
-  (mutate (from (c)) (to (g)) (rate 1))
-  (mutate (from (c)) (to (u)) (rate 1))
-  (mutate (from (g)) (to (a)) (rate 1))
-  (mutate (from (g)) (to (c)) (rate 1))
-  (mutate (from (g)) (to (u)) (rate 1))
-  (mutate (from (u)) (to (a)) (rate 1))
-  (mutate (from (u)) (to (c)) (rate 1))
-  (mutate (from (u)) (to (g)) (rate 1)))
+  (&foreach-token
+   SRC
+   (&foreach-token
+    DEST
+    (&if
+     (&eq SRC DEST)
+     ()
+     (mutate (from (SRC)) (to (DEST)) (rate (&cat pole_rate_ SRC DEST)))))))
 
  (chain
-  (update-policy irrev)
+  (update-policy parametric)
   (terminal (D))
-
+  
   ;; initial probability distribution
-  (initial (state (a)) (prob 0.25))
-  (initial (state (c)) (prob 0.25))
-  (initial (state (g)) (prob 0.25))
-  (initial (state (u)) (prob 0.25))
+  (&foreach-token
+   TOK
+   (initial (state (TOK)) (prob (&cat daughter_prob_ TOK))))
 
   ;; mutation rates
-  (mutate (from (a)) (to (c)) (rate 2))
-  (mutate (from (a)) (to (g)) (rate 2))
-  (mutate (from (a)) (to (u)) (rate 2))
-  (mutate (from (c)) (to (a)) (rate 2))
-  (mutate (from (c)) (to (g)) (rate 2))
-  (mutate (from (c)) (to (u)) (rate 2))
-  (mutate (from (g)) (to (a)) (rate 2))
-  (mutate (from (g)) (to (c)) (rate 2))
-  (mutate (from (g)) (to (u)) (rate 2))
-  (mutate (from (u)) (to (a)) (rate 2))
-  (mutate (from (u)) (to (c)) (rate 2))
-  (mutate (from (u)) (to (g)) (rate 2)))
+  (&foreach-token
+   SRC
+   (&foreach-token
+    DEST
+    (&if
+     (&eq SRC DEST)
+     ()
+     (mutate (from (SRC)) (to (DEST)) (rate (&cat daughter_rate_ SRC DEST)))))))
 
  )  ;; end grammar
 

@@ -151,7 +151,7 @@ ECFG_matrix::ECFG_matrix (const ECFG_scores& ecfg, Stockholm& stock, const ECFG_
 			  << Stockholm_sequence_annotation
 			  << " label '" << gs_val
 			  << "' in hybrid chain (" << chain.state
-			  << "); using default label '" << default_gs_val << "'\n";
+			  << "); using default label '" << default_gs_val << "' at node " << tree.node_name[n] << "\n";
 
 	      }
 	}

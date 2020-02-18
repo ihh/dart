@@ -1239,7 +1239,7 @@ ECFG_simulation::ECFG_simulation (const ECFG_scores& ecfg, const PHYLIP_tree& tr
 				   << " label '" << gs_val
 				   << "' in hybrid chain (" << chain.state
 				   << "); using default label '"
-				   << chain.gs_values[0] << "' instead\n";
+				   << chain.gs_values[0] << "'  at node " << tree.node_name[n] << "\n";
 		}
 	      else
 		THROWEXPR ("No component chain with "
