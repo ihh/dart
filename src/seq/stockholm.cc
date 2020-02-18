@@ -937,7 +937,7 @@ void Stockholm_database::update_index()
     }
   for_const_contents (Phonebook, name_count, nc)
     if (nc->second > 1)
-      CTAG(8,STOCKHOLM) << "Warning: duplicate sequence name " << nc->first << " (occurs " << nc->second << " times)\n";
+      CTAG(4,STOCKHOLM) << "Warning: duplicate sequence name " << nc->first << " (occurs " << nc->second << " times)\n";
 }
 
 void Stockholm_database::propagate_consensus_folds (bool override_row_folds)

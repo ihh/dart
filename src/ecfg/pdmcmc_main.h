@@ -61,7 +61,7 @@ struct PDMCMC_main
   bool use_beagle;
   bool use_fast_prune;
 
-  int mcmc_steps, sem_steps;
+  int mcmc_steps;
   sstring stochastic_EM_filename;
   
   // alphabet & grammar data

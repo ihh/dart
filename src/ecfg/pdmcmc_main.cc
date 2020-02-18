@@ -191,8 +191,7 @@ void PDMCMC_main::init_opts (const char* desc)
   opts.newline();
   opts.print_title ("MCMC");
   opts.add ("sem -stochastic-em", stochastic_EM_filename = "", "do stochastic EM (MCMC sampling #=GS tags for E-step), saving grammars to this file", false);
-  opts.add ("mcmcs -mcmc-steps", mcmc_steps = 5, "number of MCMC samples per node of tree for stochastic EM");
-  opts.add ("sems -sem-steps", sem_steps = 100, "number of steps of stochastic EM");
+  opts.add ("mcmc -mcmc-steps", mcmc_steps = 5, "number of MCMC samples per node of tree for stochastic EM");
 }
 
 void PDMCMC_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
@@ -1049,7 +1048,6 @@ void PDMCMC_main::do_stochastic_EM()
     if (kids.size())
       siblings.push_back (kid_names);
   }
-  stock->write_Stockholm (cout);
   
   // create fold envelope for MCMC
   const int eff_max_subseq_len = ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len;
@@ -1059,15 +1057,20 @@ void PDMCMC_main::do_stochastic_EM()
   ofstream training_log (stochastic_EM_filename.c_str());
 
   // do some stochastic EM
-  for (int sem_step = 0; sem_step < sem_steps; ++sem_step) {
-    CTAG(7,XRATE) << "Starting stochastic EM step " << (sem_step+1) << "\n";
+  Loge best_sem_loglike = -InfinityLoge;
+  int dec = 0;
+  Stockholm::Row_annotation best_annot;
+  for (int sem_step = 0; em_max_iter < 0 || sem_step < em_max_iter; ++sem_step) {
+    CTAG(6,XRATE) << "Starting stochastic EM step " << (sem_step+1) << "\n";
     Sequence_database sem_seq_db;
     Stockholm_database sem_stock_db;
     
     // get initial log-likelihood
     ECFG_inside_matrix inside_mx (ecfg, *stock, asp, env, true);
     inside_mx.fill();
-    double current_loglike = inside_mx.final_loglike;
+    Loge current_loglike = inside_mx.final_loglike;
+    Loge best_loglike = current_loglike;
+    best_annot = stock->gs_annot;
   
     // do MCMC
     for (int mcmc_step = 0; mcmc_step <= mcmc_steps * siblings.size(); ++mcmc_step) {
@@ -1075,24 +1078,28 @@ void PDMCMC_main::do_stochastic_EM()
       const Stockholm::Row_annotation old_gs_annot = stock->gs_annot;
       // pick a random sibling pair (or individual node)
       const int sib = Rnd::rnd_int (siblings.size());
-      CTAG(7,XRATE) << "MCMC step " << (mcmc_step+1) << ": flipping nodes " << sstring::join(siblings[sib]) << "\n";
+      CTAG(6,XRATE) << "MCMC step " << (mcmc_step+1) << ": flipping nodes " << sstring::join(siblings[sib]) << "\n";
       // flip it, and (if the sibling exists) flip its sibling
       for (const auto& sn: siblings[sib])
 	stock->set_gs_annot (sn, hybrid_gs_tag, flipped_gs_value[stock->get_gs_annot (sn, hybrid_gs_tag)]);
       // calculate new log-likelihood
       ECFG_inside_matrix inside_mx (ecfg, *stock, asp, env, true);
       inside_mx.fill();
-      const double new_loglike = inside_mx.final_loglike, delta_loglike = new_loglike - current_loglike;
+      const Loge new_loglike = inside_mx.final_loglike, delta_loglike = new_loglike - current_loglike;
       // if it's better, or passes the Metropolis-Hastings accept test, update current_loglike; if not, restore the old state
       bool accept = false;
       if (delta_loglike > 0 || Rnd::prob() < exp (delta_loglike)) {
 	current_loglike = new_loglike;
 	accept = true;
+	if (current_loglike > best_loglike) {
+	  best_loglike = current_loglike;
+	  best_annot = stock->gs_annot;
+	}
       } else {
 	stock->gs_annot = old_gs_annot;
       }
-      CTAG(6,XRATE) << "After flipping (" << sstring::join(siblings[sib]) << ") log-like step changed by " << Nats2Bits (delta_loglike) << " bits: move " << (accept ? "accepted" : "rejected") << "\n";
-
+      CTAG(5,XRATE) << "After flipping (" << sstring::join(siblings[sib]) << ") log-like step changed by " << Nats2Bits (delta_loglike) << " bits: move " << (accept ? "accepted" : "rejected") << "\n";
+      
       // every few steps, copy the annotated Stockholm alignment to the sampled training database
       if (mcmc_step % siblings.size() == 0) {
 	Stockholm* stock_copy = Stockholm::deep_copy (*stock, sem_seq_db);
@@ -1102,10 +1109,10 @@ void PDMCMC_main::do_stochastic_EM()
     }
 
     // log the sampled training database
-    if (CTAGGING(7,XRATE)) {
-      CTAG(7,XRATE) << "Stochastic EM step " << (sem_step+1) << " training database:\n";
+    if (CTAGGING(5,XRATE)) {
+      CTAG(6,XRATE) << "Stochastic EM step " << (sem_step+1) << " training database:\n";
       sem_stock_db.write (CL);
-      CTAG(7,XRATE) << "Beginning EM algorithm\n";
+      CTAG(6,XRATE) << "Beginning EM algorithm\n";
     }
 
     // train the model on the sampled training database
@@ -1127,7 +1134,38 @@ void PDMCMC_main::do_stochastic_EM()
     
     ECFG_builder::ecfg2stream (training_log, ecfg.alphabet, ecfg, &trainer.counts);
     training_log.flush();
+
+    // report
+    const Loge sem_loglike = trainer.best_loglike;
+    CTAG(7,ECFG_EM ECFG_EM_PROGRESS) << "Stochastic EM iteration #" << (sem_step+1)
+				     << ": log-likelihood = " << Nats2Bits(sem_loglike) << " bits\n";
+    if (sem_step > 0) {
+      const double inc = (sem_loglike - best_sem_loglike) / (abs(best_sem_loglike) < TINY ? 1. : abs(best_sem_loglike));
+      if (inc < em_min_inc)
+      {
+        if (sem_loglike < best_sem_loglike)
+          CTAG(7,ECFG_EM ECFG_EM_PROGRESS) << "Warning: log-likelihood dropped from " << Nats2Bits(best_sem_loglike)
+					   << " to " << Nats2Bits(sem_loglike) << " bits during stochastic EM\n";
+        if (++dec > em_forgive)
+        {
+          CTAG(7,ECFG_EM ECFG_EM_PROGRESS) << "Failed EM improvement threshold for the " << dec << "th time; stopping\n";
+	  break;
+        }
+      }
+      else
+	dec = 0;
+    }
+    
+    if (sem_loglike > best_sem_loglike)
+      best_sem_loglike = sem_loglike;
   }
 
   training_log.close();
+
+  // add params to best alignment and final params
+  stock->gs_annot = best_annot;
+  const PScores& ps = ecfg.pscores;
+  for (int g = 0; g < ps.groups(); ++g)
+    for (int p = 0; p < (int) ps.group[g].size(); ++p)
+      stock->add_gf_annot (ps.group_suffix[g][p], to_string (Score2Prob (ps.group[g][p])));
 }
