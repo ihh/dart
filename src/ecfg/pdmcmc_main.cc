@@ -190,8 +190,9 @@ void PDMCMC_main::init_opts (const char* desc)
 
   opts.newline();
   opts.print_title ("MCMC");
-  opts.add ("mcmc -mcmc-steps", mcmc_steps = 0, "do MCMC to get #=GS tags");
-  opts.add ("-mcmc-period", mcmc_period = 10, "number of MCMC steps per node of tree between reporting state");
+  opts.add ("sem -stochastic-em", stochastic_EM_filename = "", "do stochastic EM (MCMC sampling #=GS tags for E-step), saving grammars to this file", false);
+  opts.add ("mcmcs -mcmc-steps", mcmc_steps = 5, "number of MCMC samples per node of tree for stochastic EM");
+  opts.add ("sems -sem-steps", sem_steps = 100, "number of steps of stochastic EM");
 }
 
 void PDMCMC_main::annotate_loglike (Stockholm& stock, const char* tag, const sstring& ecfg_name, Loge loglike) const
@@ -866,8 +867,8 @@ void PDMCMC_main::run_xrate (ostream& alignment_output_stream)
   read_grammars();
   convert_sequences();
 
-  if (mcmc_steps)
-    do_MCMC();
+  if (stochastic_EM_filename.size())
+    do_stochastic_EM();
   
   if (train.size() || training_log_filename.size())
     {
@@ -933,7 +934,7 @@ ECFG_scores* PDMCMC_main::run_macro_expansion (Stockholm& stock, SExpr& grammar_
   return grammar.size() > 0 ? grammar[0] : (ECFG_scores*) 0;
 }
 
-void PDMCMC_main::do_MCMC()
+void PDMCMC_main::do_stochastic_EM()
 {
   if (missing_trees())
     THROWEXPR("All alignments must be annotated with trees before MCMC can begin");
@@ -1050,40 +1051,83 @@ void PDMCMC_main::do_MCMC()
   }
   stock->write_Stockholm (cout);
   
-  // create fold envelope
-  ECFG_auto_envelope env (*stock, ecfg, max_subseq_len);
+  // create fold envelope for MCMC
+  const int eff_max_subseq_len = ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len;
+  ECFG_auto_envelope env (*stock, ecfg, eff_max_subseq_len);
 
-  // get initial log-likelihood
-  ECFG_inside_matrix inside_mx (ecfg, *stock, asp, env, true);
-  inside_mx.fill();
-  double current_loglike = inside_mx.final_loglike;
-  
-  // do MCMC
-  int eff_mcmc_period = mcmc_period * siblings.size();
-  for (int step = 0; step <= mcmc_steps; ++step) {
-    // record the current state
-    const Stockholm::Row_annotation old_gs_annot = stock->gs_annot;
-    // pick a random sibling pair (or individual node)
-    const int sib = Rnd::rnd_int (siblings.size());
-    CTAG(7,XRATE) << "MCMC step " << step << ": flipping nodes " << sstring::join(siblings[sib]) << "\n";
-    // flip it, and (if the sibling exists) flip its sibling
-    for (const auto& sn: siblings[sib])
-      stock->set_gs_annot (sn, hybrid_gs_tag, flipped_gs_value[stock->get_gs_annot (sn, hybrid_gs_tag)]);
-    // calculate new log-likelihood
+  // set up training log
+  ofstream training_log (stochastic_EM_filename.c_str());
+
+  // do some stochastic EM
+  for (int sem_step = 0; sem_step < sem_steps; ++sem_step) {
+    CTAG(7,XRATE) << "Starting stochastic EM step " << (sem_step+1) << "\n";
+    Sequence_database sem_seq_db;
+    Stockholm_database sem_stock_db;
+    
+    // get initial log-likelihood
     ECFG_inside_matrix inside_mx (ecfg, *stock, asp, env, true);
     inside_mx.fill();
-    const double new_loglike = inside_mx.final_loglike, delta_loglike = new_loglike - current_loglike;
-    // if it's better, or passes the Metropolis-Hastings accept test, update current_loglike; if not, restore the old state
-    bool accept = false;
-    if (delta_loglike > 0 || Rnd::prob() < exp (delta_loglike)) {
-      current_loglike = new_loglike;
-      accept = true;
-    } else {
-      stock->gs_annot = old_gs_annot;
+    double current_loglike = inside_mx.final_loglike;
+  
+    // do MCMC
+    for (int mcmc_step = 0; mcmc_step <= mcmc_steps * siblings.size(); ++mcmc_step) {
+      // record the current state
+      const Stockholm::Row_annotation old_gs_annot = stock->gs_annot;
+      // pick a random sibling pair (or individual node)
+      const int sib = Rnd::rnd_int (siblings.size());
+      CTAG(7,XRATE) << "MCMC step " << (mcmc_step+1) << ": flipping nodes " << sstring::join(siblings[sib]) << "\n";
+      // flip it, and (if the sibling exists) flip its sibling
+      for (const auto& sn: siblings[sib])
+	stock->set_gs_annot (sn, hybrid_gs_tag, flipped_gs_value[stock->get_gs_annot (sn, hybrid_gs_tag)]);
+      // calculate new log-likelihood
+      ECFG_inside_matrix inside_mx (ecfg, *stock, asp, env, true);
+      inside_mx.fill();
+      const double new_loglike = inside_mx.final_loglike, delta_loglike = new_loglike - current_loglike;
+      // if it's better, or passes the Metropolis-Hastings accept test, update current_loglike; if not, restore the old state
+      bool accept = false;
+      if (delta_loglike > 0 || Rnd::prob() < exp (delta_loglike)) {
+	current_loglike = new_loglike;
+	accept = true;
+      } else {
+	stock->gs_annot = old_gs_annot;
+      }
+      CTAG(6,XRATE) << "After flipping (" << sstring::join(siblings[sib]) << ") log-like step changed by " << Nats2Bits (delta_loglike) << " bits: move " << (accept ? "accepted" : "rejected") << "\n";
+
+      // every few steps, copy the annotated Stockholm alignment to the sampled training database
+      if (mcmc_step % siblings.size() == 0) {
+	Stockholm* stock_copy = Stockholm::deep_copy (*stock, sem_seq_db);
+	sem_stock_db.add (*stock_copy);
+	delete stock_copy;
+      }
     }
-    CTAG(6,XRATE) << "After flipping (" << sstring::join(siblings[sib]) << ") log-like step changed by " << Nats2Bits (delta_loglike) << " bits: move " << (accept ? "accepted" : "rejected") << "\n";
-    // print out the annotated Stockholm alignment
-    if (step > 0 && (step % eff_mcmc_period == 0 || step == mcmc_steps - 1))
-      stock->write_Stockholm (cout);
+
+    // log the sampled training database
+    if (CTAGGING(7,XRATE)) {
+      CTAG(7,XRATE) << "Stochastic EM step " << (sem_step+1) << " training database:\n";
+      sem_stock_db.write (CL);
+      CTAG(7,XRATE) << "Beginning EM algorithm\n";
+    }
+
+    // train the model on the sampled training database
+    ECFG_attachable_tree_alignment_database sem_align_db (seq_db);
+    sem_align_db.initialise_from_Stockholm_database (sem_stock_db, false);
+    vector<Aligned_score_profile> av (sem_align_db.size());
+    for (int n = 0; n < sem_align_db.size(); ++n)
+      av[n].init (sem_align_db.tree_align[n]->align, sem_stock_db.align_index[n]->np, *alph);
+    ECFG_trainer trainer (ecfg, sem_stock_db.align_index, av, eff_max_subseq_len, NULL);
+
+    trainer.pseud_init = pseud_init;
+    trainer.pseud_mutate = pseud_mutate;
+    trainer.pseud_wait = pseud_wait;
+
+    trainer.em_min_inc = em_min_inc;
+    trainer.em_max_iter = em_max_iter;
+    
+    trainer.iterate_quick_EM (em_forgive);
+    
+    ECFG_builder::ecfg2stream (training_log, ecfg.alphabet, ecfg, &trainer.counts);
+    training_log.flush();
   }
+
+  training_log.close();
 }
