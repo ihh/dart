@@ -1035,6 +1035,9 @@ void PDMCMC_main::do_stochastic_EM()
       }
     }
   }
+  if (tree.node_name[tree.root].size() == 0)
+    THROWEXPR ("Every tree node needs to be named, including root node");
+  stock->set_gs_annot (tree.node_name[tree.root], hybrid_gs_tag, gs_values[0]);
 
   // verify that no siblings are identically labeled 
   vector<vector<sstring>> siblings;
