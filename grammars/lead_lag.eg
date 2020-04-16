@@ -7,15 +7,15 @@
   (terminal (X))
   (row STRAND)
   (components
-   ((label LEAD) (terminal (P)))
-   ((label LAG) (terminal (D)))))
+   ((label LEAD) (terminal (LEAD)))
+   ((label LAG) (terminal (LAG)))))
 
  ;; Alignment grammar (a straightforward IID model)
  (transform (from (S)) (to (X S*)))
  (transform (from (S*)) (to ()) (prob 1))
  (transform (from (S*)) (to (S)) (prob 1))
 
- ;; Declaration of parameters, XXX_rate_SRC_DEST and XXX_prob_TOK, for XXX in {LEAD,LAG} and nucleotides SRC,DEST,TOK
+ ;; Initialization of rate parameters, XXX_rate_SRC_DEST, for XXX in {LEAD,LAG} and SRC,DEST in {a,c,g,t}
  (&foreach-token
   SRC
   (&foreach-token
@@ -24,9 +24,10 @@
     (&eq SRC DEST)
     ()
     (rate
-     ((&cat lead_rate_ SRC DEST) .1)
-     ((&cat lag_rate_ SRC DEST) .2)))))
+     ((&cat lead_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
+     ((&cat lag_rate_ SRC DEST) .2)))))  ;; initialize the lagging rate to 0.2
 
+ ;; Initialization of probability parameters, XXX_prob_TOK, for XXX in {LEAD,LAG} and TOK in {a,c,g,t}
  (pgroup
   ((&foreach-token
     TOK
@@ -39,7 +40,7 @@
  
  (chain
   (update-policy parametric)
-  (terminal (P))
+  (terminal (LEAD))
 
   ;; Leading strand model
   ;; initial probability distribution
@@ -59,7 +60,7 @@
 
  (chain
   (update-policy parametric)
-  (terminal (D))
+  (terminal (LAG))
 
   ;; Lagging strand model
   ;; initial probability distribution
