@@ -946,26 +946,15 @@ void PDMCMC_main::do_stochastic_EM()
 
   ECFG_scores& ecfg = *grammar[n_grammar];
 
-  sstring hybrid_gs_tag;
+  const sstring hybrid_gs_tag ("STRAND");
+  const sstring hybrid_gs_tag_plus_parent ("STRAND_PARENT");
+  const sstring same_gs_value ("SAME");
+  const sstring diff_gs_value ("DIFF");
+  const sstring root_gs_value ("ROOT");
+  const sstring gs_value_separator ("_");
   vector<sstring> gs_values;
-  for (const auto& chain: ecfg.matrix_set.chain)
-    if (chain.type == ECFG_enum::Hybrid) {
-      if (hybrid_gs_tag.size()) {
-	if (chain.gs_tag != hybrid_gs_tag)
-	  THROWEXPR ("Grammar has two hybrid chains with different tags: " << hybrid_gs_tag << " and  " << chain.gs_tag);
-	if (chain.gs_values.size() != gs_values.size())
-	  THROWEXPR ("Grammar has two hybrid chains with different value sets");
-	for (size_t n = 0; n < chain.gs_values.size(); ++n)
-	  if (chain.gs_values[n] != gs_values[n])
-	    THROWEXPR ("Grammar has two hybrid chains with different value sets");
-      }
-      hybrid_gs_tag = chain.gs_tag;
-      gs_values = chain.gs_values;
-    }
-  if (!hybrid_gs_tag)
-    THROWEXPR ("Grammar has no hybrid chain");
-  if (gs_values.size() != 2)
-    THROWEXPR ("Grammar's hybrid chain must have exactly two values, each of which can be assigned to only one child of every tree node");
+  gs_values.push_back (sstring("LEAD"));
+  gs_values.push_back (sstring("LAG"));
 
   map<sstring,sstring> flipped_gs_value;
   flipped_gs_value[gs_values[0]] = gs_values[1];
@@ -1047,7 +1036,9 @@ void PDMCMC_main::do_stochastic_EM()
     for (auto& k: kids)
       kid_names.push_back (tree.node_name[k]);
     if (kids.size() == 2) {
-      if (stock->get_gs_annot (kid_names[0], hybrid_gs_tag) == stock->get_gs_annot (kid_names[1], hybrid_gs_tag))
+      const sstring val0 = stock->get_gs_annot (kid_names[0], hybrid_gs_tag);
+      const sstring val1 = stock->get_gs_annot (kid_names[1], hybrid_gs_tag);
+      if (val0 == val1 && flipped_gs_value.count(val0) && flipped_gs_value.count(val1))
 	THROWEXPR ("Siblings " << kid_names[0] << " and " << kid_names[1] << " are both labeled '" << stock->get_gs_annot (kid_names[0], hybrid_gs_tag) << "'");
     }
     if (kids.size())
@@ -1085,8 +1076,21 @@ void PDMCMC_main::do_stochastic_EM()
       const int sib = Rnd::rnd_int (siblings.size());
       CTAG(6,XRATE) << "MCMC step " << (mcmc_step+1) << ": flipping nodes " << sstring::join(siblings[sib]) << "\n";
       // flip it, and (if the sibling exists) flip its sibling
-      for (const auto& sn: siblings[sib])
-	stock->set_gs_annot (sn, hybrid_gs_tag, flipped_gs_value[stock->get_gs_annot (sn, hybrid_gs_tag)]);
+      for (const auto& sn: siblings[sib]) {
+	const sstring old_val = stock->get_gs_annot (sn, hybrid_gs_tag);
+	if (flipped_gs_value.count (old_val))
+	  stock->set_gs_annot (sn, hybrid_gs_tag, flipped_gs_value[old_val]);
+      }
+
+      // annotate all branches with a combination of tag & parent tag
+      for_rooted_nodes_pre (tree, b) {
+	const bool child_is_root = (*b).first < 0;
+	const sstring child_name = tree.node_name[(*b).second];
+	const sstring child_val = stock->get_gs_annot (child_name, hybrid_gs_tag);
+	const sstring parent_val = child_is_root ? root_gs_value : stock->get_gs_annot (tree.node_name[(*b).first], hybrid_gs_tag);
+	stock->set_gs_annot (child_name, hybrid_gs_tag_plus_parent, child_val + gs_value_separator + (child_is_root ? root_gs_value : (child_val == parent_val ? same_gs_value : diff_gs_value)));
+      }
+      
       // calculate new log-likelihood
       ECFG_inside_matrix inside_mx (ecfg, *stock, asp, env, true);
       inside_mx.fill();

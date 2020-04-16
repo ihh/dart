@@ -254,7 +254,8 @@ void Stockholm::write_Stockholm_body (ostream& out, const Output_mask& out_mask,
 	gs_name.push_back (ra->first);
 	nse_gs_name.push_back (ra->first);
 	// resize max_name_width if necessary
-	max_name_width = max (max_name_width, (int) ra->first.size() + (int) ra->first.size() + 6);  // 6 chars for "#=GS name "
+	for_const_contents (Annotation, ra->second, na)
+	  max_name_width = max (max_name_width, (int) ra->first.size() + (int) na->first.size() + 6);  // 6 chars for "#=GS name TAG"
       }
   // now max_name_width has its final value
 

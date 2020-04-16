@@ -1,18 +1,21 @@
-;; Pole-daughter model
+;; Lead-lag model
 (grammar
- (name pole-daughter)
+ (name lead-lag)
 
+ ;; Hybrid chain mapping "#=GS SEQNAME STRAND ..." values in Stockholm file to the appropriate continuous-time Markov chain model for the corresponding phylogenetic branch
  (hybrid-chain
   (terminal (X))
-  (row TYPE)
+  (row STRAND)
   (components
-   ((label POLE) (terminal (P)))
-   ((label DAUGHTER) (terminal (D)))))
+   ((label LEAD) (terminal (P)))
+   ((label LAG) (terminal (D)))))
 
+ ;; Alignment grammar (a straightforward IID model)
  (transform (from (S)) (to (X S*)))
  (transform (from (S*)) (to ()) (prob 1))
  (transform (from (S*)) (to (S)) (prob 1))
 
+ ;; Declaration of parameters, XXX_rate_SRC_DEST and XXX_prob_TOK, for XXX in {LEAD,LAG} and nucleotides SRC,DEST,TOK
  (&foreach-token
   SRC
   (&foreach-token
@@ -21,27 +24,28 @@
     (&eq SRC DEST)
     ()
     (rate
-     ((&cat pole_rate_ SRC DEST) .1)
-     ((&cat daughter_rate_ SRC DEST) .2)))))
+     ((&cat lead_rate_ SRC DEST) .1)
+     ((&cat lag_rate_ SRC DEST) .2)))))
 
  (pgroup
   ((&foreach-token
     TOK
-    ((&cat pole_prob_ TOK)
+    ((&cat lead_prob_ TOK)
      (&div 1 &TOKENS))))
   ((&foreach-token
     TOK
-    ((&cat daughter_prob_ TOK)
+    ((&cat lag_prob_ TOK)
      (&div 1 &TOKENS)))))
  
  (chain
   (update-policy parametric)
   (terminal (P))
 
+  ;; Leading strand model
   ;; initial probability distribution
   (&foreach-token
    TOK
-   (initial (state (TOK)) (prob (&cat pole_prob_ TOK))))
+   (initial (state (TOK)) (prob (&cat lead_prob_ TOK))))
 
   ;; mutation rates
   (&foreach-token
@@ -51,16 +55,17 @@
     (&if
      (&eq SRC DEST)
      ()
-     (mutate (from (SRC)) (to (DEST)) (rate (&cat pole_rate_ SRC DEST)))))))
+     (mutate (from (SRC)) (to (DEST)) (rate (&cat lead_rate_ SRC DEST)))))))
 
  (chain
   (update-policy parametric)
   (terminal (D))
-  
+
+  ;; Lagging strand model
   ;; initial probability distribution
   (&foreach-token
    TOK
-   (initial (state (TOK)) (prob (&cat daughter_prob_ TOK))))
+   (initial (state (TOK)) (prob (&cat lag_prob_ TOK))))
 
   ;; mutation rates
   (&foreach-token
@@ -70,10 +75,11 @@
     (&if
      (&eq SRC DEST)
      ()
-     (mutate (from (SRC)) (to (DEST)) (rate (&cat daughter_rate_ SRC DEST)))))))
+     (mutate (from (SRC)) (to (DEST)) (rate (&cat lag_rate_ SRC DEST)))))))
 
  )  ;; end grammar
 
+;; DNA alphabet
 (alphabet
  (name DNA)
  (token (a c g t))
