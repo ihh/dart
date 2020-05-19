@@ -1,6 +1,6 @@
-;; Lead-lag model
+;; Lead-lag2-scale model
 (grammar
- (name lead-lag)
+ (name lead-lag2)
 
  ;; Hybrid chain mapping "#=GS SEQNAME STRAND ..." values in Stockholm file to the appropriate continuous-time Markov chain model for the corresponding phylogenetic branch
  (hybrid-chain
@@ -19,7 +19,8 @@
  (transform (from (S*)) (to ()) (prob 1))
  (transform (from (S*)) (to (S)) (prob 1))
 
- ;; Initialization of rate parameters, XXX_rate_SRC_DEST, for XXX in {LEAD,LAG} and SRC,DEST in {a,c,g,t}
+
+ ;; Initialization of rate parameters, subst_rate_SRC_DEST, for SRC,DEST in {a,c,g,t}
  (&foreach-token
   SRC
   (&foreach-token
@@ -28,38 +29,22 @@
     (&eq SRC DEST)
     ()
     (rate
-     ((&cat lead_same_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lead_diff_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lag_same_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lag_diff_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lead_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lag_rate_ SRC DEST) .2)))))  ;; initialize the lagging rate to 0.2
+     ((&cat subst_rate_ SRC DEST) .2)))))  ;; initialize the basal rate to 1
 
- ;; Initialization of probability parameters, XXX_prob_TOK, for XXX in {LEAD,LAG} and TOK in {a,c,g,t}
+ ;; Initialization of leading & lagging rate multiplier parameters
+ (rate
+  (lead_same_rate .1)
+  (lead_diff_rate .1)
+  (lag_same_rate .2)
+  (lag_diff_rate .2)
+  (lead_rate .1)
+  (lag_rate .2))
+
+ ;; Initialization of probability parameters, root_prob_TOK, for TOK in {a,c,g,t}
  (pgroup
   ((&foreach-token
     TOK
-    ((&cat lead_same_prob_ TOK)
-     (&div 1 &TOKENS))))
-  ((&foreach-token
-    TOK
-    ((&cat lead_diff_prob_ TOK)
-     (&div 1 &TOKENS))))
-  ((&foreach-token
-    TOK
-    ((&cat lag_same_prob_ TOK)
-     (&div 1 &TOKENS))))
-  ((&foreach-token
-    TOK
-    ((&cat lag_diff_prob_ TOK)
-     (&div 1 &TOKENS))))
-  ((&foreach-token
-    TOK
-    ((&cat lead_prob_ TOK)
-     (&div 1 &TOKENS))))
-  ((&foreach-token
-    TOK
-    ((&cat lag_prob_ TOK)
+    ((&cat root_prob_ TOK)
      (&div 1 &TOKENS)))))
 
  (chain
@@ -69,7 +54,7 @@
   ;; initial probability distribution
   (&foreach-token
    TOK
-   (initial (state (TOK)) (prob (&cat lead_same_prob_ TOK))))
+   (initial (state (TOK)) (prob (&cat root_prob_ TOK))))
   ;; mutation rates
   (&foreach-token
    SRC
@@ -78,7 +63,7 @@
     (&if
      (&eq SRC DEST)
      ()
-     (mutate (from (SRC)) (to (DEST)) (rate (&cat lead_same_rate_ SRC DEST)))))))
+     (mutate (from (SRC)) (to (DEST)) (rate lead_same_rate * (&cat subst_rate_ SRC DEST)))))))
 
  (chain
   (update-policy parametric)
@@ -87,7 +72,7 @@
   ;; initial probability distribution
   (&foreach-token
    TOK
-   (initial (state (TOK)) (prob (&cat lead_diff_prob_ TOK))))
+   (initial (state (TOK)) (prob (&cat root_prob_ TOK))))
   ;; mutation rates
   (&foreach-token
    SRC
@@ -96,7 +81,7 @@
     (&if
      (&eq SRC DEST)
      ()
-     (mutate (from (SRC)) (to (DEST)) (rate (&cat lead_diff_rate_ SRC DEST)))))))
+     (mutate (from (SRC)) (to (DEST)) (rate lead_diff_rate * (&cat subst_rate_ SRC DEST)))))))
 
  (chain
   (update-policy parametric)
@@ -105,7 +90,7 @@
   ;; initial probability distribution
   (&foreach-token
    TOK
-   (initial (state (TOK)) (prob (&cat lag_same_prob_ TOK))))
+   (initial (state (TOK)) (prob (&cat root_prob_ TOK))))
   ;; mutation rates
   (&foreach-token
    SRC
@@ -114,7 +99,7 @@
     (&if
      (&eq SRC DEST)
      ()
-     (mutate (from (SRC)) (to (DEST)) (rate (&cat lag_same_rate_ SRC DEST)))))))
+     (mutate (from (SRC)) (to (DEST)) (rate lag_same_rate * (&cat subst_rate_ SRC DEST)))))))
 
  (chain
   (update-policy parametric)
@@ -123,7 +108,7 @@
   ;; initial probability distribution
   (&foreach-token
    TOK
-   (initial (state (TOK)) (prob (&cat lag_diff_prob_ TOK))))
+   (initial (state (TOK)) (prob (&cat root_prob_ TOK))))
   ;; mutation rates
   (&foreach-token
    SRC
@@ -132,7 +117,7 @@
     (&if
      (&eq SRC DEST)
      ()
-     (mutate (from (SRC)) (to (DEST)) (rate (&cat lag_diff_rate_ SRC DEST)))))))
+     (mutate (from (SRC)) (to (DEST)) (rate lag_diff_rate * (&cat subst_rate_ SRC DEST)))))))
 
  (chain
   (update-policy parametric)
@@ -141,7 +126,7 @@
   ;; initial probability distribution
   (&foreach-token
    TOK
-   (initial (state (TOK)) (prob (&cat lead_prob_ TOK))))
+   (initial (state (TOK)) (prob (&cat root_prob_ TOK))))
   ;; mutation rates
   (&foreach-token
    SRC
@@ -150,7 +135,7 @@
     (&if
      (&eq SRC DEST)
      ()
-     (mutate (from (SRC)) (to (DEST)) (rate (&cat lead_rate_ SRC DEST)))))))
+     (mutate (from (SRC)) (to (DEST)) (rate lead_rate * (&cat subst_rate_ SRC DEST)))))))
 
  (chain
   (update-policy parametric)
@@ -159,7 +144,7 @@
   ;; initial probability distribution
   (&foreach-token
    TOK
-   (initial (state (TOK)) (prob (&cat lag_prob_ TOK))))
+   (initial (state (TOK)) (prob (&cat root_prob_ TOK))))
   ;; mutation rates
   (&foreach-token
    SRC
@@ -168,7 +153,7 @@
     (&if
      (&eq SRC DEST)
      ()
-     (mutate (from (SRC)) (to (DEST)) (rate (&cat lag_rate_ SRC DEST)))))))
+     (mutate (from (SRC)) (to (DEST)) (rate lag_rate * (&cat subst_rate_ SRC DEST)))))))
 
  )  ;; end grammar
 

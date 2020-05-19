@@ -1,0 +1,54 @@
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *)
+)  ;; end alphabet DNA
+
+(grammar
+ (name rev)
+
+ (chain
+  (update-policy irrev)
+  (terminal (X))
+
+  ;; initial probability distribution
+  (initial (state (a)) (prob 0.25))
+  (initial (state (c)) (prob 0.25))
+  (initial (state (g)) (prob 0.25))
+  (initial (state (u)) (prob 0.25))
+
+  ;; mutation rates
+  (mutate (from (a)) (to (c)) (rate .01))
+  (mutate (from (a)) (to (g)) (rate .01))
+  (mutate (from (a)) (to (u)) (rate .01))
+  (mutate (from (c)) (to (a)) (rate .01))
+  (mutate (from (c)) (to (g)) (rate .01))
+  (mutate (from (c)) (to (u)) (rate .01))
+  (mutate (from (g)) (to (a)) (rate .01))
+  (mutate (from (g)) (to (c)) (rate .01))
+  (mutate (from (g)) (to (u)) (rate .01))
+  (mutate (from (u)) (to (a)) (rate .01))
+  (mutate (from (u)) (to (c)) (rate .01))
+  (mutate (from (u)) (to (g)) (rate .01))
+ )  ;; end chain X
+
+ ;; state S
+ (transform (from (S)) (to (X S*)))
+ (transform (from (S*)) (to ()) (prob 1))
+ (transform (from (S*)) (to (S)) (prob 1))
+)  ;; end grammar rev
+

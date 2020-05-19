@@ -1,0 +1,101 @@
+;; Lead-lag-scale model
+(grammar
+ (name lead-lag-scale)
+
+ ;; Hybrid chain mapping "#=GS SEQNAME STRAND ..." values in Stockholm file to the appropriate continuous-time Markov chain model for the corresponding phylogenetic branch
+ (hybrid-chain
+  (terminal (X))
+  (row STRAND)
+  (components
+   ((label LEAD) (terminal (LEAD)))
+   ((label LAG) (terminal (LAG)))))
+
+ ;; Alignment grammar (a straightforward IID model)
+ (transform (from (S)) (to (X S*)))
+ (transform (from (S*)) (to ()) (prob 1))
+ (transform (from (S*)) (to (S)) (prob 1))
+
+ ;; Initialization of rate parameters, subst_rate_SRC_DEST, for SRC,DEST in {a,c,g,t}
+ (&foreach-token
+  SRC
+  (&foreach-token
+   DEST
+   (&if
+    (&eq SRC DEST)
+    ()
+    (rate
+     ((&cat subst_rate_ SRC DEST) .2)))))  ;; initialize the basal rate to 1
+
+ ;; Initialization of leading & lagging rate multiplier parameters
+ (rate
+  (lead_rate .1)
+  (lag_rate .2))
+ 
+ ;; Initialization of probability parameters, root_prob_TOK, for TOK in {a,c,g,t}
+ (pgroup
+  ((&foreach-token
+    TOK
+    ((&cat root_prob_ TOK)
+     (&div 1 &TOKENS)))))
+ 
+ (chain
+  (update-policy parametric)
+  (terminal (LEAD))
+
+  ;; Leading strand model
+  ;; initial probability distribution
+  (&foreach-token
+   TOK
+   (initial (state (TOK)) (prob (&cat root_prob_ TOK))))
+
+  ;; mutation rates
+  (&foreach-token
+   SRC
+   (&foreach-token
+    DEST
+    (&if
+     (&eq SRC DEST)
+     ()
+     (mutate (from (SRC)) (to (DEST)) (rate lead_rate * (&cat subst_rate_ SRC DEST)))))))
+
+ (chain
+  (update-policy parametric)
+  (terminal (LAG))
+
+  ;; Lagging strand model
+  ;; initial probability distribution
+  (&foreach-token
+   TOK
+   (initial (state (TOK)) (prob (&cat root_prob_ TOK))))
+
+  ;; mutation rates
+  (&foreach-token
+   SRC
+   (&foreach-token
+    DEST
+    (&if
+     (&eq SRC DEST)
+     ()
+     (mutate (from (SRC)) (to (DEST)) (rate lag_rate * (&cat subst_rate_ SRC DEST)))))))
+
+ )  ;; end grammar
+
+;; DNA alphabet
+(alphabet
+ (name DNA)
+ (token (a c g t))
+ (complement (t g c a))
+ (extend (to n) (from a) (from c) (from g) (from t))
+ (extend (to x) (from a) (from c) (from g) (from t))
+ (extend (to u) (from t))
+ (extend (to r) (from a) (from g))
+ (extend (to y) (from c) (from t))
+ (extend (to m) (from a) (from c))
+ (extend (to k) (from g) (from t))
+ (extend (to s) (from c) (from g))
+ (extend (to w) (from a) (from t))
+ (extend (to h) (from a) (from c) (from t))
+ (extend (to b) (from c) (from g) (from t))
+ (extend (to v) (from a) (from c) (from g))
+ (extend (to d) (from a) (from g) (from t))
+ (wildcard *))
