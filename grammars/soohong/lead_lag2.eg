@@ -28,12 +28,12 @@
     (&eq SRC DEST)
     ()
     (rate
-     ((&cat lead_same_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lead_diff_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lag_same_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lag_diff_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lead_rate_ SRC DEST) .1)    ;; initialize the leading rate to 0.1
-     ((&cat lag_rate_ SRC DEST) .2)))))  ;; initialize the lagging rate to 0.2
+     ((&cat lead_same_rate_ SRC DEST) .1)
+     ((&cat lead_diff_rate_ SRC DEST) .2)
+     ((&cat lag_diff_rate_ SRC DEST) .3)
+     ((&cat lag_same_rate_ SRC DEST) .4)
+     ((&cat lead_rate_ SRC DEST) .15)
+     ((&cat lag_rate_ SRC DEST) .35)))))
 
  ;; Initialization of probability parameters, XXX_prob_TOK, for XXX in {LEAD,LAG} and TOK in {a,c,g,t}
  (pgroup

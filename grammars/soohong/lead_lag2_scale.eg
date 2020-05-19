@@ -34,11 +34,11 @@
  ;; Initialization of leading & lagging rate multiplier parameters
  (rate
   (lead_same_rate .1)
-  (lead_diff_rate .1)
-  (lag_same_rate .2)
-  (lag_diff_rate .2)
-  (lead_rate .1)
-  (lag_rate .2))
+  (lead_diff_rate .2)
+  (lag_diff_rate .3)
+  (lag_same_rate .4)
+  (lead_rate .15)
+  (lag_rate .35))
 
  ;; Initialization of probability parameters, root_prob_TOK, for TOK in {a,c,g,t}
  (pgroup

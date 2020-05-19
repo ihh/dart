@@ -1084,11 +1084,12 @@ void PDMCMC_main::do_stochastic_EM()
 
       // annotate all branches with a combination of tag & parent tag
       for_rooted_nodes_pre (tree, b) {
-	const bool child_is_root = (*b).first < 0;
+	const bool child_is_root = (*b).second == tree.root;
+	const bool parent_is_root = (*b).first == tree.root;
 	const sstring child_name = tree.node_name[(*b).second];
 	const sstring child_val = stock->get_gs_annot (child_name, hybrid_gs_tag);
 	const sstring parent_val = child_is_root ? root_gs_value : stock->get_gs_annot (tree.node_name[(*b).first], hybrid_gs_tag);
-	const bool use_child_val = child_is_root || !flipped_gs_value.count(child_val) || !flipped_gs_value.count(parent_val);
+	const bool use_child_val = child_is_root || parent_is_root || !flipped_gs_value.count(child_val) || !flipped_gs_value.count(parent_val);
 	stock->set_gs_annot (child_name, hybrid_gs_tag_plus_parent, use_child_val ? child_val : sstring(child_val + gs_value_separator + (child_val == parent_val ? same_gs_value : diff_gs_value)));
       }
       
