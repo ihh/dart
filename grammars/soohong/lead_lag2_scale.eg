@@ -5,7 +5,7 @@
  ;; Hybrid chain mapping "#=GS SEQNAME STRAND ..." values in Stockholm file to the appropriate continuous-time Markov chain model for the corresponding phylogenetic branch
  (hybrid-chain
   (terminal (X))
-  (row STRAND)
+  (row STRAND_PARENT)
   (components
    ((label LEAD_SAME) (terminal (LEAD_SAME)))
    ((label LAG_SAME) (terminal (LAG_SAME)))
