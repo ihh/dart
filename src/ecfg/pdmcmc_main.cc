@@ -361,7 +361,7 @@ void PDMCMC_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_databa
   // estimate missing trees by neighbor-joining
   if (do_neighbor_joining && missing_trees())
     {
-      CTAG(6,XRATE) << "Estimating missing trees by neighbor-joining\n";
+      CTAG(6,XRATE PDMCMC) << "Estimating missing trees by neighbor-joining\n";
       Subst_dist_func_factory dist_func_factory (*tree_estimation_chain->matrix);
       align_db.estimate_missing_trees_by_nj (dist_func_factory);
       // copy trees to Stockholm database (do this every time trees are changed)
@@ -371,7 +371,7 @@ void PDMCMC_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_databa
   // optimise branch lengths by EM
   if (do_branch_length_EM)
     {
-      CTAG(6,XRATE) << "Optimizing tree branch lengths by EM\n";
+      CTAG(6,XRATE PDMCMC) << "Optimizing tree branch lengths by EM\n";
       if (avoid_ECFG_for_branch_length_EM)
 	{
 	  Irrev_EM_matrix nj_hsm (1, 1);  // create temporary EM_matrix
@@ -387,7 +387,7 @@ void PDMCMC_main::estimate_trees (SExpr* grammar_alphabet_sexpr, Sequence_databa
   // attach all alignment rows to tree
   if (attach_rows && unattached_rows())
     {
-      CTAG(6,XRATE) << "Placing unattached alignment rows on trees\n";
+      CTAG(6,XRATE PDMCMC) << "Placing unattached alignment rows on trees\n";
       align_db.attach_rows (*tree_estimation_grammar, 0., BRANCH_LENGTH_RES, BRANCH_LENGTH_MAX, min_branch_len);
       // copy trees to Stockholm database (do this every time trees are changed)
       copy_trees_to_stock_db();
@@ -600,7 +600,7 @@ void PDMCMC_main::annotate_alignments (ostream* align_stream)
 	align_id << "Alignment" << n_align+1;
 
       // print log message
-      CTAG(7,XRATE) << "Processing alignment " << align_id
+      CTAG(7,XRATE PDMCMC) << "Processing alignment " << align_id
 		    << " (" << n_align+1 << " of " << align_db.size()
 		    << "): " << seqlen << " columns\n";
 
@@ -656,7 +656,7 @@ void PDMCMC_main::annotate_alignments (ostream* align_stream)
 	  const bool want_fast_prune = use_fast_prune && !want_fill_down;
 
 	  // log what we're doing
-	  CTAG(6,XRATE) << "Desired annotations:"
+	  CTAG(6,XRATE PDMCMC) << "Desired annotations:"
 			<< (want_ancestral_reconstruction ? " Ancestral_reconstruction" : "")
 			<< (want_hidden_classes ? " Hidden_classes" : "")
 			<< (want_GC ? " Stockholm(#=GC)" : "")
@@ -668,7 +668,7 @@ void PDMCMC_main::annotate_alignments (ostream* align_stream)
 			<< (report_postprob ? " All_postprobs" : "")
 			<< '\n';
 
-	  CTAG(6,XRATE) << "Selected algorithms:"
+	  CTAG(6,XRATE PDMCMC) << "Selected algorithms:"
 			<< (want_CYK ? " CYK" : "")
 			<< (want_inside ? " Inside" : "")
 			<< (want_outside ? " Outside" : "")
@@ -684,7 +684,7 @@ void PDMCMC_main::annotate_alignments (ostream* align_stream)
 	  bool zero_likelihood = false;  // this flag becomes set if final likelihood is 0, i.e. no traceback path
 	  if (want_CYK)
 	    {
-	      CTAG(6,XRATE) << "Annotating using grammar '" << ecfg_name << "'\n";
+	      CTAG(6,XRATE PDMCMC) << "Annotating using grammar '" << ecfg_name << "'\n";
 
 	      // create CYK matrix; get score & traceback; save emit_loglike; & delete matrix
 	      ECFG_CYK_matrix* cyk_mx = new ECFG_CYK_matrix (ecfg, *stock, asp, env, want_fast_prune);
@@ -721,7 +721,7 @@ void PDMCMC_main::annotate_alignments (ostream* align_stream)
 		    {
 		      if (report_postprob)
 			{
-			  CTAG(6,XRATE) << "Annotating posterior probabilities for all subsequences/states\n";
+			  CTAG(6,XRATE PDMCMC) << "Annotating posterior probabilities for all subsequences/states\n";
 			  sstring pp_tag;
 			  pp_tag << LOGPOSTPROB_TAG_PREFIX << '_' << ecfg_name;
 			  sstring trace_tag (CYK_STATE_LABEL);
@@ -730,7 +730,7 @@ void PDMCMC_main::annotate_alignments (ostream* align_stream)
 
 		      if (report_confidence)
 			{
-			  CTAG(6,XRATE) << "Annotating posterior probabilities for CYK parse\n";
+			  CTAG(6,XRATE PDMCMC) << "Annotating posterior probabilities for CYK parse\n";
 			  sstring pp_tag;
 			  pp_tag << CONFIDENCE_TAG_PREFIX << '_' << ecfg_name;
 			  inout_mx->annotate (*stock, gff_list, align_id, cyk_trace, pp_tag);
@@ -738,13 +738,13 @@ void PDMCMC_main::annotate_alignments (ostream* align_stream)
 
 		      if (want_hidden_classes)
 			{
-			  CTAG(6,XRATE) << "Annotating hidden class labels for CYK parse\n";
+			  CTAG(6,XRATE PDMCMC) << "Annotating hidden class labels for CYK parse\n";
 			  inout_mx->annotate_hidden_classes (*stock, cyk_trace);
 			}
 
 		      if (want_ancestral_reconstruction)
 			{
-			  CTAG(6,XRATE) << "Annotating ancestral reconstruction for CYK parse\n";
+			  CTAG(6,XRATE PDMCMC) << "Annotating ancestral reconstruction for CYK parse\n";
 			  inout_mx->inside.reconstruct_MAP (*stock, cyk_trace, CYK_MAP_reconstruction_tag, ancrec_CYK_MAP, ancrec_postprob, min_ancrec_postprob);
 			}
 		    }
@@ -757,7 +757,7 @@ void PDMCMC_main::annotate_alignments (ostream* align_stream)
 	  // if needed, do Inside algorithm (or retrieve previously-computed Inside matrix)
 	  if (want_inside)
 	    {
-	      CTAG(6,XRATE) << "Running Inside algorithm using grammar '" << ecfg_name << "'\n";
+	      CTAG(6,XRATE PDMCMC) << "Running Inside algorithm using grammar '" << ecfg_name << "'\n";
 
 	      // create Inside matrix, or get score from previously created matrix
 	      if (inout_mx)
@@ -984,7 +984,7 @@ void PDMCMC_main::do_stochastic_EM()
     align_id << "Alignment" << n_align+1;
   
   // print log message
-  CTAG(7,XRATE) << "Starting MCMC on alignment " << align_id
+  CTAG(7,XRATE PDMCMC) << "Starting MCMC on alignment " << align_id
 		<< ": " << seqlen << " columns, "
 		<< mcmc_steps << " MCMC steps\n";
   
@@ -1044,6 +1044,17 @@ void PDMCMC_main::do_stochastic_EM()
     if (kids.size())
       siblings.push_back (kid_names);
   }
+
+  // annotate all branches with a combination of tag & parent tag
+  for_rooted_nodes_pre (tree, b) {
+    const bool child_is_root = (*b).second == tree.root;
+    const bool parent_is_root = (*b).first == tree.root;
+    const sstring child_name = tree.node_name[(*b).second];
+    const sstring child_val = stock->get_gs_annot (child_name, hybrid_gs_tag);
+    const sstring parent_val = child_is_root ? root_gs_value : stock->get_gs_annot (tree.node_name[(*b).first], hybrid_gs_tag);
+    const bool use_child_val = child_is_root || parent_is_root || !flipped_gs_value.count(child_val) || !flipped_gs_value.count(parent_val);
+    stock->set_gs_annot (child_name, hybrid_gs_tag_plus_parent, use_child_val ? child_val : sstring(child_val + gs_value_separator + (child_val == parent_val ? same_gs_value : diff_gs_value)));
+  }
   
   // create fold envelope for MCMC
   const int eff_max_subseq_len = ecfg.is_left_regular() || ecfg.is_right_regular() ? 0 : max_subseq_len;
@@ -1057,7 +1068,7 @@ void PDMCMC_main::do_stochastic_EM()
   int dec = 0;
   Stockholm::Row_annotation best_annot;
   for (int sem_step = 0; em_max_iter < 0 || sem_step < em_max_iter; ++sem_step) {
-    CTAG(6,XRATE) << "Starting stochastic EM step " << (sem_step+1) << "\n";
+    CTAG(6,XRATE PDMCMC) << "Starting stochastic EM step " << (sem_step+1) << "\n";
     Sequence_database sem_seq_db;
     Stockholm_database sem_stock_db;
     
@@ -1074,7 +1085,11 @@ void PDMCMC_main::do_stochastic_EM()
       const Stockholm::Row_annotation old_gs_annot = stock->gs_annot;
       // pick a random sibling pair (or individual node)
       const int sib = Rnd::rnd_int (siblings.size());
-      CTAG(6,XRATE) << "MCMC step " << (mcmc_step+1) << ": flipping nodes " << sstring::join(siblings[sib]) << "\n";
+      CTAG(6,XRATE PDMCMC) << "MCMC step " << (mcmc_step+1) << ": flipping nodes " << sstring::join(siblings[sib]) << "\n";
+      if (CTAGGING(4,XRATE PDMCMC)) {
+	CTAG(4,XRATE PDMCMC) << "Training database:\n";
+	sem_stock_db.write (CL);
+      }
       // flip it, and (if the sibling exists) flip its sibling
       for (const auto& sn: siblings[sib]) {
 	const sstring old_val = stock->get_gs_annot (sn, hybrid_gs_tag);
@@ -1109,7 +1124,7 @@ void PDMCMC_main::do_stochastic_EM()
       } else {
 	stock->gs_annot = old_gs_annot;
       }
-      CTAG(5,XRATE) << "After flipping (" << sstring::join(siblings[sib]) << ") log-like step changed by " << Nats2Bits (delta_loglike) << " bits: move " << (accept ? "accepted" : "rejected") << "\n";
+      CTAG(5,XRATE PDMCMC) << "After flipping (" << sstring::join(siblings[sib]) << ") log-like step changed by " << Nats2Bits (delta_loglike) << " bits: move " << (accept ? "accepted" : "rejected") << "\n";
       
       // every few steps, copy the annotated Stockholm alignment to the sampled training database
       if (mcmc_step % siblings.size() == 0) {
@@ -1120,10 +1135,10 @@ void PDMCMC_main::do_stochastic_EM()
     }
 
     // log the sampled training database
-    if (CTAGGING(5,XRATE)) {
-      CTAG(6,XRATE) << "Stochastic EM step " << (sem_step+1) << " training database:\n";
+    if (CTAGGING(5,XRATE PDMCMC)) {
+      CTAG(6,XRATE PDMCMC) << "Stochastic EM step " << (sem_step+1) << " training database:\n";
       sem_stock_db.write (CL);
-      CTAG(6,XRATE) << "Beginning EM algorithm\n";
+      CTAG(6,XRATE PDMCMC) << "Beginning EM algorithm\n";
     }
 
     // train the model on the sampled training database
